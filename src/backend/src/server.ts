@@ -1,7 +1,15 @@
 import app from './app'
 import { config } from './config/env'
+import { logger } from './utils/logger'
 
 app.listen(config.port, () => {
-  console.log(`🚀 VetClinic API running on http://localhost:${config.port}`)
-  console.log(`   ENV: ${config.nodeEnv}`)
+  logger.info({ port: config.port, env: config.nodeEnv }, 'VetClinic API started')
+})
+
+process.on('unhandledRejection', (reason) => {
+  logger.error({ err: reason }, 'Unhandled promise rejection')
+})
+process.on('uncaughtException', (err) => {
+  logger.error({ err }, 'Uncaught exception')
+  process.exit(1)
 })

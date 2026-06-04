@@ -13,6 +13,7 @@ import appointmentRoutes from './routes/appointmentRoutes'
 import medicalRecordRoutes from './routes/medicalRecordRoutes'
 import prescriptionRoutes from './routes/prescriptionRoutes'
 import vaccinationRoutes from './routes/vaccinationRoutes'
+import { notFound, errorHandler } from './middlewares/errorHandler'
 
 const app = express()
 
@@ -37,7 +38,8 @@ app.use('/api/medical-records', medicalRecordRoutes)
 app.use('/api/prescriptions',   prescriptionRoutes)
 app.use('/api/vaccinations',    vaccinationRoutes)
 
-// 404 fallback
-app.use((_req, res) => res.status(404).json({ success: false, error: 'Route not found' }))
+// 404 fallback + global error handler (must be last)
+app.use(notFound)
+app.use(errorHandler)
 
 export default app
