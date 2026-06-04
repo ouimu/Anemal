@@ -11,7 +11,7 @@ interface Usage {
 }
 
 const STATS = (u: Usage) => [
-  { icon: 'calendar_today', label: "Today's appointments", value: u.appointmentsToday,        color: 'bg-blue-50 border-blue-200' },
+  { icon: 'calendar_today', label: "Today's appointments", value: u.appointmentsToday,        color: 'bg-primary-fixed border-primary/30' },
   { icon: 'calendar_month', label: 'This month',           value: u.appointmentsThisMonth,    color: 'bg-surface-container border-outline-variant' },
   { icon: 'pets',           label: 'Active patients',      value: u.totalPets,                color: 'bg-secondary-container/30 border-secondary/20' },
   { icon: 'person',         label: 'Pet owners',           value: u.totalOwners,              color: 'bg-surface-container border-outline-variant' },

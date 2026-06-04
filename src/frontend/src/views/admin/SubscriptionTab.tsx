@@ -10,7 +10,7 @@ const PLANS = [
 
 export default function SubscriptionTab() {
   const { data, isLoading } = useAdminSettings()
-  if (isLoading) return <p className="text-sm text-gray-400 py-8 text-center">Loading…</p>
+  if (isLoading) return <p className="text-sm text-on-surface-variant py-8 text-center">Loading…</p>
 
   const current = data?.planTier ?? 'starter'
 
@@ -18,16 +18,16 @@ export default function SubscriptionTab() {
     <div className="space-y-6">
       {/* Tenant info */}
       <section>
-        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Tenant information</h3>
-        <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
+        <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Tenant information</h3>
+        <div className="bg-surface border border-outline-variant rounded-xl divide-y divide-outline-variant">
           {[
             { label: 'Clinic name',  value: data?.tenant.name ?? '—' },
             { label: 'Subdomain',    value: `${data?.tenant.subdomain ?? ''}.vetclinic.app` },
             { label: 'Current plan', value: current.charAt(0).toUpperCase() + current.slice(1) },
           ].map(({ label, value }) => (
             <div key={label} className="flex items-center justify-between px-5 py-3 min-h-[44px]">
-              <span className="text-sm text-gray-500">{label}</span>
-              <span className="text-sm font-medium text-gray-800">{value}</span>
+              <span className="text-sm text-on-surface-variant">{label}</span>
+              <span className="text-sm font-medium text-on-surface">{value}</span>
             </div>
           ))}
         </div>
@@ -35,22 +35,22 @@ export default function SubscriptionTab() {
 
       {/* Plan cards */}
       <section>
-        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Plans</h3>
+        <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Plans</h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {PLANS.map(plan => {
             const isCurrent = plan.tier === current
             return (
               <div key={plan.tier}
-                className={`bg-white border rounded-xl p-5 flex flex-col gap-3 ${isCurrent ? 'border-primary ring-1 ring-primary/20' : 'border-gray-200'}`}>
+                className={`bg-surface border rounded-xl p-5 flex flex-col gap-3 ${isCurrent ? 'border-primary ring-1 ring-primary/20' : 'border-outline-variant'}`}>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-gray-800">{plan.label}</span>
+                  <span className="text-sm font-semibold text-on-surface">{plan.label}</span>
                   {isCurrent && <span className="text-xs px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-medium">Current</span>}
                 </div>
-                <p className="text-xl font-bold text-gray-900">{plan.price}</p>
+                <p className="text-xl font-bold text-on-surface">{plan.price}</p>
                 <ul className="space-y-1 flex-1">
                   {plan.features.map(f => (
-                    <li key={f} className="text-xs text-gray-500 flex items-center gap-1.5">
-                      <span className="text-green-500">✓</span>{f}
+                    <li key={f} className="text-xs text-on-surface-variant flex items-center gap-1.5">
+                      <span className="text-success">✓</span>{f}
                     </li>
                   ))}
                 </ul>
@@ -66,9 +66,9 @@ export default function SubscriptionTab() {
       </section>
 
       {/* Multi-tenant note */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-        <p className="text-sm font-medium text-blue-800 mb-1">Expanding to more clinics?</p>
-        <p className="text-xs text-blue-600">Each clinic runs as a separate tenant with full data isolation. Upgrade to Enterprise or contact us to provision additional clinic subdomains under your account.</p>
+      <div className="bg-primary-fixed border border-primary/30 rounded-xl p-4">
+        <p className="text-sm font-medium text-primary mb-1">Expanding to more clinics?</p>
+        <p className="text-xs text-primary">Each clinic runs as a separate tenant with full data isolation. Upgrade to Enterprise or contact us to provision additional clinic subdomains under your account.</p>
       </div>
     </div>
   )

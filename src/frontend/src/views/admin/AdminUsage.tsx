@@ -19,10 +19,10 @@ function Bar({ value, max, color = 'bg-secondary' }: { value: number; max: numbe
   const pct = Math.min(100, Math.round((value / Math.max(max, 1)) * 100))
   return (
     <div className="flex items-center gap-3">
-      <div className="flex-1 bg-gray-100 rounded-full h-2">
+      <div className="flex-1 bg-surface-container rounded-full h-2">
         <div className={`${color} h-2 rounded-full transition-all`} style={{ width: `${pct}%` }}/>
       </div>
-      <span className="text-xs text-gray-500 w-10 text-right">{pct}%</span>
+      <span className="text-xs text-on-surface-variant w-10 text-right">{pct}%</span>
     </div>
   )
 }
@@ -36,15 +36,15 @@ export default function AdminUsage() {
   const tier = data?.planTier ?? 'starter'
   const limits = PLAN_LIMITS[tier] ?? PLAN_LIMITS.starter
 
-  if (isLoading) return <div className="p-6 text-sm text-gray-400">Loading…</div>
+  if (isLoading) return <div className="p-6 text-sm text-on-surface-variant">Loading…</div>
   if (!data) return null
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-800">Usage statistics</h2>
-        <p className="text-sm text-gray-400 mt-1">
-          Plan: <span className="capitalize font-medium text-gray-600">{tier}</span>
+        <h2 className="text-xl font-semibold text-on-surface">Usage statistics</h2>
+        <p className="text-sm text-on-surface-variant mt-1">
+          Plan: <span className="capitalize font-medium text-on-surface-variant">{tier}</span>
           {' · '}{settings?.tenant.subdomain}.vetclinic.app
         </p>
       </div>
@@ -57,20 +57,20 @@ export default function AdminUsage() {
           { label: 'Appts this month',  value: data.appointmentsThisMonth, icon: 'calendar_today' },
           { label: 'Invoices (month)',  value: data.invoicesThisMonth,     icon: 'receipt_long' },
         ].map(({ label, value, icon }) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-xl p-4 text-center">
+          <div key={label} className="bg-surface border border-outline-variant rounded-xl p-4 text-center">
             <MaterialIcon name={icon} className="text-secondary mb-1" size={28} />
-            <p className="text-2xl font-bold text-gray-800">{value}</p>
-            <p className="text-xs text-gray-400 mt-1">{label}</p>
+            <p className="text-2xl font-bold text-on-surface">{value}</p>
+            <p className="text-xs text-on-surface-variant mt-1">{label}</p>
           </div>
         ))}
       </div>
 
       {/* Quota bars */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-6">
-        <h3 className="text-sm font-semibold text-gray-700 mb-4">Plan quota</h3>
+      <div className="bg-surface border border-outline-variant rounded-2xl p-5 mb-6">
+        <h3 className="text-sm font-semibold text-on-surface mb-4">Plan quota</h3>
         <div className="space-y-4">
           <div>
-            <div className="flex justify-between text-xs text-gray-500 mb-1">
+            <div className="flex justify-between text-xs text-on-surface-variant mb-1">
               <span>Users</span>
               <span>{data.activeUsers} / {limits.users === 999 ? '∞' : limits.users}</span>
             </div>
@@ -78,20 +78,20 @@ export default function AdminUsage() {
               color={data.activeUsers / limits.users > 0.9 ? 'bg-error' : 'bg-secondary'}/>
           </div>
           <div>
-            <div className="flex justify-between text-xs text-gray-500 mb-1">
+            <div className="flex justify-between text-xs text-on-surface-variant mb-1">
               <span>Registered patients</span>
               <span>{data.totalPets} / {limits.pets === 999999 ? '∞' : limits.pets}</span>
             </div>
             <Bar value={data.totalPets} max={limits.pets}
-              color={data.totalPets / limits.pets > 0.9 ? 'bg-amber-400' : 'bg-green-500'}/>
+              color={data.totalPets / limits.pets > 0.9 ? 'bg-warning' : 'bg-success'}/>
           </div>
         </div>
       </div>
 
       {/* Clinic info */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-5">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Clinic summary</h3>
-        <div className="divide-y divide-gray-100">
+      <div className="bg-surface border border-outline-variant rounded-2xl p-5">
+        <h3 className="text-sm font-semibold text-on-surface mb-3">Clinic summary</h3>
+        <div className="divide-y divide-outline-variant">
           {[
             { label: 'Total staff accounts', value: data.totalUsers },
             { label: 'Active staff', value: data.activeUsers },
@@ -99,8 +99,8 @@ export default function AdminUsage() {
             { label: 'Appointments today', value: data.appointmentsToday },
           ].map(({ label, value }) => (
             <div key={label} className="flex justify-between py-2.5 text-sm min-h-[44px] items-center">
-              <span className="text-gray-500">{label}</span>
-              <span className="font-semibold text-gray-800">{value}</span>
+              <span className="text-on-surface-variant">{label}</span>
+              <span className="font-semibold text-on-surface">{value}</span>
             </div>
           ))}
         </div>
