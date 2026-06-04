@@ -1,0 +1,163 @@
+# Session Summary — VetClinic SaaS
+> Last updated: 2026-06-03 | อ่านไฟล์นี้ก่อนเริ่ม session ใหม่ทุกครั้ง
+
+---
+
+## ✅ สิ่งที่ตัดสินใจและทำเสร็จแล้ว
+
+### Tech Stack (ยืนยันแล้ว ห้ามเปลี่ยน)
+- **Backend:** Node.js + Express + Prisma ORM
+- **Database:** PostgreSQL 15+
+- **Auth:** JWT (`{ userId, tenantId, role }`) — token อายุ 8h — เก็บใน memory (ไม่ใช้ localStorage)
+- **Frontend:** React 18 + Vite + TypeScript + Tailwind CSS
+- **State management:** Zustand (UI state) + TanStack Query (server state)
+- **Multi-tenancy:** Shared DB, Shared Schema — `tenant_id` discriminator ทุก table
+
+### Architecture ที่ยืนยันแล้ว
+- Middleware ดึง `tenant_id` จาก JWT แนบใน `req.context` — ทุก repo function รับ `tenantId` เป็น param ห้าม derive ข้างใน
+- Routing แบ่ง 2 zone: `/admin/*` (AdminLayout, role=admin) และ `/clinic/*` (ClinicLayout, role=doctor|staff)
+- Login detect subdomain จาก `window.location.hostname` อัตโนมัติ
+- Role-based redirect: admin → `/admin/dashboard`, doctor/staff → `/clinic/dashboard`
+- Brand color scale: `brand-50..900` (primary `#0369a1`)
+- AdminLayout sidebar: slate-900 | ClinicLayout sidebar: brand-700, collapsible, left/right-hand mode
+
+---
+
+## 📦 Phase 1 — Foundation (เสร็จแล้ว ✅)
+
+### API ที่ implement แล้ว
+- `POST /auth/login` — bcrypt verify → JWT sign
+- `authMiddleware` — JWT verify + `req.context`
+- `rbacMiddleware` — role gate factory (403 ถ้าไม่ผ่าน)
+- `GET/PUT /admin/settings` — TenantSettings upsert (admin only)
+- `GET /admin/usage` — aggregate counts (pets, owners, users, appointments, invoices)
+- `GET/POST/PUT/DELETE /users` — CRUD + soft-delete (`isActive=false`) (admin only)
+
+### Frontend ที่ implement แล้ว
+- LoginView (gradient bg, white card, subdomain auto-detect, show/hide password)
+- AdminLayout + 6 admin pages: Dashboard, Users, Usage, Profile, Settings, Subscription
+- ClinicLayout + ClinicDashboard (4 KPI cards + quick-action tiles)
+- 5 clinic stub pages (Appointments, Pets, EMR, Inventory, Billing — แสดง 🚧 placeholder)
+- React Router v6 nested routes + lazy loading + ProtectedRoute
+
+### Tests
+- 74 test cases ใน 5 test suites — ทั้งหมด pass ✅
+- หมายเหตุ: tests ต้องการ live PostgreSQL (ไม่ใช้ mock DB)
+
+### Git
+- Tag `v0.1.0` รอ smoke test บน live PostgreSQL ก่อน push
+
+---
+
+## 🐛 Known Issues จาก Phase 1 (ต้องแก้ใน Phase 2)
+
+1. **`ClinicDashboard` เรียก `/admin/usage`** — doctor/staff ไม่มีสิทธิ์ → ต้องสร้าง `GET /clinic/usage` endpoint ใหม่
+2. **`src/components/Sidebar.tsx`** — ไฟล์ legacy ใช้ route paths เก่า → ลบหรือ clean up
+3. **Logo upload** — ปัจจุบัน FileReader preview เท่านั้น → ต้องทำ S3 pre-signed URL upload จริง
+
+---
+
+## 🔜 Phase 2 — Core Clinic Operations (ยังไม่เริ่ม)
+
+### สิ่งที่ต้องทำ (ตามลำดับ)
+1. **Fix Phase 1 bugs** (3 รายการข้างบน)
+2. **Owner & Pet API** — CRUD + S3 photo upload + Quick Search (name/phone/microchip)
+3. **Appointment API** — double-booking detection, walk-in queue
+4. **Appointment Calendar UI** — day/week toggle, filter by doctor/room
+5. **LINE/SMS reminder** — cron job ทำงาน 08:00 ทุกวัน (LINE Messaging API + Twilio)
+6. **EMR API** — SOAP notes + timeline
+7. **Anatomy Canvas** — Konva.js, SVG templates (dog/cat), stylus annotation → save as JSON
+8. **Prescription module** — สั่งยาตัดสต็อกอัตโนมัติ
+9. **Vaccination timeline** — due-soon alerts
+
+---
+
+## 🔜 Phase 3 — Commercial & Billing (ยังไม่เริ่ม)
+
+- Inventory: branch-level stock, barcode scanner (ZXing.js), auto-deduct on prescription
+- Billing: Invoice + PDF receipt (pdfkit/puppeteer), PromptPay QR, credit card
+- POS billing UI
+- Revenue reports
+- SaaS subscription management (payment gateway: Omise หรือ Stripe)
+
+---
+
+## 🔜 Phase 4 — Advanced Operations (spec-only, ยังไม่เริ่ม)
+
+- Multi-branch management + inter-branch inventory transfers
+- Doctor shift scheduling
+- Inpatient care (cage board)
+- Grooming scheduler
+- Loyalty/membership system
+- Audit logs (write-once)
+- Login time-window restriction (`allowed_start_time` / `allowed_end_time`)
+- Blood bank: donor registry + transfusion safety guards
+
+> **หมายเหตุ:** Phase 4 tables มีใน `database-schema.sql` แล้ว แต่ยังไม่อยู่ใน Prisma schema (spec-only)
+
+---
+
+## ⚠️ สิ่งสำคัญที่ต้องระวัง
+
+- **`branch_id` ยังไม่อยู่ใน JWT** — ต้องเพิ่มก่อน implement multi-branch features
+- **`branch_inventory`** คือ source of truth สำหรับ stock — ห้ามอ่าน/เขียนจาก `products` table โดยตรง
+- **`audit_logs`** — ทุก state-modifying call (billing, inventory, EMR, role change) ต้อง write ด้วย
+- **Google API Key** — มีการ paste ลงใน chat โดยไม่ตั้งใจ → ควร revoke ที่ console.cloud.google.com
+
+---
+
+## 🗂️ Database Tables (Phase 1 Prisma Schema — ใช้งานได้จริง)
+
+`tenants`, `tenant_settings`, `users`, `owners`, `pets`, `appointments`, `medical_records`, `prescriptions`, `prescription_items`, `products`, `invoices`, `invoice_items`
+
+(Phase 4 tables อยู่ใน `.claude/specs/database-schema.sql` เท่านั้น)
+
+---
+
+## 🔑 Test Credentials (หลัง seed)
+
+| Subdomain | Email | Password | Role |
+|-----------|-------|----------|------|
+| dev-clinic | admin@dev-clinic.com | AdminPass1! | admin |
+| dev-clinic | doctor@dev-clinic.com | DoctorPass1! | doctor |
+| dev-clinic | staff@dev-clinic.com | StaffPass1! | staff |
+| test-clinic | admin@test-clinic.com | AdminPass2! | admin |
+
+---
+
+## 🚀 How to Run
+
+```powershell
+# Backend
+cd src\backend
+npm install
+npm run db:generate
+npm run db:migrate
+npm run db:seed
+npm run dev          # → http://localhost:4000
+
+# Frontend
+cd src\frontend
+npm install
+npm run dev          # → http://localhost:5173
+
+# Tests (ต้องมี live PostgreSQL)
+cd src\backend
+npm test
+```
+
+---
+
+## 📂 ไฟล์สำคัญ
+
+| ไฟล์ | ใช้ทำอะไร |
+|------|-----------|
+| `CLAUDE.md` | Project instructions สำหรับ Claude |
+| `DESIGN.md` | UI design system, color tokens |
+| `CHANGELOG.md` | บันทึกการเปลี่ยนแปลงตามเวอร์ชัน |
+| `HistoryLog.md` | log การตัดสินใจและเหตุการณ์สำคัญ |
+| `HOW-TO-RUN.md` | คู่มือ setup environment |
+| `.claude/specs/database-schema.sql` | Full DB schema (รวม Phase 4) |
+| `.claude/docs/phase1-implementation-log.md` | บันทึกสิ่งที่ทำใน Phase 1 ทั้งหมด |
+| `docs/index.html` | Project documentation portal (static) |
+| `docs/dashboard.html` | Project dashboard แสดง progress (static) |

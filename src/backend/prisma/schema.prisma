@@ -1,0 +1,327 @@
+// @db-agent reviewed — every tenant-scoped model has tenantId
+// RULE: All queries must pass tenantId explicitly; never derive inside service
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(255)
+  subdomain String   @unique @db.VarChar(100)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  users          User[]
+  owners         Owner[]
+  pets           Pet[]
+  appointments   Appointment[]
+  medicalRecords MedicalRecord[]
+  prescriptions  Prescription[]
+  inventoryItems InventoryItem[]
+  invoices       Invoice[]
+  invoiceItems   InvoiceItem[]
+  vaccinations   Vaccination[]
+  attachments    Attachment[]
+  settings       TenantSettings?
+
+  @@map("tenants")
+}
+
+// Clinic profile & configuration — one row per tenant
+model TenantSettings {
+  id                  Int      @id @default(autoincrement())
+  tenantId            Int      @unique
+  logoUrl             String?
+  phone               String?  @db.VarChar(50)
+  email               String?  @db.VarChar(255)
+  website             String?  @db.VarChar(255)
+  address             String?
+  taxId               String?  @db.VarChar(50)
+  // Appointment defaults
+  defaultSlotMinutes  Int      @default(30)
+  workStartTime       String   @default("08:00") @db.VarChar(5)
+  workEndTime         String   @default("18:00") @db.VarChar(5)
+  // Notification toggles
+  smsRemindersEnabled  Boolean @default(true)
+  lineRemindersEnabled Boolean @default(true)
+  // Subscription
+  planTier            String   @default("starter") @db.VarChar(50)
+  updatedAt           DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_settings")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  tenantId     Int
+  name         String   @db.VarChar(255)
+  email        String   @db.VarChar(255)
+  passwordHash String   @db.VarChar(255)
+  role         Role
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  medicalRecords MedicalRecord[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("users")
+}
+
+enum Role {
+  admin
+  doctor
+  staff
+}
+
+model Owner {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int
+  firstName String   @db.VarChar(100)
+  lastName  String   @db.VarChar(100)
+  phone     String   @db.VarChar(50)
+  email     String?  @db.VarChar(255)
+  lineId    String?  @db.VarChar(100)
+  address   String?
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pets   Pet[]
+
+  @@index([tenantId])
+  @@index([tenantId, phone])
+  @@map("owners")
+}
+
+model Pet {
+  id                   Int       @id @default(autoincrement())
+  tenantId             Int
+  ownerId              Int
+  name                 String    @db.VarChar(100)
+  species              String    @db.VarChar(50)
+  breed                String?   @db.VarChar(100)
+  color                String?   @db.VarChar(100)
+  birthDate            DateTime? @db.Date
+  gender               Gender?
+  weightKg             Decimal?  @db.Decimal(5, 2)
+  microchipId          String?   @db.VarChar(50)
+  photoUrl             String?
+  allergies            String?
+  underlyingConditions String?
+  isActive             Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  owner          Owner           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  appointments   Appointment[]
+  medicalRecords MedicalRecord[]
+  vaccinations   Vaccination[]
+  invoices       Invoice[]
+
+  @@index([tenantId])
+  @@index([tenantId, ownerId])
+  @@index([tenantId, microchipId])
+  @@index([tenantId, name])
+  @@map("pets")
+}
+
+enum Gender {
+  male
+  female
+  unknown
+}
+
+model Appointment {
+  id          Int               @id @default(autoincrement())
+  tenantId    Int
+  petId       Int
+  doctorId    Int
+  room        String?           @db.VarChar(50)
+  scheduledAt DateTime
+  durationMin Int               @default(30)
+  reason      String?
+  status      AppointmentStatus @default(scheduled)
+  notes       String?
+  createdAt   DateTime          @default(now())
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pet            Pet             @relation(fields: [petId], references: [id], onDelete: Cascade)
+  doctor         User            @relation(fields: [doctorId], references: [id])
+  medicalRecords MedicalRecord[]
+
+  @@index([tenantId])
+  @@index([tenantId, doctorId, scheduledAt])
+  @@index([tenantId, petId])
+  @@map("appointments")
+}
+
+enum AppointmentStatus {
+  scheduled
+  arrived
+  in_progress
+  completed
+  cancelled
+  no_show
+}
+
+model MedicalRecord {
+  id                Int      @id @default(autoincrement())
+  tenantId          Int
+  petId             Int
+  appointmentId     Int?
+  doctorId          Int
+  subjective        String?
+  objective         String?
+  assessment        String?
+  plan              String?
+  weightKg          Decimal? @db.Decimal(5, 2)
+  temperatureC      Decimal? @db.Decimal(4, 1)
+  heartRateBpm      Int?
+  respRateRpm       Int?
+  anatomyAnnotation Json?
+  createdAt         DateTime @default(now())
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pet           Pet           @relation(fields: [petId], references: [id], onDelete: Cascade)
+  appointment   Appointment?  @relation(fields: [appointmentId], references: [id])
+  doctor        User          @relation(fields: [doctorId], references: [id])
+  prescriptions Prescription[]
+  attachments   Attachment[]
+  invoices      Invoice[]
+
+  @@index([tenantId])
+  @@index([tenantId, petId])
+  @@map("medical_records")
+}
+
+model Prescription {
+  id               Int      @id @default(autoincrement())
+  tenantId         Int
+  medicalRecordId  Int
+  drugId           Int
+  quantity         Decimal  @db.Decimal(8, 2)
+  unit             String?  @db.VarChar(50)
+  dosageInstruction String?
+  createdAt        DateTime @default(now())
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  medicalRecord MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
+  drug          InventoryItem @relation(fields: [drugId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, medicalRecordId])
+  @@map("prescriptions")
+}
+
+model InventoryItem {
+  id            Int      @id @default(autoincrement())
+  tenantId      Int
+  name          String   @db.VarChar(255)
+  category      String?  @db.VarChar(100)
+  barcode       String?  @db.VarChar(100)
+  unit          String?  @db.VarChar(50)
+  stockQuantity Decimal  @default(0) @db.Decimal(10, 2)
+  minStockLevel Decimal  @default(0) @db.Decimal(10, 2)
+  expiryDate    DateTime? @db.Date
+  unitCost      Decimal? @db.Decimal(10, 2)
+  unitPrice     Decimal? @db.Decimal(10, 2)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  prescriptions Prescription[]
+
+  @@index([tenantId])
+  @@index([tenantId, barcode])
+  @@map("inventory_items")
+}
+
+model Invoice {
+  id              Int            @id @default(autoincrement())
+  tenantId        Int
+  petId           Int
+  medicalRecordId Int?
+  totalAmount     Decimal        @db.Decimal(10, 2)
+  taxAmount       Decimal        @default(0) @db.Decimal(10, 2)
+  paymentStatus   PaymentStatus  @default(pending)
+  paymentMethod   String?        @db.VarChar(50)
+  paidAt          DateTime?
+  createdAt       DateTime       @default(now())
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pet           Pet            @relation(fields: [petId], references: [id])
+  medicalRecord MedicalRecord? @relation(fields: [medicalRecordId], references: [id])
+  items         InvoiceItem[]
+
+  @@index([tenantId, petId])
+  @@map("invoices")
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  partial
+  void
+}
+
+model InvoiceItem {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int
+  invoiceId   Int
+  description String   @db.VarChar(255)
+  quantity    Decimal  @db.Decimal(8, 2)
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  totalPrice  Decimal  @db.Decimal(10, 2)
+  itemType    String?  @db.VarChar(50)
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, invoiceId])
+  @@map("invoice_items")
+}
+
+model Vaccination {
+  id             Int       @id @default(autoincrement())
+  tenantId       Int
+  petId          Int
+  vaccineName    String    @db.VarChar(100)
+  administeredAt DateTime  @db.Date
+  nextDueAt      DateTime? @db.Date
+  batchNo        String?   @db.VarChar(50)
+  notes          String?
+  createdAt      DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pet    Pet    @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, petId])
+  @@index([tenantId, nextDueAt])
+  @@map("vaccinations")
+}
+
+model Attachment {
+  id              Int      @id @default(autoincrement())
+  tenantId        Int
+  medicalRecordId Int
+  fileName        String   @db.VarChar(255)
+  fileUrl         String
+  fileType        String?  @db.VarChar(50)
+  createdAt       DateTime @default(now())
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  medicalRecord MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, medicalRecordId])
+  @@map("attachments")
+}

@@ -1,0 +1,60 @@
+{
+  "env": {
+    "NODE_ENV": "development",
+    "PORT": "4000",
+    "FRONTEND_URL": "http://localhost:5173"
+  },
+  "allowedTools": [
+    "Bash",
+    "Read",
+    "Write",
+    "Edit",
+    "Glob",
+    "Grep",
+    "WebSearch",
+    "WebFetch",
+    "mcp__postgres__*",
+    "mcp__filesystem__*",
+    "mcp__github__*",
+    "mcp__slack__*"
+  ],
+  "bash": {
+    "allowedCommands": [
+      "npm",
+      "npx",
+      "node",
+      "ts-node",
+      "prisma",
+      "git",
+      "curl",
+      "ls",
+      "cat",
+      "mkdir",
+      "cp",
+      "mv",
+      "rm",
+      "find",
+      "grep",
+      "echo",
+      "cd",
+      "pwd",
+      "docker",
+      "psql"
+    ]
+  },
+  "contextPaths": [
+    "CLAUDE.md",
+    ".claude/agents/pm-agent.md",
+    ".claude/agents/uiux-agent.md",
+    ".claude/agents/db-agent.md",
+    ".claude/agents/dev-agent.md",
+    ".claude/agents/qa-agent.md",
+    ".claude/specs/functional-reqs.md",
+    ".claude/specs/database-schema.sql",
+    ".claude/roadmap/phase1-tasks.md",
+    ".claude/roadmap/qa-protocols.md"
+  ],
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true
+  }
+}

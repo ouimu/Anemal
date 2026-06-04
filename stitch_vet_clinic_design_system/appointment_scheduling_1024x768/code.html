@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VetClinic Pro - Appointment Scheduling</title>
+<!-- Google Fonts: Plus Jakarta Sans & DM Sans -->
+<script type="text/javascript" nonce="96ec1d9f2f154a5aa0f41c2d539" src="//local.adguard.org?ts=1780562057294&amp;type=content-script&amp;dmn=contribution.usercontent.google.com&amp;url=https%3A%2F%2Fcontribution.usercontent.google.com%2Fdownload%3Fc%3DCgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sX2EzODZjYjZjNWQ0ZDQ3ZmE5YmU5Mzg0Njk3MjRkNjNjEgsSBxCJ8v-vlxYYAZIBIwoKcHJvamVjdF9pZBIVQhM3NTU0OTYyNjE5OTg1OTYwMDgx%26filename%3D%26opi%3D89354086&amp;app=msedge.exe&amp;css=3&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1&amp;stealth=1&amp;st-dnt"></script><script type="text/javascript" nonce="96ec1d9f2f154a5aa0f41c2d539" src="//local.adguard.org?ts=1780562057294&amp;name=AdGuard%20Assistant%20%28Beta%29&amp;name=AdGuard%20Extra%20%28Beta%29&amp;type=user-script"></script><link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&amp;family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-error": "#ffffff",
+                    "surface-variant": "#e0e3e5",
+                    "tertiary-container": "#0b1c30",
+                    "error": "#EF4444",
+                    "on-tertiary-fixed-variant": "#38485d",
+                    "tertiary": "#000000",
+                    "on-secondary": "#ffffff",
+                    "tertiary-fixed": "#d3e4fe",
+                    "primary-fixed": "#dae2fd",
+                    "primary-fixed-dim": "#bec6e0",
+                    "surface-container-highest": "#e0e3e5",
+                    "on-error-container": "#93000a",
+                    "on-background": "#191c1e",
+                    "on-secondary-fixed": "#002114",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary": "#006c4a",
+                    "sage-light": "#DCF2EA",
+                    "inverse-on-surface": "#eff1f3",
+                    "outline": "#76777d",
+                    "on-surface": "#191c1e",
+                    "on-surface-variant": "#45464d",
+                    "inverse-surface": "#2d3133",
+                    "on-primary": "#ffffff",
+                    "on-primary-container": "#7c839b",
+                    "surface-bright": "#f7f9fb",
+                    "inverse-primary": "#bec6e0",
+                    "error-container": "#ffdad6",
+                    "on-secondary-fixed-variant": "#005137",
+                    "on-secondary-container": "#00714e",
+                    "on-primary-fixed": "#131b2e",
+                    "on-tertiary": "#ffffff",
+                    "surface-container": "#eceef0",
+                    "surface-container-high": "#e6e8ea",
+                    "success": "#22C55E",
+                    "primary": "#000000",
+                    "secondary-fixed": "#85f8c4",
+                    "secondary-container": "#82f5c1",
+                    "info": "#0EA5E9",
+                    "outline-variant": "#c6c6cd",
+                    "background": "#f7f9fb",
+                    "surface": "#FFFFFF",
+                    "surface-tint": "#565e74",
+                    "on-primary-fixed-variant": "#3f465c",
+                    "surface-container-low": "#f2f4f6",
+                    "warning": "#EAB308",
+                    "tertiary-fixed-dim": "#b7c8e1",
+                    "surface-dim": "#d8dadc",
+                    "on-tertiary-fixed": "#0b1c30",
+                    "on-tertiary-container": "#75859d",
+                    "secondary-fixed-dim": "#68dba9",
+                    "primary-container": "#131b2e"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xl": "32px",
+                    "sm": "8px",
+                    "margin-desktop": "32px",
+                    "3xl": "64px",
+                    "xs": "4px",
+                    "md": "16px",
+                    "margin-mobile": "16px",
+                    "lg": "24px",
+                    "base": "8px",
+                    "2xl": "48px",
+                    "gutter": "16px"
+            },
+            "fontFamily": {
+                    "display": ["Plus Jakarta Sans"],
+                    "headline-xs": ["Plus Jakarta Sans"],
+                    "body-md": ["DM Sans"],
+                    "headline-lg-mobile": ["Plus Jakarta Sans"],
+                    "code": ["Fira Code"],
+                    "body-lg": ["DM Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "body-sm": ["DM Sans"],
+                    "label-md": ["DM Sans"],
+                    "headline-sm": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "display": ["40px", {"lineHeight": "1.15", "fontWeight": "700"}],
+                    "headline-xs": ["16px", {"lineHeight": "1.35", "fontWeight": "500"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "code": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "label-md": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.5px", "fontWeight": "500"}],
+                    "headline-sm": ["20px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "1.25", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #e0e3e5;
+        border-radius: 10px;
+      }
+      .calendar-grid {
+        display: grid;
+        grid-template-columns: 80px repeat(7, 1fr);
+      }
+      .time-slot {
+        height: 100px;
+      }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md overflow-hidden">
+<!-- SideNavBar -->
+<aside class="h-screen fixed left-0 top-0 flex flex-col py-lg bg-surface dark:bg-surface-container-low shadow-sm z-50 w-60">
+<div class="px-lg">
+<h1 class="font-headline-sm text-headline-sm text-primary dark:text-inverse-primary font-bold">VetClinic Pro</h1>
+<p class="font-label-md text-label-md text-on-surface-variant">Downtown Branch</p>
+</div>
+<nav class="flex-1 px-sm space-y-xs">
+<a class="flex items-center px-md py-sm rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined mr-md" data-icon="dashboard">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<a class="flex items-center px-md py-sm rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined mr-md" data-icon="pets">pets</span>
+<span class="font-body-md">Pets</span>
+</a>
+<a class="flex items-center px-md py-sm rounded-lg text-primary font-bold border-r-4 border-primary dark:text-inverse-primary dark:border-inverse-primary bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined mr-md" data-icon="calendar_today">calendar_today</span>
+<span class="font-body-md">Schedule</span>
+</a>
+<a class="flex items-center px-md py-sm rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined mr-md" data-icon="medical_services">medical_services</span>
+<span class="font-body-md">EMR</span>
+</a>
+<a class="flex items-center px-md py-sm rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined mr-md" data-icon="inventory_2">inventory_2</span>
+<span class="font-body-md">Inventory</span>
+</a>
+<a class="flex items-center px-md py-sm rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined mr-md" data-icon="payments">payments</span>
+<span class="font-body-md">Billing</span>
+</a>
+</nav>
+<div class="px-lg pt-lg border-t border-outline-variant">
+<div class="flex items-center gap-md">
+<img alt="Clinic Logo" class="w-10 h-10 rounded-full object-cover shadow-sm" data-alt="A professional headshot of a friendly golden retriever wearing a blue veterinary bandana, set against a soft bokeh background of a clean modern veterinary clinic. The lighting is bright and airy, conveying a sense of health, happiness, and high-quality clinical care. The colors are dominated by warm golden tones and clean whites." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDiF_9hQ_cjemyEGS_k7S_LvCXEILxhokaqMci4MHI7vBVjbHmDreTenKj3v3yL7t4TxaA85qYk_O1ioFTGrK2b8PgBU9uAPX2HG__50JmbV-TceED4IMJQhi-ITQzpP-yXrLdAix1ac3nUlnuK1aWU7dXE3Jq1n0357E92XO-C1xuvB9AZ2htUNcOObXcvvQI9CV2CkEvbNuVl3YU8_nyf18k-3S7Mt6Iu2m1x9ukpjw7kumQVmQS1PCc0KDdzUHjhqFlaPuJ7CpU"/>
+<div>
+<p class="font-label-md font-bold">Dr. Sarah Miller</p>
+<p class="text-xs text-on-surface-variant">Chief Veterinarian</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="min-h-screen flex flex-col ml-60">
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 h-16 flex justify-between items-center px-margin-desktop w-full bg-surface dark:bg-surface-container-low shadow-sm z-40 left-60">
+<div class="flex items-center gap-md">
+<div class="relative w-80">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="search">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-full py-2 pl-10 pr-4 focus:ring-2 focus:ring-primary-container text-body-sm transition-all" placeholder="Search appointments or pets..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-lg">
+<button class="hover:bg-surface-container dark:hover:bg-surface-container-high rounded-full p-2 scale-95 active:scale-100 transition-transform">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
+</button>
+<button class="hover:bg-surface-container dark:hover:bg-surface-container-high rounded-full p-2 scale-95 active:scale-100 transition-transform">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="help">help</span>
+</button>
+<div class="flex items-center gap-sm cursor-pointer ml-md">
+<img alt="User Avatar" class="w-8 h-8 rounded-full object-cover" data-alt="A professional portrait of a confident female veterinarian with her hair tied back, wearing a minimalist white lab coat. She is smiling warmly in a bright, clean, high-end medical environment with soft sage green accents. The lighting is soft and flattering, emphasizing a corporate yet approachable healthcare professional style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_3L8nfkzDJVqLAolJROf6lBGdae_WDfSRUPIonqIQ85BDEF3Nh1nz4Cl8UXWE4XtJkrZELLFX7-xUDEz1LpCbUI2ar5bTfgGjt7jzvrMRXRhbMz-7yECTemFg57_8TqInVNLXeuFJ9eWIRZLRLJ6u8CWVPeTvRhJjtLvLfz9KTzJD0RIZ1Q1qrS73iu87T2mgaO4zo_pbGP0LFu3DtV2E73f5LJIsv5EbrEaIHjp9REiZcZBuCbeMgzKKyTx5dzgPdR5WJVQlugI"/>
+</div>
+</div>
+</header>
+<!-- Page Header & Calendar View -->
+<section class="mt-16 flex-1 overflow-y-auto custom-scrollbar p-lg">
+<div class="flex justify-between items-center">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-primary">Clinic Schedule</h2>
+<p class="text-on-surface-variant">Weekly Overview • Oct 23 - Oct 29, 2023</p>
+</div>
+<div class="flex gap-md">
+<div class="flex bg-surface-container rounded-lg p-1">
+<button class="px-lg py-1.5 rounded-md text-body-sm font-bold bg-surface shadow-sm">Week</button>
+<button class="px-lg py-1.5 rounded-md text-body-sm text-on-surface-variant hover:bg-surface-container-highest transition-colors">Day</button>
+</div>
+<button class="flex items-center gap-sm bg-primary text-on-primary px-lg py-sm rounded-xl hover:opacity-90 transition-all shadow-md" onclick="toggleModal(true)">
+<span class="material-symbols-outlined text-[20px]" data-icon="add">add</span>
+<span class="font-headline-xs">Book Appointment</span>
+</button>
+</div>
+</div>
+<!-- Calendar Bento Layout -->
+<div class="grid grid-cols-12 gap-lg">
+<!-- Availability & Room Assignment Sidebar -->
+<div class="col-span-12 lg:col-span-3 space-y-lg">
+<!-- Staff Availability -->
+<div class="bg-surface p-lg rounded-2xl shadow-sm border border-outline-variant">
+<h3 class="font-headline-sm text-headline-sm mb-md flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="medical_services">medical_services</span>
+                            Staff On-Call
+                        </h3>
+<div class="space-y-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-success"></div>
+<span class="font-label-md">Dr. Sarah Miller</span>
+</div>
+<span class="text-xs text-on-surface-variant">Room 101</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-success"></div>
+<span class="font-label-md">Dr. James Chen</span>
+</div>
+<span class="text-xs text-on-surface-variant">Surgery A</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-warning"></div>
+<span class="font-label-md">Dr. Emily Watts</span>
+</div>
+<span class="text-xs text-on-surface-variant">Break</span>
+</div>
+</div>
+</div>
+<!-- Exam Rooms -->
+<div class="bg-surface p-lg rounded-2xl shadow-sm border border-outline-variant">
+<h3 class="font-headline-sm text-headline-sm mb-md flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="meeting_room">meeting_room</span>
+                            Room Status
+                        </h3>
+<div class="grid grid-cols-2 gap-sm">
+<div class="p-md rounded-xl bg-sage-light text-secondary border border-secondary/10 flex flex-col gap-1">
+<span class="font-label-md font-bold">Room 1</span>
+<span class="text-[10px] uppercase tracking-wider">Available</span>
+</div>
+<div class="p-md rounded-xl bg-surface-container-low text-on-surface-variant border border-outline-variant flex flex-col gap-1">
+<span class="font-label-md font-bold">Room 2</span>
+<span class="text-[10px] uppercase tracking-wider">In-Use</span>
+</div>
+<div class="p-md rounded-xl bg-sage-light text-secondary border border-secondary/10 flex flex-col gap-1">
+<span class="font-label-md font-bold">Surgery 1</span>
+<span class="text-[10px] uppercase tracking-wider">Available</span>
+</div>
+<div class="p-md rounded-xl bg-surface-container-low text-on-surface-variant border border-outline-variant flex flex-col gap-1">
+<span class="font-label-md font-bold">Lab 1</span>
+<span class="text-[10px] uppercase tracking-wider">Cleaning</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Weekly Calendar -->
+<div class="col-span-12 lg:col-span-9 bg-surface rounded-2xl shadow-sm border border-outline-variant overflow-hidden flex flex-col">
+<!-- Calendar Header -->
+<div class="calendar-grid border-b border-outline-variant">
+<div class="h-16 flex items-center justify-center border-r border-outline-variant bg-surface-container-low">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="schedule">schedule</span>
+</div>
+<div class="h-16 flex flex-col items-center justify-center border-r border-outline-variant bg-surface-bright">
+<span class="text-xs text-on-surface-variant uppercase font-bold">Mon</span>
+<span class="font-headline-sm">23</span>
+</div>
+<div class="h-16 flex flex-col items-center justify-center border-r border-outline-variant bg-surface-bright">
+<span class="text-xs text-on-surface-variant uppercase font-bold">Tue</span>
+<span class="font-headline-sm">24</span>
+</div>
+<div class="h-16 flex flex-col items-center justify-center border-r border-outline-variant bg-primary text-on-primary">
+<span class="text-xs text-on-primary/70 uppercase font-bold">Wed</span>
+<span class="font-headline-sm">25</span>
+</div>
+<div class="h-16 flex flex-col items-center justify-center border-r border-outline-variant bg-surface-bright">
+<span class="text-xs text-on-surface-variant uppercase font-bold">Thu</span>
+<span class="font-headline-sm">26</span>
+</div>
+<div class="h-16 flex flex-col items-center justify-center border-r border-outline-variant bg-surface-bright">
+<span class="text-xs text-on-surface-variant uppercase font-bold">Fri</span>
+<span class="font-headline-sm">27</span>
+</div>
+<div class="h-16 flex flex-col items-center justify-center border-r border-outline-variant bg-surface-container-low">
+<span class="text-xs text-on-surface-variant uppercase font-bold">Sat</span>
+<span class="font-headline-sm">28</span>
+</div>
+<div class="h-16 flex flex-col items-center justify-center bg-surface-container-low">
+<span class="text-xs text-on-surface-variant uppercase font-bold">Sun</span>
+<span class="font-headline-sm">29</span>
+</div>
+</div>
+<!-- Calendar Body -->
+<div class="flex-1 overflow-y-auto custom-scrollbar max-h-[480px]">
+<div class="calendar-grid relative">
+<!-- Time Column -->
+<div class="col-start-1 border-r border-outline-variant bg-surface-container-low">
+<div class="time-slot border-b border-outline-variant p-2 text-right">
+<span class="text-[10px] font-bold text-on-surface-variant">08:00 AM</span>
+</div>
+<div class="time-slot border-b border-outline-variant p-2 text-right">
+<span class="text-[10px] font-bold text-on-surface-variant">09:00 AM</span>
+</div>
+<div class="time-slot border-b border-outline-variant p-2 text-right">
+<span class="text-[10px] font-bold text-on-surface-variant">10:00 AM</span>
+</div>
+<div class="time-slot border-b border-outline-variant p-2 text-right">
+<span class="text-[10px] font-bold text-on-surface-variant">11:00 AM</span>
+</div>
+<div class="time-slot border-b border-outline-variant p-2 text-right">
+<span class="text-[10px] font-bold text-on-surface-variant">12:00 PM</span>
+</div>
+<div class="time-slot border-b border-outline-variant p-2 text-right">
+<span class="text-[10px] font-bold text-on-surface-variant">01:00 PM</span>
+</div>
+</div>
+<!-- Appointments Layer -->
+<!-- Monday -->
+<div class="col-start-2 border-r border-outline-variant h-full">
+<div class="mt-4 mx-1 p-2 bg-sage-light border-l-4 border-secondary rounded shadow-sm">
+<p class="text-[10px] font-bold text-secondary">Luna (Cat)</p>
+<p class="text-[9px] text-on-secondary-fixed-variant">Vaccination</p>
+</div>
+</div>
+<!-- Tuesday -->
+<div class="col-start-3 border-r border-outline-variant h-full">
+<div class="mt-24 mx-1 p-2 bg-primary-container text-on-primary-container border-l-4 border-primary rounded shadow-sm">
+<p class="text-[10px] font-bold">Max (Dog)</p>
+<p class="text-[9px]">Dental Surgery</p>
+</div>
+</div>
+<!-- Wednesday (Today) -->
+<div class="col-start-4 border-r border-outline-variant bg-primary/5 h-full relative">
+<!-- Indicator for Current Time -->
+<div class="absolute top-1/2 left-0 w-full h-0.5 bg-error z-10 flex items-center">
+<div class="w-2 h-2 rounded-full bg-error -ml-1"></div>
+</div>
+<div class="mt-8 mx-1 p-2 bg-sage-light border-l-4 border-secondary rounded shadow-sm">
+<p class="text-[10px] font-bold text-secondary">Bella (Rabbit)</p>
+<p class="text-[9px] text-on-secondary-fixed-variant">Health Check</p>
+</div>
+</div>
+<!-- Thursday -->
+<div class="col-start-5 border-r border-outline-variant h-full">
+<div class="mt-40 mx-1 p-2 bg-sage-light border-l-4 border-secondary rounded shadow-sm">
+<p class="text-[10px] font-bold text-secondary">Charlie (Dog)</p>
+<p class="text-[9px] text-on-secondary-fixed-variant">Follow-up</p>
+</div>
+</div>
+<!-- Friday -->
+<div class="col-start-6 border-r border-outline-variant h-full"></div>
+<!-- Saturday -->
+<div class="col-start-7 border-r border-outline-variant h-full bg-surface-container-low/50"></div>
+<!-- Sunday -->
+<div class="col-start-8 h-full bg-surface-container-low/50"></div>
+<!-- Full Grid Lines for aesthetic -->
+<div class="absolute inset-0 pointer-events-none grid grid-cols-7 left-[80px]">
+<div class="border-r border-outline-variant/10"></div>
+<div class="border-r border-outline-variant/10"></div>
+<div class="border-r border-outline-variant/10"></div>
+<div class="border-r border-outline-variant/10"></div>
+<div class="border-r border-outline-variant/10"></div>
+<div class="border-r border-outline-variant/10"></div>
+<div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Modal: Book New Appointment -->
+<div class="fixed inset-0 bg-primary/40 backdrop-blur-sm z-[100] flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300" id="bookingModal">
+<div class="bg-surface w-full max-w-lg rounded-3xl shadow-high overflow-hidden scale-95 transition-transform duration-300" id="modalContent">
+<div class="px-xl py-lg bg-primary text-on-primary flex justify-between items-center">
+<h3 class="font-headline-md text-headline-md">Book New Appointment</h3>
+<button class="hover:bg-on-primary/10 rounded-full p-2" onclick="toggleModal(false)">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+<form class="p-xl space-y-lg">
+<div class="grid grid-cols-2 gap-lg">
+<div class="col-span-1">
+<label class="block font-label-md mb-2 text-on-surface-variant">Pet Name</label>
+<input class="w-full border-outline-variant border rounded-xl py-md px-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="e.g. Luna" type="text"/>
+</div>
+<div class="col-span-1">
+<label class="block font-label-md mb-2 text-on-surface-variant">Pet Type</label>
+<select class="w-full border-outline-variant border rounded-xl py-md px-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all">
+<option>Dog</option>
+<option>Cat</option>
+<option>Avian</option>
+<option>Exotic</option>
+</select>
+</div>
+</div>
+<div>
+<label class="block font-label-md mb-2 text-on-surface-variant">Owner Contact (Phone/Email)</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="contact_phone">contact_phone</span>
+<input class="w-full border-outline-variant border rounded-xl py-md pl-12 pr-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="555-0123" type="text"/>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-lg">
+<div>
+<label class="block font-label-md mb-2 text-on-surface-variant">Date</label>
+<input class="w-full border-outline-variant border rounded-xl py-md px-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" type="date"/>
+</div>
+<div>
+<label class="block font-label-md mb-2 text-on-surface-variant">Time</label>
+<input class="w-full border-outline-variant border rounded-xl py-md px-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" type="time"/>
+</div>
+</div>
+<div>
+<label class="block font-label-md mb-2 text-on-surface-variant">Reason for Visit</label>
+<textarea class="w-full border-outline-variant border rounded-xl py-md px-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="Describe symptoms or service needed..." rows="3"></textarea>
+</div>
+<div class="pt-lg border-t border-outline-variant flex gap-md justify-end">
+<button class="px-xl py-md border border-outline rounded-xl font-label-md hover:bg-surface-container transition-colors" onclick="toggleModal(false)" type="button">Cancel</button>
+<button class="px-xl py-md bg-secondary text-on-secondary rounded-xl font-label-md shadow-md hover:bg-on-secondary-fixed-variant transition-colors flex items-center gap-2" type="submit">
+<span class="material-symbols-outlined text-[18px]" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                        Confirm Booking
+                    </button>
+</div>
+</form>
+</div>
+</div>
+<script>
+        function toggleModal(show) {
+            const modal = document.getElementById('bookingModal');
+            const content = document.getElementById('modalContent');
+            if (show) {
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            } else {
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                content.classList.remove('scale-100');
+                content.classList.add('scale-95');
+            }
+        }
+
+        // Close modal on click outside
+        document.getElementById('bookingModal').addEventListener('click', (e) => {
+            if (e.target.id === 'bookingModal') toggleModal(false);
+        });
+
+        // Atmospheric Micro-interaction for Calendar Slots
+        document.querySelectorAll('.time-slot').forEach(slot => {
+            slot.addEventListener('mouseenter', () => {
+                slot.classList.add('bg-surface-container-high');
+            });
+            slot.addEventListener('mouseleave', () => {
+                slot.classList.remove('bg-surface-container-high');
+            });
+        });
+    </script>
+</body></html>
