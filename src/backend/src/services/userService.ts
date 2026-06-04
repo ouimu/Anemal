@@ -1,10 +1,10 @@
 // @dev-agent — User management service
 // @db-agent reviewed — ALL queries include tenantId; no cross-tenant access possible
 import bcrypt from 'bcrypt'
-import { AppError } from '../utils/errors'
 import { Prisma } from '@prisma/client'
-import prisma from '../config/db'
+import { AppError } from '../utils/errors'
 import { config } from '../config/env'
+import * as userRepo from '../models/user.repository'
 import type { CreateUserRequest, UpdateUserRequest, UserResponse } from '../types'
 
 function safe(user: {
@@ -16,17 +16,12 @@ function safe(user: {
 }
 
 export async function listUsers(tenantId: number): Promise<UserResponse[]> {
-  const users = await prisma.user.findMany({
-    where:   { tenantId },        // @db-agent: tenant filter enforced
-    orderBy: { createdAt: 'asc' },
-  })
+  const users = await userRepo.findUsers(tenantId)
   return users.map(safe)
 }
 
 export async function getUserById(tenantId: number, userId: number): Promise<UserResponse> {
-  const user = await prisma.user.findFirst({
-    where: { id: userId, tenantId },  // @db-agent: both id AND tenantId required
-  })
+  const user = await userRepo.findUserById(tenantId, userId)
   if (!user) throw new UserError('User not found', 404)
   return safe(user)
 }
@@ -34,8 +29,8 @@ export async function getUserById(tenantId: number, userId: number): Promise<Use
 export async function createUser(tenantId: number, body: CreateUserRequest): Promise<UserResponse> {
   const passwordHash = await bcrypt.hash(body.password, config.bcryptRounds)
   try {
-    const user = await prisma.user.create({
-      data: { tenantId, name: body.name, email: body.email, passwordHash, role: body.role },
+    const user = await userRepo.createUser(tenantId, {
+      name: body.name, email: body.email, passwordHash, role: body.role,
     })
     return safe(user)
   } catch (err) {
@@ -49,20 +44,17 @@ export async function createUser(tenantId: number, body: CreateUserRequest): Pro
 export async function updateUser(
   tenantId: number, userId: number, body: UpdateUserRequest
 ): Promise<UserResponse> {
-  const existing = await prisma.user.findFirst({ where: { id: userId, tenantId } })
+  const existing = await userRepo.findUserById(tenantId, userId)
   if (!existing) throw new UserError('User not found', 404)
 
-  const user = await prisma.user.update({
-    where: { id: userId },
-    data:  body,
-  })
+  const user = await userRepo.updateUser(userId, body)
   return safe(user)
 }
 
 export async function deactivateUser(tenantId: number, userId: number): Promise<void> {
-  const existing = await prisma.user.findFirst({ where: { id: userId, tenantId } })
+  const existing = await userRepo.findUserById(tenantId, userId)
   if (!existing) throw new UserError('User not found', 404)
-  await prisma.user.update({ where: { id: userId }, data: { isActive: false } })
+  await userRepo.setActive(userId, false)
 }
 
 export class UserError extends AppError {

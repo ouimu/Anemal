@@ -1,9 +1,11 @@
 // @db-agent reviewed — all queries scoped by tenantId
-import prisma from '../config/db'
+import * as usageRepo from '../models/usage.repository'
 
 export async function getClinicUsage(tenantId: number) {
   const now   = new Date()
   const start = new Date(now.getFullYear(), now.getMonth(), 1)
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
 
   const [
     totalPets,
@@ -15,22 +17,14 @@ export async function getClinicUsage(tenantId: number) {
     invoicesThisMonth,
     settings,
   ] = await Promise.all([
-    prisma.pet.count({ where: { tenantId, isActive: true } }),
-    prisma.owner.count({ where: { tenantId } }),
-    prisma.user.count({ where: { tenantId } }),
-    prisma.user.count({ where: { tenantId, isActive: true } }),
-    prisma.appointment.count({ where: { tenantId, scheduledAt: { gte: start } } }),
-    prisma.appointment.count({
-      where: {
-        tenantId,
-        scheduledAt: {
-          gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
-          lt:  new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1),
-        },
-      },
-    }),
-    prisma.invoice.count({ where: { tenantId, createdAt: { gte: start } } }),
-    prisma.tenantSettings.findUnique({ where: { tenantId } }),
+    usageRepo.countActivePets(tenantId),
+    usageRepo.countOwners(tenantId),
+    usageRepo.countUsers(tenantId),
+    usageRepo.countActiveUsers(tenantId),
+    usageRepo.countAppointmentsSince(tenantId, start),
+    usageRepo.countAppointmentsBetween(tenantId, today, tomorrow),
+    usageRepo.countInvoicesSince(tenantId, start),
+    usageRepo.findSettings(tenantId),
   ])
 
   return {
@@ -46,24 +40,18 @@ export async function getClinicUsage(tenantId: number) {
 }
 
 export async function getClinicSummary(tenantId: number) {
-  const now     = new Date()
-  const start   = new Date(now.getFullYear(), now.getMonth(), 1)
-  const in7days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+  const now      = new Date()
+  const start    = new Date(now.getFullYear(), now.getMonth(), 1)
+  const today    = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+  const in7days  = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
 
   const [appointmentsToday, appointmentsThisMonth, totalPets, invoicesThisMonth, vaccinationsDueSoon] = await Promise.all([
-    prisma.appointment.count({
-      where: {
-        tenantId,
-        scheduledAt: {
-          gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
-          lt:  new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1),
-        },
-      },
-    }),
-    prisma.appointment.count({ where: { tenantId, scheduledAt: { gte: start } } }),
-    prisma.pet.count({ where: { tenantId, isActive: true } }),
-    prisma.invoice.count({ where: { tenantId, createdAt: { gte: start } } }),
-    prisma.vaccination.count({ where: { tenantId, nextDueAt: { gte: now, lte: in7days } } }),
+    usageRepo.countAppointmentsBetween(tenantId, today, tomorrow),
+    usageRepo.countAppointmentsSince(tenantId, start),
+    usageRepo.countActivePets(tenantId),
+    usageRepo.countInvoicesSince(tenantId, start),
+    usageRepo.countVaccinationsBetween(tenantId, now, in7days),
   ])
 
   return { appointmentsToday, appointmentsThisMonth, totalPets, invoicesThisMonth, vaccinationsDueSoon }
