@@ -5,13 +5,11 @@ import { getClinicSummary } from '../services/usageService'
 const router = Router()
 router.use(authMiddleware)
 
-router.get('/usage', async (req, res) => {
+router.get('/usage', async (req, res, next) => {
   try {
     const data = await getClinicSummary(req.context!.tenantId)
     res.json({ success: true, data })
-  } catch {
-    res.status(500).json({ success: false, error: 'Failed to load usage' })
-  }
+  } catch (err) { next(err) }
 })
 
 export default router

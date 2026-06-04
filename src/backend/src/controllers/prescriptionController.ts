@@ -1,23 +1,16 @@
-import { Request, Response } from 'express'
-import { createPrescriptionSchema, createPrescription, deletePrescription, PrescriptionError } from '../services/prescriptionService'
+import { Request, Response, NextFunction } from 'express'
+import { createPrescription, deletePrescription } from '../services/prescriptionService'
 
-function handleError(res: Response, err: unknown) {
-  if (err instanceof PrescriptionError) return res.status(err.statusCode).json({ success: false, error: err.message })
-  res.status(500).json({ success: false, error: 'Internal server error' })
-}
-
-export async function handleCreatePrescription(req: Request, res: Response) {
-  const parsed = createPrescriptionSchema.safeParse(req.body)
-  if (!parsed.success) return res.status(400).json({ success: false, error: 'Validation failed', details: parsed.error.flatten() })
+export async function handleCreatePrescription(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await createPrescription(req.context!.tenantId, parsed.data)
+    const data = await createPrescription(req.context!.tenantId, req.body)
     res.status(201).json({ success: true, data })
-  } catch (err) { handleError(res, err) }
+  } catch (err) { next(err) }
 }
 
-export async function handleDeletePrescription(req: Request, res: Response) {
+export async function handleDeletePrescription(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     await deletePrescription(req.context!.tenantId, parseInt(req.params.id))
     res.json({ success: true })
-  } catch (err) { handleError(res, err) }
+  } catch (err) { next(err) }
 }
