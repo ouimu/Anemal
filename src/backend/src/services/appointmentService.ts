@@ -1,6 +1,6 @@
-import prisma from '../config/db'
-import { AppError } from '../utils/errors'
 import { z } from 'zod'
+import { AppError } from '../utils/errors'
+import * as appointmentRepo from '../models/appointment.repository'
 
 export const createAppointmentSchema = z.object({
   petId:       z.number().int().positive(),
@@ -23,6 +23,7 @@ export const statusSchema = z.object({
 })
 
 export type CreateAppointmentInput = z.infer<typeof createAppointmentSchema>
+export type AppointmentStatus = z.infer<typeof statusSchema>['status']
 
 export class AppointmentError extends AppError {
   constructor(message: string, statusCode: number) {
@@ -38,11 +39,7 @@ export async function listAppointments(tenantId: number, date?: string, doctorId
     startDate = new Date(date)
     startDate.setHours(0, 0, 0, 0)
     endDate = new Date(startDate)
-    if (week) {
-      endDate.setDate(endDate.getDate() + 7)
-    } else {
-      endDate.setDate(endDate.getDate() + 1)
-    }
+    endDate.setDate(endDate.getDate() + (week ? 7 : 1))
   } else {
     startDate = new Date()
     startDate.setHours(0, 0, 0, 0)
@@ -50,28 +47,11 @@ export async function listAppointments(tenantId: number, date?: string, doctorId
     endDate.setDate(endDate.getDate() + 1)
   }
 
-  return prisma.appointment.findMany({
-    where: {
-      tenantId,
-      scheduledAt: { gte: startDate, lt: endDate },
-      ...(doctorId ? { doctorId } : {}),
-    },
-    include: {
-      pet:    { select: { id: true, name: true, species: true, photoUrl: true } },
-      doctor: { select: { id: true, name: true } },
-    },
-    orderBy: { scheduledAt: 'asc' },
-  })
+  return appointmentRepo.findInRange(tenantId, startDate, endDate, doctorId)
 }
 
 export async function getAppointment(tenantId: number, id: number) {
-  const appt = await prisma.appointment.findFirst({
-    where: { id, tenantId },
-    include: {
-      pet:    { include: { owner: true } },
-      doctor: { select: { id: true, name: true } },
-    },
-  })
+  const appt = await appointmentRepo.findById(tenantId, id)
   if (!appt) throw new AppointmentError('Appointment not found', 404)
   return appt
 }
@@ -80,43 +60,19 @@ export async function createAppointment(tenantId: number, data: CreateAppointmen
   const start = new Date(data.scheduledAt)
   const end   = new Date(start.getTime() + data.durationMin * 60_000)
 
-  // Overlap: existingStart < newEnd AND (existingStart + existingDuration) > newStart
-  const conflictCount = await prisma.$queryRaw<{ count: bigint }[]>`
-    SELECT COUNT(*) as count FROM appointments
-    WHERE tenant_id = ${tenantId}
-      AND doctor_id = ${data.doctorId}
-      AND status NOT IN ('cancelled', 'no_show')
-      AND scheduled_at < ${end}
-      AND scheduled_at + (duration_min * interval '1 minute') > ${start}
-  `
-
-  if (Number(conflictCount[0]?.count ?? 0) > 0) {
+  const conflicts = await appointmentRepo.countDoctorConflicts(tenantId, data.doctorId, start, end)
+  if (conflicts > 0) {
     throw new AppointmentError('Doctor already has an appointment in this time slot', 409)
   }
 
-  return prisma.appointment.create({
-    data: { ...data, tenantId, scheduledAt: start },
-  })
+  return appointmentRepo.createAppointment(tenantId, data, start)
 }
 
 export async function createWalkIn(tenantId: number, petId: number, doctorId: number, reason?: string | null) {
-  return prisma.appointment.create({
-    data: {
-      tenantId,
-      petId,
-      doctorId,
-      scheduledAt: new Date(),
-      durationMin: 30,
-      status: 'arrived',
-      reason: reason ?? null,
-    },
-  })
+  return appointmentRepo.createWalkIn(tenantId, petId, doctorId, reason)
 }
 
-export async function updateStatus(tenantId: number, id: number, status: string) {
+export async function updateStatus(tenantId: number, id: number, status: AppointmentStatus) {
   await getAppointment(tenantId, id)
-  return prisma.appointment.update({
-    where: { id },
-    data: { status: status as any },
-  })
+  return appointmentRepo.updateStatus(id, status)
 }

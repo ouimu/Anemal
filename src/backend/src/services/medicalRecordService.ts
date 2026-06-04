@@ -1,6 +1,6 @@
-import prisma from '../config/db'
-import { AppError } from '../utils/errors'
 import { z } from 'zod'
+import { AppError } from '../utils/errors'
+import * as recordRepo from '../models/medicalRecord.repository'
 
 export const createMedicalRecordSchema = z.object({
   petId:            z.number().int().positive(),
@@ -27,6 +27,7 @@ export const addAttachmentSchema = z.object({
 
 export type CreateMedicalRecordInput = z.infer<typeof createMedicalRecordSchema>
 export type UpdateMedicalRecordInput = z.infer<typeof updateMedicalRecordSchema>
+export type AddAttachmentInput = z.infer<typeof addAttachmentSchema>
 
 export class MedicalRecordError extends AppError {
   constructor(message: string, statusCode: number) {
@@ -36,57 +37,35 @@ export class MedicalRecordError extends AppError {
 
 export async function listMedicalRecords(tenantId: number, petId: number, page = 1, limit = 10) {
   const skip = (page - 1) * limit
-  const where = { tenantId, petId }
-
   const [records, total] = await Promise.all([
-    prisma.medicalRecord.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        doctor: { select: { id: true, name: true } },
-        prescriptions: { include: { drug: { select: { id: true, name: true, unit: true } } } },
-      },
-    }),
-    prisma.medicalRecord.count({ where }),
+    recordRepo.findByPet(tenantId, petId, skip, limit),
+    recordRepo.countByPet(tenantId, petId),
   ])
-
   return { records, total, page, limit }
 }
 
 export async function getMedicalRecord(tenantId: number, id: number) {
-  const record = await prisma.medicalRecord.findFirst({
-    where: { id, tenantId },
-    include: {
-      pet:    { include: { owner: { select: { firstName: true, lastName: true, phone: true } } } },
-      doctor: { select: { id: true, name: true } },
-      prescriptions: { include: { drug: true } },
-      attachments: true,
-      invoices: { select: { paymentStatus: true } },
-    },
-  })
+  const record = await recordRepo.findById(tenantId, id)
   if (!record) throw new MedicalRecordError('Medical record not found', 404)
   return record
 }
 
 export async function createMedicalRecord(tenantId: number, data: CreateMedicalRecordInput) {
-  const pet = await prisma.pet.findFirst({ where: { id: data.petId, tenantId } })
+  const pet = await recordRepo.findPet(tenantId, data.petId)
   if (!pet) throw new MedicalRecordError('Pet not found', 404)
-
-  return prisma.medicalRecord.create({ data: { ...data, tenantId } })
+  return recordRepo.createRecord(tenantId, data)
 }
 
 export async function updateMedicalRecord(tenantId: number, id: number, data: UpdateMedicalRecordInput) {
   const record = await getMedicalRecord(tenantId, id)
 
-  const hasPaidInvoice = record.invoices?.some((inv: any) => inv.paymentStatus === 'paid')
+  const hasPaidInvoice = record.invoices?.some((inv: { paymentStatus: string }) => inv.paymentStatus === 'paid')
   if (hasPaidInvoice) throw new MedicalRecordError('Cannot edit a billed medical record', 403)
 
-  return prisma.medicalRecord.update({ where: { id, tenantId }, data })
+  return recordRepo.updateRecord(tenantId, id, data)
 }
 
-export async function addAttachment(tenantId: number, medicalRecordId: number, data: z.infer<typeof addAttachmentSchema>) {
+export async function addAttachment(tenantId: number, medicalRecordId: number, data: AddAttachmentInput) {
   await getMedicalRecord(tenantId, medicalRecordId)
-  return prisma.attachment.create({ data: { ...data, tenantId, medicalRecordId } })
+  return recordRepo.createAttachment(tenantId, medicalRecordId, data)
 }
