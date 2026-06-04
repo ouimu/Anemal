@@ -1,6 +1,6 @@
-import prisma from '../config/db'
-import { AppError } from '../utils/errors'
 import { z } from 'zod'
+import { AppError } from '../utils/errors'
+import * as ownerRepo from '../models/owner.repository'
 
 export const createOwnerSchema = z.object({
   firstName: z.string().min(1).max(100),
@@ -24,48 +24,32 @@ export class OwnerError extends AppError {
 
 export async function listOwners(tenantId: number, page = 1, limit = 20, search?: string) {
   const skip = (page - 1) * limit
-  const where = {
-    tenantId,
-    ...(search ? {
-      OR: [
-        { firstName: { contains: search, mode: 'insensitive' as const } },
-        { lastName:  { contains: search, mode: 'insensitive' as const } },
-        { phone:     { contains: search } },
-      ],
-    } : {}),
-  }
-
   const [owners, total] = await Promise.all([
-    prisma.owner.findMany({ where, skip, take: limit, orderBy: { createdAt: 'desc' }, include: { pets: { where: { isActive: true }, select: { id: true, name: true, species: true } } } }),
-    prisma.owner.count({ where }),
+    ownerRepo.findOwners(tenantId, { skip, take: limit, search }),
+    ownerRepo.countOwners(tenantId, search),
   ])
-
   return { owners, total, page, limit }
 }
 
 export async function getOwner(tenantId: number, id: number) {
-  const owner = await prisma.owner.findFirst({
-    where: { id, tenantId },
-    include: { pets: { where: { isActive: true } } },
-  })
+  const owner = await ownerRepo.findOwnerById(tenantId, id)
   if (!owner) throw new OwnerError('Owner not found', 404)
   return owner
 }
 
 export async function createOwner(tenantId: number, data: CreateOwnerInput) {
-  const existing = await prisma.owner.findFirst({ where: { tenantId, phone: data.phone } })
+  const existing = await ownerRepo.findOwnerByPhone(tenantId, data.phone)
   if (existing) throw new OwnerError('Phone number already registered in this clinic', 409)
-
-  return prisma.owner.create({ data: { ...data, tenantId } })
+  return ownerRepo.createOwner(tenantId, data)
 }
 
 export async function updateOwner(tenantId: number, id: number, data: UpdateOwnerInput) {
   await getOwner(tenantId, id)
 
   if (data.phone) {
-    const existing = await prisma.owner.findFirst({ where: { tenantId, phone: data.phone, NOT: { id } } })
+    const existing = await ownerRepo.findOwnerByPhone(tenantId, data.phone, id)
     if (existing) throw new OwnerError('Phone number already registered in this clinic', 409)
   }
 
-  return prisma.owner.update({ where: { id, tenantId }, data })
+  return ownerRepo.updateOwner(tenantId, id, data)
 }
