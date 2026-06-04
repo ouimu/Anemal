@@ -1,8 +1,6 @@
 // Shared TypeScript types across the backend
 // @dev-agent — no `any` types; all API shapes defined here
 
-import { Request } from 'express'
-
 // JWT token payload
 export interface JwtPayload {
   userId:   number
