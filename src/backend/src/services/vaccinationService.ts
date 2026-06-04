@@ -1,4 +1,5 @@
 import prisma from '../config/db'
+import { AppError } from '../utils/errors'
 import { z } from 'zod'
 
 export const createVaccinationSchema = z.object({
@@ -12,10 +13,9 @@ export const createVaccinationSchema = z.object({
 
 export type CreateVaccinationInput = z.infer<typeof createVaccinationSchema>
 
-export class VaccinationError extends Error {
-  constructor(message: string, public statusCode: number) {
-    super(message)
-    this.name = 'VaccinationError'
+export class VaccinationError extends AppError {
+  constructor(message: string, statusCode: number) {
+    super(statusCode, message, 'VACCINATION_ERROR')
   }
 }
 

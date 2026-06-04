@@ -1,4 +1,5 @@
 import prisma from '../config/db'
+import { AppError } from '../utils/errors'
 import { z } from 'zod'
 
 export const createMedicalRecordSchema = z.object({
@@ -27,10 +28,9 @@ export const addAttachmentSchema = z.object({
 export type CreateMedicalRecordInput = z.infer<typeof createMedicalRecordSchema>
 export type UpdateMedicalRecordInput = z.infer<typeof updateMedicalRecordSchema>
 
-export class MedicalRecordError extends Error {
-  constructor(message: string, public statusCode: number) {
-    super(message)
-    this.name = 'MedicalRecordError'
+export class MedicalRecordError extends AppError {
+  constructor(message: string, statusCode: number) {
+    super(statusCode, message, 'MEDICAL_RECORD_ERROR')
   }
 }
 

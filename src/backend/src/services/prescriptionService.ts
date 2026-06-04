@@ -1,4 +1,5 @@
 import prisma from '../config/db'
+import { AppError } from '../utils/errors'
 import { z } from 'zod'
 
 export const createPrescriptionSchema = z.object({
@@ -11,10 +12,9 @@ export const createPrescriptionSchema = z.object({
 
 export type CreatePrescriptionInput = z.infer<typeof createPrescriptionSchema>
 
-export class PrescriptionError extends Error {
-  constructor(message: string, public statusCode: number) {
-    super(message)
-    this.name = 'PrescriptionError'
+export class PrescriptionError extends AppError {
+  constructor(message: string, statusCode: number) {
+    super(statusCode, message, 'PRESCRIPTION_ERROR')
   }
 }
 

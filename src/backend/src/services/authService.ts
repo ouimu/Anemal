@@ -1,6 +1,7 @@
 // @dev-agent — Business logic only; no direct DB calls from controller
 // @db-agent reviewed — tenantId resolved from subdomain before any user lookup
 import bcrypt from 'bcrypt'
+import { AppError } from '../utils/errors'
 import prisma from '../config/db'
 import { signToken } from '../config/jwt'
 import type { LoginRequest, LoginResponse } from '../types'
@@ -40,9 +41,8 @@ export async function login(body: LoginRequest): Promise<LoginResponse> {
   }
 }
 
-export class AuthError extends Error {
-  constructor(message: string, public statusCode: number) {
-    super(message)
-    this.name = 'AuthError'
+export class AuthError extends AppError {
+  constructor(message: string, statusCode: number) {
+    super(statusCode, message, 'AUTH_ERROR')
   }
 }

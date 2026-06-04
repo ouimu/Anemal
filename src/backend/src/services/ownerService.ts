@@ -1,4 +1,5 @@
 import prisma from '../config/db'
+import { AppError } from '../utils/errors'
 import { z } from 'zod'
 
 export const createOwnerSchema = z.object({
@@ -15,10 +16,9 @@ export const updateOwnerSchema = createOwnerSchema.partial()
 export type CreateOwnerInput = z.infer<typeof createOwnerSchema>
 export type UpdateOwnerInput = z.infer<typeof updateOwnerSchema>
 
-export class OwnerError extends Error {
-  constructor(message: string, public statusCode: number) {
-    super(message)
-    this.name = 'OwnerError'
+export class OwnerError extends AppError {
+  constructor(message: string, statusCode: number) {
+    super(statusCode, message, 'OWNER_ERROR')
   }
 }
 

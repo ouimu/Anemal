@@ -1,6 +1,7 @@
 // @dev-agent — User management service
 // @db-agent reviewed — ALL queries include tenantId; no cross-tenant access possible
 import bcrypt from 'bcrypt'
+import { AppError } from '../utils/errors'
 import { Prisma } from '@prisma/client'
 import prisma from '../config/db'
 import { config } from '../config/env'
@@ -64,9 +65,8 @@ export async function deactivateUser(tenantId: number, userId: number): Promise<
   await prisma.user.update({ where: { id: userId }, data: { isActive: false } })
 }
 
-export class UserError extends Error {
-  constructor(message: string, public statusCode: number) {
-    super(message)
-    this.name = 'UserError'
+export class UserError extends AppError {
+  constructor(message: string, statusCode: number) {
+    super(statusCode, message, 'USER_ERROR')
   }
 }

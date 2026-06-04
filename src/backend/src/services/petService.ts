@@ -1,4 +1,5 @@
 import prisma from '../config/db'
+import { AppError } from '../utils/errors'
 import { z } from 'zod'
 
 export const createPetSchema = z.object({
@@ -23,10 +24,9 @@ export const updatePetSchema = createPetSchema.partial().omit({ ownerId: true })
 export type CreatePetInput = z.infer<typeof createPetSchema>
 export type UpdatePetInput = z.infer<typeof updatePetSchema>
 
-export class PetError extends Error {
-  constructor(message: string, public statusCode: number) {
-    super(message)
-    this.name = 'PetError'
+export class PetError extends AppError {
+  constructor(message: string, statusCode: number) {
+    super(statusCode, message, 'PET_ERROR')
   }
 }
 

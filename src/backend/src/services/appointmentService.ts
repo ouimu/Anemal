@@ -1,4 +1,5 @@
 import prisma from '../config/db'
+import { AppError } from '../utils/errors'
 import { z } from 'zod'
 
 export const createAppointmentSchema = z.object({
@@ -23,10 +24,9 @@ export const statusSchema = z.object({
 
 export type CreateAppointmentInput = z.infer<typeof createAppointmentSchema>
 
-export class AppointmentError extends Error {
-  constructor(message: string, public statusCode: number) {
-    super(message)
-    this.name = 'AppointmentError'
+export class AppointmentError extends AppError {
+  constructor(message: string, statusCode: number) {
+    super(statusCode, message, 'APPOINTMENT_ERROR')
   }
 }
 
