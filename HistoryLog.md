@@ -14,7 +14,13 @@ Validate all development to date against `.claude/specs/CODING_RULES.md` and `de
 | `src/frontend/src/views/admin/AdminUsage.tsx` | **MODIFIED** | Replaced emoji KPI icons (🐾👤📅💳) with `MaterialIcon` — fixes CODING_RULES §10 / design-plan rule 3 (Material Symbols only, no emoji) |
 | `src/frontend/src/views/clinic/ClinicEMR.tsx` | **MODIFIED** | Removed decorative emoji from `TEMPLATES`; hoisted raw canvas pen hexes into documented `PEN_COLORS` constant (canvas needs literal colors) — fixes raw-hex-in-JSX flag |
 
-### ⚠️ Open Deviations (NOT auto-fixed — need direction; large/risky)
+### 🔁 Refactor Progress (branch `refactor/coding-rules-alignment`, remote: ouimu/AnimalClinic)
+- Git initialised + pushed to private GitHub repo (baseline `8e628fa` on `main`).
+- `2c32fe3` — removed dead code (deviation #7): unused frontend views/components, backend re-export stubs, empty dirs, old SQL migrator.
+- `d5f3c7b` — error/logging foundation (deviations #5): `utils/errors.ts` (AppError + subclasses), `utils/logger.ts`, `middlewares/errorHandler.ts` wired into `app.ts`; `server.ts` console.log→logger + process handlers.
+- All steps: 104 tests green, tsc clean.
+
+### ⚠️ Remaining Deviations (NOT auto-fixed — need direction; large/risky)
 1. **Backend dir layout** — code lives in `src/backend/src/{...}`; CODING_RULES §1 specifies `src/backend/{...}`. Plus dead re-export stubs at `src/backend/{config,middlewares}` and empty `controllers/routes/services` dirs.
 2. **File naming** — backend uses `camelCase` (`authMiddleware.ts`, `ownerService.ts`); rules mandate kebab + layer suffix (`auth.middleware.ts`, `owner.service.ts`).
 3. **No Repository layer** — all 11 services call Prisma directly; CODING_RULES §2/§11 require a repository layer.
