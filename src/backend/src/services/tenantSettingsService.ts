@@ -1,5 +1,5 @@
 // @db-agent reviewed — tenantId enforced on every query; 1-to-1 with tenant
-import prisma from '../config/db'
+import * as settingsRepo from '../models/tenantSettings.repository'
 
 export interface TenantSettingsInput {
   logoUrl?:             string
@@ -16,24 +16,13 @@ export interface TenantSettingsInput {
 }
 
 export async function getSettings(tenantId: number) {
-  // Upsert ensures a row always exists
-  const row = await prisma.tenantSettings.upsert({
-    where:  { tenantId },
-    update: {},
-    create: { tenantId },
-    include: { tenant: { select: { name: true, subdomain: true } } },
-  })
-  return row
+  return settingsRepo.getOrCreateSettings(tenantId)
 }
 
 export async function updateSettings(tenantId: number, data: TenantSettingsInput) {
-  return prisma.tenantSettings.upsert({
-    where:  { tenantId },
-    update: data,
-    create: { tenantId, ...data },
-  })
+  return settingsRepo.upsertSettings(tenantId, data)
 }
 
 export async function updateClinicName(tenantId: number, name: string) {
-  return prisma.tenant.update({ where: { id: tenantId }, data: { name } })
+  return settingsRepo.updateTenantName(tenantId, name)
 }

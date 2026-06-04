@@ -1,6 +1,6 @@
-import prisma from '../config/db'
-import { AppError } from '../utils/errors'
 import { z } from 'zod'
+import { AppError } from '../utils/errors'
+import * as vaccinationRepo from '../models/vaccination.repository'
 
 export const createVaccinationSchema = z.object({
   petId:          z.number().int().positive(),
@@ -20,41 +20,20 @@ export class VaccinationError extends AppError {
 }
 
 export async function listVaccinations(tenantId: number, petId: number) {
-  const pet = await prisma.pet.findFirst({ where: { id: petId, tenantId } })
+  const pet = await vaccinationRepo.findPet(tenantId, petId)
   if (!pet) throw new VaccinationError('Pet not found', 404)
-
-  return prisma.vaccination.findMany({
-    where: { tenantId, petId },
-    orderBy: { administeredAt: 'desc' },
-  })
+  return vaccinationRepo.findByPet(tenantId, petId)
 }
 
 export async function createVaccination(tenantId: number, data: CreateVaccinationInput) {
-  const pet = await prisma.pet.findFirst({ where: { id: data.petId, tenantId } })
+  const pet = await vaccinationRepo.findPet(tenantId, data.petId)
   if (!pet) throw new VaccinationError('Pet not found', 404)
-
-  return prisma.vaccination.create({
-    data: {
-      ...data,
-      tenantId,
-      administeredAt: new Date(data.administeredAt),
-      nextDueAt: data.nextDueAt ? new Date(data.nextDueAt) : null,
-    },
-  })
+  return vaccinationRepo.createVaccination(tenantId, data)
 }
 
 export async function getDueSoon(tenantId: number, days = 30) {
-  const cutoff = new Date()
-  cutoff.setDate(cutoff.getDate() + days)
-
-  return prisma.vaccination.findMany({
-    where: {
-      tenantId,
-      nextDueAt: { lte: cutoff, gte: new Date() },
-    },
-    include: {
-      pet: { select: { id: true, name: true, species: true, owner: { select: { firstName: true, lastName: true, phone: true } } } },
-    },
-    orderBy: { nextDueAt: 'asc' },
-  })
+  const from = new Date()
+  const to = new Date()
+  to.setDate(to.getDate() + days)
+  return vaccinationRepo.findDueSoon(tenantId, from, to)
 }

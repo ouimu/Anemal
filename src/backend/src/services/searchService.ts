@@ -1,4 +1,4 @@
-import prisma from '../config/db'
+import * as searchRepo from '../models/search.repository'
 
 export async function quickSearch(tenantId: number, query: string) {
   if (!query || query.trim().length < 1) return []
@@ -6,30 +6,8 @@ export async function quickSearch(tenantId: number, query: string) {
   const q = query.trim()
 
   const [pets, owners] = await Promise.all([
-    prisma.pet.findMany({
-      where: {
-        tenantId,
-        isActive: true,
-        OR: [
-          { name:        { contains: q, mode: 'insensitive' } },
-          { microchipId: { contains: q, mode: 'insensitive' } },
-        ],
-      },
-      take: 5,
-      include: { owner: { select: { id: true, firstName: true, lastName: true, phone: true } } },
-    }),
-    prisma.owner.findMany({
-      where: {
-        tenantId,
-        OR: [
-          { firstName: { contains: q, mode: 'insensitive' } },
-          { lastName:  { contains: q, mode: 'insensitive' } },
-          { phone:     { contains: q } },
-        ],
-      },
-      take: 5,
-      include: { pets: { where: { isActive: true }, select: { id: true, name: true, species: true } } },
-    }),
+    searchRepo.searchPets(tenantId, q),
+    searchRepo.searchOwners(tenantId, q),
   ])
 
   const results = [
