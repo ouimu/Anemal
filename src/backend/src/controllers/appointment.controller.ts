@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import {
   listAppointments, getAppointment, createAppointment, createWalkIn, updateStatus,
-} from '../services/appointmentService'
+} from '../services/appointment.service'
 
 export async function handleListAppointments(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {

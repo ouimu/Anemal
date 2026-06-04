@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { AppError } from '../utils/errors'
-import * as recordRepo from '../models/medicalRecord.repository'
+import * as recordRepo from '../models/medical-record.repository'
 
 export const createMedicalRecordSchema = z.object({
   petId:            z.number().int().positive(),

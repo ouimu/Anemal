@@ -1,6 +1,6 @@
 import { Router } from 'express'
-import { authMiddleware } from '../middlewares/authMiddleware'
-import { getClinicSummary } from '../services/usageService'
+import { authMiddleware } from '../middlewares/auth.middleware'
+import { getClinicSummary } from '../services/usage.service'
 
 const router = Router()
 router.use(authMiddleware)

@@ -3,7 +3,7 @@
 import prisma from '../config/db'
 import type {
   CreateMedicalRecordInput, UpdateMedicalRecordInput, AddAttachmentInput,
-} from '../services/medicalRecordService'
+} from '../services/medical-record.service'
 
 export function findByPet(tenantId: number, petId: number, skip: number, take: number) {
   return prisma.medicalRecord.findMany({

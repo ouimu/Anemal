@@ -1,11 +1,11 @@
 import { Router } from 'express'
-import { authMiddleware } from '../middlewares/authMiddleware'
-import { validate } from '../middlewares/validate'
+import { authMiddleware } from '../middlewares/auth.middleware'
+import { validate } from '../middlewares/validate.middleware'
 import {
   handleListMedicalRecords, handleGetMedicalRecord,
   handleCreateMedicalRecord, handleUpdateMedicalRecord, handleAddAttachment,
-} from '../controllers/medicalRecordController'
-import { createMedicalRecordSchema, updateMedicalRecordSchema, addAttachmentSchema } from '../services/medicalRecordService'
+} from '../controllers/medical-record.controller'
+import { createMedicalRecordSchema, updateMedicalRecordSchema, addAttachmentSchema } from '../services/medical-record.service'
 
 const router = Router()
 router.use(authMiddleware)

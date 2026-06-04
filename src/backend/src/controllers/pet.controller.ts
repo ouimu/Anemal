@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import { listPets, getPet, createPet, updatePet } from '../services/petService'
+import { listPets, getPet, createPet, updatePet } from '../services/pet.service'
 
 export async function handleListPets(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {

@@ -1,7 +1,7 @@
 // Tenant-settings repository — Prisma access for tenant_settings (1-to-1 with tenant).
 
 import prisma from '../config/db'
-import type { TenantSettingsInput } from '../services/tenantSettingsService'
+import type { TenantSettingsInput } from '../services/tenant-settings.service'
 
 // Upsert guarantees a settings row always exists for the tenant.
 export function getOrCreateSettings(tenantId: number) {

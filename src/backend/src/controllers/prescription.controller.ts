@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import { createPrescription, deletePrescription } from '../services/prescriptionService'
+import { createPrescription, deletePrescription } from '../services/prescription.service'
 
 export async function handleCreatePrescription(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {

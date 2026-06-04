@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { z } from 'zod'
-import * as svc from '../services/tenantSettingsService'
+import * as svc from '../services/tenant-settings.service'
 
 export const updateSettingsSchema = z.object({
   name:                 z.string().min(1).max(255).optional(),

@@ -1,11 +1,11 @@
 import { Router } from 'express'
-import { authMiddleware } from '../middlewares/authMiddleware'
-import { validate } from '../middlewares/validate'
+import { authMiddleware } from '../middlewares/auth.middleware'
+import { validate } from '../middlewares/validate.middleware'
 import {
   handleListAppointments, handleGetAppointment,
   handleCreateAppointment, handleWalkIn, handleUpdateStatus,
-} from '../controllers/appointmentController'
-import { createAppointmentSchema, walkInSchema, statusSchema } from '../services/appointmentService'
+} from '../controllers/appointment.controller'
+import { createAppointmentSchema, walkInSchema, statusSchema } from '../services/appointment.service'
 
 const router = Router()
 router.use(authMiddleware)

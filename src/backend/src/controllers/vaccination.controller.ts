@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { ValidationError } from '../utils/errors'
-import { listVaccinations, createVaccination, getDueSoon } from '../services/vaccinationService'
+import { listVaccinations, createVaccination, getDueSoon } from '../services/vaccination.service'
 
 export async function handleListVaccinations(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {

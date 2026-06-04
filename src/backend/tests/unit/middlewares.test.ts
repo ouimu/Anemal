@@ -1,7 +1,7 @@
 // @qa-agent — Unit tests: authMiddleware + rbacMiddleware (RBAC matrix)
 import { Request, Response, NextFunction } from 'express'
-import { authMiddleware } from '../../src/middlewares/authMiddleware'
-import { rbacMiddleware } from '../../src/middlewares/rbacMiddleware'
+import { authMiddleware } from '../../src/middlewares/auth.middleware'
+import { rbacMiddleware } from '../../src/middlewares/rbac.middleware'
 import * as jwtConfig from '../../src/config/jwt'
 
 jest.mock('../../src/config/jwt')

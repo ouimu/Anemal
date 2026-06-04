@@ -1,10 +1,10 @@
 // Admin-only routes — authMiddleware + rbacMiddleware(['admin']) applied
 import { Router } from 'express'
-import { authMiddleware } from '../middlewares/authMiddleware'
-import { rbacMiddleware } from '../middlewares/rbacMiddleware'
-import { validate } from '../middlewares/validate'
-import { getSettings, updateSettings, updateSettingsSchema } from '../controllers/tenantSettingsController'
-import { getClinicUsage } from '../services/usageService'
+import { authMiddleware } from '../middlewares/auth.middleware'
+import { rbacMiddleware } from '../middlewares/rbac.middleware'
+import { validate } from '../middlewares/validate.middleware'
+import { getSettings, updateSettings, updateSettingsSchema } from '../controllers/tenant-settings.controller'
+import { getClinicUsage } from '../services/usage.service'
 
 const router = Router()
 router.use(authMiddleware)

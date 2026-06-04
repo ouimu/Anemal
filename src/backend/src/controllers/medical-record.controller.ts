@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express'
 import { ValidationError } from '../utils/errors'
 import {
   listMedicalRecords, getMedicalRecord, createMedicalRecord, updateMedicalRecord, addAttachment,
-} from '../services/medicalRecordService'
+} from '../services/medical-record.service'
 
 export async function handleListMedicalRecords(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {

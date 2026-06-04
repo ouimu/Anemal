@@ -1,7 +1,7 @@
 // @qa-agent — Unit tests: auth service
 // Tests run against a mocked Prisma client; no DB required
 import bcrypt from 'bcrypt'
-import { login } from '../../src/services/authService'
+import { login } from '../../src/services/auth.service'
 
 jest.mock('../../src/config/db', () => ({
   __esModule: true,

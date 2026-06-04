@@ -1,7 +1,7 @@
 // Vaccination repository — all Prisma access for the vaccinations table.
 
 import prisma from '../config/db'
-import type { CreateVaccinationInput } from '../services/vaccinationService'
+import type { CreateVaccinationInput } from '../services/vaccination.service'
 
 export function findPet(tenantId: number, petId: number) {
   return prisma.pet.findFirst({ where: { id: petId, tenantId } })

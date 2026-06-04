@@ -1,7 +1,7 @@
 // Appointment repository — all Prisma access (incl. the raw-SQL overlap check).
 
 import prisma from '../config/db'
-import type { CreateAppointmentInput, AppointmentStatus } from '../services/appointmentService'
+import type { CreateAppointmentInput, AppointmentStatus } from '../services/appointment.service'
 
 export function findInRange(tenantId: number, start: Date, end: Date, doctorId?: number) {
   return prisma.appointment.findMany({

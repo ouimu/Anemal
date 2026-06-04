@@ -1,7 +1,7 @@
 // Pet repository — all Prisma access for the pets table (CODING_RULES §2, §11).
 
 import prisma from '../config/db'
-import type { CreatePetInput, UpdatePetInput } from '../services/petService'
+import type { CreatePetInput, UpdatePetInput } from '../services/pet.service'
 
 const listInclude = { owner: { select: { id: true, firstName: true, lastName: true, phone: true } } }
 

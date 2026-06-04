@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import { quickSearch } from '../services/searchService'
+import { quickSearch } from '../services/search.service'
 
 export async function handleSearch(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {

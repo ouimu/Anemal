@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { z } from 'zod'
-import * as userService from '../services/userService'
+import * as userService from '../services/user.service'
 
 export const createUserSchema = z.object({
   name:     z.string().min(1).max(255),

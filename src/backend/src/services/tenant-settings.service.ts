@@ -1,5 +1,5 @@
 // @db-agent reviewed — tenantId enforced on every query; 1-to-1 with tenant
-import * as settingsRepo from '../models/tenantSettings.repository'
+import * as settingsRepo from '../models/tenant-settings.repository'
 
 export interface TenantSettingsInput {
   logoUrl?:             string

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { z } from 'zod'
-import { login } from '../services/authService'
+import { login } from '../services/auth.service'
 
 export const loginSchema = z.object({
   subdomain: z.string().min(1),

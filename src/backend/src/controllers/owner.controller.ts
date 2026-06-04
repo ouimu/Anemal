@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import { listOwners, getOwner, createOwner, updateOwner } from '../services/ownerService'
+import { listOwners, getOwner, createOwner, updateOwner } from '../services/owner.service'
 
 export async function handleListOwners(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {

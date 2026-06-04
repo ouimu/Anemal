@@ -2,7 +2,7 @@
 // Every function takes tenantId as its first parameter; services never touch Prisma.
 
 import prisma from '../config/db'
-import type { CreateOwnerInput, UpdateOwnerInput } from '../services/ownerService'
+import type { CreateOwnerInput, UpdateOwnerInput } from '../services/owner.service'
 
 const listInclude = { pets: { where: { isActive: true }, select: { id: true, name: true, species: true } } }
 

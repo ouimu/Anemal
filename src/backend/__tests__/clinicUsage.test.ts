@@ -23,7 +23,7 @@ beforeAll(async () => {
     },
   }))
 
-  jest.doMock('../src/services/usageService', () => ({
+  jest.doMock('../src/services/usage.service', () => ({
     getClinicSummary: jest.fn().mockResolvedValue({
       appointmentsToday:     3,
       appointmentsThisMonth: 12,

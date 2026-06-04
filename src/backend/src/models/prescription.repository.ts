@@ -1,7 +1,7 @@
 // Prescription repository — Prisma access incl. atomic stock deduction.
 
 import prisma from '../config/db'
-import type { CreatePrescriptionInput } from '../services/prescriptionService'
+import type { CreatePrescriptionInput } from '../services/prescription.service'
 
 export function findMedicalRecord(tenantId: number, medicalRecordId: number) {
   return prisma.medicalRecord.findFirst({ where: { id: medicalRecordId, tenantId } })
