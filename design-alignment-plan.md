@@ -522,15 +522,17 @@ SETTINGS TAB (form):
 | P2-06 | `src/frontend/src/views/clinic/ClinicPets.tsx` | Redesign per spec |
 | P2-07 | `src/frontend/src/views/clinic/ClinicEMR.tsx` | Redesign per spec |
 
-### Phase 3 — Before Phase 3 UI work begins
+### Phase 3 — Commercial UI
 
-| # | Target file | Instruction |
+> **Status: COMPLETE** (2026-06-05) — Compassionate Care tokens, Material Symbols, ≥44px tap targets.
+
+| # | Target file | Status |
 |---|---|---|
-| P3-01 | `.claude/specs/screen-specs/06-inventory.md` | Create |
-| P3-02 | `.claude/specs/screen-specs/07-billing-pos.md` | Create |
-| P3-03 | `.claude/roadmap/phase3-tasks.md` | Add design references |
-| P3-04 | `src/frontend/src/views/clinic/ClinicInventory.tsx` | Redesign per spec |
-| P3-05 | `src/frontend/src/views/clinic/ClinicBilling.tsx` | Redesign per spec |
+| P3-01 | `.claude/specs/screen-specs/06-inventory.md` | ✅ Done |
+| P3-02 | `.claude/specs/screen-specs/07-billing-pos.md` | ✅ Done |
+| P3-03 | `.claude/roadmap/phase3-tasks.md` | ✅ Done |
+| P3-04 | `src/frontend/src/views/clinic/ClinicInventory.tsx` | ✅ Done |
+| P3-05 | `src/frontend/src/views/clinic/ClinicBilling.tsx` | ✅ Done |
 
 ---
 

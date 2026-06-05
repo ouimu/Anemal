@@ -165,8 +165,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <h1>🐾 VetClinic SaaS — Project Dashboard</h1>
   <div class="meta">
     <span>📅 5 June 2026</span>
-    <span>✅ Phase 2 Complete</span>
-    <span>🔖 v0.2.0</span>
+    <span>✅ Phase 3 Complete</span>
+    <span>🔖 v0.3.0</span>
   </div>
 </div>
 
@@ -321,19 +321,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
 
       <div class="phase-row">
-        <div class="phase-dot pending">3</div>
+        <div class="phase-dot done">3</div>
         <div class="phase-info" style="flex:1">
           <div class="phase-name">Phase 3 — Commercial &amp; Billing</div>
-          <div class="phase-desc">Inventory + Barcode Scan · POS/Billing · QR PromptPay · PDF Receipts · Revenue Reports · SaaS Subscriptions (Omise/Stripe)</div>
+          <div class="phase-desc">Inventory + stock ledger · POS/Billing · Revenue Reports · SaaS plan limits · (PDF/QR gateway/branch → Phase 4)</div>
           <div class="phase-tags">
-            <span class="tag" style="background:#f1f5f9;color:#64748b;border-color:#e2e8f0">⏳ Inventory</span>
-            <span class="tag" style="background:#f1f5f9;color:#64748b;border-color:#e2e8f0">⏳ Billing/POS</span>
-            <span class="tag" style="background:#f1f5f9;color:#64748b;border-color:#e2e8f0">⏳ QR Payment</span>
-            <span class="tag" style="background:#f1f5f9;color:#64748b;border-color:#e2e8f0">⏳ PDF Receipts</span>
+            <span class="tag" style="background:#dcfce7;color:#16a34a;border-color:#bbf7d0">✅ Inventory</span>
+            <span class="tag" style="background:#dcfce7;color:#16a34a;border-color:#bbf7d0">✅ Billing/POS</span>
+            <span class="tag" style="background:#dcfce7;color:#16a34a;border-color:#bbf7d0">✅ Reports</span>
+            <span class="tag" style="background:#dcfce7;color:#16a34a;border-color:#bbf7d0">✅ Subscription</span>
           </div>
           <div style="margin-top:8px">
-            <div class="prog-label"><span>Phase 3 completion</span><strong>0%</strong></div>
-            <div class="prog-track"><div class="prog-bar" style="width:0%;background:#94a3b8"></div></div>
+            <div class="prog-label"><span>Phase 3 completion</span><strong style="color:#16a34a">100% ✅</strong></div>
+            <div class="prog-track"><div class="prog-bar" style="width:100%;background:#16a34a"></div></div>
           </div>
         </div>
       </div>
@@ -366,19 +366,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="donut">
           <svg viewBox="0 0 80 80" width="80" height="80">
             <circle cx="40" cy="40" r="32" fill="none" stroke="#e2e8f0" stroke-width="10"/>
-            <!-- 50% of circumference (2πr=201): dashoffset = 201*(1-0.50) ≈ 100 -->
-            <circle cx="40" cy="40" r="32" fill="none" stroke="#0369a1" stroke-width="10"
-              stroke-dasharray="201" stroke-dashoffset="100" stroke-linecap="round"/>
+            <!-- 75% of circumference (2πr=201): dashoffset = 201*(1-0.75) ≈ 50 -->
+            <circle cx="40" cy="40" r="32" fill="none" stroke="#16a34a" stroke-width="10"
+              stroke-dasharray="201" stroke-dashoffset="50" stroke-linecap="round"/>
           </svg>
           <div class="donut-center">
-            <div class="donut-pct">50%</div>
+            <div class="donut-pct">75%</div>
             <div class="donut-label-sm">complete</div>
           </div>
         </div>
         <div class="donut-legend">
           <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>Phase 1 — ✅ Done (100%)</div>
           <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>Phase 2 — ✅ Done (100%)</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#e2e8f0"></div>Phase 3 — Pending</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>Phase 3 — ✅ Done (100%)</div>
           <div class="legend-item"><div class="legend-dot" style="background:#e2e8f0"></div>Phase 4 — Pending</div>
         </div>
       </div>
@@ -562,13 +562,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="phase-title-row">
           <div class="phase-badge badge-pending-b">3</div>
           <div>
-            <div class="phase-pname">Phase 3 — Commercial &amp; Billing <span class="chip chip-gray" style="margin-left:8px">Not Started</span></div>
-            <div class="phase-psub">Week 13–16 · Inventory, POS, PDF Receipts, PromptPay, Subscriptions</div>
+            <div class="phase-pname">Phase 3 — Commercial &amp; Billing <span class="chip chip-green" style="margin-left:8px">Complete</span></div>
+            <div class="phase-psub">Inventory + stock ledger · POS/Billing · Reports · SaaS plan limits · 131 tests</div>
           </div>
         </div>
         <div class="phase-progress-wrap">
-          <div class="mini-bar-track"><div class="mini-bar-fill fill-gray" style="width:0%"></div></div>
-          <div class="pct-label" style="color:var(--muted)">0%</div>
+          <div class="mini-bar-track"><div class="mini-bar-fill" style="width:100%;background:#16a34a"></div></div>
+          <div class="pct-label" style="color:#16a34a">100%</div>
           <span class="toggle-icon">▼</span>
         </div>
       </div>
@@ -831,19 +831,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <!-- ══ Next Steps ══════════════════════════════════════════════════════ -->
   <div class="col-12">
     <div class="card" style="border-left:4px solid #d97706">
-      <div class="card-title">Next Steps — Phase 3 Kickoff Checklist <span class="badge" style="background:var(--amber-l);color:var(--amber)">Commercial &amp; Billing</span></div>
+      <div class="card-title">Next Steps — Phase 4 Kickoff Checklist <span class="badge" style="background:var(--amber-l);color:var(--amber)">Advanced Operations &amp; Scaling</span></div>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 8px">Phase 3 ✅ done (131 tests). Start Phase 4 (`.claude/roadmap/phase4-tasks.md`) — the foundation work below was deferred from Phase 3 by scope decision.</p>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:8px;font-size:12px">
-        <label style="display:flex;align-items:center;gap:8px;min-height:32px"><input type="checkbox" style="width:14px;height:14px;accent-color:#d97706"/> Git tag <code>v0.2.0</code> — Phase 2 complete milestone</label>
-        <label style="display:flex;align-items:center;gap:8px;min-height:32px"><input type="checkbox" style="width:14px;height:14px;accent-color:#d97706"/> Implement Product CRUD API — <code>POST/GET/PUT /api/products</code></label>
-        <label style="display:flex;align-items:center;gap:8px;min-height:32px"><input type="checkbox" style="width:14px;height:14px;accent-color:#d97706"/> Stock-in endpoint: <code>POST /api/products/:id/stock-in</code> with lot no + expiry</label>
-        <label style="display:flex;align-items:center;gap:8px;min-height:32px"><input type="checkbox" style="width:14px;height:14px;accent-color:#d97706"/> Stock alerts API: <code>GET /api/products/alerts</code> (low stock + expiring within 30d)</label>
-        <label style="display:flex;align-items:center;gap:8px;min-height:32px"><input type="checkbox" style="width:14px;height:14px;accent-color:#d97706"/> Inventory UI — search bar, category filter, stock indicator, barcode scan (ZXing.js)</label>
-        <label style="display:flex;align-items:center;gap:8px;min-height:32px"><input type="checkbox" style="width:14px;height:14px;accent-color:#d97706"/> Invoice generation API: <code>POST /api/invoices</code> — auto-pull EMR items, VAT 7%</label>
-        <label style="display:flex;align-items:center;gap:8px;min-height:32px"><input type="checkbox" style="width:14px;height:14px;accent-color:#d97706"/> Payment recording: <code>PUT /api/invoices/:id/payment</code> (cash / QR / card)</label>
-        <label style="display:flex;align-items:center;gap:8px;min-height:32px"><input type="checkbox" style="width:14px;height:14px;accent-color:#d97706"/> PDF receipt generation (pdfkit) + email delivery</label>
-        <label style="display:flex;align-items:center;gap:8px;min-height:32px"><input type="checkbox" style="width:14px;height:14px;accent-color:#d97706"/> PromptPay QR full-screen payment screen (Tablet)</label>
-        <label style="display:flex;align-items:center;gap:8px;min-height:32px"><input type="checkbox" style="width:14px;height:14px;accent-color:#d97706"/> Revenue reports API (daily / monthly) + Recharts analytics dashboard</label>
-        <label style="display:flex;align-items:center;gap:8px;min-height:32px"><input type="checkbox" style="width:14px;height:14px;accent-color:#d97706"/> SaaS subscription plan enforcement + Omise/Stripe integration</label>
+        <label style="display:flex;align-items:center;gap:8px;min-height:32px"><input type="checkbox" style="width:14px;height:14px;accent-color:#d97706"/> Add <code>branch_id</code> to JWT + <code>Branch</code> model; migrate flat stock → <code>branch_inventory</code></label>
+        <label style="display:flex;align-items:center;gap:8px;min-height:32px"><input type="checkbox" style="width:14px;height:14px;accent-color:#d97706"/> Multi-branch inventory transfers (approve send/receive, dual stock movements)</label>
+        <label style="display:flex;align-items:center;gap:8px;min-height:32px"><input type="checkbox" style="width:14px;height:14px;accent-color:#d97706"/> PDF receipts (pdfkit) + email delivery; real PromptPay QR (node-qrcode/EMVCo)</label>
+        <label style="display:flex;align-items:center;gap:8px;min-height:32px"><input type="checkbox" style="width:14px;height:14px;accent-color:#d97706"/> Payment gateway (Omise/Stripe) + webhooks; camera barcode scanning (ZXing)</label>
+        <label style="display:flex;align-items:center;gap:8px;min-height:32px"><input type="checkbox" style="width:14px;height:14px;accent-color:#d97706"/> Hospitalization (cage board), Grooming scheduler, Blood Bank registry</label>
+        <label style="display:flex;align-items:center;gap:8px;min-height:32px"><input type="checkbox" style="width:14px;height:14px;accent-color:#d97706"/> Loyalty/points, Audit logs (write-once), login time-window restrictions</label>
+        <label style="display:flex;align-items:center;gap:8px;min-height:32px"><input type="checkbox" style="width:14px;height:14px;accent-color:#d97706"/> Full subscription billing tables + trial/expiry cron notifications</label>
       </div>
     </div>
   </div>

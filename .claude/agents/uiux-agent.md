@@ -123,8 +123,8 @@ Content area offset: `ml-56 pt-16` or `ml-14 pt-16`
 | Appointments | `.claude/specs/screen-specs/03-appointments.md` | Phase 2 |
 | Pet & Owner | `.claude/specs/screen-specs/04-pet-owner.md` | Phase 2 |
 | EMR | `.claude/specs/screen-specs/05-emr.md` | Phase 2 |
-| Inventory | `.claude/specs/screen-specs/06-inventory.md` | Phase 3 |
-| Billing/POS | `.claude/specs/screen-specs/07-billing-pos.md` | Phase 3 |
+| Inventory | `.claude/specs/screen-specs/06-inventory.md` | ✅ Done |
+| Billing/POS | `.claude/specs/screen-specs/07-billing-pos.md` | ✅ Done |
 | Admin | `.claude/specs/screen-specs/08-admin.md` | ✅ Done |
 
 ---

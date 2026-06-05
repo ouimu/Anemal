@@ -13,6 +13,10 @@ import appointmentRoutes from './routes/appointment.routes'
 import medicalRecordRoutes from './routes/medical-record.routes'
 import prescriptionRoutes from './routes/prescription.routes'
 import vaccinationRoutes from './routes/vaccination.routes'
+import productRoutes from './routes/product.routes'
+import invoiceRoutes from './routes/invoice.routes'
+import reportRoutes from './routes/report.routes'
+import subscriptionRoutes from './routes/subscription.routes'
 import { notFound, errorHandler } from './middlewares/error-handler.middleware'
 
 const app = express()
@@ -37,6 +41,10 @@ app.use('/api/appointments',appointmentRoutes)
 app.use('/api/medical-records', medicalRecordRoutes)
 app.use('/api/prescriptions',   prescriptionRoutes)
 app.use('/api/vaccinations',    vaccinationRoutes)
+app.use('/api/products',        productRoutes)
+app.use('/api/invoices',        invoiceRoutes)
+app.use('/api/reports',         reportRoutes)
+app.use('/api/subscription',    subscriptionRoutes)
 
 // 404 fallback + global error handler (must be last)
 app.use(notFound)

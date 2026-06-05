@@ -1,5 +1,8 @@
 # Session Summary — VetClinic SaaS
-> Last updated: 2026-06-03 | อ่านไฟล์นี้ก่อนเริ่ม session ใหม่ทุกครั้ง
+> Last updated: 2026-06-05 | อ่านไฟล์นี้ก่อนเริ่ม session ใหม่ทุกครั้ง
+>
+> **Status:** Phase 1 ✅ · Phase 2 ✅ · **Phase 3 ✅ (Inventory, Billing/POS, Reports, Subscription — 131 tests pass)** · Phase 4 ⏳ next
+> Dev DB: Docker `vetclinic-pg` (postgres:16). `cd src/backend && npm run db:migrate / db:seed / npm test`.
 
 ---
 
@@ -72,13 +75,11 @@
 
 ---
 
-## 🔜 Phase 3 — Commercial & Billing (ยังไม่เริ่ม)
+## ✅ Phase 3 — Commercial & Billing (เสร็จแล้ว)
 
-- Inventory: branch-level stock, barcode scanner (ZXing.js), auto-deduct on prescription
-- Billing: Invoice + PDF receipt (pdfkit/puppeteer), PromptPay QR, credit card
-- POS billing UI
-- Revenue reports
-- SaaS subscription management (payment gateway: Omise หรือ Stripe)
+**ทำแล้ว:** Inventory API `/api/products` (CRUD + stock-in + alerts + movements) + tenant-scoped `StockMovement` ledger; auto-deduct ตอนจ่ายยา; Billing `/api/invoices` (auto-pull จาก visit + retail deduction + `INV-YYYY-MM-NNNN` + VAT 7% + payment); Reports `/api/reports/*` + dashboard recharts; Subscription `/api/subscription/status` + 402 plan limit. UI: ClinicInventory, ClinicBilling (POS + print), dashboard charts, SubscriptionTab usage. 131 tests pass.
+
+**Deferred → Phase 4:** branch-level stock (`branch_inventory`) + transfers, barcode camera (ZXing), PDF receipt (pdfkit) + email, PromptPay QR จริง + Omise/Stripe gateway, subscription billing tables/cron.
 
 ---
 

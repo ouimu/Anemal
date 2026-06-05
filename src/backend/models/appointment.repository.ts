@@ -30,13 +30,14 @@ export function findById(tenantId: number, id: number) {
 
 // Overlap: existingStart < newEnd AND (existingStart + existingDuration) > newStart
 export async function countDoctorConflicts(tenantId: number, doctorId: number, start: Date, end: Date): Promise<number> {
+  // DB columns are camelCase (Prisma maps tables, not columns) — must be double-quoted in raw SQL.
   const rows = await prisma.$queryRaw<{ count: bigint }[]>`
     SELECT COUNT(*) as count FROM appointments
-    WHERE tenant_id = ${tenantId}
-      AND doctor_id = ${doctorId}
+    WHERE "tenantId" = ${tenantId}
+      AND "doctorId" = ${doctorId}
       AND status NOT IN ('cancelled', 'no_show')
-      AND scheduled_at < ${end}
-      AND scheduled_at + (duration_min * interval '1 minute') > ${start}
+      AND "scheduledAt" < ${end}
+      AND "scheduledAt" + ("durationMin" * interval '1 minute') > ${start}
   `
   return Number(rows[0]?.count ?? 0)
 }

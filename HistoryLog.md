@@ -2,6 +2,87 @@
 
 ---
 
+## 📅 Log Entry: 2026-06-05 — Phase 3 Commercial (Inventory, Billing/POS, Reports, Subscription)
+
+### 🎯 Motivation & Purpose
+Implement Phase 3 so a clinic can run commercially: manage inventory → auto-deduct on dispense → build invoices → take payment → view revenue, plus MVP SaaS plan enforcement. Built strictly on the existing layered architecture (CLAUDE.md).
+
+### 🧭 Scope decisions (locked with user)
+- **Inventory = flat tenant-scoped** (`InventoryItem.stockQuantity` kept) + new tenant-scoped `StockMovement` ledger. `branch_inventory`/`branch_id`-in-JWT deferred to **Phase 4**.
+- **Commercial integrations = lightweight**: browser-print receipt, placeholder PromptPay QR, manual payment confirm, manual barcode entry (no pdfkit / node-qrcode / camera / gateway).
+- **Subscription = MVP**: `planTier` + `GET /api/subscription/status` + 402 user-limit enforcement (no gateway).
+- **Analytics = recharts** revenue chart on the dashboard.
+
+### 📂 Files Changed
+| File | Action | Description |
+|---|---|---|
+| `src/backend/prisma/schema.prisma` | **MODIFIED** | New `StockMovement` model; `Invoice` gains `invoiceNo`(unique/tenant), `issuedAt`, `subtotal`, `discount`, `discountReason`, `taxRate`, `notes`, `createdBy`, `updatedAt`; `petId` optional; `PaymentStatus` += `refunded` |
+| `prisma/migrations/20260605142920_phase3_commercial/` | **NEW** | Forward migration for the above |
+| `src/backend/models/{product,invoice,report,subscription}.repository.ts` | **NEW** | Repository layer (tenant-scoped; raw SQL double-quotes camelCase columns) |
+| `src/backend/services/{product,invoice,report,subscription}.service.ts` | **NEW** | Business logic + co-located Zod schemas + `AppError` subclasses |
+| `src/backend/controllers/{product,invoice,report,subscription}.controller.ts` | **NEW** | Thin handlers |
+| `src/backend/routes/{product,invoice,report,subscription}.routes.ts` | **NEW** | Mounted `/api/products`, `/api/invoices`, `/api/reports`, `/api/subscription` in `app.ts` |
+| `src/backend/utils/errors.ts` | **MODIFIED** | `PaymentRequiredError` (402, `PLAN_LIMIT_REACHED`) |
+| `src/backend/services/user.service.ts` | **MODIFIED** | Enforce plan user-limit on create |
+| `src/backend/models/prescription.repository.ts` | **MODIFIED** | Dispense/restock now writes a `StockMovement` (Task 3.1.2) |
+| `src/backend/models/{prescription,appointment}.repository.ts` | **FIXED** | Raw SQL used snake_case columns that don't exist (DB columns are camelCase) — quoted to camelCase so stock-deduction & double-booking checks actually run |
+| `src/backend/prisma/seed.ts` | **MODIFIED** | 6 sample products for Tenant A |
+| `src/frontend/src/hooks/{useInventory,useInvoices,useReports,useSubscription}.ts` | **NEW** | React Query hooks |
+| `src/frontend/src/views/clinic/ClinicInventory.tsx` | **REPLACED** | Full inventory UI (stub → real) |
+| `src/frontend/src/views/clinic/ClinicBilling.tsx` | **REPLACED** | Full POS UI (stub → real) |
+| `src/frontend/src/views/clinic/ClinicDashboard.tsx` | **MODIFIED** | recharts revenue chart + inventory-alerts + revenue KPIs |
+| `src/frontend/src/views/admin/SubscriptionTab.tsx` | **MODIFIED** | Plan usage vs limit |
+| `src/frontend/{package.json,vite.config.ts,tsconfig.json}` | **MODIFIED** | recharts dep, `/api` proxy, `skipLibCheck` |
+| `.claude/specs/screen-specs/06-inventory.md`, `07-billing-pos.md` | **NEW** | Screen specs |
+| `src/backend/__tests__/{inventory,invoice,reports,subscription}.test.ts` | **NEW** | 27 tests (isolation + edge cases) |
+
+### 🐛 Notable finding (fixed)
+Prisma `@@map`s table names but **not column names** → DB columns are camelCase. Pre-existing Phase 2 raw SQL (prescription stock-deduct, appointment double-booking) used snake_case and silently failed against the real DB (no Phase 2 DB tests existed). All raw SQL now double-quotes camelCase columns and is covered by tests.
+
+### ✅ Verification
+- `prisma migrate deploy` applied `phase3_commercial`; `prisma generate` clean.
+- **131 backend tests pass** (104 prior + 27 new); backend `tsc` clean.
+- Frontend `tsc` + `vite build` clean (recharts lazy-loads with the dashboard chunk).
+- Seed adds 6 products; manual flow ready on dev-clinic.
+- ⚠️ `eslint` is not installed in either package (lint scripts exist but no binary) — pre-existing tooling gap, not a Phase 3 regression.
+
+---
+
+## 📅 Log Entry: 2026-06-05 — Bugfix: remember-me, invisible buttons, F5 logout
+
+### 🎯 Motivation & Purpose
+Three user-reported frontend defects: (1) "Remember me" did nothing, (2) several dark
+`bg-primary` buttons showed no label text, (3) pressing F5 bounced the user back to the
+login page instead of reloading the current page.
+
+### 🐞 Root Causes
+- **Auth was memory-only** — `authStore` (Zustand) had no persistence/rehydration, so on
+  refresh `token` was `null` and `ProtectedRoute` redirected to `/login` (#1, #3).
+- **Invalid Tailwind tokens** — Tailwind v3 `flattenColorPalette` generates nested color
+  keys as `text-{color}-on`. Clinic views/layouts used the non-existent prefix form
+  `text-on-primary` / `text-on-secondary(-container)` / `text-on-error-container` /
+  `text-on-primary-fixed`, which produced **no** CSS rule → text inherited dark
+  `on-surface` over black `bg-primary` = invisible (#2).
+
+### 📂 Files Changed
+
+| File Path | Action | Description |
+|---|---|---|
+| `src/frontend/src/store/authStore.ts` | **MODIFIED** | Persist auth to web storage + synchronous rehydrate on load. `setAuth(data, remember)`: remember→localStorage, else sessionStorage; `clearAuth` wipes both. Key `vc_auth`. |
+| `src/frontend/src/hooks/useAuth.ts` | **MODIFIED** | `LoginPayload` carries `remember`; stripped from POST body; `onSuccess` passes it to `setAuth`. |
+| `src/frontend/src/views/LoginView.tsx` | **MODIFIED** | `handleSubmit` now sends `{ ...form, remember }`. |
+| 11 view/layout files | **MODIFIED** | Renamed invalid `text-on-*` classes → valid `text-{color}-on(-container)`; `text-on-primary-fixed`→`text-on-surface`. (ClinicLayout, AdminLayout, TopNav, ClinicDashboard, ClinicAppointments, ClinicEMR, ClinicPets, ClinicProfileTab, ClinicSettingsTab, UserManagementTab, SubscriptionTab) |
+
+### ✅ Verification
+`tsc --noEmit` clean · `npm run build` ok · built CSS confirms `text-primary-on`→#fff,
+`text-secondary-on-container`→#00714e, and old `text-on-primary` emits 0 rules.
+
+### 🔐 Note
+Persisting a JWT in web storage carries XSS exposure — accepted per the explicit
+remember-me requirement; sessionStorage limits the window for the non-remember case.
+
+---
+
 ## 📅 Log Entry: 2026-06-05 — Compliance Audit vs CODING_RULES & Design Plan
 
 ### 🎯 Motivation & Purpose

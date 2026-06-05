@@ -5,6 +5,42 @@ Format: `[YYYY-MM-DD] Agent — Description`
 
 ---
 
+## [2026-06-05] — Phase 3: Commercial (Inventory, Billing/POS, Reports, Subscription)
+
+### NEW FILES
+| File | Agent | Description |
+|------|-------|-------------|
+| `src/backend/{models,services,controllers,routes}/product.*` | @dev-agent | Inventory API: `/api/products` CRUD + `stock-in` + `alerts` + `:id/movements` |
+| `src/backend/{models,services,controllers,routes}/invoice.*` | @dev-agent | Billing API: `/api/invoices` create (auto-pull from visit + retail stock deduction), `INV-YYYY-MM-NNNN`, payment |
+| `src/backend/{models,services,controllers,routes}/report.*` | @dev-agent | Reports API: revenue (daily/monthly), top-services, inventory-usage, snapshot |
+| `src/backend/{models,services,controllers,routes}/subscription.*` | @dev-agent | `/api/subscription/status` + plan limits |
+| `prisma/migrations/20260605142920_phase3_commercial/` | @db-agent | StockMovement + Invoice columns + petId optional + refunded status |
+| `src/frontend/src/hooks/{useInventory,useInvoices,useReports,useSubscription}.ts` | @dev-agent | React Query hooks |
+| `.claude/specs/screen-specs/06-inventory.md`, `07-billing-pos.md` | @uiux-agent | Screen specs |
+| `src/backend/__tests__/{inventory,invoice,reports,subscription}.test.ts` | @qa-agent | 27 tests (isolation + edge cases) |
+
+### MODIFIED FILES
+| File | Agent | Change |
+|------|-------|--------|
+| `prisma/schema.prisma` | @db-agent | `StockMovement` model; `Invoice` numbering/totals/discount/tax fields; `petId?`; `PaymentStatus += refunded` |
+| `src/backend/models/prescription.repository.ts` | @dev-agent | Logs `StockMovement` on dispense/restock; raw SQL → camelCase columns |
+| `src/backend/models/appointment.repository.ts` | @dev-agent | Double-booking raw SQL → camelCase columns (was non-functional) |
+| `src/backend/services/user.service.ts` + `utils/errors.ts` | @dev-agent | 402 plan user-limit enforcement |
+| `src/backend/prisma/seed.ts` | @db-agent | 6 sample products |
+| `src/frontend/src/views/clinic/ClinicInventory.tsx`, `ClinicBilling.tsx` | @dev-agent + @uiux-agent | Stubs → full inventory + POS UIs |
+| `src/frontend/src/views/clinic/ClinicDashboard.tsx` | @dev-agent | recharts revenue chart + inventory alerts + revenue KPIs |
+| `src/frontend/src/views/admin/SubscriptionTab.tsx` | @dev-agent | Plan usage vs limit |
+| `src/frontend/{package.json,vite.config.ts,tsconfig.json}` | @dev-agent | recharts; `/api` proxy; `skipLibCheck` |
+| `.claude/roadmap/phase3-tasks.md`, `design-alignment-plan.md`, `.claude/agents/uiux-agent.md`, `docs/*.html` | @pm-agent | Phase 3 status |
+
+### SCOPE
+Lightweight integrations (browser-print receipt, placeholder PromptPay QR, manual confirm); flat tenant-scoped inventory. **Deferred to Phase 4:** branch inventory/transfers, PDF + email receipts, real PromptPay/Omise/Stripe gateway, camera barcode, subscription billing tables.
+
+### VERIFICATION
+131 backend tests pass; FE+BE `tsc` clean; `vite build` clean; migration applied.
+
+---
+
 ## [2026-06-03] — DESIGN.md MCP Integration + Project Dashboard
 
 ### NEW FILES

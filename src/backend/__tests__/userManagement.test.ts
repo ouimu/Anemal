@@ -33,6 +33,11 @@ beforeAll(async () => {
   const tenant = await prisma.tenant.create({ data: { name: 'User Mgmt Test', subdomain: SUBDOMAIN } })
   tenantId = tenant.id
 
+  // Phase 3: user creation enforces the plan's user limit. These CRUD tests create
+  // many users, so put this tenant on an unlimited plan (limit behaviour is covered
+  // separately in subscription.test.ts).
+  await prisma.tenantSettings.create({ data: { tenantId, planTier: 'professional' } })
+
   const admin = await prisma.user.create({
     data: { tenantId, name: 'Test Admin', email: `admin-${ts}@users-test.local`, passwordHash: hash, role: 'admin' },
   })

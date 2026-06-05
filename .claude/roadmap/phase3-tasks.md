@@ -14,6 +14,21 @@
 
 ---
 
+## ✅ Status (2026-06-05) — IMPLEMENTED
+
+Phase 3 core delivered & green (131 backend tests pass, FE+BE tsc clean). Flat tenant-scoped
+inventory model (per decision); branch scoping stays Phase 4.
+
+**Done:**
+- **3.1 Inventory** — `Product` API (`/api/products` CRUD, `stock-in`, `alerts`, `:id/movements`), tenant-scoped `StockMovement` ledger, auto-deduct on prescription dispense (+restock on cancel). `ClinicInventory.tsx` (search/filter, KPI alerts, add/edit/stock-in modals).
+- **3.2 Billing/POS** — `Invoice` API (`/api/invoices` create + auto-pull from visit + retail stock deduction, `INV-YYYY-MM-NNNN`, payment), 7% VAT + discount. `ClinicBilling.tsx` POS (cart, cash change, payment methods, success modal, browser-print receipt).
+- **3.3 Reports** — `/api/reports/{revenue,top-services,inventory-usage,snapshot}`; dashboard revenue chart (recharts) + inventory-alerts + revenue KPIs.
+- **3.4 Subscription** — `/api/subscription/status` + plan user-limit enforcement (402) wired into user creation; `SubscriptionTab` shows usage vs limit.
+
+**Deferred to Phase 4** (per scope decision): camera barcode scanning, PDF receipts (pdfkit) + email send, real PromptPay QR (node-qrcode/EMVCo) & Omise/Stripe gateway + webhooks, per-branch `branch_inventory` + transfers, full subscription billing tables/cron.
+
+---
+
 ## Module 3.1: Inventory Management
 
 ### Task 3.1.1 — Inventory API
@@ -136,14 +151,17 @@
 
 ## Phase 3 Completion Checklist
 
-- [ ] ทดสอบ Full Flow: รับผู้ป่วย → EMR → จ่ายยา → ออกใบเสร็จ → รับชำระ QR
-- [ ] ทดสอบ Inventory: สต็อกตัดถูกต้องทุกกรณี
-- [ ] ทดสอบ PDF: ใบเสร็จออกมาถูกต้องตาม format
-- [ ] QA: ทดสอบ Billing edge cases (ยกเลิก invoice, refund)
-- [ ] Security: ทดสอบว่า invoice ข้าม tenant ไม่ได้
+- [x] Full Flow: รับผู้ป่วย → EMR → จ่ายยา (ตัดสต็อก+ledger) → ออกใบเสร็จ → รับชำระ → พิมพ์ใบเสร็จ
+- [x] Inventory: stock-in/auto-deduct/alerts ถูกต้อง (inventory.test — 10 cases)
+- [x] Billing: invoice generation, invoiceNo, retail deduction, payment (invoice.test — 9 cases)
+- [x] Reports: revenue/top-services/snapshot tenant-scoped (reports.test — 5 cases)
+- [x] Subscription: status + user-limit 402 (subscription.test — 3 cases)
+- [x] Security: cross-tenant 404 ทุก module (inventory/invoice/reports)
+- [ ] PDF receipt (deferred → Phase 4; Phase 3 uses browser-print)
+- [ ] QR PromptPay gateway + refund flow (deferred → Phase 4)
 
 ---
 
 **Previous:** [Phase 2](./phase2-tasks.md) | **Next:** [Phase 4 — Advanced Operations & Scaling](./phase4-tasks.md)
 
-*Last Updated: 2026-05-30*
+*Last Updated: 2026-06-05 — Phase 3 core COMPLETE (131 tests passing)*

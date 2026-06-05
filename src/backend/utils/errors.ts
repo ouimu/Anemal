@@ -44,3 +44,9 @@ export class ConflictError extends AppError {
     super(409, message, code)
   }
 }
+
+export class PaymentRequiredError extends AppError {
+  constructor(message = 'Plan limit reached', code = 'PLAN_LIMIT_REACHED') {
+    super(402, message, code)
+  }
+}

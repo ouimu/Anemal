@@ -1893,40 +1893,109 @@ npm run test:coverage</code></pre>
 <div class="page" id="page-howto">
   <h1>🚀 How to Run Locally (Windows)</h1>
 
-  <h2>Prerequisites</h2>
-  <ul>
-    <li>Node.js ≥ 20: <a href="https://nodejs.org" target="_blank">nodejs.org</a></li>
-    <li>PostgreSQL 16 locally <strong>or</strong> Docker Desktop</li>
-  </ul>
+  <div class="callout info"><span class="callout-icon">📋</span><span>This guide covers both <strong>Phase 1</strong> (already complete) and <strong>Phase 2</strong> (Core Clinic Operations) setup. Phase 2 adds S3 file uploads, LINE/SMS reminders, and new API modules.</span></div>
 
+  <!-- ── Prerequisites ── -->
+  <h2>Prerequisites</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Tool</th><th>Version</th><th>Required for</th></tr></thead>
+    <tbody>
+      <tr><td>Node.js</td><td>≥ 20</td><td>Phase 1 + 2</td></tr>
+      <tr><td>PostgreSQL</td><td>16 (local or Docker)</td><td>Phase 1 + 2</td></tr>
+      <tr><td>AWS Account</td><td>—</td><td>Phase 2 (S3 for photo/file uploads)</td></tr>
+      <tr><td>LINE Developer Account</td><td>—</td><td>Phase 2 (appointment reminders)</td></tr>
+      <tr><td>Twilio Account</td><td>—</td><td>Phase 2 (SMS fallback reminders)</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- ── Step 1 ── -->
   <h2>Step 1 — Start PostgreSQL</h2>
   <p><strong>Docker (easiest):</strong></p>
   <pre><code>docker run --name vetclinic-pg -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=vetclinic_dev -p 5432:5432 -d postgres:16</code></pre>
 
-  <h2>Step 2 — Configure .env</h2>
-  <p>The <code>.env</code> file must be inside <code>src\backend\</code> (where Prisma CLI is run from). A file is already provided — verify the values match your database:</p>
+  <!-- ── Step 2 ── -->
+  <h2>Step 2 — Configure .env (Phase 1 + Phase 2)</h2>
+  <p>The <code>.env</code> file must be inside <code>src\backend\</code>. Phase 2 adds S3, LINE, and Twilio variables:</p>
   <pre><code># File: src\backend\.env
+
+# ── Phase 1 (required) ──────────────────────────────────
 DATABASE_URL=postgresql://postgres:dev@localhost:5432/vetclinic_dev
 JWT_SECRET=vetclinic-dev-jwt-secret-change-in-prod-32chars
 JWT_EXPIRES_IN=8h
+REFRESH_TOKEN_EXPIRES_IN=30d
 PORT=4000
-NODE_ENV=development</code></pre>
-  <div class="callout warn"><span class="callout-icon">⚠️</span><span>Do <strong>not</strong> rely on a <code>.env</code> at the project root for Prisma commands — Prisma CLI reads from <code>src\backend\.env</code> (the directory you run it from).</span></div>
+NODE_ENV=development
 
-  <h2>Step 3 — Backend Setup</h2>
+# ── Phase 2 — File Upload (AWS S3) ──────────────────────
+AWS_REGION=ap-southeast-1
+AWS_ACCESS_KEY_ID=your-access-key-id
+AWS_SECRET_ACCESS_KEY=your-secret-access-key
+S3_BUCKET_NAME=vetclinic-dev-uploads
+S3_SIGNED_URL_EXPIRES=3600        # seconds
+
+# ── Phase 2 — LINE Messaging API ────────────────────────
+LINE_CHANNEL_ACCESS_TOKEN=your-line-channel-access-token
+LINE_CHANNEL_SECRET=your-line-channel-secret
+
+# ── Phase 2 — Twilio SMS (fallback) ─────────────────────
+TWILIO_ACCOUNT_SID=your-twilio-account-sid
+TWILIO_AUTH_TOKEN=your-twilio-auth-token
+TWILIO_PHONE_NUMBER=+66XXXXXXXXX
+
+# ── Phase 2 — Reminder Cron ─────────────────────────────
+REMINDER_CRON_SCHEDULE="0 8 * * *"   # Every day at 08:00
+REMINDER_DAYS_AHEAD=1</code></pre>
+  <div class="callout warn"><span class="callout-icon">⚠️</span><span>Prisma CLI reads from <code>src\backend\.env</code> — not the project root. Phase 2 env vars can be left blank during development; features that require them will log a warning but won't crash the server.</span></div>
+
+  <!-- ── Step 3 ── -->
+  <h2>Step 3 — Install Dependencies (Phase 2 adds new packages)</h2>
   <pre><code>cd src\backend
 npm install
-npm run db:generate
-npm run db:migrate
-npm run db:seed</code></pre>
-  <div class="callout ok"><span class="callout-icon">✅</span><span>Expected: 6 users seeded (admin/doctor/staff × 2 tenants)</span></div>
 
-  <h2>Step 4 — Run Tests</h2>
+# Phase 2 backend packages (if not already in package.json):
+npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
+npm install @line/bot-sdk twilio
+npm install node-cron multer</code></pre>
+  <pre><code>cd src\frontend
+npm install
+
+# Phase 2 frontend packages (if not already in package.json):
+npm install konva react-konva           # Anatomy canvas (EMR)
+npm install @zxing/library              # Barcode scanner (Inventory)
+npm install react-big-calendar dayjs    # Appointment calendar UI</code></pre>
+
+  <!-- ── Step 4 ── -->
+  <h2>Step 4 — Database Setup &amp; Migrations</h2>
   <pre><code>cd src\backend
-npm test</code></pre>
-  <p>Expected: <strong>104 tests pass across 10 test suites</strong> (requires DB + seed).</p>
+npm run db:generate     # Regenerate Prisma client
+npm run db:migrate      # Apply all migrations (Phase 1 + Phase 2 schema)
+npm run db:seed         # Seed dev data (2 tenants × admin + doctor + staff)</code></pre>
+  <div class="callout ok"><span class="callout-icon">✅</span><span>Expected: 6 users seeded across 2 tenants. Phase 2 tables (owners, pets, appointments, medical_records, vaccinations, prescriptions) are created by migration.</span></div>
+
+  <h3>Phase 2 Prisma Migrations</h3>
+  <p>Run these when adding Phase 2 modules (one migration per module is recommended):</p>
+  <pre><code># After adding Owner/Pet models:
+npx prisma migrate dev --name add-owners-pets
+
+# After adding Appointment model:
+npx prisma migrate dev --name add-appointments
+
+# After adding EMR / Medical Records:
+npx prisma migrate dev --name add-medical-records-prescriptions
+
+# After adding Vaccinations:
+npx prisma migrate dev --name add-vaccinations</code></pre>
+
+  <!-- ── Step 5 ── -->
+  <h2>Step 5 — Run Tests</h2>
+  <pre><code>cd src\backend
+npm test                              # All tests
+npx jest --testPathPattern="tests/unit"    # Unit only (no DB)
+npm run test:security                 # Tenant isolation suite</code></pre>
+
+  <h3>Phase 1 Test Suites (existing)</h3>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Suite</th><th>Tests</th><th>DB required?</th></tr></thead>
+    <thead><tr><th>Suite</th><th>Tests</th><th>DB?</th></tr></thead>
     <tbody>
       <tr><td><code>tests/unit/middlewares.test.ts</code></td><td>8</td><td>No</td></tr>
       <tr><td><code>tests/unit/authService.test.ts</code></td><td>5</td><td>No (mocked)</td></tr>
@@ -1936,25 +2005,77 @@ npm test</code></pre>
       <tr><td><code>__tests__/rbac.test.ts</code></td><td>17</td><td>Yes</td></tr>
       <tr><td><code>__tests__/multitenancy-isolation.test.ts</code></td><td>9</td><td>Yes</td></tr>
       <tr><td><code>__tests__/clinicUsage.test.ts</code></td><td>5</td><td>No (mocked)</td></tr>
-      <tr><td><code>tests/integration/auth.test.ts</code></td><td>6</td><td>Yes (seed required)</td></tr>
-      <tr><td><code>tests/integration/tenantIsolation.test.ts</code></td><td>6</td><td>Yes (seed required)</td></tr>
+      <tr><td><code>tests/integration/auth.test.ts</code></td><td>6</td><td>Yes</td></tr>
+      <tr><td><code>tests/integration/tenantIsolation.test.ts</code></td><td>6</td><td>Yes</td></tr>
     </tbody>
   </table></div>
-  <div class="callout ok"><span class="callout-icon">✅</span><span>To run only unit tests (no DB): <code>npx jest --testPathPattern="tests/unit"</code></span></div>
 
-  <h2>Step 5 — Start Backend</h2>
+  <h3>Phase 2 Test Suites (to be created)</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Suite</th><th>Key Assertions</th><th>Module</th></tr></thead>
+    <tbody>
+      <tr><td><code>__tests__/owners.test.ts</code></td><td>CRUD, duplicate phone → 409, tenant isolation</td><td>2.1</td></tr>
+      <tr><td><code>__tests__/pets.test.ts</code></td><td>CRUD, microchip unique, photo upload URL</td><td>2.1</td></tr>
+      <tr><td><code>__tests__/search.test.ts</code></td><td>Returns top 10, scoped to tenant, &lt;300ms</td><td>2.1</td></tr>
+      <tr><td><code>__tests__/appointments.test.ts</code></td><td>Double-booking → 409, status transitions, walk-in</td><td>2.2</td></tr>
+      <tr><td><code>__tests__/medicalRecords.test.ts</code></td><td>SOAP fields, lock on 'billed', attachment upload</td><td>2.3</td></tr>
+      <tr><td><code>__tests__/prescriptions.test.ts</code></td><td>Atomic stock deduction, over-stock → 400, cancel returns stock</td><td>2.3</td></tr>
+      <tr><td><code>__tests__/vaccinations.test.ts</code></td><td>Due-soon query, timeline order, tenant scope</td><td>2.4</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- ── Step 6 ── -->
+  <h2>Step 6 — Start Backend</h2>
   <pre><code>cd src\backend
 npm run dev      # API on http://localhost:4000</code></pre>
-  <pre><code># Test login
-curl -X POST http://localhost:4000/auth/login \
-  -H "Content-Type: application/json" \
-  -d "{\"subdomain\":\"dev-clinic\",\"email\":\"admin@dev-clinic.com\",\"password\":\"AdminPass1!\"}"</code></pre>
 
-  <h2>Step 6 — Start Frontend</h2>
+  <h3>Phase 2 — Quick API Smoke Tests</h3>
+  <pre><code># 1. Login first — save the token
+TOKEN=$(curl -s -X POST http://localhost:4000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"subdomain":"dev-clinic","email":"doctor@dev-clinic.com","password":"DoctorPass1!"}' \
+  | python -c "import sys,json; print(json.load(sys.stdin)['accessToken'])")
+
+# 2. Create an owner
+curl -X POST http://localhost:4000/api/owners \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"firstName":"สมชาย","lastName":"ใจดี","phone":"0812345678","email":"owner@test.com"}'
+
+# 3. Create a pet (replace OWNER_ID)
+curl -X POST http://localhost:4000/api/pets \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"ownerId":"OWNER_ID","name":"บัตเตอร์","species":"dog","breed":"Golden","gender":"male"}'
+
+# 4. Quick search
+curl "http://localhost:4000/api/search?q=บัตเตอร์" \
+  -H "Authorization: Bearer $TOKEN"
+
+# 5. Book an appointment (replace PET_ID and DOCTOR_ID)
+curl -X POST http://localhost:4000/api/appointments \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"petId":"PET_ID","doctorId":"DOCTOR_ID","appointmentDate":"2026-06-10T10:00:00Z","reason":"annual checkup"}'</code></pre>
+
+  <!-- ── Step 7 ── -->
+  <h2>Step 7 — Start Frontend</h2>
   <pre><code>cd src\frontend
 npm install
 npm run dev      # UI on http://localhost:5173</code></pre>
 
+  <h3>Phase 2 Frontend Routes</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Route</th><th>Component</th><th>Module</th></tr></thead>
+    <tbody>
+      <tr><td><code>/clinic/pets</code></td><td><code>ClinicPets.tsx</code></td><td>2.1 — Pet &amp; Owner list</td></tr>
+      <tr><td><code>/clinic/pets/:id</code></td><td><code>PetProfile.tsx</code></td><td>2.1 — Pet profile + vaccination timeline</td></tr>
+      <tr><td><code>/clinic/appointments</code></td><td><code>ClinicAppointments.tsx</code></td><td>2.2 — Calendar view</td></tr>
+      <tr><td><code>/clinic/emr/:id</code></td><td><code>ClinicEMR.tsx</code></td><td>2.3 — SOAP notes + anatomy canvas</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- ── Login Credentials ── -->
   <h2>Login Credentials</h2>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Role</th><th>Email</th><th>Password</th><th>Clinic ID</th></tr></thead>
@@ -1965,15 +2086,44 @@ npm run dev      # UI on http://localhost:5173</code></pre>
     </tbody>
   </table></div>
 
+  <!-- ── Phase 2 Demo Flow ── -->
+  <h2>Phase 2 Demo Flow (End-to-End)</h2>
+  <div class="callout ok"><span class="callout-icon">🎯</span><span>
+    <strong>Full Phase 2 walkthrough:</strong><br>
+    1. Login as <strong>doctor@dev-clinic.com</strong><br>
+    2. Register new owner + pet (with photo from camera on tablet)<br>
+    3. Book appointment from calendar<br>
+    4. Start EMR visit → fill SOAP note → annotate anatomy canvas<br>
+    5. Add prescription → confirm stock deducted<br>
+    6. Record vaccination → verify timeline in pet profile
+  </span></div>
+
+  <!-- ── Reminder Cron (Phase 2) ── -->
+  <h2>Phase 2 — Test Appointment Reminders</h2>
+  <pre><code># Trigger reminder job manually (without waiting for cron)
+curl -X POST http://localhost:4000/api/reminders/trigger \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# Check reminder log in DB
+# SELECT * FROM pet_reminders ORDER BY created_at DESC LIMIT 10;</code></pre>
+  <div class="callout info"><span class="callout-icon">💡</span><span>LINE reminders require a valid <code>LINE_CHANNEL_ACCESS_TOKEN</code> in <code>.env</code>. If not set, the cron job falls back to Twilio SMS. If neither is configured, it logs <code>"Reminder skipped — no channel configured"</code>.</span></div>
+
+  <!-- ── Troubleshooting ── -->
   <h2>Troubleshooting</h2>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Problem</th><th>Fix</th></tr></thead>
     <tbody>
-      <tr><td>Missing required env var: DATABASE_URL</td><td>Ensure <code>src\backend\.env</code> exists with a valid <code>DATABASE_URL</code> — Prisma reads from the directory you run it in, not the project root</td></tr>
+      <tr><td>Missing required env var: DATABASE_URL</td><td>Ensure <code>src\backend\.env</code> exists — Prisma reads from the directory you run it in</td></tr>
       <tr><td>Can't reach database server</td><td>Ensure PostgreSQL / Docker container is running</td></tr>
       <tr><td>P1003: Database does not exist</td><td>Create vetclinic_dev DB or fix DATABASE_URL</td></tr>
       <tr><td>Port 4000 in use</td><td>Set PORT=4001 in .env</td></tr>
-      <tr><td>Prisma errors after schema change</td><td>npm run db:generate then restart dev server</td></tr>
+      <tr><td>Prisma errors after schema change</td><td><code>npm run db:generate</code> then restart dev server</td></tr>
+      <tr><td>S3 upload fails — InvalidAccessKeyId</td><td>Check <code>AWS_ACCESS_KEY_ID</code> and <code>AWS_SECRET_ACCESS_KEY</code> in <code>.env</code></td></tr>
+      <tr><td>S3 upload fails — NoSuchBucket</td><td>Create the bucket in AWS Console or run <code>aws s3 mb s3://vetclinic-dev-uploads</code></td></tr>
+      <tr><td>LINE reminder not sent</td><td>Verify <code>LINE_CHANNEL_ACCESS_TOKEN</code> is valid and owner has <code>line_user_id</code> set</td></tr>
+      <tr><td>Twilio SMS error 21608</td><td>Trial account — verify the recipient number in Twilio Console first</td></tr>
+      <tr><td>Konva canvas not rendering</td><td>Ensure <code>konva</code> and <code>react-konva</code> are installed: <code>npm install konva react-konva</code></td></tr>
+      <tr><td>Barcode scanner not working</td><td>Browser must have camera permission; ensure HTTPS or localhost</td></tr>
     </tbody>
   </table></div>
 </div>
@@ -2416,6 +2566,40 @@ claude mcp list</code></pre>
 <div class="page" id="page-changelog">
   <h1>📋 Changelog</h1>
   <p style="color:var(--muted);font-size:13px;margin-bottom:20px">All changes recorded in reverse-chronological order.</p>
+
+  <h2>2026-06-05 — Phase 3 Commercial Complete</h2>
+  <div class="cl-entry new">
+    <div class="cl-date">2026-06-05</div>
+    <p><strong>Phase 3 implemented.</strong> 131 tests passing (104 prior + 27 new). Clinic can now manage inventory → auto-deduct on dispense → build invoices → take payment → print receipt → view revenue, plus MVP SaaS plan limits.</p>
+  </div>
+  <h3>📁 New Backend (vertical slices)</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Module</th><th>Endpoints</th></tr></thead>
+    <tbody>
+      <tr><td><code>product.*</code> (+ <code>StockMovement</code> ledger)</td><td><code>/api/products</code> CRUD · <code>/:id/stock-in</code> · <code>/alerts</code> · <code>/:id/movements</code></td></tr>
+      <tr><td><code>invoice.*</code></td><td><code>POST/GET /api/invoices</code> (auto-pull visit + retail stock deduction, <code>INV-YYYY-MM-NNNN</code>, VAT 7%) · <code>PUT /:id/payment</code></td></tr>
+      <tr><td><code>report.*</code></td><td><code>/api/reports/{revenue,top-services,inventory-usage,snapshot}</code></td></tr>
+      <tr><td><code>subscription.*</code></td><td><code>GET /api/subscription/status</code> + 402 plan user-limit on user creation</td></tr>
+    </tbody>
+  </table></div>
+  <h3>✏️ Frontend</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>File</th><th>Change</th></tr></thead>
+    <tbody>
+      <tr><td><code>views/clinic/ClinicInventory.tsx</code></td><td>Replaced — search/filter, KPI alerts, add/edit/stock-in modals</td></tr>
+      <tr><td><code>views/clinic/ClinicBilling.tsx</code></td><td>Replaced — POS cart, cash change, payment methods, success modal, browser-print receipt</td></tr>
+      <tr><td><code>views/clinic/ClinicDashboard.tsx</code></td><td>Modified — recharts revenue chart + inventory alerts + revenue KPIs</td></tr>
+      <tr><td><code>views/admin/SubscriptionTab.tsx</code></td><td>Modified — plan usage vs limit</td></tr>
+    </tbody>
+  </table></div>
+  <h3>🐛 Notable fix</h3>
+  <div class="cl-entry fix">
+    <div class="cl-date">2026-06-05</div>
+    <ul>
+      <li>Prisma maps table names but not columns → DB columns are camelCase; pre-existing Phase 2 raw SQL (prescription deduct, appointment double-booking) used snake_case and silently failed. All raw SQL now double-quotes camelCase columns and is test-covered.</li>
+    </ul>
+  </div>
+  <div class="callout info"><span class="callout-icon">➡️</span><span><strong>Next:</strong> Phase 4 — branch_id in JWT + branch_inventory, transfers, PDF/QR/gateway, inpatient/grooming/blood-bank/loyalty/audit. See <code>.claude/roadmap/phase4-tasks.md</code>.</span></div>
 
   <h2>2026-06-04 — Phase 2 Core Clinic Operations Complete</h2>
   <div class="cl-entry new">

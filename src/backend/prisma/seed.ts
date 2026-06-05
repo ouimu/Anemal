@@ -54,6 +54,24 @@ async function main() {
     console.log(`  ✓ ${u.role} — ${u.email}`)
   }
 
+  // Phase 3 — sample inventory for Tenant A (idempotent by name).
+  const soon = new Date(); soon.setDate(soon.getDate() + 20) // expiring-soon demo
+  const products = [
+    { name: 'Amoxicillin 250mg', category: 'Medicine',  unit: 'tablet', unitPrice: 12,  unitCost: 6,   stockQuantity: 200, minStockLevel: 50 },
+    { name: 'Apoquel 5.4mg',     category: 'Medicine',  unit: 'tablet', unitPrice: 30,  unitCost: 18,  stockQuantity: 120, minStockLevel: 20 },
+    { name: 'Rabies Vaccine',    category: 'Vaccine',   unit: 'vial',   unitPrice: 350, unitCost: 180, stockQuantity: 5,   minStockLevel: 10, expiryDate: soon },
+    { name: 'Surgical Gloves',   category: 'Supply',    unit: 'box',    unitPrice: 150, unitCost: 90,  stockQuantity: 8,   minStockLevel: 10 },
+    { name: 'Dog Shampoo',       category: 'Grooming',  unit: 'bottle', unitPrice: 220, unitCost: 110, stockQuantity: 40,  minStockLevel: 5 },
+    { name: 'Premium Cat Food',  category: 'Food',      unit: 'bag',    unitPrice: 600, unitCost: 420, stockQuantity: 25,  minStockLevel: 5 },
+  ]
+  for (const p of products) {
+    const existing = await prisma.inventoryItem.findFirst({ where: { tenantId: tenantA.id, name: p.name } })
+    if (!existing) {
+      await prisma.inventoryItem.create({ data: { tenantId: tenantA.id, ...p } })
+      console.log(`  ✓ product — ${p.name}`)
+    }
+  }
+
   console.log('✅ Seed complete.')
   console.log(`   Tenant A: ${tenantA.subdomain} (id: ${tenantA.id})`)
   console.log(`   Tenant B: ${tenantB.subdomain} (id: ${tenantB.id})`)

@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client'
 import { AppError } from '../utils/errors'
 import { config } from '../config/env'
 import * as userRepo from '../models/user.repository'
+import * as subscriptionService from './subscription.service'
 import type { CreateUserRequest, UpdateUserRequest, UserResponse } from '../types'
 
 function safe(user: {
@@ -27,6 +28,7 @@ export async function getUserById(tenantId: number, userId: number): Promise<Use
 }
 
 export async function createUser(tenantId: number, body: CreateUserRequest): Promise<UserResponse> {
+  await subscriptionService.assertCanAddUser(tenantId)
   const passwordHash = await bcrypt.hash(body.password, config.bcryptRounds)
   try {
     const user = await userRepo.createUser(tenantId, {
