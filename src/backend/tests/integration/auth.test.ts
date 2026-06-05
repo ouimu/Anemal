@@ -2,7 +2,7 @@
 // Uses supertest against the Express app; requires DATABASE_URL in .env.test
 import request from 'supertest'
 import { Server } from 'http'
-import app from '../../src/app'
+import app from '../../app'
 
 // NOTE: These tests assume the seed has been run (npm run db:seed)
 // Run with: DATABASE_URL=<test-db-url> npm test

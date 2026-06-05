@@ -13,11 +13,11 @@
  */
 import request from 'supertest'
 import { Server } from 'http'
-import app from '../src/app'
-import prisma from '../src/config/db'
+import app from '../app'
+import prisma from '../config/db'
 import bcrypt from 'bcrypt'
-import { signToken } from '../src/config/jwt'
-import { config } from '../src/config/env'
+import { signToken } from '../config/jwt'
+import { config } from '../config/env'
 import jwt from 'jsonwebtoken'
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────

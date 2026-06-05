@@ -1,20 +1,20 @@
 // @qa-agent — Unit tests: auth service
 // Tests run against a mocked Prisma client; no DB required
 import bcrypt from 'bcrypt'
-import { login } from '../../src/services/auth.service'
+import { login } from '../../services/auth.service'
 
-jest.mock('../../src/config/db', () => ({
+jest.mock('../../config/db', () => ({
   __esModule: true,
   default: {
     tenant: { findUnique: jest.fn() },
     user:   { findUnique: jest.fn() },
   },
 }))
-jest.mock('../../src/config/jwt', () => ({
+jest.mock('../../config/jwt', () => ({
   signToken: jest.fn().mockReturnValue('mock.jwt.token'),
 }))
 
-import prisma from '../../src/config/db'
+import prisma from '../../config/db'
 
 const mockTenant = { id: 1, subdomain: 'dev-clinic', isActive: true }
 

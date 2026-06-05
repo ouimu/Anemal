@@ -1,8 +1,8 @@
 import dotenv from 'dotenv'
 import path from 'path'
 
-// Load .env from project root (two levels above src/backend/)
-dotenv.config({ path: path.resolve(__dirname, '../../../../.env') })
+// Load .env from project root (resolved relative to src/backend/config/)
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') })
 
 function required(key: string): string {
   const val = process.env[key]

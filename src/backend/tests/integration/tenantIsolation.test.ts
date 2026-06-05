@@ -4,7 +4,7 @@
 
 import request from 'supertest'
 import { Server } from 'http'
-import app from '../../src/app'
+import app from '../../app'
 
 let server: Server
 

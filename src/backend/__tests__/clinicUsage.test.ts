@@ -23,7 +23,7 @@ beforeAll(async () => {
     },
   }))
 
-  jest.doMock('../src/services/usage.service', () => ({
+  jest.doMock('../services/usage.service', () => ({
     getClinicSummary: jest.fn().mockResolvedValue({
       appointmentsToday:     3,
       appointmentsThisMonth: 12,
@@ -34,9 +34,9 @@ beforeAll(async () => {
   }))
 
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const app: Express = require('../src/app').default
+  const app: Express = require('../app').default
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  signToken = require('../src/config/jwt').signToken
+  signToken = require('../config/jwt').signToken
 
   await new Promise<void>(resolve => {
     server = (app as any).listen(0, resolve)

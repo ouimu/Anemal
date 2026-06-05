@@ -9,9 +9,9 @@
  */
 import request from 'supertest'
 import { Server } from 'http'
-import app from '../src/app'
-import prisma from '../src/config/db'
-import { signToken } from '../src/config/jwt'
+import app from '../app'
+import prisma from '../config/db'
+import { signToken } from '../config/jwt'
 import bcrypt from 'bcrypt'
 
 // ── Fixture IDs ───────────────────────────────────────────────────────────────
@@ -131,7 +131,7 @@ describe('iso-1.1 — Cross-tenant REST isolation', () => {
   test('iso-07: Request with expired token → 401', async () => {
     // Type: security
     const { default: jwt } = await import('jsonwebtoken')
-    const { config } = await import('../src/config/env')
+    const { config } = await import('../config/env')
     const expiredToken = jwt.sign(
       { userId: uidA, tenantId: tidA, role: 'admin' },
       config.jwtSecret,

@@ -8,10 +8,10 @@
  */
 import request from 'supertest'
 import { Server } from 'http'
-import app from '../src/app'
-import prisma from '../src/config/db'
+import app from '../app'
+import prisma from '../config/db'
 import bcrypt from 'bcrypt'
-import { signToken } from '../src/config/jwt'
+import { signToken } from '../config/jwt'
 
 // ── Fixture ───────────────────────────────────────────────────────────────────
 let server: Server
