@@ -14,21 +14,26 @@ Validate all development to date against `.claude/specs/CODING_RULES.md` and `de
 | `src/frontend/src/views/admin/AdminUsage.tsx` | **MODIFIED** | Replaced emoji KPI icons (🐾👤📅💳) with `MaterialIcon` — fixes CODING_RULES §10 / design-plan rule 3 (Material Symbols only, no emoji) |
 | `src/frontend/src/views/clinic/ClinicEMR.tsx` | **MODIFIED** | Removed decorative emoji from `TEMPLATES`; hoisted raw canvas pen hexes into documented `PEN_COLORS` constant (canvas needs literal colors) — fixes raw-hex-in-JSX flag |
 
-### 🔁 Refactor Progress (branch `refactor/coding-rules-alignment`, remote: ouimu/AnimalClinic)
-- Git initialised + pushed to private GitHub repo (baseline `8e628fa` on `main`).
-- `2c32fe3` — removed dead code (deviation #7): unused frontend views/components, backend re-export stubs, empty dirs, old SQL migrator.
-- `d5f3c7b` — error/logging foundation (deviations #5): `utils/errors.ts` (AppError + subclasses), `utils/logger.ts`, `middlewares/errorHandler.ts` wired into `app.ts`; `server.ts` console.log→logger + process handlers.
-- All steps: 104 tests green, tsc clean.
+### 🔁 Refactor — COMPLETE (branch `refactor/coding-rules-alignment` → remote `ouimu/AnimalClinic`, private)
+Git initialised + pushed; baseline `8e628fa` on `main`. All 8 deviations resolved; every step kept 104 backend tests green + tsc clean (backend **and** frontend now type-clean).
 
-### ⚠️ Remaining Deviations (NOT auto-fixed — need direction; large/risky)
-1. **Backend dir layout** — code lives in `src/backend/src/{...}`; CODING_RULES §1 specifies `src/backend/{...}`. Plus dead re-export stubs at `src/backend/{config,middlewares}` and empty `controllers/routes/services` dirs.
-2. **File naming** — backend uses `camelCase` (`authMiddleware.ts`, `ownerService.ts`); rules mandate kebab + layer suffix (`auth.middleware.ts`, `owner.service.ts`).
-3. **No Repository layer** — all 11 services call Prisma directly; CODING_RULES §2/§11 require a repository layer.
-4. **Validation** — Zod is inline in controllers; rules require a shared `validate()` middleware + `src/shared/schemas/`.
-5. **Errors/logging** — no typed `AppError`/global handler util; no pino/winston; `console.log` in `server.ts`.
-6. **tsconfig** — missing `noUnusedLocals`/`noUnusedParameters` (CODING_RULES §3).
-7. **Dead code** — `views/AppShell.tsx`, `views/DashboardView.tsx`, `views/admin/AdminView.tsx`, `components/Sidebar.tsx` (self-labelled legacy) are unreferenced.
-8. **Frontend tokens** — admin views use non-token utilities (`bg-gray-*`, `bg-amber-400`, `bg-green-500`) instead of design tokens (CODING_RULES §10).
+| Commit | Deviation | What |
+|---|---|---|
+| `2c32fe3` | #7 | Removed dead code: unused FE views/components, BE re-export stubs, empty dirs, old SQL migrator |
+| `d5f3c7b` | #5 | `utils/errors.ts` (AppError + subclasses), `utils/logger.ts`, global `error-handler` middleware; `server.ts` console.log→logger |
+| `22b316a` | #6 | Enabled `noUnusedLocals`/`noUnusedParameters`; fixed fallout |
+| `8e29bf8` | #6 | Reparented 8 service error classes onto `AppError` |
+| `a11cbf2` | #5 | `validate()` middleware wired into every POST/PUT route; controllers read validated `req.body` + `next(err)`; `.strict()` schemas |
+| `8acd8b0`·`34dff52`·`71e3661`·`d78afaa` | #3 | Repository layer for all 11 services — services are now Prisma-free; raw SQL + transactions live in `models/*.repository.ts` |
+| `9b3b7da` | #8 | Tokenized admin views (no raw gray/red/green/blue/amber/white utilities) |
+| `4ae73ec` | #2 | Renamed BE files to `kebab.layer.ts`; updated all imports |
+| `318eb30` | #1 | Flattened `src/backend/src/*` → `src/backend/*` to match §1 exactly |
+| `38b8944` | §13 | Removed unused FE imports — frontend tsc now passes clean |
+
+#### Notes / intentionally not changed
+- **Shared schemas** (§5 `src/shared/schemas/`): request schemas are validated via the new `validate()` middleware but kept co-located with their service/controller. A true cross-package `src/shared/` requires a workspace/monorepo build setup (separate FE/BE `tsconfig`/Vite); deferred to avoid destabilising the build with no test coverage to catch regressions.
+- **Test layout**: tests remain under `tests/` + `__tests__/` (not co-located `*.test.ts`); jest config drives this. Left as-is.
+- Canvas pen hexes in `ClinicEMR.tsx` kept as a documented `PEN_COLORS` constant (canvas APIs need literal color values).
 
 ---
 
