@@ -1,5 +1,4 @@
 // Subscription & tenant info — multi-tenant expansion panel
-import React from 'react'
 import { useAdminSettings } from '../../hooks/useAdmin'
 
 const PLANS = [

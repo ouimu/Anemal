@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import { useLogin } from '../hooks/useAuth'
 import { useAuthStore } from '../store/authStore'
 import { Navigate } from 'react-router-dom'
-import MaterialIcon from '../components/MaterialIcon'
 
 export default function LoginView() {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated())

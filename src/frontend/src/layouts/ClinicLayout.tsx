@@ -1,5 +1,4 @@
 // Doctor/Staff shell — redirects admins to /admin/dashboard
-import React from 'react'
 import { NavLink, Outlet, Navigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { useLogout } from '../hooks/useAuth'

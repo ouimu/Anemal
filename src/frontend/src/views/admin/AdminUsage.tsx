@@ -1,4 +1,3 @@
-import React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import api from '../../utils/api'
 import { useAdminSettings } from '../../hooks/useAdmin'

@@ -1,6 +1,6 @@
 // @uiux-agent spec: logo upload zone, clinic identity fields, save inline
 import React, { useState, useEffect, useRef } from 'react'
-import { useAdminSettings, useUpdateSettings, TenantSettings } from '../../hooks/useAdmin'
+import { useAdminSettings, useUpdateSettings } from '../../hooks/useAdmin'
 
 export default function ClinicProfileTab() {
   const { data, isLoading } = useAdminSettings()
