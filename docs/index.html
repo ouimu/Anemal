@@ -2093,6 +2093,15 @@ npm run dev      # UI on http://localhost:5173</code></pre>
 
   <!-- ── Login Credentials ── -->
   <h2>Login Credentials</h2>
+  <div class="callout warn"><span class="callout-icon">🔑</span><span>
+    <strong>The “Clinic ID” field is required.</strong> It is case-sensitive and must exactly match the
+    tenant subdomain (e.g. <code>dev-clinic</code>). An empty or wrong Clinic ID makes <em>every</em> login —
+    admin, doctor <strong>and staff</strong> — fail with <code>Invalid credentials. Please try again.</code>
+    On <code>localhost</code> the Clinic ID now auto-fills to <code>dev-clinic</code>; on a real subdomain
+    (<code>dev-clinic.vetclinic.app</code>) it is detected automatically. Passwords are case-sensitive too.
+  </span></div>
+
+  <h3>Dev Clinic — <code>dev-clinic</code> (primary)</h3>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Role</th><th>Email</th><th>Password</th><th>Clinic ID</th></tr></thead>
     <tbody>
@@ -2101,6 +2110,19 @@ npm run dev      # UI on http://localhost:5173</code></pre>
       <tr><td>Staff</td><td>staff@dev-clinic.com</td><td>StaffPass1!</td><td>dev-clinic</td></tr>
     </tbody>
   </table></div>
+
+  <h3>Test Clinic — <code>test-clinic</code> (isolation testing)</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Role</th><th>Email</th><th>Password</th><th>Clinic ID</th></tr></thead>
+    <tbody>
+      <tr><td>Admin</td><td>admin@test-clinic.com</td><td>AdminPass2!</td><td>test-clinic</td></tr>
+      <tr><td>Doctor</td><td>doctor@test-clinic.com</td><td>DoctorPass2!</td><td>test-clinic</td></tr>
+      <tr><td>Staff</td><td>staff@test-clinic.com</td><td>StaffPass2!</td><td>test-clinic</td></tr>
+    </tbody>
+  </table></div>
+  <p style="color:#45464d;font-size:14px">⚠️ Note the <strong>different password suffix</strong>: <code>dev-clinic</code> uses
+    <code>…Pass1!</code>, <code>test-clinic</code> uses <code>…Pass2!</code>. Using a <code>test-clinic</code>
+    password against <code>dev-clinic</code> (or vice-versa) is a common cause of “Invalid credentials”.</p>
 
   <!-- ── Phase 2 Demo Flow ── -->
   <h2>Phase 2 Demo Flow (End-to-End)</h2>

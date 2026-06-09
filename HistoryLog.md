@@ -2,6 +2,17 @@
 
 ---
 
+## 📅 Log Entry: 2026-06-09 — Login "Invalid credentials" diagnosis + Clinic ID auto-fill fix
+
+### 🎯 Root cause
+Staff (and in fact any role) login failed with *"Invalid credentials"* when the **Clinic ID** field was empty. On `localhost` the subdomain auto-detect needs a 3-part hostname (e.g. `dev-clinic.vetclinic.app`) and otherwise left the field blank → tenant lookup fails → 401. The seed, password hashes, and backend auth were all verified correct (live login of `staff@dev-clinic.com` / `StaffPass1!` returns a valid token).
+
+### 🔧 Fix
+- `src/frontend/src/views/LoginView.tsx` — Clinic ID now defaults to `dev-clinic` on `localhost`/`127.0.0.1` so dev logins don't fail on an empty tenant field. Verified end-to-end in browser preview: staff login → redirect to `/clinic/dashboard`.
+- `docs/index.html` + `HOW-TO-RUN.md` — clarified Clinic ID requirement, added both `dev-clinic` (`Pass1!`) and `test-clinic` (`Pass2!`) credential tables with a warning about the suffix difference.
+
+---
+
 ## 📅 Log Entry: 2026-06-09 — Phase 4 Frontend Session A
 
 ### 🎯 Summary

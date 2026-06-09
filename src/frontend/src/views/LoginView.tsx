@@ -8,8 +8,14 @@ export default function LoginView() {
   const role = useAuthStore(s => s.role)
 
   const detectedSubdomain = (() => {
-    const parts = window.location.hostname.split('.')
-    return parts.length >= 3 ? parts[0] : ''
+    const host = window.location.hostname
+    const parts = host.split('.')
+    if (parts.length >= 3) return parts[0]
+    // Dev convenience: subdomain can't be derived from localhost/127.0.0.1,
+    // so default to the seeded dev tenant instead of leaving an empty Clinic ID
+    // (an empty Clinic ID makes every login fail with "Invalid credentials").
+    if (host === 'localhost' || host === '127.0.0.1') return 'dev-clinic'
+    return ''
   })()
 
   const [form, setForm]       = useState({ subdomain: detectedSubdomain, email: '', password: '' })

@@ -117,12 +117,24 @@ npm run dev
 Frontend running at: `http://localhost:5173`
 
 **Login credentials:**
+
+> 🔑 **The "Clinic ID" field is required and case-sensitive.** It must match the tenant subdomain exactly.
+> An empty/wrong Clinic ID makes **every** login (admin, doctor, and staff) fail with *"Invalid credentials. Please try again."*
+> On `localhost` the Clinic ID now auto-fills to `dev-clinic`; just type it manually if it's blank.
+
+**Dev Clinic — Clinic ID `dev-clinic`:**
 | Role | Email | Password |
 |------|-------|----------|
 | Admin | admin@dev-clinic.com | AdminPass1! |
 | Doctor | doctor@dev-clinic.com | DoctorPass1! |
 | Staff | staff@dev-clinic.com | StaffPass1! |
-| Clinic ID | dev-clinic | |
+
+**Test Clinic — Clinic ID `test-clinic`** (isolation testing; note the `Pass2!` suffix):
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@test-clinic.com | AdminPass2! |
+| Doctor | doctor@test-clinic.com | DoctorPass2! |
+| Staff | staff@test-clinic.com | StaffPass2! |
 
 ---
 
