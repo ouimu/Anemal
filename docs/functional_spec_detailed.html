@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>VetCare SaaS — Detailed Functional Specification</title>
+<title>Anemal SaaS — Detailed Functional Specification</title>
 <style>
 :root {
   --brand:       #0369a1;
@@ -128,7 +128,7 @@ tr:hover td{background:#f8fafc}
 <!-- Sidebar -->
 <nav id="sidebar">
   <div id="sid-header">
-    <h1>VetCare SaaS</h1>
+    <h1>Anemal SaaS</h1>
     <p>Functional Specification v2.0</p>
   </div>
   <div class="nav-group">
@@ -179,7 +179,7 @@ tr:hover td{background:#f8fafc}
 <!-- Main -->
 <div id="main">
   <div id="topbar">
-    <h2 id="current-section-title">VetCare SaaS — Detailed Functional Specification</h2>
+    <h2 id="current-section-title">Anemal SaaS — Detailed Functional Specification</h2>
     <span class="badge-phase ph-complete">Phase 1–3 Complete</span>
     <span class="badge-phase ph-planned">Phase 4 Planned</span>
   </div>
@@ -187,7 +187,7 @@ tr:hover td{background:#f8fafc}
 
     <!-- ═══════════════════════════════════════════════════════════ -->
     <section id="overview">
-    <h1>VetCare SaaS — Detailed Functional Specification</h1>
+    <h1>Anemal SaaS — Detailed Functional Specification</h1>
     <p><strong>Version:</strong> 1.1 &nbsp;|&nbsp; <strong>Date:</strong> 2026-06-05 &nbsp;|&nbsp; <strong>Status:</strong> Phase 3 Complete / Phase 4 Planned</p>
 
     <div class="toc">
@@ -221,7 +221,7 @@ tr:hover td{background:#f8fafc}
     </div>
 
     <h3 class="section">System Overview</h3>
-    <p>VetCare SaaS is a <strong>multi-tenant Software-as-a-Service</strong> platform for veterinary clinics. It supports both <strong>Web browser</strong> (reception counter) and <strong>Tablet</strong> (touch-first, consultation room) clients, with full multi-branch capability under a single subscription.</p>
+    <p>Anemal SaaS is a <strong>multi-tenant Software-as-a-Service</strong> platform for veterinary clinics. It supports both <strong>Web browser</strong> (reception counter) and <strong>Tablet</strong> (touch-first, consultation room) clients, with full multi-branch capability under a single subscription.</p>
 
     <h4 class="subsection">User Roles</h4>
     <div class="tbl-wrap"><table>
@@ -304,7 +304,7 @@ tr:hover td{background:#f8fafc}
       <strong>MUST</strong> include <code>WHERE tenant_id = :currentTenantId</code>. Enforced at three levels:
       database RLS policies, Express middleware (sets <code>app.current_tenant_id</code>), and explicit <code>tenantId</code> parameter in all repository functions.
     </div>
-    <p>VetCare uses a <strong>Shared Database, Shared Schema</strong> model. Each tenant is identified by a unique subdomain (<code>abc-clinic.vetcare.app</code>) resolved at the API gateway.</p>
+    <p>Anemal uses a <strong>Shared Database, Shared Schema</strong> model. Each tenant is identified by a unique subdomain (<code>abc-clinic.anemal.app</code>) resolved at the API gateway.</p>
     </section>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
@@ -320,7 +320,7 @@ tr:hover td{background:#f8fafc}
       <tr><td>S3</td><td>Object storage</td><td>Pet photos, lab results, DICOM files</td></tr>
       <tr><td>CloudFront</td><td>CDN</td><td>Frontend asset delivery, edge caching</td></tr>
       <tr><td>Route 53</td><td>DNS</td><td>Wildcard subdomain routing per tenant</td></tr>
-      <tr><td>ACM</td><td>TLS certificates</td><td>Wildcard <code>*.vetcare.app</code></td></tr>
+      <tr><td>ACM</td><td>TLS certificates</td><td>Wildcard <code>*.anemal.app</code></td></tr>
       <tr><td>CloudWatch</td><td>Logs &amp; Metrics</td><td>Application monitoring, alerting</td></tr>
       <tr><td>ECR</td><td>Container registry</td><td>Docker image storage</td></tr>
       <tr><td>Secrets Manager</td><td>Secrets</td><td>DB credentials, JWT keys, API keys</td></tr>
@@ -348,12 +348,12 @@ tr:hover td{background:#f8fafc}
 
     <h3 class="section">Tenant Onboarding</h3>
     <ol class="flow-steps">
-      <li>Clinic registers at <code>vetcare.app/signup</code> with clinic name, email, desired subdomain</li>
+      <li>Clinic registers at <code>anemal.app/signup</code> with clinic name, email, desired subdomain</li>
       <li>System validates subdomain uniqueness (3–50 alphanumeric chars)</li>
       <li>Atomic transaction: create <code>tenants</code> + first <code>users</code> record (role: admin)</li>
       <li>Trial period set: <code>trial_ends_at = NOW() + 30 days</code></li>
       <li>Welcome email dispatched via SendGrid</li>
-      <li>Clinic admin logs in at <code>&lt;subdomain&gt;.vetcare.app</code></li>
+      <li>Clinic admin logs in at <code>&lt;subdomain&gt;.anemal.app</code></li>
     </ol>
 
     <h3 class="section">Subscription Plans</h3>
@@ -391,7 +391,7 @@ tr:hover td{background:#f8fafc}
 
       <h4 class="subsection">Process Flow</h4>
       <ol class="flow-steps">
-        <li>User navigates to <code>&lt;subdomain&gt;.vetcare.app</code></li>
+        <li>User navigates to <code>&lt;subdomain&gt;.anemal.app</code></li>
         <li>System extracts tenant from subdomain, validates tenant is active</li>
         <li>User submits email + password</li>
         <li>Server validates credentials (bcrypt compare)</li>
@@ -491,7 +491,7 @@ tr:hover td{background:#f8fafc}
       <h4 class="subsection">Functional Requirements</h4>
       <div class="tbl-wrap"><table>
         <tr><th>ID</th><th>Requirement</th><th>Priority</th></tr>
-        <tr><td>FR-02-01</td><td>Each clinic has a unique subdomain (e.g., <code>abc-clinic.vetcare.app</code>)</td><td><span class="must">MUST</span></td></tr>
+        <tr><td>FR-02-01</td><td>Each clinic has a unique subdomain (e.g., <code>abc-clinic.anemal.app</code>)</td><td><span class="must">MUST</span></td></tr>
         <tr><td>FR-02-02</td><td>Every table row isolated by <code>tenant_id</code>; RLS enforced at DB layer</td><td><span class="must">MUST</span></td></tr>
         <tr><td>FR-02-03</td><td>No user can see another clinic's data under any circumstances</td><td><span class="must">MUST</span></td></tr>
         <tr><td>FR-02-04</td><td>Multi-branch under one tenant; transactions isolated by <code>branch_id</code></td><td><span class="must">MUST</span></td></tr>
@@ -1258,7 +1258,7 @@ app.use(async (req, res, next) => {
 });</pre>
 
     <div style="margin-top:40px;padding:20px;background:#f1f5f9;border-radius:8px;font-size:13px;color:var(--muted);text-align:center">
-      <strong>VetCare SaaS Functional Specification v2.0</strong> · Generated 2026-06-05 · Confidential<br>
+      <strong>Anemal SaaS Functional Specification v2.0</strong> · Generated 2026-06-05 · Confidential<br>
       LaTeX source: <code>docs/vetcare_functional_spec.tex</code> · Compile with <code>pdflatex</code>
     </div>
     </section>

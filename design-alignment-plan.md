@@ -8,7 +8,7 @@
 
 ## 1. Objective
 
-Align every layer of the VetClinic SaaS codebase — design tokens, component library, screen implementations, agent instructions, and phase roadmaps — with the **Compassionate Care System** design language from Stitch. The Stitch folder is the single source of truth for visual output. Nothing in that folder is modified.
+Align every layer of the Anemal codebase — design tokens, component library, screen implementations, agent instructions, and phase roadmaps — with the **Compassionate Care System** design language from Stitch. The Stitch folder is the single source of truth for visual output. Nothing in that folder is modified.
 
 ---
 
@@ -165,7 +165,7 @@ bg: bg-surface  shadow-sm
 flex: flex-col py-lg
 
 HEADER (px-lg mb-xl):
-  "VetClinic Pro"  — font-headline-sm text-primary font-bold
+  "Anemal"  — font-headline-sm text-primary font-bold
   Branch name      — font-label-md text-on-surface-variant
 
 NAV (flex-grow, space-y-xs):
@@ -232,7 +232,7 @@ Full-screen flex min-h-screen
     max-w container inner: w-full max-w-sm
     Branding:
       pets icon (FILL=1) in bg-primary-container rounded-lg w-10 h-10
-      "VetClinic Pro" font-headline-sm font-bold text-primary
+      "Anemal" font-headline-sm font-bold text-primary
     H1 "Welcome back" font-headline-lg text-on-surface
     Subtitle text-on-surface-variant font-body-md
     Form (space-y-lg):

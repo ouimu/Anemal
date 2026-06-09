@@ -3,7 +3,7 @@
 
 $root = "D:\Development\AnimalClinic"
 
-Write-Host "`n=== VetClinic Cleanup Remnants ===" -ForegroundColor Cyan
+Write-Host "`n=== Anemal Cleanup Remnants ===" -ForegroundColor Cyan
 
 # 1. Remove old 'claude\' folder (superseded by '.claude\')
 $oldClaude = "$root\claude"

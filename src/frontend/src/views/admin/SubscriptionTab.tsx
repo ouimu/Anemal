@@ -51,7 +51,7 @@ export default function SubscriptionTab() {
         <div className="bg-surface border border-outline-variant rounded-xl divide-y divide-outline-variant">
           {[
             { label: 'Clinic name',  value: data?.tenant.name ?? '—' },
-            { label: 'Subdomain',    value: `${data?.tenant.subdomain ?? ''}.vetclinic.app` },
+            { label: 'Subdomain',    value: `${data?.tenant.subdomain ?? ''}.anemal.app` },
             { label: 'Current plan', value: current.charAt(0).toUpperCase() + current.slice(1) },
           ].map(({ label, value }) => (
             <div key={label} className="flex items-center justify-between px-5 py-3 min-h-[44px]">

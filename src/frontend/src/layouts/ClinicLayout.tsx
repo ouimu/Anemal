@@ -50,7 +50,7 @@ export default function ClinicLayout() {
           {sidebarOpen && (
             <div className="pl-sm min-w-0">
               <p className="text-headline-sm font-headline font-bold text-primary leading-tight truncate">
-                VetClinic Pro
+                Anemal
               </p>
               <p className="text-label-md text-on-surface-variant mt-0.5">Clinic Portal</p>
             </div>

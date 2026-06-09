@@ -1,5 +1,5 @@
 % ============================================================
-% VetCare SaaS — Comprehensive Functional Specification
+% Anemal SaaS — Comprehensive Functional Specification
 % Version: 2.0 | Date: 2026-06-05
 % Compile with: xelatex vetcare_functional_spec.tex (run twice)
 % Or: pdflatex vetcare_functional_spec.tex (fallback, requires T1 fonts)
@@ -13,7 +13,7 @@
 \usepackage[a4paper, top=25mm, bottom=25mm, left=25mm, right=20mm, headheight=14pt]{geometry}
 \usepackage{xcolor}
 \usepackage[colorlinks=true,linkcolor=brandblue,urlcolor=accent,citecolor=sagegreen,
-            pdftitle={VetCare SaaS Functional Specification v2.0},
+            pdftitle={Anemal SaaS Functional Specification v2.0},
             bookmarksnumbered,bookmarksopen]{hyperref}
 \usepackage{titlesec}
 \usepackage{tocloft}
@@ -53,7 +53,7 @@
 % ── Page Setup ────────────────────────────────────────────
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\small\color{muted}VetCare SaaS --- Functional Specification v2.0}
+\fancyhead[L]{\small\color{muted}Anemal SaaS --- Functional Specification v2.0}
 \fancyhead[R]{\small\color{muted}2026-06-05}
 \fancyfoot[C]{\small\color{muted}\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
@@ -114,7 +114,7 @@
 \pagecolor{branddark}\color{white}
 \vspace*{36mm}
 \begin{center}
-  {\fontsize{40}{46}\selectfont\bfseries VetCare SaaS}\\[5mm]
+  {\fontsize{40}{46}\selectfont\bfseries Anemal SaaS}\\[5mm]
   {\fontsize{20}{26}\selectfont Comprehensive Functional Specification}\\[4mm]
   {\color{brandlight}\rule{110mm}{1.5pt}}\\[6mm]
   {\large Multi-Tenant Veterinary Clinic Management Platform}\\[12mm]
@@ -139,7 +139,7 @@
 
 \section{Product Description}
 
-VetCare SaaS is a \textbf{multi-tenant Software-as-a-Service} platform for veterinary clinics. It supports both \textbf{Web Browser} (reception counter, 1024px+) and \textbf{Tablet} (touch-first, consultation room, min tap target 44x44px) clients, with full multi-branch capability under a single subscription.
+Anemal SaaS is a \textbf{multi-tenant Software-as-a-Service} platform for veterinary clinics. It supports both \textbf{Web Browser} (reception counter, 1024px+) and \textbf{Tablet} (touch-first, consultation room, min tap target 44x44px) clients, with full multi-branch capability under a single subscription.
 
 \begin{mdframed}[style=InfoBox]
 \textbf{Multi-Tenancy Model:} Shared database, shared schema. Every tenant-scoped table carries \texttt{tenant\_id}. PostgreSQL Row-Level Security (RLS) enforces hard data isolation between clinics at the database layer --- even if application code has a bug.
@@ -182,7 +182,7 @@ VetCare SaaS is a \textbf{multi-tenant Software-as-a-Service} platform for veter
 
 \section{Architecture Overview}
 
-VetCare uses a \textbf{layered monolith with service boundaries} architecture, optimised for rapid feature delivery while keeping multi-tenant isolation guarantees firm.
+Anemal uses a \textbf{layered monolith with service boundaries} architecture, optimised for rapid feature delivery while keeping multi-tenant isolation guarantees firm.
 
 \begin{figure}[H]
 \centering
@@ -220,7 +220,7 @@ VetCare uses a \textbf{layered monolith with service boundaries} architecture, o
 \draw[arr] (svc.south) -- (s3.north);
 \draw[arr] (svc.south) -- (rd.north);
 \end{tikzpicture}
-\caption{VetCare SaaS System Architecture}
+\caption{Anemal SaaS System Architecture}
 \end{figure}
 
 \section{Layered Architecture Pattern}
@@ -282,7 +282,7 @@ File Storage     & S3 + CloudFront      & SSE-S3 encryption; pre-signed URLs for
 Cache/Sessions   & ElastiCache Redis 7  & cache.t3.micro; cluster mode; TLS \\
 CDN/Static       & CloudFront           & React SPA dist; HTTPS enforced; edge caching \\
 Load Balancer    & ALB                  & SSL termination; /api/health checks; sticky sessions off \\
-DNS              & Route 53             & Wildcard \texttt{*.vetcare.app} to ALB \\
+DNS              & Route 53             & Wildcard \texttt{*.anemal.app} to ALB \\
 Secrets          & AWS Secrets Manager  & DB creds, JWT private keys, API keys \\
 Monitoring       & CloudWatch + Grafana & API latency, DB connections, error rates \\
 Alerting         & PagerDuty + SNS      & P1: 2-min SLA; P2: 15-min SLA \\
@@ -291,7 +291,7 @@ Alerting         & PagerDuty + SNS      & P1: 2-min SLA; P2: 15-min SLA \\
 \section{Multi-Tenancy Subdomain Routing}
 
 \begin{enumerate}
-  \item DNS wildcard \texttt{*.vetcare.app} resolves to ALB.
+  \item DNS wildcard \texttt{*.anemal.app} resolves to ALB.
   \item ALB forwards to Express API cluster.
   \item \textbf{Tenant Resolver Middleware} reads \texttt{Host} header, extracts subdomain, queries \texttt{tenants} table.
   \item \texttt{tenant\_id} injected into request context.
@@ -327,7 +327,7 @@ Deploy Prod      & ECS Fargate Blue/Green & Manual approval gate; zero-downtime 
 
 \section{Description}
 
-Application Management covers the \textbf{SaaS platform operator} layer --- tools used by the VetCare engineering/operations team to manage the platform itself. This is \emph{separate} from the admin panel available to clinic owners.
+Application Management covers the \textbf{SaaS platform operator} layer --- tools used by the Anemal engineering/operations team to manage the platform itself. This is \emph{separate} from the admin panel available to clinic owners.
 
 \section{Super Admin Portal (\texttt{/superadmin})}
 
@@ -361,7 +361,7 @@ Revenue Dashboard  & MRR, ARR, churn rate, new signups charts \\
 \section{Tenant Onboarding Workflow}
 
 \begin{enumerate}
-  \item Clinic owner visits \texttt{vetcare.app/register}: submits clinic name, subdomain, admin email, password, phone.
+  \item Clinic owner visits \texttt{anemal.app/register}: submits clinic name, subdomain, admin email, password, phone.
   \item System validates subdomain uniqueness; returns \texttt{409 Conflict} if taken.
   \item \textbf{Atomic transaction:} creates \texttt{tenants} + default \texttt{branches} + first \texttt{users} (admin) record.
   \item \texttt{trial\_ends\_at = NOW() + 30 days} set.
@@ -403,7 +403,7 @@ Secure identity verification and role-based access control using JWT (RS256), bc
 \section{Process Flow}
 
 \begin{enumerate}
-  \item User navigates to \texttt{https://[subdomain].vetcare.app}.
+  \item User navigates to \texttt{https://[subdomain].anemal.app}.
   \item Frontend calls \texttt{GET /api/tenant/resolve} to confirm tenant context.
   \item User submits email + password.
   \item \textbf{Rate limit check:} 5 failed attempts per email per 15 min (Redis); exceed: \texttt{429}.
@@ -474,14 +474,14 @@ Foundational isolation layer. Every clinic is completely isolated. Within a tena
 
 \begin{itemize}
   \item PostgreSQL RLS policies enabled on all 25 tenant-scoped tables.
-  \item Wildcard DNS \texttt{*.vetcare.app} pointing to ALB.
+  \item Wildcard DNS \texttt{*.anemal.app} pointing to ALB.
   \item Tenant resolver and \texttt{app.current\_tenant\_id} setter middleware in pipeline.
 \end{itemize}
 
 \section{Tenant Isolation Process Flow}
 
 \begin{enumerate}
-  \item HTTP request arrives; \texttt{Host} header = \texttt{abc-clinic.vetcare.app}.
+  \item HTTP request arrives; \texttt{Host} header = \texttt{abc-clinic.anemal.app}.
   \item Tenant Resolver: extract \texttt{abc-clinic} \textrightarrow{} \texttt{SELECT id FROM tenants WHERE subdomain = 'abc-clinic'}.
   \item \texttt{req.tenantId} set.
   \item Prisma middleware: before every query \textrightarrow{} \texttt{SET app.current\_tenant\_id = tenantId}.
@@ -520,7 +520,7 @@ FR-02-06 & Super Admin overview of all tenants (platform level) & \should \\
 
 \section{Description}
 
-Core CRM of VetCare. Manages the lifecycle of pet owner profiles and their associated pets. Every medical, billing, and appointment record links back here. Supports smart onboarding, photo capture, drug allergy tracking, and proactive health reminders.
+Core CRM of Anemal. Manages the lifecycle of pet owner profiles and their associated pets. Every medical, billing, and appointment record links back here. Supports smart onboarding, photo capture, drug allergy tracking, and proactive health reminders.
 
 \section{Prerequisites}
 
@@ -674,7 +674,7 @@ FR-04-07 & Walk-in queue without pre-booking & \must \\
 
 \section{Description}
 
-Clinical heart of VetCare. Records consultations in SOAP format, captures vital signs via touch-friendly steppers, manages prescriptions linked to live inventory, supports lab results with trend graphs, DICOM image viewing, anatomy annotation canvas (Konva.js with Stylus/Touch), and PDF export for referrals.
+Clinical heart of Anemal. Records consultations in SOAP format, captures vital signs via touch-friendly steppers, manages prescriptions linked to live inventory, supports lab results with trend graphs, DICOM image viewing, anatomy annotation canvas (Konva.js with Stylus/Touch), and PDF export for referrals.
 
 \section{Prerequisites}
 
@@ -1313,8 +1313,8 @@ NFR-11 & Scalability & Architecture supports $\geq$1,000 concurrent tenants \\
 \begin{center}
 \vspace*{28mm}
 {\large\bfseries\color{muted} --- End of Document ---}\\[4mm]
-{\small\color{muted}VetCare SaaS Functional Specification v2.0 $|$ 2026-06-05}\\[2mm]
-{\small\color{muted}Maintained by VetCare Development Team}
+{\small\color{muted}Anemal SaaS Functional Specification v2.0 $|$ 2026-06-05}\\[2mm]
+{\small\color{muted}Maintained by Anemal Development Team}
 \end{center}
 
 \end{document}

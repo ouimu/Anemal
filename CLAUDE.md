@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**VetClinic SaaS** — a multi-tenant clinic management application for veterinary practices, targeting Tablet (touch-first) and Web (counter/reception) use cases. Sold as a subscription SaaS product.
+**Anemal** — a multi-tenant clinic management application for veterinary practices, targeting Tablet (touch-first) and Web (counter/reception) use cases. Sold as a subscription SaaS product.
 
 ---
 

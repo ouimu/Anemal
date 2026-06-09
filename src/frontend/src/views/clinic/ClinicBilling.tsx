@@ -388,7 +388,7 @@ function SuccessModal({ invoice, pet, method, earnedMsg, onClose }: { invoice: I
       .muted{color:#45464d;font-size:12px}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:13px}
       th,td{padding:6px 4px;border-bottom:1px solid #e2e8f0}th{text-align:left;text-transform:uppercase;font-size:11px;color:#45464d}
       .tot{display:flex;justify-content:space-between;font-size:13px;margin-top:6px}.grand{font-weight:700;font-size:16px;border-top:2px solid #191c1e;padding-top:6px;margin-top:8px}</style></head>
-      <body><h1>VetClinic Pro</h1><p class="muted">Tax invoice / receipt</p>
+      <body><h1>Anemal</h1><p class="muted">Tax invoice / receipt</p>
       <p class="muted">Invoice: <b>${invoice.invoiceNo}</b> · ${new Date(invoice.issuedAt).toLocaleString()}</p>
       ${pet ? `<p class="muted">Patient: ${pet.petName} · Owner: ${pet.ownerName}</p>` : ''}
       <table><thead><tr><th>Item</th><th style="text-align:center">Qty</th><th style="text-align:right">Unit</th><th style="text-align:right">Total</th></tr></thead><tbody>${items}</tbody></table>

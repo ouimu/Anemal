@@ -18,7 +18,7 @@ Flex:      flex flex-col overflow-hidden transition-all duration-200
 flex items-center justify-between px-sm pt-md pb-md border-b border-outline-variant
 
 [Expanded]:
-  "VetClinic Pro" — text-headline-sm font-headline font-bold text-primary
+  "Anemal" — text-headline-sm font-headline font-bold text-primary
   Branch/role label — text-label-md text-on-surface-variant
 
 Toggle button: min-h-[44px] min-w-[44px] rounded-lg hover:bg-surface-container

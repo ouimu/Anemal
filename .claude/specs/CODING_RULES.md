@@ -1,4 +1,4 @@
-# Coding Rules & Developer Guidelines — VetClinic SaaS
+# Coding Rules & Developer Guidelines — Anemal
 
 **Version:** 1.0  
 **Applies to:** All agents and human developers  
@@ -828,4 +828,4 @@ Before any production deploy:
 
 ---
 
-*Version: 1.0 | VetClinic SaaS | Maintained by: @dev-agent + @qa-agent | Updated: 2026-06-04*
+*Version: 1.0 | Anemal | Maintained by: @dev-agent + @qa-agent | Updated: 2026-06-04*

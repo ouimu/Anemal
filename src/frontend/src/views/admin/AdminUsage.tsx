@@ -44,7 +44,7 @@ export default function AdminUsage() {
         <h2 className="text-xl font-semibold text-on-surface">Usage statistics</h2>
         <p className="text-sm text-on-surface-variant mt-1">
           Plan: <span className="capitalize font-medium text-on-surface-variant">{tier}</span>
-          {' · '}{settings?.tenant.subdomain}.vetclinic.app
+          {' · '}{settings?.tenant.subdomain}.anemal.app
         </p>
       </div>
 

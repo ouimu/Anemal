@@ -84,7 +84,7 @@ export default function LoginView() {
                     pets
                   </span>
                 </div>
-                <span className="text-headline-sm font-headline font-bold text-primary">VetClinic Pro</span>
+                <span className="text-headline-sm font-headline font-bold text-primary">Anemal</span>
               </div>
               <h1 className="text-headline-lg font-headline font-bold text-on-surface mb-xs">Welcome back</h1>
               <p className="text-on-surface-variant text-body-md">
@@ -112,7 +112,7 @@ export default function LoginView() {
                     className="w-full pl-[48px] pr-[110px] py-[14px] bg-surface-container-low border border-outline-variant rounded-lg focus:border-secondary focus:ring-1 focus:ring-secondary outline-none transition-all text-body-md text-on-surface"
                   />
                   <span className="absolute right-md top-1/2 -translate-y-1/2 text-label-md text-on-surface-variant pointer-events-none select-none">
-                    .vetclinic.app
+                    .anemal.app
                   </span>
                 </div>
               </div>
@@ -226,8 +226,8 @@ export default function LoginView() {
       {/* ── Footer ───────────────────────────────────────────────────────── */}
       <footer className="w-full py-xl px-margin-desktop flex flex-col md:flex-row justify-between items-center gap-md bg-surface-container-low border-t border-outline-variant">
         <div className="flex flex-col md:flex-row items-center gap-lg">
-          <span className="text-headline-xs font-headline font-bold text-on-surface">VetClinic Pro</span>
-          <p className="text-label-md text-on-surface-variant">© 2024 VetClinic SaaS. All rights reserved.</p>
+          <span className="text-headline-xs font-headline font-bold text-on-surface">Anemal</span>
+          <p className="text-label-md text-on-surface-variant">© 2024 Anemal. All rights reserved.</p>
         </div>
         <div className="flex flex-wrap justify-center gap-lg">
           <a href="#" className="text-label-md text-on-surface-variant hover:text-secondary transition-colors">Privacy Policy</a>

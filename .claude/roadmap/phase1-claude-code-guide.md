@@ -166,7 +166,7 @@ Implement Task 1.8 from phase1-tasks.md
 
 Redesign src/views/LoginView.tsx:
 - Gradient background (brand-700 to brand-900)
-- White card with VetClinic logo above
+- White card with Anemal logo above
 - Clinic ID field: auto-detect subdomain from window.location.hostname
 - Password show/hide toggle
 - Role-based redirect on success: admin → /admin/dashboard, doctor/staff → /clinic/dashboard

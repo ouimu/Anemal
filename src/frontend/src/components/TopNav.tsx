@@ -23,7 +23,7 @@ export default function TopNav() {
   const { sidebarOpen } = useUiStore()
   const { pathname } = useLocation()
 
-  const pageTitle  = PAGE_TITLES[pathname] ?? 'VetClinic Pro'
+  const pageTitle  = PAGE_TITLES[pathname] ?? 'Anemal'
   const leftOffset = sidebarOpen ? 'left-56' : 'left-14'
 
   return (

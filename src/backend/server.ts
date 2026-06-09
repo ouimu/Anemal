@@ -4,7 +4,7 @@ import { logger } from './utils/logger'
 import { startReminderWorker } from './workers/reminder.worker'
 
 app.listen(config.port, () => {
-  logger.info({ port: config.port, env: config.nodeEnv }, 'VetClinic API started')
+  logger.info({ port: config.port, env: config.nodeEnv }, 'Anemal API started')
   startReminderWorker()
 })
 

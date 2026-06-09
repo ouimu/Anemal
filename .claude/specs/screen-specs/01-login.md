@@ -34,7 +34,7 @@ RIGHT PANEL (flex-grow md:w-2/5):
 flex items-center gap-sm mb-xl
   Icon container: w-10 h-10 rounded-lg bg-primary-container
     MaterialIcon: pets fill=1 size=22 className="text-on-surface"
-  "VetClinic Pro" — text-headline-sm font-headline font-bold text-primary
+  "Anemal" — text-headline-sm font-headline font-bold text-primary
 ```
 
 ### Headings
@@ -57,7 +57,7 @@ Left icon: MaterialIcon absolute left-md, size=18, text-on-surface-variant
 
 | Field | Icon | Type |
 |---|---|---|
-| Clinic ID | `business` | text + right suffix `.vetclinic.app` |
+| Clinic ID | `business` | text + right suffix `.anemal.app` |
 | Email | `mail` | email |
 | Password | `lock` | password + eye toggle (visibility / visibility_off) |
 

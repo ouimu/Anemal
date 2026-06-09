@@ -1,7 +1,7 @@
-# Functional Requirements — VetCare SaaS
+# Functional Requirements — Anemal SaaS
 
 **Version:** 1.1 (source) | See `docs/functional_spec_detailed.html` (v2.0) and `docs/vetcare_functional_spec.tex` for full detail  
-**Project:** VetCare Clinic Management SaaS  
+**Project:** Anemal Clinic Management SaaS  
 **Target:** Multi-tenant SaaS for Veterinary Clinics (Tablet + Web + Multi-Branch)  
 **Last Updated:** 2026-06-05
 
@@ -9,7 +9,7 @@
 
 ## 1. System Overview
 
-VetCare SaaS เป็นระบบจัดการคลินิกสัตว์แบบ Multi-tenant Software-as-a-Service  
+Anemal SaaS เป็นระบบจัดการคลินิกสัตว์แบบ Multi-tenant Software-as-a-Service  
 ออกแบบมาให้ทำงานได้ทั้งบน **Web Browser** (หน้าเคาน์เตอร์) และ **Tablet** (ระหว่างตรวจเคส) และขยายขีดความสามารถรองรับระบบ **Multi-Branch (หลายสาขา)** และ **Operations ขั้นสูง** เต็มรูปแบบ
 
 ### User Roles
@@ -40,7 +40,7 @@ VetCare SaaS เป็นระบบจัดการคลินิกสั�
 
 | ID | Requirement | Priority |
 |---|---|---|
-| FR-02-01 | แต่ละคลินิกมี subdomain เฉพาะ (e.g., `abc-clinic.vetcare.app`) | Must |
+| FR-02-01 | แต่ละคลินิกมี subdomain เฉพาะ (e.g., `abc-clinic.anemal.app`) | Must |
 | FR-02-02 | ข้อมูลทุก Table ต้องแยกด้วย `tenant_id` อย่างเด็ดขาด | Must |
 | FR-02-03 | ไม่มีทางที่ user คนหนึ่งจะเห็นข้อมูลของคลินิกอื่น | Must |
 | FR-02-04 | รองรับโครงสร้าง Multi-Branch ภายใต้ Tenant เดียวกัน โดยแยกข้อมูลธุรกรรมด้วย `branch_id` | Must |
@@ -211,4 +211,4 @@ VetCare SaaS เป็นระบบจัดการคลินิกสั�
 
 ---
 
-*Document Version: 1.1 | VetCare SaaS | 2026-05-30*
+*Document Version: 1.1 | Anemal SaaS | 2026-05-30*

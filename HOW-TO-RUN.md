@@ -1,4 +1,4 @@
-# How to Run VetClinic Locally (Windows)
+# How to Run Anemal Locally (Windows)
 
 ## Prerequisites
 - Node.js ≥ 20: https://nodejs.org

@@ -53,7 +53,7 @@ export default function AdminLayout() {
           {sidebarOpen && (
             <div className="pl-sm min-w-0">
               <p className="text-headline-sm font-headline font-bold text-primary leading-tight truncate">
-                {data?.tenant.name ?? 'VetClinic Pro'}
+                {data?.tenant.name ?? 'Anemal'}
               </p>
               <p className="text-label-md text-on-surface-variant mt-0.5">Admin Panel</p>
             </div>

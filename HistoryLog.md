@@ -2,6 +2,26 @@
 
 ---
 
+## 📅 Log Entry: 2026-06-09 — Application rebrand → "Anemal"
+
+### 🎯 Summary
+Renamed the product brand to **Anemal** everywhere users and readers see it. Consolidated the prior inconsistent names — "VetClinic Pro", "VetClinic SaaS", "VetClinic", and "VetCare" — into a single brand, and updated the on-screen domain suffix `*.vetclinic.app` / `*.vetcare.app` → `*.anemal.app`.
+
+### 📂 Scope
+- **App UI:** `index.html` title, `TopNav`, `AdminLayout`/`ClinicLayout` sidebar brand, `LoginView` (brand ×2 + footer + domain suffix), `AdminUsage`/`SubscriptionTab` domain suffix, `ClinicBilling` receipt header; backend `server.ts` startup log banner.
+- **Docs:** README, CLAUDE.md, CHANGELOG, DESIGN, AGENTS, HOW-TO-RUN, session-summary, this log, design-alignment-plan, all `.claude/specs/*` + `screen-specs`, `.claude/roadmap/*`, `.claude/agents/*`, `docs/index.html` + `dashboard.html` + `functional_spec_detailed.html` + `vetcare_functional_spec.tex` (content only).
+
+### 🚫 Deliberately left unchanged
+- Read-only `stitch_vet_clinic_design_system/**`, archived `_archive/**`, build output `dist/**`.
+- Infra identifiers: npm package names (`vetclinic-frontend`/`-backend`), Docker `vetclinic-pg`, DB `vetclinic_dev`, S3 bucket, JWT secret, localStorage keys (`vetclinic_sidebar_*`, `vetclinic-ui`), and the `vetcare_functional_spec.tex` filename (kept so doc links don't break).
+- Descriptive words "veterinary"/"vet".
+
+### ✅ Verification
+- `tsc --noEmit` frontend + backend: 0 errors · `npm test`: **155/155** (no code path touched).
+- Browser: login page title/brand/footer + `.anemal.app`; clinic sidebar reads **Anemal**; no "VetClinic" string remains in any rendered view.
+
+---
+
 ## 📅 Log Entry: 2026-06-09 — Phase 4 Frontend Session B + audit read endpoint
 
 ### 🎯 Summary
@@ -32,7 +52,7 @@ Completed the remaining Phase 4 admin UI and the loyalty checkout integration; a
 ## 📅 Log Entry: 2026-06-09 — Login "Invalid credentials" diagnosis + Clinic ID auto-fill fix
 
 ### 🎯 Root cause
-Staff (and in fact any role) login failed with *"Invalid credentials"* when the **Clinic ID** field was empty. On `localhost` the subdomain auto-detect needs a 3-part hostname (e.g. `dev-clinic.vetclinic.app`) and otherwise left the field blank → tenant lookup fails → 401. The seed, password hashes, and backend auth were all verified correct (live login of `staff@dev-clinic.com` / `StaffPass1!` returns a valid token).
+Staff (and in fact any role) login failed with *"Invalid credentials"* when the **Clinic ID** field was empty. On `localhost` the subdomain auto-detect needs a 3-part hostname (e.g. `dev-clinic.anemal.app`) and otherwise left the field blank → tenant lookup fails → 401. The seed, password hashes, and backend auth were all verified correct (live login of `staff@dev-clinic.com` / `StaffPass1!` returns a valid token).
 
 ### 🔧 Fix
 - `src/frontend/src/views/LoginView.tsx` — Clinic ID now defaults to `dev-clinic` on `localhost`/`127.0.0.1` so dev logins don't fail on an empty tenant field. Verified end-to-end in browser preview: staff login → redirect to `/clinic/dashboard`.
@@ -301,7 +321,7 @@ Implement Phase 2 backend APIs and frontend views for Pet/Owner management, Appo
 
 ---
 
-This document records the modifications, additions, and synchronizations performed to align **AnimalClinic** (VetCare SaaS) with the feature set and system designs proven in **AnimalClinic_Prototype** (VetDocHome). This tracking log serves as the absolute source of truth for **Claude Code** and other AI agents implementing this platform.
+This document records the modifications, additions, and synchronizations performed to align **AnimalClinic** (Anemal SaaS) with the feature set and system designs proven in **AnimalClinic_Prototype** (VetDocHome). This tracking log serves as the absolute source of truth for **Claude Code** and other AI agents implementing this platform.
 
 ---
 
@@ -322,7 +342,7 @@ Establish a single authoritative reference for all developers and AI agents cove
 ## 📅 Log Entry: 2026-05-30 — Synchronization & RLS/Remediation Audit
 
 ### 🎯 Motivation & Purpose
-To elevate the VetCare SaaS platform from a simplified clinic management system into a robust, enterprise-grade cloud system supporting advanced operations like **Multi-Branch Operations, Inpatient Care, Grooming Services, Blood Bank Registries, Loyalty and Membership programs, Audit Logs, and Login Access Controls**.
+To elevate the Anemal SaaS platform from a simplified clinic management system into a robust, enterprise-grade cloud system supporting advanced operations like **Multi-Branch Operations, Inpatient Care, Grooming Services, Blood Bank Registries, Loyalty and Membership programs, Audit Logs, and Login Access Controls**.
 
 ---
 
@@ -409,7 +429,7 @@ To deliver a high-fidelity, client-ready, fully detailed Microsoft Word document
    - The generator parsed `claude/roadmap/phase4-tasks.md` (Phase 4 sprint tasks, effort, priorities, checklist, and criteria).
 2. **Premium Document Layout Details**:
    - **Cover Page**: Center-aligned corporate styling with a primary Navy color accent (#1B365D), subtle metadata block, and clean horizontal line separator.
-   - **Running Headers/Footers**: Right-aligned running header (`VetCare SaaS System Specification | Confidential`) and page-numbered standard footer layout.
+   - **Running Headers/Footers**: Right-aligned running header (`Anemal SaaS System Specification | Confidential`) and page-numbered standard footer layout.
    - **Table Formatting**: 1-inch margins, custom cell padding, bold white text header rows with deep navy/teal background colors, alternating zebra-striped rows, and clean light grey boundaries.
    - **Lists & Bullets**: Indented checklist items (⬜) and acceptance criteria (✅) formatted cleanly for easy readability on tablets or print.
 

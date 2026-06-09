@@ -1,5 +1,5 @@
 -- ============================================================
--- VetCare SaaS — Complete Database Schema
+-- Anemal SaaS — Complete Database Schema
 -- DB-Agent controlled — DO NOT modify without DB-Agent review
 -- Pattern: Shared Database, Shared Schema + tenant_id isolation
 -- Database: PostgreSQL 15+

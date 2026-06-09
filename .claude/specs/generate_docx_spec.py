@@ -33,14 +33,14 @@ def add_header_footer(doc):
     section = doc.sections[0]
     header = section.header
     hp = header.paragraphs[0]
-    hp.text = "VetCare SaaS System Specification  |  Confidential"
+    hp.text = "Anemal SaaS System Specification  |  Confidential"
     hp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     hp.style.font.size = Pt(8.5)
     hp.style.font.color.rgb = RGBColor(112, 128, 144)
     
     footer = section.footer
     fp = footer.paragraphs[0]
-    fp.text = "VetCare Clinic Management Platform"
+    fp.text = "Anemal Clinic Management Platform"
     fp.alignment = WD_ALIGN_PARAGRAPH.LEFT
     fp.style.font.size = Pt(8.5)
     fp.style.font.color.rgb = RGBColor(112, 128, 144)
@@ -295,7 +295,7 @@ def build_docx():
     title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     title_p.paragraph_format.space_before = Pt(120)
     title_p.paragraph_format.space_after = Pt(10)
-    run_title = title_p.add_run("VETCARE CLINIC MANAGEMENT PLATFORM")
+    run_title = title_p.add_run("ANEMAL CLINIC MANAGEMENT PLATFORM")
     run_title.font.name = 'Arial'
     run_title.font.size = Pt(24)
     run_title.font.bold = True
@@ -355,7 +355,7 @@ def build_docx():
     
     p = doc.add_paragraph()
     p.add_run(
-        "VetCare Clinic Management SaaS is an enterprise-grade multi-tenant software-as-a-service system. "
+        "Anemal Clinic Management SaaS is an enterprise-grade multi-tenant software-as-a-service system. "
         "It is engineered specifically for veterinary clinics to handle tablet-based diagnostics, web-based counter operations, "
         "retail POS, multi-branch operations, real-time inventory management, and deep clinical auditing. "
         "This system enables clinics to run seamless processes across multiple geographic branches with isolated tenant "
@@ -463,7 +463,7 @@ def build_docx():
     run_h3.font.color.rgb = RGBColor(27, 54, 93)
     
     doc.add_paragraph(
-        "VetCare utilizes a shared-database, shared-schema deployment model for its multi-tenant software architecture. "
+        "Anemal utilizes a shared-database, shared-schema deployment model for its multi-tenant software architecture. "
         "To strictly secure clinic records, PostgreSQL 15 Row-Level Security (RLS) is fully configured. "
         "This ensures that all queries are dynamically scoped using a session variable, preventing cross-tenant data leaks."
     )
@@ -642,7 +642,7 @@ def build_docx():
     run_h4.font.color.rgb = RGBColor(27, 54, 93)
     
     doc.add_paragraph(
-        "Development operations for VetCare's latest capabilities (Phase 4) cover high-performance clinical, "
+        "Development operations for Anemal's latest capabilities (Phase 4) cover high-performance clinical, "
         "commercial operations, security mechanisms, and automated notification engines. Sprints are organized by modules:"
     )
     

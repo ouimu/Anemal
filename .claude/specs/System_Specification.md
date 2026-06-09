@@ -4,7 +4,7 @@
 
 ## 1. Introduction
 
-**Project:** VetCare Clinic Management SaaS (VetCare)
+**Project:** Anemal Clinic Management SaaS (Anemal)
 
 **Version:** 1.1 (2026-05-30)
 
@@ -14,7 +14,7 @@
 - Stakeholders & product owners
 - External auditors (security, compliance)
 
-**Purpose:** This document consolidates the functional requirements, technical architecture, database design, and roadmap for the VetCare multi‑tenant, multi‑branch veterinary clinic management platform. It is intended for direct import into Microsoft Word (Markdown → Word conversion) and serves as the single source of truth for future development, onboarding, and compliance audits.
+**Purpose:** This document consolidates the functional requirements, technical architecture, database design, and roadmap for the Anemal multi‑tenant, multi‑branch veterinary clinic management platform. It is intended for direct import into Microsoft Word (Markdown → Word conversion) and serves as the single source of truth for future development, onboarding, and compliance audits.
 
 ---
 
@@ -22,7 +22,7 @@
 
 ### 2.1 System Overview
 
-VetCare is a SaaS solution supporting **Web** and **Tablet** clients for veterinary clinics, with full multi‑tenant isolation, multi‑branch capabilities, and a rich set of clinical, operational, and business features.
+Anemal is a SaaS solution supporting **Web** and **Tablet** clients for veterinary clinics, with full multi‑tenant isolation, multi‑branch capabilities, and a rich set of clinical, operational, and business features.
 
 ### 2.2 Functional Requirements Summary
 
@@ -34,7 +34,7 @@ VetCare is a SaaS solution supporting **Web** and **Tablet** clients for veterin
 | FR-01-04 | Role‑based Access Control (Admin/Doctor/Staff) | Must |
 | FR-01-05 | Admin สามารถเพิ่ม/ลบ/ปิดการใช้งาน User และกำหนดสิทธิ์รายบุคคลได้ | Must |
 | FR-01-06 | รองรับการจำกัดเวลาเข้าใช้งานของพนักงานรายบุคคล (Login Time Window Restrictions) | Should |
-| FR-02-01 | แต่ละคลินิกมี subdomain เฉพาะ (e.g., `abc-clinic.vetcare.app`) | Must |
+| FR-02-01 | แต่ละคลินิกมี subdomain เฉพาะ (e.g., `abc-clinic.anemal.app`) | Must |
 | FR-02-02 | ข้อมูลทุก Table ต้องแยกด้วย `tenant_id` อย่างเด็ดขาด | Must |
 | FR-02-03 | ไม่มีทางที่ user คนหนึ่งจะเห็นข้อมูลของคลินิกอื่น | Must |
 | FR-02-04 | รองรับโครงสร้าง Multi‑Branch ภายใต้ Tenant เดียวกัน โดยแยกข้อมูลธุรกรรมด้วย `branch_id` | Must |

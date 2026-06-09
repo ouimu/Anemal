@@ -47,7 +47,7 @@ Lightweight integrations (browser-print receipt, placeholder PromptPay QR, manua
 
 | File | Agent | Description |
 |------|-------|-------------|
-| `DESIGN.md` | @uiux-agent | VetClinic design system: brand colors, typography scale, spacing, component tokens, layout rules, MCP usage guide |
+| `DESIGN.md` | @uiux-agent | Anemal design system: brand colors, typography scale, spacing, component tokens, layout rules, MCP usage guide |
 | `docs/dashboard.html` | @dev-agent | Interactive project dashboard — phase progress, feature matrix, agent contributions, MCP status, next steps checklist |
 
 ### MODIFIED FILES

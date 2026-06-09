@@ -1,4 +1,4 @@
-# 🐾 VetCare SaaS — Vet Clinic Management Platform
+# 🐾 Anemal SaaS — Vet Clinic Management Platform
 
 > Multi-tenant SaaS application for veterinary clinics — optimized for Tablet & Web
 
@@ -6,7 +6,7 @@
 
 ## Project Overview
 
-**VetCare SaaS** is a commercial Software-as-a-Service platform designed for veterinary clinics of all sizes.  
+**Anemal SaaS** is a commercial Software-as-a-Service platform designed for veterinary clinics of all sizes.  
 It runs seamlessly on **Web browsers** (front-desk / counter use) and **Tablets** (on-the-floor consultation use).
 
 ### Key Capabilities

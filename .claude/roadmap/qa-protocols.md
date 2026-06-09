@@ -1,4 +1,4 @@
-# QA Protocols — VetCare SaaS
+# QA Protocols — Anemal SaaS
 
 **Owner:** QA-Agent  
 **Applies To:** All Phases  
@@ -202,4 +202,4 @@ npm run test:coverage
 
 ---
 
-*Protocol Version: 1.0 | VetCare SaaS | Updated: 2026-05-30*
+*Protocol Version: 1.0 | Anemal SaaS | Updated: 2026-05-30*
