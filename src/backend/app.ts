@@ -24,6 +24,7 @@ import bloodBankRoutes from './routes/blood-bank.routes'
 import groomingRoutes from './routes/grooming.routes'
 import loyaltyRoutes from './routes/loyalty.routes'
 import reminderRoutes from './routes/reminder.routes'
+import auditRoutes from './routes/audit.routes'
 import { auditMiddleware } from './middlewares/audit.middleware'
 import { notFound, errorHandler } from './middlewares/error-handler.middleware'
 
@@ -63,6 +64,7 @@ app.use('/api/blood-bank',      bloodBankRoutes)
 app.use('/api/grooming',        groomingRoutes)
 app.use('/api/loyalty',         loyaltyRoutes)
 app.use('/api/reminders',       reminderRoutes)
+app.use('/api/audit',           auditRoutes)
 
 // 404 fallback + global error handler (must be last)
 app.use(notFound)

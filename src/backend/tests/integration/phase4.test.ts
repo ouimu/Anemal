@@ -223,4 +223,24 @@ describe('Phase 4 — Audit logging (write-once trail)', () => {
     }
     expect(after).toBeGreaterThan(before)
   })
+
+  it('✅ admin reads paginated audit log (newest first)', async () => {
+    const res = await request(server).get('/api/audit?limit=10').set('Authorization', `Bearer ${adminA}`)
+    expect(res.status).toBe(200)
+    expect(Array.isArray(res.body.data.items)).toBe(true)
+    expect(res.body.data).toHaveProperty('total')
+    expect(res.body.data.items.length).toBeLessThanOrEqual(10)
+  })
+
+  it('✅ audit log is tenant-scoped (Tenant B never sees Tenant A actions)', async () => {
+    const res = await request(server).get('/api/audit?limit=100').set('Authorization', `Bearer ${adminB}`)
+    expect(res.status).toBe(200)
+    const tenantB = await prisma.tenant.findFirst({ where: { subdomain: 'test-clinic' } })
+    for (const row of res.body.data.items) expect(row.tenantId).toBe(tenantB!.id)
+  })
+
+  it('🚫 staff cannot read the audit log (admin-only)', async () => {
+    const res = await request(server).get('/api/audit').set('Authorization', `Bearer ${staffA}`)
+    expect(res.status).toBe(403)
+  })
 })

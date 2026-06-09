@@ -11,9 +11,9 @@
 
 > **Backend: ✅ COMPLETE** — all 8 modules (Branch+Shifts, Transfers, Hospitalization, Grooming, Loyalty, Audit, Login-time restriction, Blood Bank, Reminders) built as Route→Controller→Service→Repository; migration `20260606090000_phase4_multibranch` applied; `auditMiddleware` wired; reminder background worker added; `tsc --noEmit` clean. Integration tests in `tests/integration/phase4.test.ts` — **full suite green: 152 tests / 15 suites** (was 131).
 >
-> **Frontend: ⏳ PENDING** — Inpatient cage board, Grooming calendar, Branch/Loyalty/Blood Bank pages, admin dashboard snapshot, `/api/reports/branch-revenue` chart. **← next session.**
+> **Frontend: ✅ COMPLETE** — Session A: Inpatient cage board, Grooming queue, AdminDashboard snapshot (+ inpatient/grooming KPIs + branch-revenue chart), `GET /api/reports/branch-revenue`. Session B: AdminBranches (CRUD + doctor shifts), AdminBloodBank (donors/bags/transfusions + compatibility guard), AdminAudit (read-only `GET /api/audit`), Loyalty at POS checkout. **155 backend tests pass; tsc clean; browser-verified.**
 >
-> **Deferred:** real LINE/SMS dispatch in reminder worker (currently marks `sent`).
+> **Deferred:** real LINE/SMS dispatch in reminder worker (currently marks `sent`); barcode/PromptPay/PDF.
 
 ---
 

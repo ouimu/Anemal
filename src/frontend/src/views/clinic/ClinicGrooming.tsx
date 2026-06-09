@@ -69,7 +69,7 @@ function BookingModal({ date, onClose, onSaved }: {
 
   const { data: searchResults = [] } = useQuery<SearchResult[]>({
     queryKey: ['owner-search', petSearch],
-    queryFn: () => api.get(`/owners/search?q=${encodeURIComponent(petSearch)}`).then(r => r.data.data),
+    queryFn: () => api.get(`/api/search?q=${encodeURIComponent(petSearch)}`).then(r => r.data.data),
     enabled: petSearch.length >= 2,
   })
 
@@ -80,7 +80,7 @@ function BookingModal({ date, onClose, onSaved }: {
 
   const qc = useQueryClient()
   const mut = useMutation({
-    mutationFn: (body: object) => api.post('/grooming/bookings', body),
+    mutationFn: (body: object) => api.post('/api/grooming/bookings', body),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['grooming'] }); onSaved() },
   })
 
@@ -270,12 +270,12 @@ export default function ClinicGrooming() {
 
   const { data, isLoading, isError } = useQuery<GroomingBooking[]>({
     queryKey: ['grooming', dateKey],
-    queryFn: () => api.get(`/grooming/bookings?date=${dateKey}`).then(r => r.data.data),
+    queryFn: () => api.get(`/api/grooming/bookings?date=${dateKey}`).then(r => r.data.data),
   })
 
   const updateStatus = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) =>
-      api.put(`/grooming/bookings/${id}`, { status }),
+      api.put(`/api/grooming/bookings/${id}`, { status }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['grooming', dateKey] }),
   })
 

@@ -71,7 +71,7 @@ function CareModal({ hospit, onClose, onSaved }: {
 
   const qc = useQueryClient()
   const mut = useMutation({
-    mutationFn: (data: CareEntry) => api.post(`/hospitalizations/${hospit.id}/care`, data),
+    mutationFn: (data: CareEntry) => api.post(`/api/hospitalizations/${hospit.id}/care`, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['inpatient-active'] }); onSaved() },
   })
 
@@ -292,12 +292,12 @@ export default function ClinicInpatient() {
 
   const { data, isLoading, isError, refetch } = useQuery<Hospitalization[]>({
     queryKey: ['inpatient-active'],
-    queryFn: () => api.get('/hospitalizations/active').then(r => r.data.data),
+    queryFn: () => api.get('/api/hospitalizations/active').then(r => r.data.data),
     refetchInterval: 60_000,
   })
 
   const discharge = useMutation({
-    mutationFn: (id: number) => api.put(`/hospitalizations/${id}/discharge`),
+    mutationFn: (id: number) => api.put(`/api/hospitalizations/${id}/discharge`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['inpatient-active'] }),
   })
 

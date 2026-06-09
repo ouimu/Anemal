@@ -43,18 +43,18 @@ export default function AdminDashboard() {
 
   const { data: inpatients = [] } = useQuery<{ id: number }[]>({
     queryKey: ['inpatient-active'],
-    queryFn: () => api.get('/hospitalizations/active').then(r => r.data.data),
+    queryFn: () => api.get('/api/hospitalizations/active').then(r => r.data.data),
     refetchInterval: 60_000,
   })
 
   const { data: groomingToday = [] } = useQuery<{ id: number }[]>({
     queryKey: ['grooming', todayStr],
-    queryFn: () => api.get(`/grooming/bookings?date=${todayStr}`).then(r => r.data.data),
+    queryFn: () => api.get(`/api/grooming/bookings?date=${todayStr}`).then(r => r.data.data),
   })
 
   const { data: branchRevenue = [], isLoading: revenueLoading } = useQuery<BranchRevenueRow[]>({
     queryKey: ['branch-revenue', revenueFrom, revenueTo],
-    queryFn: () => api.get(`/reports/branch-revenue?from=${revenueFrom}&to=${revenueTo}`).then(r => r.data.data),
+    queryFn: () => api.get(`/api/reports/branch-revenue?from=${revenueFrom}&to=${revenueTo}`).then(r => r.data.data),
   })
 
   return (

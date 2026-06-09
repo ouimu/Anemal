@@ -2,6 +2,33 @@
 
 ---
 
+## 📅 Log Entry: 2026-06-09 — Phase 4 Frontend Session B + audit read endpoint
+
+### 🎯 Summary
+Completed the remaining Phase 4 admin UI and the loyalty checkout integration; added the missing audit read endpoint.
+
+### 📂 Files Changed
+| File | Action |
+|---|---|
+| `src/backend/services/audit.service.ts` | **NEW** — `listAudit()` (pagination + filters over write-once trail) |
+| `src/backend/controllers/audit.controller.ts` | **NEW** — thin `GET` handler |
+| `src/backend/routes/audit.routes.ts` | **NEW** — `GET /api/audit` (admin-only) |
+| `src/backend/app.ts` | Mounted `/api/audit` |
+| `src/backend/tests/integration/phase4.test.ts` | +3 audit tests (paginated read, tenant-scoped, staff 403) → **155 tests** |
+| `src/frontend/src/views/admin/AdminBranches.tsx` | Real impl — branch list, create/edit modal, doctor-shifts panel (add/delete) |
+| `src/frontend/src/views/admin/AdminBloodBank.tsx` | Real impl — Donors/Bags/Transfusions tabs, register/collect/transfuse modals, expiry badges, client-side compatibility guard |
+| `src/frontend/src/views/admin/AdminAudit.tsx` | Real impl — paginated read-only table, filters (user/action/date), expandable JSON diff |
+| `src/frontend/src/views/clinic/ClinicBilling.tsx` | Loyalty at checkout — balance + tier, redeem (1pt=฿1, ≤20% cap), points-earned toast |
+
+### 🐞 Fix during verification
+- **Missing `/api` prefix** on many Session A+B calls (proxy only forwards `/api`, `/auth`, `/users`, `/admin`). Corrected hospitalizations/grooming/branches/blood-bank/audit/reports paths; grooming pet-search switched from non-existent `/owners/search` to `/api/search`. Browser-verified all three admin screens load live data.
+- AdminAudit list used a bare `<>` fragment in `.map()` → keyed `<Fragment>`.
+
+### ✅ Verification
+- `tsc --noEmit` backend + frontend: 0 errors · `npm test`: **155/155** · browser: Branches/BloodBank/Audit render live data, audit row-expand works.
+
+---
+
 ## 📅 Log Entry: 2026-06-09 — Login "Invalid credentials" diagnosis + Clinic ID auto-fill fix
 
 ### 🎯 Root cause

@@ -1,7 +1,7 @@
 # Session Summary — VetClinic SaaS
 > Last updated: 2026-06-09 | อ่านไฟล์นี้ก่อนเริ่ม session ใหม่ทุกครั้ง
 >
-> **Status:** Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ · **Phase 4 🚧 backend ✅ + frontend Session A ✅ · Session B pending**
+> **Status:** Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ · **Phase 4 ✅ backend (155 tests) + frontend Sessions A & B complete**
 > Dev DB: Docker `vetclinic-pg` (postgres:16) — **must run with `-p 5432:5432`**. `cd src/backend && npm run db:migrate / db:seed / npm test`.
 
 ---
@@ -13,9 +13,11 @@
 - `branchId` now embedded in JWT + `req.context`. `branch_inventory` is the stock source of truth.
 - Tests: `tests/integration/phase4.test.ts` — branch RBAC/isolation, loyalty earn+caps, hospitalization lifecycle, blood-bank guard, reminders, audit write. **All green: 152 tests / 15 suites pass** (was 131; fixed 3 Phase-3 regressions from the flat-stock→branch_inventory migration).
 
-**Session A complete (2026-06-09):** `GET /api/reports/branch-revenue`; nav wiring (ClinicLayout + AdminLayout + App.tsx); `ClinicInpatient.tsx` (cage board + 3-step care modal + discharge); `ClinicGrooming.tsx` (day timeline + booking modal + status cycle); `AdminDashboard` upgrade (inpatient/grooming KPI cards + branch revenue Recharts chart). Stubs for Branches/BloodBank/Audit ready.
+**Session A (2026-06-09):** `GET /api/reports/branch-revenue`; nav wiring; `ClinicInpatient` (cage board + 3-step care modal + discharge); `ClinicGrooming` (day timeline + booking modal + status cycle); `AdminDashboard` upgrade (inpatient/grooming KPIs + branch revenue chart).
 
-**Still TODO (Session B):** `AdminBranches.tsx`, `AdminBloodBank.tsx`, `AdminAudit.tsx`, Loyalty integration in `ClinicBilling`; real LINE/SMS dispatch in reminder worker.
+**Session B (2026-06-09):** `GET /api/audit` (admin-only, paginated) + audit service/controller/route; `AdminBranches` (CRUD + doctor shifts); `AdminBloodBank` (3 tabs + register/collect/transfuse + compatibility guard); `AdminAudit` (read-only table + filters + JSON-diff expand); Loyalty at POS checkout in `ClinicBilling` (balance/tier, redeem ≤20%, earned toast). **155 backend tests pass.** Fixed missing `/api` prefix on several frontend calls (proxy only forwards `/api|/auth|/users|/admin`).
+
+**Still TODO:** real LINE/SMS dispatch in reminder worker (currently marks `sent`); barcode/PromptPay/PDF deferred items. Dev-proxy quirk: full-page load of `/admin/*` hits backend — production static serve is unaffected.
 
 ---
 

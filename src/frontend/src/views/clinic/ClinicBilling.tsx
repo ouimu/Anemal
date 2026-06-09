@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
 import { useProducts, type Product } from '../../hooks/useInventory'
@@ -7,11 +7,14 @@ import { useCreateInvoice, useRecordPayment, type Invoice } from '../../hooks/us
 
 const baht = (n: number) => '฿' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const TAX_RATE = 7
+const LOYALTY_REDEEM_RATIO = 0.2 // points can cover at most 20% of an invoice
+
+interface Loyalty { ownerId: number; points: number; membershipTier: string }
 
 const inputCls =
   'min-h-[44px] w-full bg-surface-container-low border border-outline-variant rounded-lg px-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20'
 
-interface PetResult { petId: number; petName: string; ownerName: string; phone: string }
+interface PetResult { petId: number; petName: string; ownerId: number; ownerName: string; phone: string }
 interface PreviewLine { description: string; qty: number; unitPrice: number }
 interface CartItem { key: number; description: string; itemType: string; qty: number; unitPrice: number; productId?: number }
 
@@ -23,14 +26,24 @@ export default function ClinicBilling() {
   const [recordId, setRecordId] = useState<number | null>(null)
   const [cart, setCart] = useState<CartItem[]>([])
   const [discount, setDiscount] = useState('')
+  const [redeemPts, setRedeemPts] = useState(0)
   const [method, setMethod] = useState<'cash' | 'qr_promptpay' | 'credit_card'>('cash')
   const [tendered, setTendered] = useState('')
   const [err, setErr] = useState('')
   const [paid, setPaid] = useState<Invoice | null>(null)
+  const [earnedMsg, setEarnedMsg] = useState('')
   const [addingRetail, setAddingRetail] = useState(false)
 
+  const qc = useQueryClient()
   const createInvoice = useCreateInvoice()
   const recordPayment = useRecordPayment()
+
+  // Loyalty balance for the selected pet's owner.
+  const { data: loyalty } = useQuery<Loyalty>({
+    queryKey: ['loyalty', pet?.ownerId],
+    enabled: !!pet?.ownerId,
+    queryFn: () => api.get(`/api/loyalty/owners/${pet!.ownerId}`).then((r) => r.data.data),
+  })
 
   // Pet search (quick search returns pet results).
   const { data: searchResults } = useQuery<PetResult[]>({
@@ -65,15 +78,19 @@ export default function ClinicBilling() {
   const previewTotal = previewLines.reduce((s, l) => s + l.qty * l.unitPrice, 0)
   const cartTotal = cart.reduce((s, c) => s + c.qty * c.unitPrice, 0)
   const subtotal = previewTotal + cartTotal
-  const discountNum = Math.min(Number(discount || 0), subtotal)
+  // Loyalty: 1 point = ฿1, capped at 20% of subtotal and the owner's balance.
+  const maxRedeemable = Math.min(loyalty?.points ?? 0, Math.floor(subtotal * LOYALTY_REDEEM_RATIO))
+  const redeemDiscount = Math.min(redeemPts, maxRedeemable)
+  const manualDiscount = Number(discount || 0)
+  const discountNum = Math.min(manualDiscount + redeemDiscount, subtotal)
   const tax = ((subtotal - discountNum) * TAX_RATE) / 100
   const total = subtotal - discountNum + tax
   const change = method === 'cash' ? Number(tendered || 0) - total : 0
   const hasLines = previewLines.length > 0 || cart.length > 0
 
   function reset() {
-    setPet(null); setPetQuery(''); setRecordId(null); setCart([]); setDiscount('')
-    setMethod('cash'); setTendered(''); setErr(''); setPaid(null)
+    setPet(null); setPetQuery(''); setRecordId(null); setCart([]); setDiscount(''); setRedeemPts(0)
+    setMethod('cash'); setTendered(''); setErr(''); setPaid(null); setEarnedMsg('')
   }
 
   function addService() {
@@ -101,6 +118,15 @@ export default function ClinicBilling() {
         taxRate: TAX_RATE,
       })
       const settled = await recordPayment.mutateAsync({ id: invoice.id, paymentMethod: method })
+      // Redeem loyalty points (best-effort — payment already succeeded).
+      if (pet?.ownerId && redeemDiscount > 0) {
+        try {
+          await api.post('/api/loyalty/redeem', { ownerId: pet.ownerId, points: redeemDiscount, invoiceTotal: subtotal })
+          qc.invalidateQueries({ queryKey: ['loyalty', pet.ownerId] })
+        } catch { /* discount already applied to invoice; ignore redeem failure */ }
+      }
+      const earned = Math.floor(Number(settled.totalAmount) / 100)
+      if (pet?.ownerId && earned > 0) setEarnedMsg(`+${earned} loyalty point${earned !== 1 ? 's' : ''} earned`)
       setPaid(settled)
     } catch (e: unknown) {
       setErr((e as { response?: { data?: { error?: string } } }).response?.data?.error ?? 'Could not finalize the sale.')
@@ -271,6 +297,32 @@ export default function ClinicBilling() {
               </div>
             )}
 
+            {/* Loyalty */}
+            {loyalty && (
+              <div className="mb-md rounded-lg border border-outline-variant bg-surface-container-low p-md space-y-sm">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-xs text-body-sm text-on-surface">
+                    <MaterialIcon name="loyalty" size={18} className="text-secondary" />
+                    Loyalty
+                    <span className="px-sm py-px rounded-full bg-secondary-container text-secondary-on-container text-label-md capitalize">{loyalty.membershipTier}</span>
+                  </span>
+                  <span className="text-body-sm font-medium text-on-surface font-code">{loyalty.points} pts</span>
+                </div>
+                {maxRedeemable > 0 ? (
+                  <div className="flex items-center gap-sm">
+                    <input type="number" min="0" max={maxRedeemable} value={redeemPts || ''} placeholder="0"
+                           onChange={(e) => setRedeemPts(Math.max(0, Math.min(maxRedeemable, Math.floor(Number(e.target.value) || 0))))}
+                           className="w-24 min-h-[40px] bg-surface border border-outline-variant rounded-lg px-sm text-body-sm text-right font-code focus:outline-none focus:border-primary" />
+                    <button onClick={() => setRedeemPts(maxRedeemable)}
+                            className="min-h-[40px] px-sm rounded-lg border border-outline-variant text-body-sm text-on-surface-variant hover:bg-surface-container transition-colors">Max</button>
+                    <span className="text-label-md text-on-surface-variant">redeem (max {maxRedeemable}, −{baht(redeemDiscount)})</span>
+                  </div>
+                ) : (
+                  <p className="text-label-md text-on-surface-variant">Add line items to redeem points (up to 20% of the bill).</p>
+                )}
+              </div>
+            )}
+
             {err && <p className="text-body-sm text-error mb-sm">{err}</p>}
 
             <button onClick={finalize} disabled={!hasLines || createInvoice.isPending || recordPayment.isPending}
@@ -283,7 +335,7 @@ export default function ClinicBilling() {
       </div>
 
       {addingRetail && <RetailPicker onPick={addProduct} onClose={() => setAddingRetail(false)} />}
-      {paid && <SuccessModal invoice={paid} pet={pet} method={method} onClose={reset} />}
+      {paid && <SuccessModal invoice={paid} pet={pet} method={method} earnedMsg={earnedMsg} onClose={reset} />}
     </div>
   )
 }
@@ -326,7 +378,7 @@ function Row({ label, value }: { label: string; value: string }) {
   )
 }
 
-function SuccessModal({ invoice, pet, method, onClose }: { invoice: Invoice; pet: { petName: string; ownerName: string } | null; method: string; onClose: () => void }) {
+function SuccessModal({ invoice, pet, method, earnedMsg, onClose }: { invoice: Invoice; pet: { petName: string; ownerName: string } | null; method: string; earnedMsg?: string; onClose: () => void }) {
   function print() {
     const items = (invoice.items ?? [])
       .map((i) => `<tr><td>${i.description}</td><td style="text-align:center">${Number(i.quantity)}</td><td style="text-align:right">${baht(Number(i.unitPrice))}</td><td style="text-align:right">${baht(Number(i.totalPrice))}</td></tr>`)
@@ -358,7 +410,12 @@ function SuccessModal({ invoice, pet, method, onClose }: { invoice: Invoice; pet
         </div>
         <h3 className="text-headline-md font-headline font-bold text-on-surface mb-xs">Payment Successful!</h3>
         <p className="text-body-sm text-on-surface-variant mb-xs">{invoice.invoiceNo}</p>
-        <p className="text-headline-md font-headline font-bold text-primary font-code mb-lg">{baht(Number(invoice.totalAmount))}</p>
+        <p className="text-headline-md font-headline font-bold text-primary font-code mb-sm">{baht(Number(invoice.totalAmount))}</p>
+        {earnedMsg && (
+          <p className="inline-flex items-center gap-xs text-body-sm text-secondary font-medium mb-lg">
+            <MaterialIcon name="loyalty" size={16} /> {earnedMsg}
+          </p>
+        )}
         <div className="flex gap-sm">
           <button onClick={print} className="flex-1 min-h-[44px] rounded-lg border border-primary text-primary font-medium hover:bg-surface-container-low transition-colors flex items-center justify-center gap-sm">
             <MaterialIcon name="print" size={18} /> Print Receipt
