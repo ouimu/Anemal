@@ -13,6 +13,8 @@ const NAV = [
   { to: '/clinic/emr',          icon: 'medical_services', label: 'EMR' },
   { to: '/clinic/inventory',    icon: 'inventory_2',      label: 'Inventory' },
   { to: '/clinic/billing',      icon: 'payments',         label: 'Billing' },
+  { to: '/clinic/inpatient',    icon: 'local_hospital',   label: 'Inpatient' },
+  { to: '/clinic/grooming',     icon: 'content_cut',      label: 'Grooming' },
 ]
 
 export default function ClinicLayout() {

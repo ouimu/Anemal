@@ -25,6 +25,15 @@ export async function getInventoryUsage(req: Request, res: Response, next: NextF
   } catch (err) { next(err) }
 }
 
+export async function getBranchRevenue(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const from = req.query.from ? new Date(req.query.from as string) : undefined
+    const to   = req.query.to   ? new Date(req.query.to   as string) : undefined
+    const data = await reportService.getBranchRevenue(req.context!.tenantId, from, to)
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
 export async function getSnapshot(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const data = await reportService.getSnapshot(req.context!.tenantId, requireBranchId(req))

@@ -2,6 +2,36 @@
 
 ---
 
+## 📅 Log Entry: 2026-06-09 — Phase 4 Frontend Session A
+
+### 🎯 Summary
+Built the clinic-side Phase 4 UI and admin dashboard upgrade. Backend report endpoint also added.
+
+### 📂 Files Changed
+| File | Action |
+|---|---|
+| `src/backend/models/report.repository.ts` | Added `branchRevenue()` — per-branch paid invoice aggregate with optional date range |
+| `src/backend/services/report.service.ts` | Added `getBranchRevenue()` |
+| `src/backend/controllers/report.controller.ts` | Added `getBranchRevenue` handler |
+| `src/backend/routes/report.routes.ts` | Added `GET /branch-revenue` route |
+| `src/frontend/src/layouts/ClinicLayout.tsx` | Added Inpatient + Grooming nav items |
+| `src/frontend/src/layouts/AdminLayout.tsx` | Added Branches, Blood Bank, Audit Log nav items |
+| `src/frontend/src/App.tsx` | Added lazy routes for all Phase 4 screens |
+| `src/frontend/src/views/clinic/ClinicInpatient.tsx` | **NEW** — Cage board grid, care-log 3-step stepper modal, discharge with confirm |
+| `src/frontend/src/views/clinic/ClinicGrooming.tsx` | **NEW** — Day timeline, booking cards, status-cycle, new-booking modal with pet search |
+| `src/frontend/src/views/admin/AdminDashboard.tsx` | Added inpatient + grooming KPI cards + branch revenue Recharts bar chart with date range |
+| `src/frontend/src/views/admin/AdminBranches.tsx` | **NEW** stub (Session B) |
+| `src/frontend/src/views/admin/AdminBloodBank.tsx` | **NEW** stub (Session B) |
+| `src/frontend/src/views/admin/AdminAudit.tsx` | **NEW** stub (Session B) |
+| `.claude/launch.json` | Created — dev server config for preview tool |
+
+### ✅ Verification
+- `tsc --noEmit` backend + frontend: 0 errors
+- `npm test`: 152/152 pass (no regressions)
+- `vite build`: succeeds, all Phase 4 chunks bundled as lazy splits
+
+---
+
 ## 📅 Log Entry: 2026-06-05 — Functional Spec v2.0 — Full Module Detail Expansion
 
 ### 🎯 Motivation & Purpose

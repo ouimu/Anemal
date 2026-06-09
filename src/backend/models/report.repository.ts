@@ -77,3 +77,39 @@ export async function revenueThisMonth(tenantId: number): Promise<number> {
 export function countPendingInvoices(tenantId: number): Promise<number> {
   return prisma.invoice.count({ where: { tenantId, paymentStatus: 'pending' } })
 }
+
+export interface BranchRevenueRow { branchId: number; branchName: string; total: number; count: number }
+
+export function branchRevenue(tenantId: number, from?: Date, to?: Date): Promise<BranchRevenueRow[]> {
+  if (from && to) {
+    return prisma.$queryRaw<BranchRevenueRow[]>`
+      SELECT b.id AS "branchId", b.name AS "branchName",
+             COALESCE(SUM(i."totalAmount"), 0)::float8 AS total,
+             COUNT(i.id)::int AS count
+      FROM branches b
+      LEFT JOIN invoices i ON i."branchId" = b.id AND i."tenantId" = ${tenantId}
+        AND i."paymentStatus" = 'paid' AND i."issuedAt" >= ${from} AND i."issuedAt" < ${to}
+      WHERE b."tenantId" = ${tenantId} AND b."isActive" = true
+      GROUP BY b.id, b.name ORDER BY total DESC`
+  }
+  if (from) {
+    return prisma.$queryRaw<BranchRevenueRow[]>`
+      SELECT b.id AS "branchId", b.name AS "branchName",
+             COALESCE(SUM(i."totalAmount"), 0)::float8 AS total,
+             COUNT(i.id)::int AS count
+      FROM branches b
+      LEFT JOIN invoices i ON i."branchId" = b.id AND i."tenantId" = ${tenantId}
+        AND i."paymentStatus" = 'paid' AND i."issuedAt" >= ${from}
+      WHERE b."tenantId" = ${tenantId} AND b."isActive" = true
+      GROUP BY b.id, b.name ORDER BY total DESC`
+  }
+  return prisma.$queryRaw<BranchRevenueRow[]>`
+    SELECT b.id AS "branchId", b.name AS "branchName",
+           COALESCE(SUM(i."totalAmount"), 0)::float8 AS total,
+           COUNT(i.id)::int AS count
+    FROM branches b
+    LEFT JOIN invoices i ON i."branchId" = b.id AND i."tenantId" = ${tenantId}
+      AND i."paymentStatus" = 'paid'
+    WHERE b."tenantId" = ${tenantId} AND b."isActive" = true
+    GROUP BY b.id, b.name ORDER BY total DESC`
+}

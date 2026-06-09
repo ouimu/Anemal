@@ -24,6 +24,10 @@ export function getInventoryUsage(tenantId: number) {
   return reportRepo.inventoryUsage(tenantId, USAGE_LIMIT)
 }
 
+export function getBranchRevenue(tenantId: number, from?: Date, to?: Date) {
+  return reportRepo.branchRevenue(tenantId, from, to)
+}
+
 export async function getSnapshot(tenantId: number, branchId: number) {
   const [revenueToday, revenueThisMonth, pendingInvoices, lowStock, expiringSoon] = await Promise.all([
     reportRepo.revenueToday(tenantId),

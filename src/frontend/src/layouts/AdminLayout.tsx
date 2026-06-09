@@ -14,6 +14,9 @@ const NAV = [
   { to: '/admin/usage',        icon: 'bar_chart',    label: 'Usage Stats' },
   { to: '/admin/settings',     icon: 'settings',     label: 'Settings' },
   { to: '/admin/subscription', icon: 'credit_card',  label: 'Subscription' },
+  { to: '/admin/branches',     icon: 'apartment',    label: 'Branches' },
+  { to: '/admin/blood-bank',   icon: 'bloodtype',    label: 'Blood Bank' },
+  { to: '/admin/audit',        icon: 'policy',       label: 'Audit Log' },
 ]
 
 export default function AdminLayout() {

@@ -9,5 +9,6 @@ router.get('/revenue', ctrl.getRevenue)
 router.get('/top-services', ctrl.getTopServices)
 router.get('/inventory-usage', ctrl.getInventoryUsage)
 router.get('/snapshot', ctrl.getSnapshot)
+router.get('/branch-revenue', ctrl.getBranchRevenue)
 
 export default router

@@ -14,12 +14,19 @@ const AdminSettings     = lazy(() => import('./views/admin/AdminSettings'))
 const AdminSubscription = lazy(() => import('./views/admin/AdminSubscription'))
 
 // ── Clinic pages ─────────────────────────────────────────────────────────────
-const ClinicDashboard   = lazy(() => import('./views/clinic/ClinicDashboard'))
-const ClinicAppointments= lazy(() => import('./views/clinic/ClinicAppointments'))
-const ClinicPets        = lazy(() => import('./views/clinic/ClinicPets'))
-const ClinicEMR         = lazy(() => import('./views/clinic/ClinicEMR'))
-const ClinicInventory   = lazy(() => import('./views/clinic/ClinicInventory'))
-const ClinicBilling     = lazy(() => import('./views/clinic/ClinicBilling'))
+const ClinicDashboard    = lazy(() => import('./views/clinic/ClinicDashboard'))
+const ClinicAppointments = lazy(() => import('./views/clinic/ClinicAppointments'))
+const ClinicPets         = lazy(() => import('./views/clinic/ClinicPets'))
+const ClinicEMR          = lazy(() => import('./views/clinic/ClinicEMR'))
+const ClinicInventory    = lazy(() => import('./views/clinic/ClinicInventory'))
+const ClinicBilling      = lazy(() => import('./views/clinic/ClinicBilling'))
+const ClinicInpatient    = lazy(() => import('./views/clinic/ClinicInpatient'))
+const ClinicGrooming     = lazy(() => import('./views/clinic/ClinicGrooming'))
+
+// ── Phase 4 admin pages (Session B stubs) ────────────────────────────────────
+const AdminBranches  = lazy(() => import('./views/admin/AdminBranches'))
+const AdminBloodBank = lazy(() => import('./views/admin/AdminBloodBank'))
+const AdminAudit     = lazy(() => import('./views/admin/AdminAudit'))
 
 const Loader = () => (
   <div className="flex items-center justify-center h-screen">
@@ -43,6 +50,9 @@ export default function App() {
           <Route path="usage"        element={<AdminUsage/>}/>
           <Route path="settings"     element={<AdminSettings/>}/>
           <Route path="subscription" element={<AdminSubscription/>}/>
+          <Route path="branches"     element={<AdminBranches/>}/>
+          <Route path="blood-bank"   element={<AdminBloodBank/>}/>
+          <Route path="audit"        element={<AdminAudit/>}/>
         </Route>
 
         {/* ── Clinic section (/clinic/*) ── role=doctor|staff only */}
@@ -54,6 +64,8 @@ export default function App() {
           <Route path="emr"          element={<ClinicEMR/>}/>
           <Route path="inventory"    element={<ClinicInventory/>}/>
           <Route path="billing"      element={<ClinicBilling/>}/>
+          <Route path="inpatient"    element={<ClinicInpatient/>}/>
+          <Route path="grooming"     element={<ClinicGrooming/>}/>
         </Route>
 
         {/* Legacy + catch-all */}
