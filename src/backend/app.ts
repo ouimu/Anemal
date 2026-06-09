@@ -17,6 +17,14 @@ import productRoutes from './routes/product.routes'
 import invoiceRoutes from './routes/invoice.routes'
 import reportRoutes from './routes/report.routes'
 import subscriptionRoutes from './routes/subscription.routes'
+import branchRoutes from './routes/branch.routes'
+import transferRoutes from './routes/transfer.routes'
+import hospitalizationRoutes from './routes/hospitalization.routes'
+import bloodBankRoutes from './routes/blood-bank.routes'
+import groomingRoutes from './routes/grooming.routes'
+import loyaltyRoutes from './routes/loyalty.routes'
+import reminderRoutes from './routes/reminder.routes'
+import { auditMiddleware } from './middlewares/audit.middleware'
 import { notFound, errorHandler } from './middlewares/error-handler.middleware'
 
 const app = express()
@@ -28,6 +36,9 @@ app.use(express.json())
 
 // Health check — no auth required
 app.get('/health', (_req, res) => res.json({ status: 'ok' }))
+
+// Audit trail — records successful state-changing requests (reads req.context lazily at finish)
+app.use(auditMiddleware)
 
 // Routes
 app.use('/auth',            authRoutes)
@@ -45,6 +56,13 @@ app.use('/api/products',        productRoutes)
 app.use('/api/invoices',        invoiceRoutes)
 app.use('/api/reports',         reportRoutes)
 app.use('/api/subscription',    subscriptionRoutes)
+app.use('/api/branches',        branchRoutes)
+app.use('/api/inventory/transfers', transferRoutes)
+app.use('/api/hospitalizations', hospitalizationRoutes)
+app.use('/api/blood-bank',      bloodBankRoutes)
+app.use('/api/grooming',        groomingRoutes)
+app.use('/api/loyalty',         loyaltyRoutes)
+app.use('/api/reminders',       reminderRoutes)
 
 // 404 fallback + global error handler (must be last)
 app.use(notFound)

@@ -18,23 +18,24 @@ export class PrescriptionError extends AppError {
   }
 }
 
-export async function createPrescription(tenantId: number, data: CreatePrescriptionInput) {
+export async function createPrescription(tenantId: number, branchId: number, data: CreatePrescriptionInput) {
   const record = await prescriptionRepo.findMedicalRecord(tenantId, data.medicalRecordId)
   if (!record) throw new PrescriptionError('Medical record not found', 404)
 
   const drug = await prescriptionRepo.findDrug(tenantId, data.drugId)
   if (!drug) throw new PrescriptionError('Drug/item not found', 404)
 
-  const prescription = await prescriptionRepo.deductStockAndCreate(tenantId, data)
+  const prescription = await prescriptionRepo.deductStockAndCreate(tenantId, branchId, data)
   if (!prescription) {
-    throw new PrescriptionError(`Insufficient stock. Available: ${Number(drug.stockQuantity)} ${drug.unit ?? ''}`.trim(), 409)
+    const stock = await prescriptionRepo.findBranchStock(tenantId, branchId, data.drugId)
+    const available = stock ? Number(stock.stockQty) : 0
+    throw new PrescriptionError(`Insufficient stock at this branch. Available: ${available} ${drug.unit ?? ''}`.trim(), 409)
   }
   return prescription
 }
 
-export async function deletePrescription(tenantId: number, id: number) {
+export async function deletePrescription(tenantId: number, branchId: number, id: number) {
   const prescription = await prescriptionRepo.findPrescription(tenantId, id)
   if (!prescription) throw new PrescriptionError('Prescription not found', 404)
-
-  await prescriptionRepo.deleteAndRestock(tenantId, id, prescription.drugId, Number(prescription.quantity))
+  await prescriptionRepo.deleteAndRestock(tenantId, branchId, id, prescription.drugId, Number(prescription.quantity))
 }

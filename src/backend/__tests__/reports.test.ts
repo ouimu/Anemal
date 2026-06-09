@@ -26,8 +26,11 @@ beforeAll(async () => {
   tidA = tA.id; tidB = tB.id
   const uA = await prisma.user.create({ data: { tenantId: tidA, name: 'A', email: `rep-a-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
   const uB = await prisma.user.create({ data: { tenantId: tidB, name: 'B', email: `rep-b-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
-  tokenA = signToken({ userId: uA.id, tenantId: tidA, role: 'admin' })
-  tokenB = signToken({ userId: uB.id, tenantId: tidB, role: 'admin' })
+  // Phase 4: every operating context has a branch; snapshot requires one in the token.
+  const bA = await prisma.branch.create({ data: { tenantId: tidA, name: 'Main' } })
+  const bB = await prisma.branch.create({ data: { tenantId: tidB, name: 'Main' } })
+  tokenA = signToken({ userId: uA.id, tenantId: tidA, branchId: bA.id, role: 'admin' })
+  tokenB = signToken({ userId: uB.id, tenantId: tidB, branchId: bB.id, role: 'admin' })
 
   // Tenant A: one PAID invoice of 500 today. Tenant B: nothing.
   await prisma.invoice.create({
@@ -41,6 +44,7 @@ afterAll(async () => {
   await new Promise<void>((resolve) => server.close(() => resolve()))
   await prisma.invoiceItem.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.invoice.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
+  await prisma.branch.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.user.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.tenant.deleteMany({ where: { id: { in: [tidA, tidB] } } })
 })

@@ -1,4 +1,4 @@
-import { useLocation } from 'react-router-dom'
+﻿import { useLocation } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { useUiStore } from '../store/uiStore'
 import MaterialIcon from './MaterialIcon'
@@ -62,7 +62,7 @@ export default function TopNav() {
           <MaterialIcon name="help_outline" size={20} />
         </button>
         <div
-          className="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center text-label-md font-bold select-none flex-shrink-0"
+          className="w-9 h-9 rounded-full bg-primary text-primary-on flex items-center justify-center text-label-md font-bold select-none flex-shrink-0"
           title={name ?? ''}
         >
           {(name ?? 'U').charAt(0).toUpperCase()}

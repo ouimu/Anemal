@@ -42,14 +42,15 @@ export async function countDoctorConflicts(tenantId: number, doctorId: number, s
   return Number(rows[0]?.count ?? 0)
 }
 
-export function createAppointment(tenantId: number, data: CreateAppointmentInput, scheduledAt: Date) {
-  return prisma.appointment.create({ data: { ...data, tenantId, scheduledAt } })
+export function createAppointment(tenantId: number, branchId: number | null, data: CreateAppointmentInput, scheduledAt: Date) {
+  return prisma.appointment.create({ data: { ...data, tenantId, branchId, scheduledAt } })
 }
 
-export function createWalkIn(tenantId: number, petId: number, doctorId: number, reason?: string | null) {
+export function createWalkIn(tenantId: number, branchId: number | null, petId: number, doctorId: number, reason?: string | null) {
   return prisma.appointment.create({
     data: {
       tenantId,
+      branchId,
       petId,
       doctorId,
       scheduledAt: new Date(),

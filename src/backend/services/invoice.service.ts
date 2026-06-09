@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { AppError } from '../utils/errors'
 import * as invoiceRepo from '../models/invoice.repository'
 import type { BuiltItem } from '../models/invoice.repository'
+import { earnOnPayment } from './loyalty.service'
 
 const ITEM_TYPES = ['service', 'medicine', 'vaccine', 'lab', 'supply', 'grooming', 'retail', 'other'] as const
 const PAYMENT_METHODS = ['cash', 'qr_promptpay', 'credit_card', 'transfer', 'other'] as const
@@ -39,7 +40,7 @@ export class InvoiceError extends AppError {
 
 const round2 = (n: number): number => Math.round(n * 100) / 100
 
-export async function createInvoice(tenantId: number, data: CreateInvoiceInput, createdBy?: number) {
+export async function createInvoice(tenantId: number, branchId: number, data: CreateInvoiceInput, createdBy?: number) {
   const builtItems: BuiltItem[] = []
   let petId: number | null = data.petId ?? null
 
@@ -82,6 +83,7 @@ export async function createInvoice(tenantId: number, data: CreateInvoiceInput, 
   const totalAmount = round2(taxable + taxAmount)
 
   return invoiceRepo.createInvoice(tenantId, {
+    branchId,
     petId,
     medicalRecordId: data.medicalRecordId ?? null,
     items:           builtItems,
@@ -116,5 +118,8 @@ export async function listInvoices(
 export async function recordPayment(tenantId: number, id: number, paymentMethod: string) {
   const invoice = await getInvoice(tenantId, id)
   if (invoice.paymentStatus === 'paid') throw new InvoiceError('Invoice is already paid', 409)
-  return invoiceRepo.recordPayment(tenantId, id, paymentMethod)
+  const paid = await invoiceRepo.recordPayment(tenantId, id, paymentMethod)
+  // Loyalty: earn points on payment (best-effort; skips retail invoices with no owner).
+  await earnOnPayment(tenantId, id, Number(invoice.totalAmount))
+  return paid
 }

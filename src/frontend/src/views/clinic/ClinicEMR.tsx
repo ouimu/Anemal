@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+﻿import React, { useState, useRef, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
@@ -86,7 +86,7 @@ function AnatomyCanvas({ value, onChange }: { value: any; onChange: (v: any) => 
       <div className="flex gap-sm flex-wrap">
         {TEMPLATES.map(t => (
           <button key={t} type="button" onClick={() => setTemplate(t)}
-            className={`px-md py-xs rounded-full text-label-md font-medium transition-colors min-h-[36px] ${template === t ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}>
+            className={`px-md py-xs rounded-full text-label-md font-medium transition-colors min-h-[36px] ${template === t ? 'bg-primary text-primary-on' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}>
             {t}
           </button>
         ))}
@@ -100,7 +100,7 @@ function AnatomyCanvas({ value, onChange }: { value: any; onChange: (v: any) => 
             style={{ background: c }} />
         ))}
         <button type="button" onClick={() => setTool('eraser')}
-          className={`px-md py-xs rounded-lg text-label-md min-h-[36px] transition-colors ${tool === 'eraser' ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}>
+          className={`px-md py-xs rounded-lg text-label-md min-h-[36px] transition-colors ${tool === 'eraser' ? 'bg-primary text-primary-on' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}>
           <MaterialIcon name="ink_eraser" size={16} className="inline mr-xs" />Eraser
         </button>
         <button type="button" onClick={clearCanvas} className="px-md py-xs rounded-lg text-label-md bg-surface-container text-on-surface-variant hover:bg-surface-container-high min-h-[36px] transition-colors">
@@ -226,7 +226,7 @@ function PrescriptionPanel({ recordId, prescriptions, onRefresh }: {
             </div>
             <input className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-sm border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary"
               placeholder="Dosage instructions…" value={instruction} onChange={e => setInstruction(e.target.value)} />
-            <button onClick={addPrescription} disabled={saving} className="w-full min-h-[44px] bg-secondary text-on-secondary rounded-lg text-body-sm font-semibold hover:bg-secondary/90 transition-colors disabled:opacity-50">
+            <button onClick={addPrescription} disabled={saving} className="w-full min-h-[44px] bg-secondary text-secondary-on rounded-lg text-body-sm font-semibold hover:bg-secondary/90 transition-colors disabled:opacity-50">
               {saving ? 'Adding…' : 'Add Prescription'}
             </button>
           </>
@@ -385,7 +385,7 @@ export default function ClinicEMR() {
                 <p className="text-label-md text-on-surface-variant capitalize">{pet.species}</p>
               </div>
             </div>
-            <button onClick={newRecord} className="w-full min-h-[44px] flex items-center justify-center gap-sm bg-primary text-on-primary rounded-lg text-body-sm font-semibold hover:bg-primary/90 transition-colors">
+            <button onClick={newRecord} className="w-full min-h-[44px] flex items-center justify-center gap-sm bg-primary text-primary-on rounded-lg text-body-sm font-semibold hover:bg-primary/90 transition-colors">
               <MaterialIcon name="add" size={18} />New EMR
             </button>
           </div>
@@ -498,7 +498,7 @@ export default function ClinicEMR() {
             {saveMsg && <span className={`text-body-sm font-medium ${saveMsg === 'Saved' ? 'text-success' : 'text-error'}`}>{saveMsg}</span>}
             <div className="flex-1" />
             <button onClick={saveRecord} disabled={saving}
-              className="min-h-[44px] px-xl bg-primary text-on-primary rounded-lg text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-sm">
+              className="min-h-[44px] px-xl bg-primary text-primary-on rounded-lg text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-sm">
               <MaterialIcon name="save" size={18} />
               {saving ? 'Saving…' : 'Save EMR'}
             </button>

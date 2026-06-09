@@ -13,6 +13,7 @@ export interface BuiltItem {
 }
 
 export interface CreateInvoiceData {
+  branchId?:       number | null
   petId?:          number | null
   medicalRecordId?: number | null
   items:           BuiltItem[]
@@ -45,13 +46,14 @@ const monthBounds = () => {
 
 export function createInvoice(tenantId: number, data: CreateInvoiceData) {
   return prisma.$transaction(async (tx) => {
-    // 1. Deduct stock for retail lines (conditional update prevents overselling).
+    // 1. Deduct branch stock for retail lines (conditional update prevents overselling).
     for (const item of data.items) {
       if (!item.productId) continue
       const affected = await tx.$executeRaw`
-        UPDATE inventory_items
-        SET "stockQuantity" = "stockQuantity" - ${item.qty}
-        WHERE id = ${item.productId} AND "tenantId" = ${tenantId} AND "stockQuantity" >= ${item.qty}
+        UPDATE branch_inventory
+        SET "stockQty" = "stockQty" - ${item.qty}
+        WHERE "tenantId" = ${tenantId} AND "branchId" = ${data.branchId}
+          AND "productId" = ${item.productId} AND "stockQty" >= ${item.qty}
       `
       if (affected === 0) throw new ConflictError(`Insufficient stock for ${item.description}`, 'INSUFFICIENT_STOCK')
     }
@@ -65,6 +67,7 @@ export function createInvoice(tenantId: number, data: CreateInvoiceData) {
     const invoice = await tx.invoice.create({
       data: {
         tenantId,
+        branchId:        data.branchId ?? null,
         petId:           data.petId ?? null,
         medicalRecordId: data.medicalRecordId ?? null,
         invoiceNo,
@@ -96,6 +99,7 @@ export function createInvoice(tenantId: number, data: CreateInvoiceData) {
       await tx.stockMovement.create({
         data: {
           tenantId,
+          branchId:      data.branchId ?? null,
           itemId:        item.productId,
           movementType:  'out',
           qty:           item.qty,

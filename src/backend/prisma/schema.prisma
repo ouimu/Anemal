@@ -30,6 +30,19 @@ model Tenant {
   vaccinations   Vaccination[]
   attachments    Attachment[]
   settings       TenantSettings?
+  // Phase 4
+  branches            Branch[]
+  branchInventory     BranchInventory[]
+  doctorShifts        DoctorShift[]
+  hospitalizations    Hospitalization[]
+  dailyInpatientCare  DailyInpatientCare[]
+  groomingBookings    GroomingBooking[]
+  bloodDonors         BloodDonor[]
+  bloodDonations      BloodDonation[]
+  bloodTransfusions   BloodTransfusion[]
+  loyaltyTransactions LoyaltyTransaction[]
+  auditLogs           AuditLog[]
+  petReminders        PetReminder[]
 
   @@map("tenants")
 }
@@ -61,21 +74,27 @@ model TenantSettings {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  tenantId     Int
-  name         String   @db.VarChar(255)
-  email        String   @db.VarChar(255)
-  passwordHash String   @db.VarChar(255)
-  role         Role
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
+  id               Int      @id @default(autoincrement())
+  tenantId         Int
+  branchId         Int?     // primary branch (Phase 4)
+  name             String   @db.VarChar(255)
+  email            String   @db.VarChar(255)
+  passwordHash     String   @db.VarChar(255)
+  role             Role
+  isActive         Boolean  @default(true)
+  allowedStartTime String?  @db.VarChar(5) // "HH:MM" login window start (Phase 4)
+  allowedEndTime   String?  @db.VarChar(5) // "HH:MM" login window end
+  lastLoginAt      DateTime?
+  createdAt        DateTime @default(now())
 
   tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch       Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
   appointments Appointment[]
   medicalRecords MedicalRecord[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
+  @@index([tenantId, branchId])
   @@map("users")
 }
 
@@ -86,18 +105,22 @@ enum Role {
 }
 
 model Owner {
-  id        Int      @id @default(autoincrement())
-  tenantId  Int
-  firstName String   @db.VarChar(100)
-  lastName  String   @db.VarChar(100)
-  phone     String   @db.VarChar(50)
-  email     String?  @db.VarChar(255)
-  lineId    String?  @db.VarChar(100)
-  address   String?
-  createdAt DateTime @default(now())
+  id             Int      @id @default(autoincrement())
+  tenantId       Int
+  firstName      String   @db.VarChar(100)
+  lastName       String   @db.VarChar(100)
+  phone          String   @db.VarChar(50)
+  email          String?  @db.VarChar(255)
+  lineId         String?  @db.VarChar(100)
+  address        String?
+  isActive       Boolean  @default(true)   // Phase 4 soft-deactivation
+  loyaltyPoints  Int      @default(0)       // Phase 4 loyalty balance
+  membershipTier String   @default("standard") @db.VarChar(50) // standard|silver|gold|platinum
+  createdAt      DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   pets   Pet[]
+  loyaltyTransactions LoyaltyTransaction[]
 
   @@index([tenantId])
   @@index([tenantId, phone])
@@ -128,6 +151,12 @@ model Pet {
   medicalRecords MedicalRecord[]
   vaccinations   Vaccination[]
   invoices       Invoice[]
+  // Phase 4
+  hospitalizations  Hospitalization[]
+  groomingBookings  GroomingBooking[]
+  bloodDonors       BloodDonor[]
+  bloodTransfusions BloodTransfusion[]
+  petReminders      PetReminder[]
 
   @@index([tenantId])
   @@index([tenantId, ownerId])
@@ -145,6 +174,7 @@ enum Gender {
 model Appointment {
   id          Int               @id @default(autoincrement())
   tenantId    Int
+  branchId    Int?
   petId       Int
   doctorId    Int
   room        String?           @db.VarChar(50)
@@ -178,6 +208,7 @@ enum AppointmentStatus {
 model MedicalRecord {
   id                Int      @id @default(autoincrement())
   tenantId          Int
+  branchId          Int?
   petId             Int
   appointmentId     Int?
   doctorId          Int
@@ -224,6 +255,7 @@ model Prescription {
   @@map("prescriptions")
 }
 
+// Product catalog (Phase 4: stock moved to BranchInventory — this is now definition-only).
 model InventoryItem {
   id            Int      @id @default(autoincrement())
   tenantId      Int
@@ -231,47 +263,69 @@ model InventoryItem {
   category      String?  @db.VarChar(100)
   barcode       String?  @db.VarChar(100)
   unit          String?  @db.VarChar(50)
-  stockQuantity Decimal  @default(0) @db.Decimal(10, 2)
-  minStockLevel Decimal  @default(0) @db.Decimal(10, 2)
-  expiryDate    DateTime? @db.Date
   unitCost      Decimal? @db.Decimal(10, 2)
   unitPrice     Decimal? @db.Decimal(10, 2)
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
 
-  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  prescriptions  Prescription[]
-  stockMovements StockMovement[]
+  tenant          Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  prescriptions   Prescription[]
+  stockMovements  StockMovement[]
+  branchInventory BranchInventory[]
 
   @@index([tenantId])
   @@index([tenantId, barcode])
   @@map("inventory_items")
 }
 
-// Stock card / ledger — tenant-scoped movement history (FR-06-04).
-// Branch scoping (branch_inventory, destination_branch_id) is deferred to Phase 4.
+// Per-branch stock — the source of truth (Phase 4, FR-06-02).
+model BranchInventory {
+  id          Int       @id @default(autoincrement())
+  tenantId    Int
+  branchId    Int
+  productId   Int
+  stockQty    Decimal   @default(0) @db.Decimal(10, 2)
+  minStockQty Decimal   @default(0) @db.Decimal(10, 2)
+  lotNo       String?   @db.VarChar(100)
+  expiryDate  DateTime? @db.Date
+  updatedAt   DateTime  @updatedAt
+
+  tenant  Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch  Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  product InventoryItem @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, branchId, productId])
+  @@index([tenantId, branchId, productId])
+  @@map("branch_inventory")
+}
+
+// Stock card / ledger — per-branch movement history (FR-06-04); transfers use destinationBranchId.
 model StockMovement {
-  id            Int      @id @default(autoincrement())
-  tenantId      Int
-  itemId        Int
-  movementType  String   @db.VarChar(20) // 'in' | 'out' | 'adjustment'
-  qty           Decimal  @db.Decimal(10, 2)
-  referenceType String?  @db.VarChar(50) // 'prescription' | 'retail' | 'manual'
-  referenceId   Int?
-  notes         String?
-  performedBy   Int?
-  createdAt     DateTime @default(now())
+  id                  Int      @id @default(autoincrement())
+  tenantId            Int
+  branchId            Int?
+  itemId              Int
+  movementType        String   @db.VarChar(20) // in|out|adjustment|transfer_in|transfer_out
+  qty                 Decimal  @db.Decimal(10, 2)
+  referenceType       String?  @db.VarChar(50) // prescription|retail|manual|transfer
+  referenceId         Int?
+  destinationBranchId Int?
+  notes               String?
+  performedBy         Int?
+  createdAt           DateTime @default(now())
 
   tenant Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   item   InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, itemId, createdAt])
+  @@index([tenantId, branchId, itemId, createdAt])
   @@map("stock_movements")
 }
 
 model Invoice {
   id              Int            @id @default(autoincrement())
   tenantId        Int
+  branchId        Int?
   petId           Int?
   medicalRecordId Int?
   invoiceNo       String         @db.VarChar(100)
@@ -359,4 +413,233 @@ model Attachment {
 
   @@index([tenantId, medicalRecordId])
   @@map("attachments")
+}
+
+// ─── Phase 4: Multi-branch ───────────────────────────────────────────────────
+model Branch {
+  id             Int      @id @default(autoincrement())
+  tenantId       Int
+  name           String   @db.VarChar(255)
+  phone          String?  @db.VarChar(50)
+  email          String?  @db.VarChar(255)
+  address        String?
+  operatingHours Json?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant          Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users           User[]
+  branchInventory BranchInventory[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId, isActive])
+  @@map("branches")
+}
+
+model DoctorShift {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int
+  branchId  Int
+  doctorId  Int
+  dayOfWeek Int      // 0=Sun … 6=Sat
+  startTime String   @db.VarChar(5) // "HH:MM"
+  endTime   String   @db.VarChar(5)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, branchId, doctorId, dayOfWeek])
+  @@index([tenantId, branchId, doctorId])
+  @@map("doctor_shifts")
+}
+
+// ─── Phase 4: Inpatient / Hospitalization ────────────────────────────────────
+model Hospitalization {
+  id             Int       @id @default(autoincrement())
+  tenantId       Int
+  branchId       Int?
+  petId          Int
+  admittedAt     DateTime  @default(now())
+  dischargedAt   DateTime?
+  reason         String
+  cageNo         String?   @db.VarChar(50)
+  status         String    @default("admitted") @db.VarChar(20) // admitted|discharged|transferred
+  doctorInCharge Int?
+  dailyRate      Decimal   @default(0) @db.Decimal(10, 2)
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tenant   Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pet      Pet                  @relation(fields: [petId], references: [id], onDelete: Cascade)
+  careLogs DailyInpatientCare[]
+
+  @@index([tenantId, petId, status])
+  @@index([tenantId, branchId, status])
+  @@map("hospitalizations")
+}
+
+model DailyInpatientCare {
+  id                 Int      @id @default(autoincrement())
+  tenantId           Int
+  hospitalizationId  Int
+  recordedAt         DateTime @default(now())
+  timeSlot           String   @db.VarChar(20) // 08:00|12:00|16:00|20:00
+  temperatureC       Decimal? @db.Decimal(4, 1)
+  heartRateBpm       Int?
+  respRateRpm        Int?
+  feedingStatus      String?  @db.VarChar(255)
+  medicationGiven    String?
+  notes              String?
+  performedBy        Int?
+
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  hospitalization Hospitalization @relation(fields: [hospitalizationId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, hospitalizationId, recordedAt])
+  @@map("daily_inpatient_care")
+}
+
+// ─── Phase 4: Grooming ───────────────────────────────────────────────────────
+model GroomingBooking {
+  id                  Int      @id @default(autoincrement())
+  tenantId            Int
+  branchId            Int?
+  petId               Int
+  groomerId           Int?
+  serviceType         String   @db.VarChar(255)
+  scheduledAt         DateTime
+  durationMin         Int      @default(60)
+  status              String   @default("scheduled") @db.VarChar(20) // scheduled|in_progress|completed|cancelled
+  specialInstructions String?
+  notes               String?
+  createdBy           Int?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pet    Pet    @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, branchId, scheduledAt])
+  @@index([tenantId, groomerId, scheduledAt])
+  @@map("grooming_bookings")
+}
+
+// ─── Phase 4: Blood Bank ─────────────────────────────────────────────────────
+model BloodDonor {
+  id             Int       @id @default(autoincrement())
+  tenantId       Int
+  petId          Int
+  bloodType      String    @db.VarChar(50)
+  lastDonationAt DateTime?
+  isEligible     Boolean   @default(true)
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tenant    Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pet       Pet             @relation(fields: [petId], references: [id], onDelete: Cascade)
+  donations BloodDonation[]
+
+  @@unique([tenantId, petId])
+  @@index([tenantId, bloodType])
+  @@map("blood_donors")
+}
+
+model BloodDonation {
+  id          Int       @id @default(autoincrement())
+  tenantId    Int
+  donorId     Int
+  volumeMl    Decimal   @db.Decimal(10, 2)
+  collectedAt DateTime  @default(now())
+  collectedBy Int?
+  expiryDate  DateTime  @db.Date
+  status      String    @default("available") @db.VarChar(20) // available|used|expired|discarded
+  notes       String?
+
+  tenant Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  donor  BloodDonor @relation(fields: [donorId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status, expiryDate])
+  @@map("blood_donations")
+}
+
+model BloodTransfusion {
+  id             Int      @id @default(autoincrement())
+  tenantId       Int
+  recipientPetId Int
+  donationId     Int?
+  volumeMl       Decimal  @db.Decimal(10, 2)
+  administeredAt DateTime @default(now())
+  administeredBy Int?
+  reactions      String?
+  notes          String?
+
+  tenant       Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  recipientPet Pet    @relation(fields: [recipientPetId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, recipientPetId])
+  @@map("blood_transfusions")
+}
+
+// ─── Phase 4: Loyalty ────────────────────────────────────────────────────────
+model LoyaltyTransaction {
+  id              Int      @id @default(autoincrement())
+  tenantId        Int
+  ownerId         Int
+  invoiceId       Int?
+  pointsEarned    Int      @default(0)
+  pointsRedeemed  Int      @default(0)
+  transactionType String   @db.VarChar(20) // earn|redeem|adjustment
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  owner  Owner  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, ownerId])
+  @@map("loyalty_transactions")
+}
+
+// ─── Phase 4: Audit (write-once) ─────────────────────────────────────────────
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  tenantId   Int
+  userId     Int?
+  action     String   @db.VarChar(255)
+  tableName  String?  @db.VarChar(100)
+  recordId   Int?
+  details    Json?
+  ipAddress  String?  @db.VarChar(50)
+  userAgent  String?  @db.VarChar(500)
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@map("audit_logs")
+}
+
+// ─── Phase 4: Proactive reminders ────────────────────────────────────────────
+model PetReminder {
+  id           Int       @id @default(autoincrement())
+  tenantId     Int
+  petId        Int
+  reminderType String    @db.VarChar(100) // vaccination|deworming|health_checkup
+  message      String
+  dueDate      DateTime  @db.Date
+  status       String    @default("pending") @db.VarChar(20) // pending|sent|completed|cancelled
+  sentAt       DateTime?
+  channel      String    @default("line") @db.VarChar(20) // line|sms|email|all
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pet    Pet    @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, dueDate, status])
+  @@index([tenantId, petId])
+  @@map("pet_reminders")
 }

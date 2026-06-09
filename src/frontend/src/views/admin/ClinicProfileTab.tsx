@@ -1,4 +1,4 @@
-// @uiux-agent spec: logo upload zone, clinic identity fields, save inline
+﻿// @uiux-agent spec: logo upload zone, clinic identity fields, save inline
 import React, { useState, useEffect, useRef } from 'react'
 import { useAdminSettings, useUpdateSettings } from '../../hooks/useAdmin'
 
@@ -118,7 +118,7 @@ export default function ClinicProfileTab() {
       <div className="flex items-center justify-end gap-3">
         {saved && <span className="text-sm text-secondary-on-container">✓ Saved</span>}
         <button type="submit" disabled={update.isPending}
-          className="min-h-[44px] px-6 bg-primary hover:bg-primary/90 disabled:opacity-50 text-on-primary text-sm font-semibold rounded-lg transition-colors">
+          className="min-h-[44px] px-6 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-on text-sm font-semibold rounded-lg transition-colors">
           {update.isPending ? 'Saving…' : 'Save changes'}
         </button>
       </div>

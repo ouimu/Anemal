@@ -1,8 +1,19 @@
 # Session Summary — VetClinic SaaS
-> Last updated: 2026-06-05 | อ่านไฟล์นี้ก่อนเริ่ม session ใหม่ทุกครั้ง
+> Last updated: 2026-06-09 | อ่านไฟล์นี้ก่อนเริ่ม session ใหม่ทุกครั้ง
 >
-> **Status:** Phase 1 ✅ · Phase 2 ✅ · **Phase 3 ✅ (Inventory, Billing/POS, Reports, Subscription — 131 tests pass)** · Phase 4 ⏳ next
-> Dev DB: Docker `vetclinic-pg` (postgres:16). `cd src/backend && npm run db:migrate / db:seed / npm test`.
+> **Status:** Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ (131 tests) · **Phase 4 🚧 backend complete, frontend pending**
+> Dev DB: Docker `vetclinic-pg` (postgres:16) — **must run with `-p 5432:5432`**. `cd src/backend && npm run db:migrate / db:seed / npm test`.
+
+---
+
+## 🚧 Phase 4 — Advanced Operations (backend DONE this session)
+
+**Backend (complete, typecheck clean):** Branch + doctor-shifts, inter-branch inventory Transfers, Hospitalization (admit→care(time-slots)→discharge auto-bill), Blood Bank (donor registry + collection bags + transfusion compatibility guard), Grooming bookings, Loyalty (earn-on-payment, tiered, redeem capped 20%), Proactive Reminders (+ hourly background worker `workers/reminder.worker.ts`), write-once Audit logging (`auditMiddleware` wired globally in `app.ts`).
+- Migration `20260606090000_phase4_multibranch` (data-preserving) **applied**. Seed is Phase-4-aware (2 branches for dev-clinic, per-branch `branch_inventory`, users get `branchId`).
+- `branchId` now embedded in JWT + `req.context`. `branch_inventory` is the stock source of truth.
+- Tests: `tests/integration/phase4.test.ts` — branch RBAC/isolation, loyalty earn+caps, hospitalization lifecycle, blood-bank guard, reminders, audit write. **All green: 152 tests / 15 suites pass** (was 131; fixed 3 Phase-3 regressions from the flat-stock→branch_inventory migration).
+
+**Still TODO (next session):** Phase 4 **frontend** (Inpatient cage board, Grooming calendar, Branch/Loyalty/Blood Bank pages, admin dashboard snapshot); `/api/reports/branch-revenue`; real LINE/SMS dispatch in reminder worker (currently marks `sent`).
 
 ---
 

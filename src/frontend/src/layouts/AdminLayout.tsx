@@ -1,4 +1,4 @@
-// Admin-only shell — redirects non-admins to /clinic/dashboard
+﻿// Admin-only shell — redirects non-admins to /clinic/dashboard
 import { NavLink, Outlet, Navigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { useLogout } from '../hooks/useAuth'
@@ -84,7 +84,7 @@ export default function AdminLayout() {
         <div className="border-t border-outline-variant p-sm flex-shrink-0">
           {sidebarOpen && (
             <div className="flex items-center gap-sm px-sm mb-sm">
-              <div className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center text-label-md font-bold flex-shrink-0 select-none">
+              <div className="w-10 h-10 rounded-full bg-primary text-primary-on flex items-center justify-center text-label-md font-bold flex-shrink-0 select-none">
                 {(name ?? 'A').charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0">

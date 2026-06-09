@@ -3,17 +3,17 @@ import { useNavigate } from 'react-router-dom'
 import api from '../utils/api'
 import { useAuthStore } from '../store/authStore'
 
-interface LoginPayload { subdomain: string; email: string; password: string }
+interface LoginPayload { subdomain: string; email: string; password: string; remember: boolean }
 
 export function useLogin() {
   const setAuth   = useAuthStore((s) => s.setAuth)
   const navigate  = useNavigate()
 
   return useMutation({
-    mutationFn: (payload: LoginPayload) =>
-      api.post<{ success: boolean; data: { token: string; userId: number; tenantId: number; role: string; name: string } }>('/auth/login', payload),
-    onSuccess: (res) => {
-      setAuth(res.data.data)
+    mutationFn: ({ remember: _remember, ...credentials }: LoginPayload) =>
+      api.post<{ success: boolean; data: { token: string; userId: number; tenantId: number; role: string; name: string } }>('/auth/login', credentials),
+    onSuccess: (res, variables) => {
+      setAuth(res.data.data, variables.remember)
       // Role-based redirect: admin → admin section, others → clinic section
       const role = res.data.data.role
       navigate(role === 'admin' ? '/admin/dashboard' : '/clinic/dashboard')

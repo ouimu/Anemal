@@ -1,4 +1,5 @@
 // Product / inventory service — business logic + co-located Zod schemas (CODING_RULES §5).
+// Phase 4: stock is per-branch; branchId threaded from the request context.
 import { z } from 'zod'
 import { AppError } from '../utils/errors'
 import * as productRepo from '../models/product.repository'
@@ -26,9 +27,10 @@ export const updateProductSchema = z.object({
 }).strict()
 
 export const stockInSchema = z.object({
-  qty:        z.number().positive(),
-  lotNo:      z.string().max(100).optional().nullable(),
-  expiryDate: z.string().datetime().optional().nullable(),
+  qty:         z.number().positive(),
+  lotNo:       z.string().max(100).optional().nullable(),
+  expiryDate:  z.string().datetime().optional().nullable(),
+  minStockQty: z.number().nonnegative().optional(),
 }).strict()
 
 export type CreateProductInput = z.infer<typeof createProductSchema>
@@ -44,55 +46,55 @@ export class ProductError extends AppError {
 }
 
 export async function listProducts(
-  tenantId: number, page = 1, limit = 20, category?: string, search?: string,
+  tenantId: number, branchId: number, page = 1, limit = 20, category?: string, search?: string,
 ) {
   const skip = (page - 1) * limit
   const [products, total] = await Promise.all([
-    productRepo.findProducts(tenantId, { skip, take: limit, category, search }),
+    productRepo.findProducts(tenantId, branchId, { skip, take: limit, category, search }),
     productRepo.countProducts(tenantId, category, search),
   ])
   return { products, total, page, limit }
 }
 
-export async function getProduct(tenantId: number, id: number) {
-  const product = await productRepo.findProductById(tenantId, id)
+export async function getProduct(tenantId: number, branchId: number, id: number) {
+  const product = await productRepo.findProductById(tenantId, branchId, id)
   if (!product) throw new ProductError('Product not found', 404)
   return product
 }
 
-export function createProduct(tenantId: number, data: CreateProductInput) {
-  return productRepo.createProduct(tenantId, data)
+export function createProduct(tenantId: number, branchId: number, data: CreateProductInput) {
+  return productRepo.createProduct(tenantId, branchId, data)
 }
 
-export async function updateProduct(tenantId: number, id: number, data: UpdateProductInput) {
-  await getProduct(tenantId, id)
+export async function updateProduct(tenantId: number, branchId: number, id: number, data: UpdateProductInput) {
+  await getProduct(tenantId, branchId, id)
+  if (data.minStockLevel != null) await productRepo.setMinStock(tenantId, branchId, id, data.minStockLevel)
   return productRepo.updateProduct(tenantId, id, data)
 }
 
-export async function stockIn(tenantId: number, id: number, data: StockInInput, performedBy?: number) {
-  await getProduct(tenantId, id)
-  return productRepo.stockIn(tenantId, id, data, performedBy)
+export async function stockIn(tenantId: number, branchId: number, id: number, data: StockInInput, performedBy?: number) {
+  await getProduct(tenantId, branchId, id)
+  return productRepo.stockIn(tenantId, branchId, id, data, performedBy)
 }
 
-export async function getMovements(tenantId: number, id: number) {
-  await getProduct(tenantId, id)
-  return productRepo.findMovements(tenantId, id)
+export async function getMovements(tenantId: number, branchId: number, id: number) {
+  await getProduct(tenantId, branchId, id)
+  return productRepo.findMovements(tenantId, branchId, id)
 }
 
-export async function deactivateProduct(tenantId: number, id: number) {
-  await getProduct(tenantId, id)
+export async function deactivateProduct(tenantId: number, branchId: number, id: number) {
+  await getProduct(tenantId, branchId, id)
   await productRepo.deactivateProduct(tenantId, id)
 }
 
-export async function getAlerts(tenantId: number) {
+export async function getAlerts(tenantId: number, branchId: number) {
   const [lowStock, expiringSoon, inventoryValue] = await Promise.all([
-    productRepo.findLowStock(tenantId),
-    productRepo.findExpiringSoon(tenantId, EXPIRY_ALERT_DAYS),
-    productRepo.sumInventoryValue(tenantId),
+    productRepo.findLowStock(tenantId, branchId),
+    productRepo.findExpiringSoon(tenantId, branchId, EXPIRY_ALERT_DAYS),
+    productRepo.sumInventoryValue(tenantId, branchId),
   ])
   return {
-    lowStock,
-    expiringSoon,
+    lowStock, expiringSoon,
     lowStockCount: lowStock.length,
     expiringSoonCount: expiringSoon.length,
     inventoryValue,

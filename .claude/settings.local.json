@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(node -e ' *)",
-      "Bash(xargs ls -la)"
+      "Bash(xargs ls -la)",
+      "Bash(npx prisma *)",
+      "Bash(echo \"DIFF_EXIT:$?\")",
+      "Read(//tmp/**)"
     ]
   }
 }

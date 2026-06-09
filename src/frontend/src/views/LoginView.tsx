@@ -26,7 +26,7 @@ export default function LoginView() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    login.mutate(form)
+    login.mutate({ ...form, remember })
   }
 
   const errorMsg = login.error

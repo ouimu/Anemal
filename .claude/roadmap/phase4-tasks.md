@@ -7,6 +7,16 @@
 
 ---
 
+## 📊 Status (2026-06-09)
+
+> **Backend: ✅ COMPLETE** — all 8 modules (Branch+Shifts, Transfers, Hospitalization, Grooming, Loyalty, Audit, Login-time restriction, Blood Bank, Reminders) built as Route→Controller→Service→Repository; migration `20260606090000_phase4_multibranch` applied; `auditMiddleware` wired; reminder background worker added; `tsc --noEmit` clean. Integration tests in `tests/integration/phase4.test.ts` — **full suite green: 152 tests / 15 suites** (was 131).
+>
+> **Frontend: ⏳ PENDING** — Inpatient cage board, Grooming calendar, Branch/Loyalty/Blood Bank pages, admin dashboard snapshot, `/api/reports/branch-revenue` chart. **← next session.**
+>
+> **Deferred:** real LINE/SMS dispatch in reminder worker (currently marks `sent`).
+
+---
+
 ## 🎯 Phase 4 Goal
 
 ขยายขีดความสามารถของระบบเพื่อให้รองรับการบริการสัตว์แพทย์เชิงลึกและการบริหารงานพาณิชย์ขนาดใหญ่  

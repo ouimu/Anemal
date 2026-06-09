@@ -2,6 +2,52 @@
 
 ---
 
+## 📅 Log Entry: 2026-06-05 — Functional Spec v2.0 — Full Module Detail Expansion
+
+### 🎯 Motivation & Purpose
+Expanded functional specification to v2.0. All 13 modules now include: description, process flows, prerequisites, functional requirements table (FR-XX-XX IDs with MUST/SHOULD/COULD priority), additional details, and detailed testing criteria. LaTeX source fully rewritten for xelatex compilation with TikZ architecture diagram, cover page, and proper TOC.
+
+### 📂 Files Changed
+| File | Action | Description |
+|---|---|---|
+| `docs/vetcare_functional_spec.tex` | **UPDATED v2.0** | Full LaTeX rewrite: cover page, TikZ arch diagram, all 13 modules with FR tables, testing criteria, appendices. Compile: `xelatex vetcare_functional_spec.tex` (run twice) |
+| `docs/functional_spec_detailed.html` | **UPDATED v2.0** | Added Functional Requirements table and Additional Details to all 13 modules; security hardening checklist in FR-12; transfer flow in FR-06; hard-block prescription safety note in FR-05 |
+| `docs/index.html` | **MODIFIED** | Updated spec links to v2.0 |
+
+### 📋 Key Additions Per Module
+- **FR-01:** FR table (6 items), rate-limit/brute-force detail, token storage pattern, inactive-admin guard
+- **FR-02:** FR table, RLS implementation detail, cross-tenant test suite description
+- **FR-03:** FR table (9 items), drug allergy safety rule detail
+- **FR-04:** FR table, double-booking algorithm detail, reminder cron idempotency
+- **FR-05:** FR table (8 items), hard-block prescription safety box, DICOM/anatomy canvas detail
+- **FR-06:** FR table (7 items), multi-branch transfer 6-step flow
+- **FR-07:** FR table, VAT formula, PromptPay QR detail, loyalty integration note
+- **FR-08:** FR table, cage board color coding, nursing handover immutability, discharge billing
+- **FR-09:** FR table, capacity enforcement algorithm, vet-grooming combo invoice
+- **FR-10:** FR table, donor eligibility rules (56/30 day), blood type warning behavior
+- **FR-11:** FR table, tier upgrade trigger, redemption cap (20%), points immutability
+- **FR-12:** FR table, 9-control security hardening table
+- **FR-13:** FR table, report isolation detail, Redis cache 30s TTL, materialised snapshot
+
+---
+
+## 📅 Log Entry: 2026-06-05 — Comprehensive Functional Specification Document
+
+### 🎯 Motivation & Purpose
+Created full functional specification covering all 13 modules (FR-01 to FR-13), system architecture, infrastructure, SaaS application management, non-functional requirements, integration requirements, testing strategy, and database schema reference.
+
+### 📂 Files Changed
+| File | Action | Description |
+|---|---|---|
+| `docs/vetcare_functional_spec.tex` | **NEW** | LaTeX source — print-ready PDF functional spec (compile with `pdflatex`) |
+| `docs/functional_spec_detailed.html` | **REPLACED** | Comprehensive HTML version with sidebar nav, per-module detail: description, workflow, prerequisites, additional details, testing criteria |
+| `docs/index.html` | **MODIFIED** | Added nav links + home cards for Detailed Functional Spec and LaTeX source |
+
+### 📋 Modules Covered
+FR-01 Auth/RBAC, FR-02 Multi-Tenancy, FR-03 Pet & Owner, FR-04 Appointments, FR-05 EMR, FR-06 Inventory, FR-07 Billing/POS, FR-08 Inpatient, FR-09 Grooming, FR-10 Blood Bank, FR-11 Loyalty, FR-12 Security/Audit, FR-13 Reports. Plus: Architecture, Infrastructure, Application Management (SaaS Platform Level), Testing Strategy, NFRs, DB Schema Reference.
+
+---
+
 ## 📅 Log Entry: 2026-06-05 — Phase 3 Commercial (Inventory, Billing/POS, Reports, Subscription)
 
 ### 🎯 Motivation & Purpose
@@ -302,4 +348,29 @@ To deliver a high-fidelity, client-ready, fully detailed Microsoft Word document
 3. **Compilation Success**:
    - The python generator completed successfully under the local system shell using Python 3.11.9.
    - Resulting document size verified at **62.6 KB**, validating structural rich XML composition (not a markdown placeholder).
+
+---
+
+## 📅 Log Entry: 2026-06-09 — Phase 4 Backend Completion & Verification Wiring
+
+### 🎯 Motivation
+Resume the interrupted Phase 4 build. A prior session had scaffolded the full Phase 4 backend (8 modules, layered Route→Controller→Service→Repository) with the data-preserving migration `20260606090000_phase4_multibranch` already applied to the dev DB, but left three gaps: audit middleware unwired, no reminder background worker, and zero Phase 4 tests.
+
+### 📂 Changes
+| File | Action | Description |
+|---|---|---|
+| `src/backend/app.ts` | Modified | Wired `auditMiddleware` globally (after health check, before routes). Reads `req.context` lazily at `res.on('finish')`, so it records only successful authenticated mutations. |
+| `src/backend/services/reminder.service.ts` | Modified | Added `dispatchDue()` — cross-tenant scan + mark-sent for the worker (real LINE/SMS deferred). |
+| `src/backend/models/reminder.repository.ts` | Modified | Added `listAllDue()` (cross-tenant, system context) + `markSent()`. |
+| `src/backend/workers/reminder.worker.ts` | **NEW** | Hourly `setInterval` worker (`.unref()`), runs once on boot. Started from `server.ts` only — never imported by `app.ts`, so tests don't spawn timers. |
+| `src/backend/server.ts` | Modified | Calls `startReminderWorker()` after `app.listen`. |
+| `src/backend/tests/integration/phase4.test.ts` | **NEW** | Integration + cross-tenant isolation suite: Branch RBAC/isolation, Loyalty earn-on-payment + redeem caps (>points, >20%), Hospitalization admit→care→discharge-billing + post-discharge 409, Blood Bank donor dedup + transfusion compatibility guard (409 `INCOMPATIBLE_BLOOD` unless acknowledged), Reminders due+sent, write-once Audit log assertion. |
+
+### ✅ Verification
+- `npx tsc --noEmit` — clean (exit 0) after all wiring.
+- Migrations applied to a fresh container + seed; **full suite green: 152 tests / 15 suites pass** (was 131).
+- Fixed 3 pre-existing Phase-3 regressions the prior session's flat-stock→`branch_inventory` migration had introduced: `inventory.test.ts` and `invoice.test.ts` read/wrote the dropped `inventoryItem.stockQuantity` (now `branchInventory.stockQty`, tokens given a `branchId`); `reports.test.ts` snapshot needed a `branchId` in the token; `authService.test.ts` mock lacked `prisma.user.update` (new `touchLastLogin`).
+
+### 📌 Still open (next session)
+Phase 4 **frontend** (Inpatient cage board, Grooming calendar, Branch/Loyalty/Blood Bank pages, admin dashboard snapshot); `/api/reports/branch-revenue`; real SMS/LINE dispatch in the reminder worker.
 

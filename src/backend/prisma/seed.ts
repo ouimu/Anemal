@@ -27,6 +27,21 @@ async function main() {
     create: { name: 'Test Clinic', subdomain: 'test-clinic' },
   })
 
+  // Phase 4 — branches (idempotent). dev-clinic gets a 2nd branch for transfer/switch demos.
+  const branchA = await prisma.branch.upsert({
+    where: { tenantId_name: { tenantId: tenantA.id, name: 'Main Branch' } },
+    update: {}, create: { tenantId: tenantA.id, name: 'Main Branch', phone: '02-000-0001' },
+  })
+  const branchA2 = await prisma.branch.upsert({
+    where: { tenantId_name: { tenantId: tenantA.id, name: 'Downtown Branch' } },
+    update: {}, create: { tenantId: tenantA.id, name: 'Downtown Branch', phone: '02-000-0002' },
+  })
+  const branchB = await prisma.branch.upsert({
+    where: { tenantId_name: { tenantId: tenantB.id, name: 'Main Branch' } },
+    update: {}, create: { tenantId: tenantB.id, name: 'Main Branch' },
+  })
+  const mainBranch: Record<number, number> = { [tenantA.id]: branchA.id, [tenantB.id]: branchB.id }
+
   const usersToSeed = [
     // Tenant A
     { tenantId: tenantA.id, name: 'Admin A',  email: 'admin@dev-clinic.com',  role: Role.admin,  password: 'AdminPass1!' },
@@ -40,38 +55,41 @@ async function main() {
 
   for (const u of usersToSeed) {
     const passwordHash = await bcrypt.hash(u.password, SALT_ROUNDS)
+    const branchId = mainBranch[u.tenantId]
     await prisma.user.upsert({
       where: { tenantId_email: { tenantId: u.tenantId, email: u.email } },
-      update: {},
-      create: {
-        tenantId:     u.tenantId,
-        name:         u.name,
-        email:        u.email,
-        passwordHash,
-        role:         u.role,
-      },
+      update: { branchId },
+      create: { tenantId: u.tenantId, branchId, name: u.name, email: u.email, passwordHash, role: u.role },
     })
     console.log(`  ✓ ${u.role} — ${u.email}`)
   }
 
-  // Phase 3 — sample inventory for Tenant A (idempotent by name).
+  // Phase 3/4 — sample catalog + per-branch stock for Tenant A Main Branch (idempotent by name).
   const soon = new Date(); soon.setDate(soon.getDate() + 20) // expiring-soon demo
   const products = [
-    { name: 'Amoxicillin 250mg', category: 'Medicine',  unit: 'tablet', unitPrice: 12,  unitCost: 6,   stockQuantity: 200, minStockLevel: 50 },
-    { name: 'Apoquel 5.4mg',     category: 'Medicine',  unit: 'tablet', unitPrice: 30,  unitCost: 18,  stockQuantity: 120, minStockLevel: 20 },
-    { name: 'Rabies Vaccine',    category: 'Vaccine',   unit: 'vial',   unitPrice: 350, unitCost: 180, stockQuantity: 5,   minStockLevel: 10, expiryDate: soon },
-    { name: 'Surgical Gloves',   category: 'Supply',    unit: 'box',    unitPrice: 150, unitCost: 90,  stockQuantity: 8,   minStockLevel: 10 },
-    { name: 'Dog Shampoo',       category: 'Grooming',  unit: 'bottle', unitPrice: 220, unitCost: 110, stockQuantity: 40,  minStockLevel: 5 },
-    { name: 'Premium Cat Food',  category: 'Food',      unit: 'bag',    unitPrice: 600, unitCost: 420, stockQuantity: 25,  minStockLevel: 5 },
+    { name: 'Amoxicillin 250mg', category: 'Medicine',  unit: 'tablet', unitPrice: 12,  unitCost: 6,   stockQty: 200, minStockQty: 50 },
+    { name: 'Apoquel 5.4mg',     category: 'Medicine',  unit: 'tablet', unitPrice: 30,  unitCost: 18,  stockQty: 120, minStockQty: 20 },
+    { name: 'Rabies Vaccine',    category: 'Vaccine',   unit: 'vial',   unitPrice: 350, unitCost: 180, stockQty: 5,   minStockQty: 10, expiryDate: soon },
+    { name: 'Surgical Gloves',   category: 'Supply',    unit: 'box',    unitPrice: 150, unitCost: 90,  stockQty: 8,   minStockQty: 10 },
+    { name: 'Dog Shampoo',       category: 'Grooming',  unit: 'bottle', unitPrice: 220, unitCost: 110, stockQty: 40,  minStockQty: 5 },
+    { name: 'Premium Cat Food',  category: 'Food',      unit: 'bag',    unitPrice: 600, unitCost: 420, stockQty: 25,  minStockQty: 5 },
   ]
   for (const p of products) {
-    const existing = await prisma.inventoryItem.findFirst({ where: { tenantId: tenantA.id, name: p.name } })
-    if (!existing) {
-      await prisma.inventoryItem.create({ data: { tenantId: tenantA.id, ...p } })
+    let item = await prisma.inventoryItem.findFirst({ where: { tenantId: tenantA.id, name: p.name } })
+    if (!item) {
+      item = await prisma.inventoryItem.create({
+        data: { tenantId: tenantA.id, name: p.name, category: p.category, unit: p.unit, unitPrice: p.unitPrice, unitCost: p.unitCost },
+      })
       console.log(`  ✓ product — ${p.name}`)
     }
+    await prisma.branchInventory.upsert({
+      where: { tenantId_branchId_productId: { tenantId: tenantA.id, branchId: branchA.id, productId: item.id } },
+      update: {},
+      create: { tenantId: tenantA.id, branchId: branchA.id, productId: item.id, stockQty: p.stockQty, minStockQty: p.minStockQty, expiryDate: p.expiryDate ?? null },
+    })
   }
 
+  console.log(`  ✓ branches: ${branchA.name}, ${branchA2.name} (dev-clinic), ${branchB.name} (test-clinic)`)
   console.log('✅ Seed complete.')
   console.log(`   Tenant A: ${tenantA.subdomain} (id: ${tenantA.id})`)
   console.log(`   Tenant B: ${tenantB.subdomain} (id: ${tenantB.id})`)

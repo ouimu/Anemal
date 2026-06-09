@@ -1,6 +1,7 @@
 // Invoice / billing controller — thin HTTP handlers.
 import { Request, Response, NextFunction } from 'express'
 import * as invoiceService from '../services/invoice.service'
+import { requireBranchId } from '../utils/context'
 
 export async function listInvoices(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -22,7 +23,7 @@ export async function getInvoice(req: Request, res: Response, next: NextFunction
 
 export async function createInvoice(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await invoiceService.createInvoice(req.context!.tenantId, req.body, req.context!.userId)
+    const data = await invoiceService.createInvoice(req.context!.tenantId, requireBranchId(req), req.body, req.context!.userId)
     res.status(201).json({ success: true, data })
   } catch (err) { next(err) }
 }

@@ -7,7 +7,7 @@ jest.mock('../../config/db', () => ({
   __esModule: true,
   default: {
     tenant: { findUnique: jest.fn() },
-    user:   { findUnique: jest.fn() },
+    user:   { findUnique: jest.fn(), update: jest.fn() }, // update: touchLastLogin (Phase 4)
   },
 }))
 jest.mock('../../config/jwt', () => ({

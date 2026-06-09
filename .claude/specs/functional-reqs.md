@@ -1,9 +1,9 @@
 # Functional Requirements — VetCare SaaS
 
-**Version:** 1.1  
+**Version:** 1.1 (source) | See `docs/functional_spec_detailed.html` (v2.0) and `docs/vetcare_functional_spec.tex` for full detail  
 **Project:** VetCare Clinic Management SaaS  
 **Target:** Multi-tenant SaaS for Veterinary Clinics (Tablet + Web + Multi-Branch)  
-**Last Updated:** 2026-05-30
+**Last Updated:** 2026-06-05
 
 ---
 

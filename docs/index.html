@@ -218,6 +218,12 @@
     <a class="nav-item" onclick="show('functional')" href="#">
       <span class="icon">📝</span>Functional Requirements
     </a>
+    <a class="nav-item" href="functional_spec_detailed.html" target="_blank">
+      <span class="icon">📄</span>Detailed Functional Spec v2.0 ↗
+    </a>
+    <a class="nav-item" href="vetcare_functional_spec.tex" target="_blank">
+      <span class="icon">📑</span>LaTeX Source v2.0 (.tex) ↗
+    </a>
     <a class="nav-item" onclick="show('schema')" href="#">
       <span class="icon">🗄️</span>Database Schema
     </a>
@@ -332,6 +338,16 @@
       <div class="card-icon">📝</div>
       <div class="card-title">Functional Requirements</div>
       <div class="card-desc">All 5 modules with feature specs and tablet-specific requirements</div>
+    </div>
+    <div class="card" onclick="window.open('functional_spec_detailed.html','_blank')">
+      <div class="card-icon">📄</div>
+      <div class="card-title">Detailed Functional Spec</div>
+      <div class="card-desc">Full per-module spec: workflow, prerequisites, testing criteria, architecture, infrastructure, app management</div>
+    </div>
+    <div class="card" onclick="window.open('vetcare_functional_spec.tex','_blank')">
+      <div class="card-icon">📑</div>
+      <div class="card-title">LaTeX Source (.tex)</div>
+      <div class="card-desc">Print-ready PDF source. Compile with <code>pdflatex vetcare_functional_spec.tex</code></div>
     </div>
     <div class="card" onclick="show('schema')">
       <div class="card-icon">🗄️</div>

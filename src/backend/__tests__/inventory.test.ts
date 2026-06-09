@@ -14,8 +14,13 @@ import bcrypt from 'bcrypt'
 let server: Server
 let tidA: number, tidB: number
 let tokenA: string, tokenB: string
+let branchAId: number
 const SUB_A = `inv-a-${Date.now()}`
 const SUB_B = `inv-b-${Date.now()}`
+
+// Phase 4: stock lives in branch_inventory, keyed by (tenant, branch, product).
+const stockOf = async (productId: number) =>
+  Number((await prisma.branchInventory.findFirst({ where: { tenantId: tidA, branchId: branchAId, productId } }))?.stockQty)
 
 beforeAll(async () => {
   await new Promise<void>((resolve) => { server = app.listen(0, resolve) })
@@ -26,15 +31,20 @@ beforeAll(async () => {
   tidA = tA.id; tidB = tB.id
   const uA = await prisma.user.create({ data: { tenantId: tidA, name: 'Admin A', email: `inv-a-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
   const uB = await prisma.user.create({ data: { tenantId: tidB, name: 'Admin B', email: `inv-b-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
-  tokenA = signToken({ userId: uA.id, tenantId: tidA, role: 'admin' })
-  tokenB = signToken({ userId: uB.id, tenantId: tidB, role: 'admin' })
+  const bA = await prisma.branch.create({ data: { tenantId: tidA, name: 'Main' } })
+  const bB = await prisma.branch.create({ data: { tenantId: tidB, name: 'Main' } })
+  branchAId = bA.id
+  tokenA = signToken({ userId: uA.id, tenantId: tidA, branchId: bA.id, role: 'admin' })
+  tokenB = signToken({ userId: uB.id, tenantId: tidB, branchId: bB.id, role: 'admin' })
 })
 
 afterAll(async () => {
   server.closeAllConnections()
   await new Promise<void>((resolve) => server.close(() => resolve()))
   await prisma.stockMovement.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
+  await prisma.branchInventory.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.inventoryItem.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
+  await prisma.branch.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.user.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.tenant.deleteMany({ where: { id: { in: [tidA, tidB] } } })
 })
@@ -67,8 +77,7 @@ describe('inv-3.1 — Inventory CRUD + stock + alerts', () => {
   test('inv-04: stock-in increments quantity and logs an "in" movement', async () => {
     await request(server).post(`/api/products/${productId}/stock-in`).set(auth(tokenA))
       .send({ qty: 50, lotNo: 'L-001' }).expect(201)
-    const item = await prisma.inventoryItem.findUnique({ where: { id: productId } })
-    expect(Number(item?.stockQuantity)).toBe(50)
+    expect(await stockOf(productId)).toBe(50)
     const moves = await prisma.stockMovement.findMany({ where: { itemId: productId, movementType: 'in' } })
     expect(moves.length).toBe(1)
   })
@@ -97,8 +106,7 @@ describe('inv-3.1 — Inventory CRUD + stock + alerts', () => {
 
   test('inv-08: tenant B cannot stock-in tenant A product → 404', async () => {
     await request(server).post(`/api/products/${productId}/stock-in`).set(auth(tokenB)).send({ qty: 5 }).expect(404)
-    const item = await prisma.inventoryItem.findUnique({ where: { id: productId } })
-    expect(Number(item?.stockQuantity)).toBe(50) // unchanged
+    expect(await stockOf(productId)).toBe(50) // unchanged
   })
 
   test('inv-09: validation rejects bad category', async () => {

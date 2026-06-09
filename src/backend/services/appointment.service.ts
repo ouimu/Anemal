@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { AppError } from '../utils/errors'
 import * as appointmentRepo from '../models/appointment.repository'
+import { shiftWarning } from './branch.service'
 
 export const createAppointmentSchema = z.object({
   petId:       z.number().int().positive(),
@@ -56,7 +57,7 @@ export async function getAppointment(tenantId: number, id: number) {
   return appt
 }
 
-export async function createAppointment(tenantId: number, data: CreateAppointmentInput) {
+export async function createAppointment(tenantId: number, branchId: number | null, data: CreateAppointmentInput) {
   const start = new Date(data.scheduledAt)
   const end   = new Date(start.getTime() + data.durationMin * 60_000)
 
@@ -65,11 +66,15 @@ export async function createAppointment(tenantId: number, data: CreateAppointmen
     throw new AppointmentError('Doctor already has an appointment in this time slot', 409)
   }
 
-  return appointmentRepo.createAppointment(tenantId, data, start)
+  // Soft doctor-shift check (Phase 4) — warns but does not block.
+  const warning = branchId ? await shiftWarning(tenantId, branchId, data.doctorId, start) : null
+
+  const appt = await appointmentRepo.createAppointment(tenantId, branchId, data, start)
+  return { ...appt, shiftWarning: warning }
 }
 
-export async function createWalkIn(tenantId: number, petId: number, doctorId: number, reason?: string | null) {
-  return appointmentRepo.createWalkIn(tenantId, petId, doctorId, reason)
+export async function createWalkIn(tenantId: number, branchId: number | null, petId: number, doctorId: number, reason?: string | null) {
+  return appointmentRepo.createWalkIn(tenantId, branchId, petId, doctorId, reason)
 }
 
 export async function updateStatus(tenantId: number, id: number, status: AppointmentStatus) {

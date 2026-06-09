@@ -1,87 +1,121 @@
-// Product / inventory repository — all Prisma access for inventory_items + stock_movements.
-// @db-agent: every read/write is scoped by tenantId (first parameter, always).
-// Phase 3 uses the flat InventoryItem.stockQuantity model; branch_inventory is Phase 4.
-
+// Product / inventory repository — catalog (inventory_items) + per-branch stock (branch_inventory).
+// Phase 4: stock is branch-scoped (branchId required). Raw SQL double-quotes camelCase columns.
 import prisma from '../config/db'
 import type { CreateProductInput, UpdateProductInput, StockInInput } from '../services/product.service'
 
-interface ListParams {
-  skip: number
-  take: number
-  category?: string
-  search?: string
-}
+interface ListParams { skip: number; take: number; category?: string; search?: string }
 
-function buildWhere(tenantId: number, category?: string, search?: string) {
+function catalogWhere(tenantId: number, category?: string, search?: string) {
   return {
     tenantId,
     isActive: true,
     ...(category ? { category } : {}),
     ...(search
-      ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' as const } },
-            { barcode: { contains: search, mode: 'insensitive' as const } },
-          ],
-        }
+      ? { OR: [
+          { name: { contains: search, mode: 'insensitive' as const } },
+          { barcode: { contains: search, mode: 'insensitive' as const } },
+        ] }
       : {}),
   }
 }
 
-export function findProducts(tenantId: number, { skip, take, category, search }: ListParams) {
-  return prisma.inventoryItem.findMany({
-    where: buildWhere(tenantId, category, search),
+type ItemWithStock = { branchInventory?: { stockQty: unknown; minStockQty: unknown; expiryDate: Date | null; lotNo: string | null }[] }
+function flatten<T extends ItemWithStock>(item: T, branchId: number) {
+  const bi = item.branchInventory?.[0]
+  const { branchInventory: _bi, ...rest } = item
+  return {
+    ...rest,
+    branchId,
+    stockQty:    bi ? Number(bi.stockQty) : 0,
+    minStockQty: bi ? Number(bi.minStockQty) : 0,
+    expiryDate:  bi?.expiryDate ?? null,
+    lotNo:       bi?.lotNo ?? null,
+  }
+}
+
+export async function findProducts(tenantId: number, branchId: number, { skip, take, category, search }: ListParams) {
+  const items = await prisma.inventoryItem.findMany({
+    where: catalogWhere(tenantId, category, search),
     orderBy: { name: 'asc' },
-    skip,
-    take,
+    skip, take,
+    include: { branchInventory: { where: { branchId } } },
   })
+  return items.map((i) => flatten(i, branchId))
 }
 
 export function countProducts(tenantId: number, category?: string, search?: string) {
-  return prisma.inventoryItem.count({ where: buildWhere(tenantId, category, search) })
+  return prisma.inventoryItem.count({ where: catalogWhere(tenantId, category, search) })
 }
 
-export function findProductById(tenantId: number, id: number) {
-  return prisma.inventoryItem.findFirst({ where: { id, tenantId } })
+export async function findProductById(tenantId: number, branchId: number, id: number) {
+  const item = await prisma.inventoryItem.findFirst({
+    where: { id, tenantId },
+    include: { branchInventory: { where: { branchId } } },
+  })
+  return item ? flatten(item, branchId) : null
 }
 
-export function createProduct(tenantId: number, data: CreateProductInput) {
-  return prisma.inventoryItem.create({ data: { ...data, tenantId } })
-}
-
-export function updateProduct(tenantId: number, id: number, data: UpdateProductInput) {
-  // tenantId in the where clause gives defence-in-depth even though existence was checked.
-  return prisma.inventoryItem.updateMany({ where: { id, tenantId }, data }).then(() => findProductById(tenantId, id))
-}
-
-// Receive stock: increment quantity, optionally refresh expiry, log an 'in' movement — atomic.
-export function stockIn(tenantId: number, id: number, data: StockInInput, performedBy?: number) {
+export function createProduct(tenantId: number, branchId: number, data: CreateProductInput) {
   return prisma.$transaction(async (tx) => {
-    const item = await tx.inventoryItem.update({
-      where: { id },
-      data: {
-        stockQuantity: { increment: data.qty },
-        ...(data.expiryDate ? { expiryDate: new Date(data.expiryDate) } : {}),
-      },
-    })
-    await tx.stockMovement.create({
+    const item = await tx.inventoryItem.create({
       data: {
         tenantId,
-        itemId:        id,
-        movementType:  'in',
-        qty:           data.qty,
-        referenceType: 'manual',
-        notes:         data.lotNo ? `Lot ${data.lotNo}` : null,
-        performedBy:   performedBy ?? null,
+        name: data.name, category: data.category, barcode: data.barcode ?? null,
+        unit: data.unit ?? null, unitPrice: data.unitPrice, unitCost: data.unitCost ?? null,
       },
+    })
+    await tx.branchInventory.create({
+      data: { tenantId, branchId, productId: item.id, stockQty: 0, minStockQty: data.minStockLevel ?? 0 },
     })
     return item
   })
 }
 
-export function findMovements(tenantId: number, itemId: number) {
+export function updateProduct(tenantId: number, id: number, data: UpdateProductInput) {
+  const { minStockLevel: _drop, ...catalog } = data
+  return prisma.inventoryItem
+    .updateMany({ where: { id, tenantId }, data: catalog })
+    .then(() => prisma.inventoryItem.findFirst({ where: { id, tenantId } }))
+}
+
+// Per-branch minStock threshold update (used when editing a product's branch row).
+export function setMinStock(tenantId: number, branchId: number, productId: number, minStockQty: number) {
+  return prisma.branchInventory.upsert({
+    where: { tenantId_branchId_productId: { tenantId, branchId, productId } },
+    update: { minStockQty },
+    create: { tenantId, branchId, productId, stockQty: 0, minStockQty },
+  })
+}
+
+export function stockIn(tenantId: number, branchId: number, productId: number, data: StockInInput, performedBy?: number) {
+  return prisma.$transaction(async (tx) => {
+    const bi = await tx.branchInventory.upsert({
+      where: { tenantId_branchId_productId: { tenantId, branchId, productId } },
+      update: {
+        stockQty: { increment: data.qty },
+        ...(data.expiryDate ? { expiryDate: new Date(data.expiryDate) } : {}),
+        ...(data.lotNo ? { lotNo: data.lotNo } : {}),
+        ...(data.minStockQty != null ? { minStockQty: data.minStockQty } : {}),
+      },
+      create: {
+        tenantId, branchId, productId,
+        stockQty: data.qty, minStockQty: data.minStockQty ?? 0,
+        lotNo: data.lotNo ?? null, expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
+      },
+    })
+    await tx.stockMovement.create({
+      data: {
+        tenantId, branchId, itemId: productId, movementType: 'in', qty: data.qty,
+        referenceType: 'manual', notes: data.lotNo ? `Lot ${data.lotNo}` : null, performedBy: performedBy ?? null,
+      },
+    })
+    return bi
+  })
+}
+
+export function findMovements(tenantId: number, branchId: number, itemId: number) {
   return prisma.stockMovement.findMany({
-    where: { tenantId, itemId },
+    where: { tenantId, branchId, itemId },
     orderBy: { createdAt: 'desc' },
     take: 100,
   })
@@ -92,45 +126,36 @@ export function deactivateProduct(tenantId: number, id: number) {
 }
 
 interface AlertRow {
-  id: number
-  name: string
-  category: string | null
-  unit: string | null
-  stockQuantity: string | number
-  minStockLevel: string | number
-  expiryDate: Date | null
-  unitPrice: string | number | null
+  id: number; name: string; category: string | null; unit: string | null
+  stockQty: number; minStockQty: number; expiryDate: Date | null; unitPrice: number | null
 }
 
-// NOTE: Prisma maps table names (@@map) but NOT column names — DB columns are camelCase,
-// so raw SQL must double-quote them ("tenantId", "stockQuantity", …).
-export function findLowStock(tenantId: number) {
+export function findLowStock(tenantId: number, branchId: number) {
   return prisma.$queryRaw<AlertRow[]>`
-    SELECT id, name, category, unit, "stockQuantity", "minStockLevel", "expiryDate", "unitPrice"
-    FROM inventory_items
-    WHERE "tenantId" = ${tenantId} AND "isActive" = TRUE
-      AND "minStockLevel" > 0 AND "stockQuantity" <= "minStockLevel"
-    ORDER BY "stockQuantity" ASC
+    SELECT i.id, i.name, i.category, i.unit, bi."stockQty", bi."minStockQty", bi."expiryDate", i."unitPrice"
+    FROM branch_inventory bi JOIN inventory_items i ON i.id = bi."productId"
+    WHERE bi."tenantId" = ${tenantId} AND bi."branchId" = ${branchId} AND i."isActive" = TRUE
+      AND bi."minStockQty" > 0 AND bi."stockQty" <= bi."minStockQty"
+    ORDER BY bi."stockQty" ASC
   `
 }
 
-export function findExpiringSoon(tenantId: number, withinDays: number) {
-  const cutoff = new Date()
-  cutoff.setDate(cutoff.getDate() + withinDays)
+export function findExpiringSoon(tenantId: number, branchId: number, withinDays: number) {
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() + withinDays)
   return prisma.$queryRaw<AlertRow[]>`
-    SELECT id, name, category, unit, "stockQuantity", "minStockLevel", "expiryDate", "unitPrice"
-    FROM inventory_items
-    WHERE "tenantId" = ${tenantId} AND "isActive" = TRUE
-      AND "expiryDate" IS NOT NULL AND "expiryDate" <= ${cutoff}
-    ORDER BY "expiryDate" ASC
+    SELECT i.id, i.name, i.category, i.unit, bi."stockQty", bi."minStockQty", bi."expiryDate", i."unitPrice"
+    FROM branch_inventory bi JOIN inventory_items i ON i.id = bi."productId"
+    WHERE bi."tenantId" = ${tenantId} AND bi."branchId" = ${branchId} AND i."isActive" = TRUE
+      AND bi."expiryDate" IS NOT NULL AND bi."expiryDate" <= ${cutoff}
+    ORDER BY bi."expiryDate" ASC
   `
 }
 
-export async function sumInventoryValue(tenantId: number): Promise<number> {
+export async function sumInventoryValue(tenantId: number, branchId: number): Promise<number> {
   const rows = await prisma.$queryRaw<{ value: number | null }[]>`
-    SELECT COALESCE(SUM("stockQuantity" * COALESCE("unitPrice", 0)), 0)::float8 AS value
-    FROM inventory_items
-    WHERE "tenantId" = ${tenantId} AND "isActive" = TRUE
+    SELECT COALESCE(SUM(bi."stockQty" * COALESCE(i."unitPrice", 0)), 0)::float8 AS value
+    FROM branch_inventory bi JOIN inventory_items i ON i.id = bi."productId"
+    WHERE bi."tenantId" = ${tenantId} AND bi."branchId" = ${branchId} AND i."isActive" = TRUE
   `
   return Number(rows[0]?.value ?? 0)
 }

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+﻿import React, { useState, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
@@ -10,8 +10,8 @@ interface Vaccination { id: number; vaccineName: string; administeredAt: string;
 
 // ─── Species chip colors ──────────────────────────────────────────────────────
 const speciesColor: Record<string, string> = {
-  canine: 'bg-secondary-container text-on-secondary-container',
-  feline: 'bg-primary-fixed text-on-primary-fixed',
+  canine: 'bg-secondary-container text-secondary-on-container',
+  feline: 'bg-primary-fixed text-on-surface',
 }
 function speciesChip(s: string) {
   const key = s.toLowerCase()
@@ -64,7 +64,7 @@ function AddOwnerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
           <input className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Address (optional)" value={form.address} onChange={set('address')} />
           <div className="flex gap-md pt-sm">
             <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 min-h-[44px] rounded-lg bg-primary text-on-primary text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? 'Saving…' : 'Save Owner'}</button>
+            <button type="submit" disabled={saving} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? 'Saving…' : 'Save Owner'}</button>
           </div>
         </form>
       </div>
@@ -136,7 +136,7 @@ function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerId: numb
           <textarea className="bg-surface-container-low rounded-lg px-md py-sm min-h-[80px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary resize-none" placeholder="Underlying conditions (optional)" value={form.underlyingConditions} onChange={set('underlyingConditions')} />
           <div className="flex gap-md pt-sm">
             <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 min-h-[44px] rounded-lg bg-primary text-on-primary text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? 'Saving…' : 'Save Pet'}</button>
+            <button type="submit" disabled={saving} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? 'Saving…' : 'Save Pet'}</button>
           </div>
         </form>
       </div>
@@ -179,7 +179,7 @@ function AddVaccinationModal({ petId, onClose, onSuccess }: { petId: number; onC
           <input className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Batch number (optional)" value={form.batchNo} onChange={set('batchNo')} />
           <div className="flex gap-md pt-sm">
             <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 min-h-[44px] rounded-lg bg-primary text-on-primary text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? 'Saving…' : 'Save'}</button>
+            <button type="submit" disabled={saving} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? 'Saving…' : 'Save'}</button>
           </div>
         </form>
       </div>
@@ -228,7 +228,7 @@ function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVaccinatio
       {/* Owner card */}
       {owner && (
         <div className="bg-surface-container-low rounded-xl p-lg flex items-center gap-lg border border-outline-variant">
-          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold text-headline-xs">
+          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-on font-bold text-headline-xs">
             {initials(owner.firstName, owner.lastName)}
           </div>
           <div className="flex-1">
@@ -284,7 +284,7 @@ function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVaccinatio
       {tab === 'Vaccinations' && (
         <div>
           <div className="flex justify-end mb-md">
-            <button onClick={onAddVaccination} className="flex items-center gap-sm bg-primary text-on-primary rounded-lg px-md py-sm min-h-[44px] text-body-sm font-semibold hover:bg-primary/90 transition-colors">
+            <button onClick={onAddVaccination} className="flex items-center gap-sm bg-primary text-primary-on rounded-lg px-md py-sm min-h-[44px] text-body-sm font-semibold hover:bg-primary/90 transition-colors">
               <MaterialIcon name="add" size={18} />Add Vaccination
             </button>
           </div>
@@ -364,7 +364,7 @@ export default function ClinicPets() {
             <button
               key={f.label}
               onClick={() => setSpecies(f.value)}
-              className={`px-md py-xs rounded-full text-label-md font-medium whitespace-nowrap min-h-[36px] transition-colors ${speciesFilter === f.value ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}
+              className={`px-md py-xs rounded-full text-label-md font-medium whitespace-nowrap min-h-[36px] transition-colors ${speciesFilter === f.value ? 'bg-primary text-primary-on' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}
             >
               {f.label}
             </button>
@@ -412,7 +412,7 @@ export default function ClinicPets() {
             <div className="flex items-center justify-between px-lg py-md border-b border-outline-variant bg-surface flex-shrink-0">
               <h2 className="text-headline-sm font-headline font-bold text-primary">Pet Profile</h2>
               {selectedOwnerId && (
-                <button onClick={() => setModal('addPet')} className="flex items-center gap-sm bg-primary text-on-primary rounded-lg px-lg py-sm min-h-[44px] text-body-sm font-semibold hover:bg-primary/90 transition-colors">
+                <button onClick={() => setModal('addPet')} className="flex items-center gap-sm bg-primary text-primary-on rounded-lg px-lg py-sm min-h-[44px] text-body-sm font-semibold hover:bg-primary/90 transition-colors">
                   <MaterialIcon name="add" size={18} />Add Pet
                 </button>
               )}

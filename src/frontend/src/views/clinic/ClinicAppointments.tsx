@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
@@ -23,8 +23,8 @@ interface SearchResult { petId: number; petName: string; species: string; ownerI
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const STATUS_COLORS: Record<string, string> = {
-  scheduled:   'bg-primary-fixed text-on-primary-fixed',
-  arrived:     'bg-secondary-container text-on-secondary-container',
+  scheduled:   'bg-primary-fixed text-on-surface',
+  arrived:     'bg-secondary-container text-secondary-on-container',
   in_progress: 'bg-warning/20 text-warning',
   completed:   'bg-success/20 text-success',
   cancelled:   'bg-surface-container-high text-on-surface-variant line-through',
@@ -176,7 +176,7 @@ function BookingForm({ selectedDate, selectedHour, doctors, onClose, onSaved }: 
           <textarea className="w-full bg-surface-container-low rounded-lg px-md py-sm text-body-sm border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary min-h-[80px] resize-none" placeholder="Chief complaint or visit type…" value={reason} onChange={e => setReason(e.target.value)} />
         </div>
 
-        <button type="submit" disabled={saving} className="w-full min-h-[44px] bg-primary text-on-primary rounded-lg text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? 'Booking…' : 'Book Appointment'}</button>
+        <button type="submit" disabled={saving} className="w-full min-h-[44px] bg-primary text-primary-on rounded-lg text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? 'Booking…' : 'Book Appointment'}</button>
       </form>
     </div>
   )
@@ -286,7 +286,7 @@ export default function ClinicAppointments() {
         <div className="flex rounded-lg overflow-hidden border border-outline-variant">
           {(['day', 'week'] as const).map(m => (
             <button key={m} onClick={() => setViewMode(m)}
-              className={`px-lg py-sm min-h-[44px] text-body-sm font-medium capitalize transition-colors ${viewMode === m ? 'bg-primary text-on-primary' : 'hover:bg-surface-container-low'}`}>
+              className={`px-lg py-sm min-h-[44px] text-body-sm font-medium capitalize transition-colors ${viewMode === m ? 'bg-primary text-primary-on' : 'hover:bg-surface-container-low'}`}>
               {m}
             </button>
           ))}
@@ -306,7 +306,7 @@ export default function ClinicAppointments() {
 
         <button
           onClick={() => { setShowForm(true); setSelectedHour(undefined) }}
-          className="flex items-center gap-sm bg-primary text-on-primary rounded-lg px-lg py-sm min-h-[44px] text-body-sm font-semibold hover:bg-primary/90 transition-colors">
+          className="flex items-center gap-sm bg-primary text-primary-on rounded-lg px-lg py-sm min-h-[44px] text-body-sm font-semibold hover:bg-primary/90 transition-colors">
           <MaterialIcon name="add" size={18} />Book Appointment
         </button>
       </div>

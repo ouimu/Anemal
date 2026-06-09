@@ -1,4 +1,4 @@
-// @uiux-agent spec: user list, role badges, add/edit/deactivate modal — 44px tap targets
+﻿// @uiux-agent spec: user list, role badges, add/edit/deactivate modal — 44px tap targets
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
@@ -73,7 +73,7 @@ function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; o
         <div className="flex gap-2 mt-5">
           <button onClick={onClose} className="flex-1 min-h-[44px] border border-outline-variant rounded-lg text-sm text-on-surface-variant hover:bg-surface-container-low">Cancel</button>
           <button onClick={() => save.mutate()} disabled={save.isPending}
-            className="flex-1 min-h-[44px] bg-primary text-on-primary rounded-lg text-sm font-semibold disabled:opacity-50 hover:bg-primary/90">
+            className="flex-1 min-h-[44px] bg-primary text-primary-on rounded-lg text-sm font-semibold disabled:opacity-50 hover:bg-primary/90">
             {save.isPending ? 'Saving…' : isNew ? 'Add user' : 'Save'}
           </button>
         </div>

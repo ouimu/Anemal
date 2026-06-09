@@ -24,13 +24,13 @@ export function getInventoryUsage(tenantId: number) {
   return reportRepo.inventoryUsage(tenantId, USAGE_LIMIT)
 }
 
-export async function getSnapshot(tenantId: number) {
+export async function getSnapshot(tenantId: number, branchId: number) {
   const [revenueToday, revenueThisMonth, pendingInvoices, lowStock, expiringSoon] = await Promise.all([
     reportRepo.revenueToday(tenantId),
     reportRepo.revenueThisMonth(tenantId),
     reportRepo.countPendingInvoices(tenantId),
-    productRepo.findLowStock(tenantId),
-    productRepo.findExpiringSoon(tenantId, EXPIRY_WINDOW_DAYS),
+    productRepo.findLowStock(tenantId, branchId),
+    productRepo.findExpiringSoon(tenantId, branchId, EXPIRY_WINDOW_DAYS),
   ])
   return {
     revenueToday,

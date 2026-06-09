@@ -5,6 +5,7 @@
 export interface JwtPayload {
   userId:   number
   tenantId: number
+  branchId?: number   // active branch (Phase 4)
   role:     'admin' | 'doctor' | 'staff'
   iat?:     number
   exp?:     number
@@ -30,6 +31,7 @@ export interface LoginResponse {
   token:    string
   userId:   number
   tenantId: number
+  branchId: number | null
   role:     string
   name:     string
 }
