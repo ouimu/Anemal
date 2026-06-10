@@ -66,9 +66,27 @@ model TenantSettings {
   lineRemindersEnabled Boolean @default(true)
   // Subscription
   planTier            String   @default("starter") @db.VarChar(50)
+  // Phase 1.5 — operating hours per day: { mon:{open:"08:00",close:"18:00"}, sun:null, ... }
+  operatingHours      Json?
+  // Phase 1.5 — LINE OA (token AES-256-GCM encrypted, enc:v1 format)
+  lineOaToken         String?
+  // Phase 1.5 — SMS ('thaibulksms' | 'thsms' | null; apiKey encrypted)
+  smsProvider         String?  @db.VarChar(50)
+  smsApiKey           String?
+  smsSenderName       String?  @db.VarChar(100)
+  // Phase 1.5 — Payments (gbprimepaySecret encrypted)
+  promptpayId         String?  @db.VarChar(50)
+  paymentQrUrl        String?
+  gbprimepayPublic    String?  @db.VarChar(255)
+  gbprimepaySecret    String?
+  // Phase 1.5 — Lab integration (labApiKey encrypted)
+  labApiUrl           String?  @db.VarChar(500)
+  labApiKey           String?
+  updatedBy           Int?
   updatedAt           DateTime @updatedAt
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant        Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  updatedByUser User?  @relation("TenantSettingsUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
 
   @@map("tenant_settings")
 }
@@ -84,6 +102,8 @@ model User {
   isActive         Boolean  @default(true)
   allowedStartTime String?  @db.VarChar(5) // "HH:MM" login window start (Phase 4)
   allowedEndTime   String?  @db.VarChar(5) // "HH:MM" login window end
+  language            String @default("th")   @db.VarChar(5)  // personal preference (Phase 1.5-B)
+  defaultCalendarView String @default("week") @db.VarChar(10) // day | week | month
   lastLoginAt      DateTime?
   createdAt        DateTime @default(now())
 
@@ -91,6 +111,10 @@ model User {
   branch       Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
   appointments Appointment[]
   medicalRecords MedicalRecord[]
+  // Phase 1.5 settings back-relations
+  tenantSettingsUpdated TenantSettings[]   @relation("TenantSettingsUpdatedBy")
+  systemSettingsUpdated SystemSettings[]   @relation("SystemSettingsUpdatedBy")
+  settingsAuditChanges  SettingsAuditLog[] @relation("SettingsAuditChangedBy")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -102,6 +126,42 @@ enum Role {
   admin
   doctor
   staff
+  superadmin // platform operator — system_settings access only (Phase 1.5-B)
+}
+
+// Platform-global settings — NOT tenant-scoped; super-admin only (Phase 1.5)
+model SystemSettings {
+  key           String   @id @db.VarChar(100)
+  value         String
+  description   String?  @db.VarChar(500)
+  category      String   @default("platform") @db.VarChar(50) // 'smtp' | 'platform' | 'feature_flags'
+  isSecret      Boolean  @default(false)
+  updatedBy     Int?
+  updatedAt     DateTime @updatedAt
+
+  updatedByUser User? @relation("SystemSettingsUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
+
+  @@index([category])
+  @@map("system_settings")
+}
+
+// Field-level settings change trail (Phase 1.5).
+// tenantId NULL = system_settings change. No tenant FK — audit rows survive tenant deletion.
+model SettingsAuditLog {
+  id            Int      @id @default(autoincrement())
+  tenantId      Int?
+  changedBy     Int?
+  tableName     String   @db.VarChar(100) // 'tenant_settings' | 'system_settings'
+  fieldName     String   @db.VarChar(100)
+  oldValue      String?  // masked if secret
+  newValue      String?  // masked if secret
+  changedAt     DateTime @default(now())
+
+  changedByUser User? @relation("SettingsAuditChangedBy", fields: [changedBy], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, changedAt])
+  @@index([tableName, fieldName, changedAt])
+  @@map("settings_audit_log")
 }
 
 model Owner {

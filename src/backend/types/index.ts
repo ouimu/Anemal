@@ -6,7 +6,7 @@ export interface JwtPayload {
   userId:   number
   tenantId: number
   branchId?: number   // active branch (Phase 4)
-  role:     'admin' | 'doctor' | 'staff'
+  role:     'admin' | 'doctor' | 'staff' | 'superadmin'
   iat?:     number
   exp?:     number
 }

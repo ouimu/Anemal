@@ -27,6 +27,11 @@ async function main() {
     create: { name: 'Test Clinic', subdomain: 'test-clinic' },
   })
 
+  // Phase 1.5 — guarantee a tenant_settings row exists for each seeded tenant (S2.4)
+  for (const t of [tenantA, tenantB]) {
+    await prisma.tenantSettings.upsert({ where: { tenantId: t.id }, update: {}, create: { tenantId: t.id } })
+  }
+
   // Phase 4 — branches (idempotent). dev-clinic gets a 2nd branch for transfer/switch demos.
   const branchA = await prisma.branch.upsert({
     where: { tenantId_name: { tenantId: tenantA.id, name: 'Main Branch' } },
@@ -47,6 +52,8 @@ async function main() {
     { tenantId: tenantA.id, name: 'Admin A',  email: 'admin@dev-clinic.com',  role: Role.admin,  password: 'AdminPass1!' },
     { tenantId: tenantA.id, name: 'Doctor A', email: 'doctor@dev-clinic.com', role: Role.doctor, password: 'DoctorPass1!' },
     { tenantId: tenantA.id, name: 'Staff A',  email: 'staff@dev-clinic.com',  role: Role.staff,  password: 'StaffPass1!' },
+    // Platform superadmin (Phase 1.5-B) — system_settings access only; lives under dev-clinic
+    { tenantId: tenantA.id, name: 'Platform Super', email: 'super@anemal.co', role: Role.superadmin, password: 'SuperPass1!' },
     // Tenant B
     { tenantId: tenantB.id, name: 'Admin B',  email: 'admin@test-clinic.com',  role: Role.admin,  password: 'AdminPass2!' },
     { tenantId: tenantB.id, name: 'Doctor B', email: 'doctor@test-clinic.com', role: Role.doctor, password: 'DoctorPass2!' },

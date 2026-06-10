@@ -27,3 +27,20 @@ export function updateUser(userId: number, data: UpdateUserRequest) {
 export function setActive(userId: number, isActive: boolean) {
   return prisma.user.update({ where: { id: userId }, data: { isActive } })
 }
+
+// Phase 1.5-B — personal preferences (language, default calendar view)
+export function getPreferences(tenantId: number, userId: number) {
+  return prisma.user.findFirst({
+    where:  { id: userId, tenantId },
+    select: { language: true, defaultCalendarView: true },
+  })
+}
+
+export function updatePreferences(
+  tenantId: number,
+  userId: number,
+  data: { language?: string; defaultCalendarView?: string },
+) {
+  // updateMany keeps the write tenant-scoped (plain update matches by id alone)
+  return prisma.user.updateMany({ where: { id: userId, tenantId }, data })
+}

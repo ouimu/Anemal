@@ -17,4 +17,6 @@ export const config = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '8h',
   nodeEnv:     process.env.NODE_ENV || 'development',
   bcryptRounds: Number(process.env.BCRYPT_ROUNDS) || 10,
+  // AES-256-GCM key for settings secrets — 32-byte hex (openssl rand -hex 32)
+  settingsEncryptionKey: required('SETTINGS_ENCRYPTION_KEY'),
 }

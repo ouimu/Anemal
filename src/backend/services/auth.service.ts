@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt'
 import { AppError } from '../utils/errors'
 import { signToken } from '../config/jwt'
 import * as authRepo from '../models/auth.repository'
-import type { LoginRequest, LoginResponse } from '../types'
+import type { JwtPayload, LoginRequest, LoginResponse } from '../types'
 
 export class AuthError extends AppError {
   constructor(message: string, statusCode: number) {
@@ -60,7 +60,7 @@ export async function login(body: LoginRequest): Promise<LoginResponse> {
 
 // Re-issue a token scoped to a different branch within the same tenant.
 export async function switchBranch(
-  tenantId: number, userId: number, role: 'admin' | 'doctor' | 'staff', targetBranchId: number,
+  tenantId: number, userId: number, role: JwtPayload['role'], targetBranchId: number,
 ): Promise<LoginResponse> {
   const user = await authRepo.findUserById(tenantId, userId)
   if (!user || !user.isActive) throw new AuthError('User not found', 404)

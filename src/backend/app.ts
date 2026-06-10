@@ -25,6 +25,8 @@ import groomingRoutes from './routes/grooming.routes'
 import loyaltyRoutes from './routes/loyalty.routes'
 import reminderRoutes from './routes/reminder.routes'
 import auditRoutes from './routes/audit.routes'
+import settingsRoutes from './routes/settings.routes'
+import systemSettingsRoutes from './routes/system-settings.routes'
 import { auditMiddleware } from './middlewares/audit.middleware'
 import { notFound, errorHandler } from './middlewares/error-handler.middleware'
 
@@ -44,6 +46,7 @@ app.use(auditMiddleware)
 // Routes
 app.use('/auth',            authRoutes)
 app.use('/users',           userRoutes)
+app.use('/admin/system-settings', systemSettingsRoutes) // superadmin only — before /admin
 app.use('/admin',           adminRoutes)
 app.use('/clinic',          clinicRoutes)
 app.use('/api/owners',      ownerRoutes)
@@ -65,6 +68,7 @@ app.use('/api/grooming',        groomingRoutes)
 app.use('/api/loyalty',         loyaltyRoutes)
 app.use('/api/reminders',       reminderRoutes)
 app.use('/api/audit',           auditRoutes)
+app.use('/api/settings',        settingsRoutes)
 
 // 404 fallback + global error handler (must be last)
 app.use(notFound)

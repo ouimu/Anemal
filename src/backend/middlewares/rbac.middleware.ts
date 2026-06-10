@@ -1,7 +1,7 @@
 // @db-agent reviewed — RBAC check runs AFTER authMiddleware which sets req.context
 import { Request, Response, NextFunction } from 'express'
 
-type Role = 'admin' | 'doctor' | 'staff'
+type Role = 'admin' | 'doctor' | 'staff' | 'superadmin'
 
 export function rbacMiddleware(allowedRoles: Role[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
