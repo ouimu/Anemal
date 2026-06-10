@@ -171,23 +171,17 @@
 
   <div class="nav-group">
     <div class="nav-group-label">Overview</div>
-    <a class="nav-item" href="dashboard.html" target="_blank" style="background:#172554;color:#60a5fa;border-left:3px solid #3b82f6">
-      <span class="icon">📊</span>Project Dashboard ↗
-    </a>
     <a class="nav-item active" onclick="show('home')" href="#">
-      <span class="icon">🏠</span>Home
-    </a>
-    <a class="nav-item" onclick="show('changelog')" href="#">
-      <span class="icon">📋</span>Changelog
+      <span class="icon">🏠</span>Project Home
     </a>
     <a class="nav-item" onclick="show('howto')" href="#">
       <span class="icon">🚀</span>How to Run
     </a>
+    <a class="nav-item" onclick="show('changelog')" href="#">
+      <span class="icon">📋</span>Changelog
+    </a>
     <a class="nav-item" onclick="show('mcp')" href="#">
       <span class="icon">🔌</span>MCP Servers
-    </a>
-    <a class="nav-item" onclick="show('admin')" href="#">
-      <span class="icon">⚙️</span>Admin Page
     </a>
   </div>
 
@@ -197,7 +191,7 @@
       <span class="icon">🔐</span>Login
     </a>
     <a class="nav-item" onclick="show('page-admin-dash')" href="#">
-      <span class="icon">🏠</span>Admin Dashboard
+      <span class="icon">🏛️</span>Admin Dashboard
     </a>
     <a class="nav-item" onclick="show('page-admin-users')" href="#">
       <span class="icon">👥</span>Users &amp; Roles
@@ -205,8 +199,38 @@
     <a class="nav-item" onclick="show('page-admin-usage')" href="#">
       <span class="icon">📊</span>Usage Stats
     </a>
+    <a class="nav-item" onclick="show('page-admin-branches')" href="#">
+      <span class="icon">🏢</span>Branches &amp; Shifts
+    </a>
+    <a class="nav-item" onclick="show('page-admin-bloodbank')" href="#">
+      <span class="icon">🩸</span>Blood Bank Admin
+    </a>
+    <a class="nav-item" onclick="show('page-admin-audit')" href="#">
+      <span class="icon">🔍</span>Audit Log
+    </a>
     <a class="nav-item" onclick="show('page-clinic-dash')" href="#">
       <span class="icon">🐾</span>Clinic Dashboard
+    </a>
+    <a class="nav-item" onclick="show('page-clinic-appts')" href="#">
+      <span class="icon">📅</span>Appointments
+    </a>
+    <a class="nav-item" onclick="show('page-clinic-pets')" href="#">
+      <span class="icon">🐕</span>Pets &amp; Owners
+    </a>
+    <a class="nav-item" onclick="show('page-clinic-emr')" href="#">
+      <span class="icon">📋</span>EMR
+    </a>
+    <a class="nav-item" onclick="show('page-clinic-inventory')" href="#">
+      <span class="icon">💊</span>Inventory
+    </a>
+    <a class="nav-item" onclick="show('page-clinic-billing')" href="#">
+      <span class="icon">💳</span>Billing / POS
+    </a>
+    <a class="nav-item" onclick="show('page-clinic-inpatient')" href="#">
+      <span class="icon">🏥</span>Inpatient
+    </a>
+    <a class="nav-item" onclick="show('page-clinic-grooming')" href="#">
+      <span class="icon">✂️</span>Grooming
     </a>
   </div>
 
@@ -216,13 +240,7 @@
       <span class="icon">📘</span>CLAUDE.md
     </a>
     <a class="nav-item" onclick="show('functional')" href="#">
-      <span class="icon">📝</span>Functional Requirements
-    </a>
-    <a class="nav-item" href="functional_spec_detailed.html" target="_blank">
-      <span class="icon">📄</span>Detailed Functional Spec v2.0 ↗
-    </a>
-    <a class="nav-item" href="vetcare_functional_spec.tex" target="_blank">
-      <span class="icon">📑</span>LaTeX Source v2.0 (.tex) ↗
+      <span class="icon">📝</span>Functional Spec
     </a>
     <a class="nav-item" onclick="show('schema')" href="#">
       <span class="icon">🗄️</span>Database Schema
@@ -266,26 +284,17 @@
 
   <div class="nav-group">
     <div class="nav-group-label">Roadmap</div>
-    <a class="nav-item" onclick="show('phase1')" href="#">
-      <span class="icon">1️⃣</span>Phase 1 — Foundation
+    <a class="nav-item" onclick="show('roadmap-upcoming')" href="#" style="color:#d97706;font-weight:700">
+      <span class="icon">🟡</span>Phase 1.5-D — Settings UI
     </a>
-    <a class="nav-item" onclick="show('phase2')" href="#">
-      <span class="icon">2️⃣</span>Phase 2 — Core Ops
-    </a>
-    <a class="nav-item" onclick="show('phase3')" href="#">
-      <span class="icon">3️⃣</span>Phase 3 — Commercial
-    </a>
-    <a class="nav-item" onclick="show('phase4')" href="#">
-      <span class="icon">4️⃣</span>Phase 4 — Advanced Ops
-    </a>
-    <a class="nav-item" onclick="show('phase1plan')" href="#">
-      <span class="icon">📅</span>Phase 1 Plan
-    </a>
-    <a class="nav-item" onclick="show('phase1guide')" href="#">
-      <span class="icon">⌨️</span>Claude Code Guide
+    <a class="nav-item" onclick="show('roadmap-upcoming')" href="#">
+      <span class="icon">🔜</span>Upcoming Work
     </a>
     <a class="nav-item" onclick="show('qaproto')" href="#">
       <span class="icon">✅</span>QA Protocols
+    </a>
+    <a class="nav-item" onclick="show('roadmap-history')" href="#">
+      <span class="icon">📚</span>Completed Phases
     </a>
   </div>
 </nav>
@@ -305,124 +314,111 @@
 
 <!-- ══════════════════ HOME ══════════════════ -->
 <div class="page active" id="page-home">
-  <h1>🐾 Anemal</h1>
-  <p>Multi-tenant clinic management system for veterinary practices, built for <strong>Tablet (touch-first)</strong> and <strong>Web (reception counter)</strong>. Sold as a subscription SaaS product.</p>
+  <h1>🐾 Anemal — Project Dashboard</h1>
+  <p>Multi-tenant clinic management system for veterinary practices. <strong>Tablet (touch-first)</strong> + <strong>Web (reception counter)</strong>. Sold as subscription SaaS.</p>
 
+  <!-- ── Build Status ── -->
+  <div class="callout ok" style="margin-top:16px">
+    <span class="callout-icon">🎉</span>
+    <span><strong>All 4 development phases complete + Phase 1.5-A (DB + Encryption) and 1.5-B (Settings API incl. minimal S2.2 + <code>superadmin</code> role) done.</strong> 206 backend tests passing · tsc clean (2026-06-10). <strong style="color:#dc2626">Next: Phase 1.5-D Settings frontend pages</strong> (S3.5 Payment Page unblocks PromptPay QR); 1.5-C is now only the System Settings Admin UI.</span>
+  </div>
+
+  <!-- ── Stats ── -->
   <div class="stat-row">
-    <div class="stat"><div class="n">4</div><div class="l">Dev Phases</div></div>
-    <div class="stat"><div class="n">42</div><div class="l">Tasks Planned</div></div>
+    <div class="stat"><div class="n" style="color:#16a34a">4/4</div><div class="l">Phases Done</div></div>
+    <div class="stat"><div class="n" style="color:#16a34a">161</div><div class="l">Tests Passing</div></div>
     <div class="stat"><div class="n">25</div><div class="l">DB Tables</div></div>
-    <div class="stat"><div class="n">5</div><div class="l">Agents</div></div>
+    <div class="stat"><div class="n">13</div><div class="l">API Modules</div></div>
     <div class="stat"><div class="n">8</div><div class="l">Screen Prototypes</div></div>
-    <div class="stat"><div class="n">31</div><div class="l">Design Alignment Files</div></div>
+    <div class="stat"><div class="n">5</div><div class="l">Agents</div></div>
   </div>
 
-  <div class="callout ok">
-    <span class="callout-icon">🎨</span>
-    <span><strong>Design System:</strong> All UI aligned to <strong>Compassionate Care System</strong> (Stitch). Primary <code>#000000</code> · Secondary Sage <code>#006c4a</code> · Fonts: Plus Jakarta Sans + DM Sans · Icons: Material Symbols Outlined. See <a onclick="show('design-system')" href="#">Design Overview</a> or <a onclick="show('design-plan')" href="#">Alignment Plan</a>.</span>
-  </div>
+  <!-- ── Phase Progress ── -->
+  <h2>📊 Phase Progress</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Phase</th><th>Focus</th><th>Tests</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Phase 1</strong></td><td>Multi-tenancy, Auth, RBAC, Base Layout</td><td>74</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
+      <tr><td><strong>Phase 2</strong></td><td>Pet/Owner, Appointments, EMR, Anatomy Canvas</td><td>104</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
+      <tr><td><strong>Phase 3</strong></td><td>Inventory, POS/Billing, Reports, Subscription</td><td>131</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
+      <tr><td><strong>Phase 4</strong></td><td>Inpatient, Grooming, Blood Bank, Loyalty, Audit, Branches</td><td>155</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
+    </tbody>
+  </table></div>
 
-  <div class="callout info">
+  <!-- ── Stack ── -->
+  <div class="callout info" style="margin-top:4px">
     <span class="callout-icon">ℹ️</span>
-    <span><strong>Stack:</strong> Node.js + Express + Prisma + PostgreSQL (backend) · React 18 + Vite + Tailwind + Zustand (frontend) · JWT multi-tenancy with <code>tenant_id</code> on every table.</span>
+    <span><strong>Stack:</strong> Node.js + Express + Prisma + PostgreSQL 15 (backend) · React 18 + Vite + Tailwind CSS + Zustand + React Query (frontend) · JWT multi-tenancy — <code>tenant_id</code> enforced on every table.</span>
+  </div>
+  <div class="callout ok" style="margin-top:8px">
+    <span class="callout-icon">🎨</span>
+    <span><strong>Design System:</strong> <strong>Compassionate Care System</strong> — Primary <code>#000000</code> · Sage <code>#006c4a</code> · Plus Jakarta Sans + DM Sans · Material Symbols Outlined icons. <a onclick="show('design-system')" href="#">Design Overview →</a></span>
   </div>
 
-  <h2>📂 Documentation Sections</h2>
+  <!-- ── Quick Nav ── -->
+  <h2>📂 Quick Navigation</h2>
   <div class="card-grid">
-    <div class="card" onclick="show('claude')">
-      <div class="card-icon">📘</div>
-      <div class="card-title">CLAUDE.md</div>
-      <div class="card-desc">Agent system, tech stack, architecture rules, dev commands</div>
+    <div class="card" onclick="show('howto')">
+      <div class="card-icon">🚀</div>
+      <div class="card-title">How to Run</div>
+      <div class="card-desc">Start the app locally — 4 commands</div>
     </div>
     <div class="card" onclick="show('functional')">
       <div class="card-icon">📝</div>
-      <div class="card-title">Functional Requirements</div>
-      <div class="card-desc">All 5 modules with feature specs and tablet-specific requirements</div>
-    </div>
-    <div class="card" onclick="window.open('functional_spec_detailed.html','_blank')">
-      <div class="card-icon">📄</div>
-      <div class="card-title">Detailed Functional Spec</div>
-      <div class="card-desc">Full per-module spec: workflow, prerequisites, testing criteria, architecture, infrastructure, app management</div>
-    </div>
-    <div class="card" onclick="window.open('vetcare_functional_spec.tex','_blank')">
-      <div class="card-icon">📑</div>
-      <div class="card-title">LaTeX Source (.tex)</div>
-      <div class="card-desc">Print-ready PDF source. Compile with <code>pdflatex vetcare_functional_spec.tex</code></div>
+      <div class="card-title">Functional Spec</div>
+      <div class="card-desc">All 13 modules — requirements, workflows, NFRs</div>
     </div>
     <div class="card" onclick="show('schema')">
       <div class="card-icon">🗄️</div>
       <div class="card-title">Database Schema</div>
-      <div class="card-desc">PostgreSQL DDL for all 10 tables with multi-tenancy enforcement</div>
+      <div class="card-desc">25 tables with multi-tenancy enforcement &amp; indexes</div>
     </div>
-    <div class="card" onclick="show('phase1')">
-      <div class="card-icon">1️⃣</div>
-      <div class="card-title">Phase 1 Tasks</div>
-      <div class="card-desc">Foundation: auth, RBAC, middleware, base layout (6 tasks)</div>
+    <div class="card" onclick="show('roadmap-upcoming')" style="border-color:#d9770644;background:linear-gradient(135deg,#fff 0%,#fffbeb 100%)">
+      <div class="card-icon">🟡</div>
+      <div class="card-title">Phase 1.5-D — Settings UI <span style="font-size:11px;background:#fef3c7;color:#d97706;padding:2px 6px;border-radius:4px;font-weight:700">IN PROGRESS</span></div>
+      <div class="card-desc">1.5-A DB ✅ · 1.5-B Settings API ✅ (206 tests, TC-S001–S009) · Now: frontend settings pages — S3.5 Payment Page unblocks PromptPay QR.</div>
     </div>
-    <div class="card" onclick="show('phase2')">
-      <div class="card-icon">2️⃣</div>
-      <div class="card-title">Phase 2 Tasks</div>
-      <div class="card-desc">Pet/Owner, Appointments, EMR, Anatomy Canvas (10 tasks)</div>
-    </div>
-    <div class="card" onclick="show('phase3')">
-      <div class="card-icon">3️⃣</div>
-      <div class="card-title">Phase 3 Tasks</div>
-      <div class="card-desc">Inventory, POS/Billing, PDF receipts, Dashboard KPIs (9 tasks)</div>
-    </div>
-    <div class="card" onclick="show('phase4')">
-      <div class="card-icon">4️⃣</div>
-      <div class="card-title">Phase 4 Tasks</div>
-      <div class="card-desc">Inpatient, Grooming, Blood Bank, Loyalty, Audits, Shifts, Reminders (13 tasks)</div>
+    <div class="card" onclick="show('roadmap-upcoming')">
+      <div class="card-icon">🔜</div>
+      <div class="card-title">Upcoming Work</div>
+      <div class="card-desc">Phase 1.5 Settings (CRITICAL) · C: PromptPay QR · D: Barcode · E: S3 · F: Gateway · G: LINE/SMS</div>
     </div>
     <div class="card" onclick="show('qaproto')">
       <div class="card-icon">✅</div>
       <div class="card-title">QA Protocols</div>
       <div class="card-desc">7-section checklist run after every task</div>
     </div>
-    <div class="card" onclick="show('howto')">
-      <div class="card-icon">🚀</div>
-      <div class="card-title">How to Run</div>
-      <div class="card-desc">Local setup guide for Windows with PostgreSQL and npm</div>
-    </div>
-    <div class="card" onclick="show('admin')">
-      <div class="card-icon">⚙️</div>
-      <div class="card-title">Admin page</div>
-      <div class="card-desc">Clinic profile, user management, settings, subscription & multi-tenant</div>
-    </div>
-    <div class="card" onclick="show('mcp')">
-      <div class="card-icon">🔌</div>
-      <div class="card-title">MCP Servers</div>
-      <div class="card-desc">CLI commands, recommended servers, .mcp.json config, per-agent usage</div>
+    <div class="card" onclick="show('design-system')" style="border-color:#006c4a33;background:linear-gradient(135deg,#fff 0%,#f0fdf8 100%)">
+      <div class="card-icon">🎨</div>
+      <div class="card-title">Design System</div>
+      <div class="card-desc">Compassionate Care System — tokens, sidebar, 8 screen prototypes</div>
     </div>
     <div class="card" onclick="show('changelog')">
       <div class="card-icon">📋</div>
       <div class="card-title">Changelog</div>
-      <div class="card-desc">Full history of all files created and fixes applied</div>
+      <div class="card-desc">Full history of all files and changes</div>
     </div>
-    <div class="card" onclick="show('design-system')" style="border-color:#006c4a33; background:linear-gradient(135deg,#fff 0%,#f0fdf8 100%)">
-      <div class="card-icon">🎨</div>
-      <div class="card-title">Design System</div>
-      <div class="card-desc">Compassionate Care System — tokens, sidebar spec, screen prototypes (8 screens)</div>
-    </div>
-    <div class="card" onclick="show('design-plan')" style="border-color:#006c4a33; background:linear-gradient(135deg,#fff 0%,#f0fdf8 100%)">
-      <div class="card-icon">📋</div>
-      <div class="card-title">Design Alignment Plan</div>
-      <div class="card-desc">31-file change plan — gap analysis, token delta, implementation order by phase</div>
+    <div class="card" onclick="show('mcp')">
+      <div class="card-icon">🔌</div>
+      <div class="card-title">MCP Servers</div>
+      <div class="card-desc">Config, recommended servers, per-agent usage</div>
     </div>
   </div>
 
+  <!-- ── Agents ── -->
   <h2>🤝 Agent System</h2>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Agent</th><th>Role</th><th>Phase 1 Focus</th></tr></thead>
+    <thead><tr><th>Agent</th><th>Role</th><th>Primary Responsibility</th></tr></thead>
     <tbody>
-      <tr><td><span class="badge agent-pm">@pm-agent</span></td><td>Product Manager</td><td>Scope control, task breakdown, sign-off</td></tr>
-      <tr><td><span class="badge agent-ui">@uiux-agent</span></td><td>UI/UX Designer</td><td>Sidebar spec, login layout, 44px tap targets</td></tr>
-      <tr><td><span class="badge agent-db">@db-agent</span></td><td>Database Admin</td><td>Prisma schema, seed, tenant isolation review</td></tr>
-      <tr><td><span class="badge agent-dev">@dev-agent</span></td><td>Full-Stack Dev</td><td>Express API, React frontend, middlewares</td></tr>
-      <tr><td><span class="badge agent-qa">@qa-agent</span></td><td>QA Engineer</td><td>Unit + integration tests, RBAC matrix</td></tr>
+      <tr><td><span class="badge agent-pm">@pm-agent</span></td><td>Product Manager</td><td>Scope control, user stories, acceptance criteria, phase sign-off</td></tr>
+      <tr><td><span class="badge agent-ui">@uiux-agent</span></td><td>UI/UX Designer</td><td>Touch-first layout, 44px tap targets, Compassionate Care System compliance</td></tr>
+      <tr><td><span class="badge agent-db">@db-agent</span></td><td>Database Admin</td><td>Schema design, multi-tenancy isolation, index tuning, migration review</td></tr>
+      <tr><td><span class="badge agent-dev">@dev-agent</span></td><td>Full-Stack Engineer</td><td>Express API (Route→Controller→Service→Repo), React components, TypeScript strict</td></tr>
+      <tr><td><span class="badge agent-qa">@qa-agent</span></td><td>QA Engineer</td><td>Data isolation tests, RBAC matrix, edge cases, integration suites</td></tr>
     </tbody>
   </table></div>
 
+  <!-- ── Architecture Rule ── -->
   <h2>🏗️ Critical Architecture Rule</h2>
   <div class="callout danger">
     <span class="callout-icon">🚨</span>
@@ -512,156 +508,181 @@ npm run dev            # Start Vite on :5173</code></pre>
 
 <!-- ══════════════════ FUNCTIONAL REQS ══════════════════ -->
 <div class="page" id="page-functional">
-  <h1>📝 Functional Requirements</h1>
+  <h1>📝 Functional Specification v2.0</h1>
+  <p>Merged reference: functional requirements + detailed per-module spec. All 4 phases complete as of 2026-06-10.</p>
 
-  <h2>Multi-Tenancy &amp; Auth</h2>
-  <ul>
-    <li>Each clinic is an isolated Tenant with its own subdomain</li>
-    <li>Users belong to one Tenant; roles: <code>admin</code>, <code>doctor</code>, <code>staff</code></li>
-    <li>JWT tokens embed <code>tenant_id</code> and <code>role</code>; middleware enforces both</li>
-    <li>Admin can manage clinic users, settings, and subscription</li>
-  </ul>
+  <!-- ── Foundation ── -->
+  <h2>Foundation — Multi-Tenancy &amp; Auth</h2>
+  <div class="callout info"><span class="callout-icon">📁</span><span>Phase 1 · 74 tests · <code>src/backend/src/middlewares/</code></span></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Requirement</th><th>Implementation</th></tr></thead>
+    <tbody>
+      <tr><td>Tenant isolation</td><td>Shared DB, shared schema — <code>tenant_id</code> on every tenant-scoped table; enforced by middleware and reviewed by <code>@db-agent</code> on every PR</td></tr>
+      <tr><td>Authentication</td><td>JWT (<code>userId, tenantId, branchId, role</code>); 8h access token + 30d refresh token; bcrypt passwords; rate limit 5 attempts/15 min</td></tr>
+      <tr><td>RBAC</td><td>3 roles: <code>admin</code> (full), <code>doctor</code> (clinical), <code>staff</code> (operations); factory <code>requireRole()</code> middleware</td></tr>
+      <tr><td>Multi-branch</td><td><code>branch_id</code> on appointments, EMR, inventory, invoices; doctor shifts enforce branch availability</td></tr>
+      <tr><td>Login time restriction</td><td><code>allowed_start_time</code> / <code>allowed_end_time</code> on users table; enforced at login</td></tr>
+    </tbody>
+  </table></div>
 
-  <h2>Module 1 — Pet &amp; Owner Management</h2>
-  <div class="task-card">
-    <ul>
-      <li>Create/edit Owner profiles (name, phone, email)</li>
-      <li>Create/edit Pet profiles linked to Owner (species, breed, birth date, gender, weight, microchip ID, photo)</li>
-      <li>Quick Search: find by pet name, owner phone number, or microchip ID</li>
-      <li>🖥️ <strong>Tablet:</strong> capture pet photo directly from device camera</li>
-      <li>Flag pets for disease surveillance / isolation alerts</li>
-    </ul>
-  </div>
+  <!-- ── Module Matrix ── -->
+  <h2>Module Overview</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>#</th><th>Module</th><th>Phase</th><th>Key API Prefix</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Pet &amp; Owner Management</td><td>2</td><td><code>/api/owners</code> · <code>/api/pets</code> · <code>/api/search</code></td></tr>
+      <tr><td>2</td><td>Appointment Scheduling</td><td>2</td><td><code>/api/appointments</code></td></tr>
+      <tr><td>3</td><td>EMR (SOAP + Anatomy Canvas)</td><td>2</td><td><code>/api/medical-records</code> · <code>/api/prescriptions</code> · <code>/api/vaccinations</code></td></tr>
+      <tr><td>4</td><td>Inventory (per-branch)</td><td>3</td><td><code>/api/products</code> · <code>/api/inventory</code></td></tr>
+      <tr><td>5</td><td>Billing / POS + Discount Engine</td><td>3</td><td><code>/api/invoices</code></td></tr>
+      <tr><td>6</td><td>Reports &amp; Analytics</td><td>3</td><td><code>/api/reports/*</code></td></tr>
+      <tr><td>7</td><td>Multi-Branch &amp; Inventory Transfers</td><td>4</td><td><code>/api/branches</code> · <code>/api/inventory/transfers</code></td></tr>
+      <tr><td>8</td><td>Inpatient (Hospitalization)</td><td>4</td><td><code>/api/hospitalizations</code> · <code>/api/inpatient-care</code></td></tr>
+      <tr><td>9</td><td>Grooming Scheduler</td><td>4</td><td><code>/api/grooming-bookings</code></td></tr>
+      <tr><td>10</td><td>Blood Bank</td><td>4</td><td><code>/api/blood-donors</code> · <code>/api/blood-donations</code> · <code>/api/blood-transfusions</code></td></tr>
+      <tr><td>11</td><td>Loyalty &amp; Membership</td><td>4</td><td><code>/api/loyalty</code></td></tr>
+      <tr><td>12</td><td>Audit &amp; Work-Hour Restriction</td><td>4</td><td><code>/api/audit</code></td></tr>
+      <tr><td>13</td><td>Appointment Reminders (cron)</td><td>4</td><td>Background worker · <code>/api/reminders/trigger</code></td></tr>
+    </tbody>
+  </table></div>
 
-  <h2>Module 2 — Appointment Scheduling</h2>
-  <div class="task-card">
-    <ul>
-      <li>Calendar views: per doctor, per exam room; day and week views</li>
-      <li>Create/reschedule/cancel appointments with reason notes</li>
-      <li>Auto-send SMS/LINE reminder to owner 24h and 1h before appointment</li>
-      <li>🖥️ <strong>Tablet:</strong> doctor can view daily schedule in a compact card layout</li>
-    </ul>
-  </div>
+  <!-- ── Module Details ── -->
+  <h2>Module Detail</h2>
 
-  <h2>Module 3 — EMR</h2>
-  <div class="task-card">
-    <ul>
-      <li>SOAP-format entry: Subjective, Objective, Assessment, Plan</li>
-      <li>Treatment timeline showing all past visits in chronological order</li>
-      <li>Prescription issuance linked to Inventory (auto-deducts stock)</li>
-      <li>Lab order and result upload (PDF, image)</li>
-      <li>🖥️ <strong>Tablet:</strong> stylus/finger drawing on animal anatomy diagrams</li>
-    </ul>
-  </div>
+  <h3>M1 — Pet &amp; Owner</h3>
+  <div class="task-card"><ul>
+    <li>Owner: name, phone (unique per tenant), email, LINE user ID, membership tier, loyalty points</li>
+    <li>Pet: linked to owner; species, breed, DOB, weight, microchip (unique per tenant), allergies, underlying conditions, photo URL, isolation flag</li>
+    <li>Quick search returns top 10 results by name / phone / microchip in &lt;300ms</li>
+    <li>🖥️ <strong>Tablet:</strong> camera capture for pet photo; barcode scan for microchip lookup</li>
+  </ul></div>
 
-  <h2>Module 4 — Inventory Management</h2>
-  <div class="task-card">
-    <ul>
-      <li>Drug and supply catalog with unit, minimum stock level, expiry date</li>
-      <li>Auto-deduct stock quantity when prescription is issued via EMR</li>
-      <li>Alerts: stock below minimum threshold; items expiring within 30 days</li>
-      <li>🖥️ <strong>Tablet:</strong> scan drug barcode/QR code via camera</li>
-    </ul>
-  </div>
+  <h3>M2 — Appointments</h3>
+  <div class="task-card"><ul>
+    <li>Calendar per doctor and per room; day and week views</li>
+    <li>Double-booking (same doctor + time) → <code>409 Conflict</code></li>
+    <li>Status: <code>scheduled → confirmed → in_progress → completed / cancelled / no_show</code></li>
+    <li>Walk-in appointments bypass slot conflict check</li>
+    <li>Reminder cron fires daily at 08:00; marks <code>pet_reminders</code> rows as <code>sent</code> (LINE/SMS dispatch deferred)</li>
+    <li>🖥️ <strong>Tablet:</strong> compact daily card layout; 44px tap targets on all status buttons</li>
+  </ul></div>
 
-  <h2>Module 5 — Billing &amp; POS</h2>
-  <div class="task-card">
-    <ul>
-      <li>Generate invoice from EMR visit (services + drugs)</li>
-      <li>Issue tax receipt and prescription printout (PDF)</li>
-      <li>Payment methods: cash, QR code (PromptPay), credit/debit card</li>
-      <li>🖥️ <strong>Tablet:</strong> display QR code full-screen for owner to scan and pay</li>
-    </ul>
-  </div>
+  <h3>M3 — EMR</h3>
+  <div class="task-card"><ul>
+    <li>SOAP note: Subjective, Objective (vitals), Assessment, Plan</li>
+    <li>Anatomy canvas: stylus/finger annotation on dog/cat body diagram (Konva.js)</li>
+    <li>Prescriptions auto-deduct <code>branch_inventory</code> atomically on creation; restore on cancellation</li>
+    <li>Attachments: lab results, X-rays (PDF/image) stored via S3 signed URL (deferred)</li>
+    <li>Record locks to <code>billed</code> on invoice creation — no further edits allowed</li>
+    <li>Vaccination timeline linked to medical record; due-date query for reminder cron</li>
+  </ul></div>
 
-  <h2>Module 6 — Inventory &amp; Multi-Branch Transfers</h2>
-  <div class="task-card">
-    <ul>
-      <li>Smart inventory management system with stock catalog (medicines, vaccines, general products)</li>
-      <li>Physical inventory levels, lot numbers, and expiration dates isolated per branch in <code>branch_inventory</code></li>
-      <li>Automatic stock deduction on EMR prescription dispensing or retail POS checkout</li>
-      <li>Inter-branch inventory transfer system with request, dispatch, and receipt confirmation workflows</li>
-      <li>Lot/expiry tracking, low-stock threshold triggers, and real-time alerts</li>
-      <li>🖥️ <strong>Tablet:</strong> barcode/QR scanning via camera for swift catalog registration and search</li>
-    </ul>
-  </div>
+  <h3>M4 — Inventory</h3>
+  <div class="task-card"><ul>
+    <li>Product catalog: name, SKU, barcode, unit, unit price, category, <code>min_stock_qty</code></li>
+    <li>Per-branch stock in <code>branch_inventory</code>: lot number, expiry date, current qty</li>
+    <li>Alerts: red (stock = 0), amber (stock &lt; min or expiry &lt; 30 days)</li>
+    <li>All movements logged in <code>stock_movements</code> (prescription_dispense, stock_in, adjustment, transfer_out, transfer_in)</li>
+    <li>🖥️ <strong>Tablet:</strong> ZXing.js camera scan → auto-fills product search</li>
+  </ul></div>
 
-  <h2>Module 7 — Billing, POS &amp; Discount Engine</h2>
-  <div class="task-card">
-    <ul>
-      <li>Automatic invoice generation pulling clinical items directly from EMR visits</li>
-      <li>Retail POS checkout screen for over-the-counter pet shop sales</li>
-      <li>Flexible discount engine supporting tiered membership cuts, flat rates, and product-specific promotions</li>
-      <li>Multiple payment schemes: Cash with change calculations, credit cards, bank transfers, and PromptPay</li>
-      <li>Generation and printing of detailed receipts, invoices, and VAT (7%) tax documents</li>
-      <li>🖥️ <strong>Tablet:</strong> full-screen PromptPay dynamic QR code rendering for scans</li>
-    </ul>
-  </div>
+  <h3>M5 — Billing / POS</h3>
+  <div class="task-card"><ul>
+    <li>Invoice auto-generated from EMR on lock; manual retail POS also supported</li>
+    <li>Line items: service fees + prescribed drugs pulled automatically</li>
+    <li>Discount engine: membership tier flat-rate, per-product promotions</li>
+    <li>VAT 7% applied on subtotal after discounts</li>
+    <li>Payment: Cash (change calc), PromptPay QR (EMVCo, UI only — gateway deferred), Credit card (deferred)</li>
+    <li>Void creates reversal audit record; original invoice immutable</li>
+    <li>🖥️ <strong>Tablet:</strong> full-screen QR for owner to scan; large payment method tiles (80px)</li>
+  </ul></div>
 
-  <h2>Module 8 — Inpatient (Hospitalization) Management</h2>
-  <div class="task-card">
-    <ul>
-      <li>Admission tracking including cage assignment, admission reasons, and responsible veterinarian</li>
-      <li>Daily nursing plans structured into hourly time-slots (e.g. 08:00, 12:00, 16:00, 20:00)</li>
-      <li>Tracking of vital signs (temp, pulse, resp), feeding schedules, and administered medications</li>
-      <li>Discharge automation compiling hospitalization logs and cage room charges directly into billing invoices</li>
-    </ul>
-  </div>
+  <h3>M6 — Reports</h3>
+  <div class="task-card"><ul>
+    <li><code>GET /api/reports/revenue?period=daily|monthly</code></li>
+    <li><code>GET /api/reports/top-services</code> — top-earning service types</li>
+    <li><code>GET /api/reports/branch-revenue</code> — bar chart data per branch</li>
+    <li>All queries strictly tenant-scoped; &lt;1s using pre-aggregated <code>COUNT</code> + <code>SUM</code></li>
+  </ul></div>
 
-  <h2>Module 9 — Grooming Management</h2>
-  <div class="task-card">
-    <ul>
-      <li>Grooming appointments scheduling including service selection, specific request notes, and groomer assignment</li>
-      <li>Daily service capacity tracking to prevent groomer overbooking based on slot time limits</li>
-      <li>Real-time status tracking queue (scheduled, in_progress, completed, cancelled) segregated from clinical queues</li>
-    </ul>
-  </div>
+  <h3>M7 — Multi-Branch &amp; Transfers</h3>
+  <div class="task-card"><ul>
+    <li>Branch CRUD with operating hours; doctor shifts (<code>doctor_shifts</code>) prevent booking outside shift</li>
+    <li>Transfer request → dispatch → receive; dual <code>stock_movements</code> rows in a single DB transaction</li>
+    <li>Source branch stock deducted only on receive confirmation</li>
+  </ul></div>
 
-  <h2>Module 10 — Blood Bank Management</h2>
-  <div class="task-card">
-    <ul>
-      <li>Blood donor registry logging pet details, eligibility status, blood type, and physical health records</li>
-      <li>Donation logs tracking volume, collection date, expiry, and storage status (available, used, expired)</li>
-      <li>Transfusion logs tracking recipient compatibility, cross-matching results, and post-transfusion reactions</li>
-    </ul>
-  </div>
+  <h3>M8 — Inpatient</h3>
+  <div class="task-card"><ul>
+    <li>Admit: cage number, responsible doctor, reason; status: <code>admitted / discharged</code></li>
+    <li>Daily care log at defined time slots (08:00, 12:00, 16:00, 20:00): temp, pulse, resp, feeding, meds</li>
+    <li>Discharge auto-creates billing invoice including cage/day charges</li>
+  </ul></div>
 
-  <h2>Module 11 — Loyalty &amp; Membership System</h2>
-  <div class="task-card">
-    <ul>
-      <li>Tiered membership programs (Gold, Platinum, etc.) with custom checkout discount engines</li>
-      <li>Automatic loyalty point accumulation based on invoice amounts (e.g. ฿100 spent = 1 point)</li>
-      <li>Cash redemption or reward exchange flows integrated directly into the POS/Billing screens</li>
-    </ul>
-  </div>
+  <h3>M9 — Grooming</h3>
+  <div class="task-card"><ul>
+    <li>Grooming booking with service type, groomer assignment, special notes</li>
+    <li>Daily capacity quota per groomer — overbooking → <code>409</code></li>
+    <li>Queue board: <code>scheduled → in_progress → completed / cancelled</code></li>
+  </ul></div>
 
-  <h2>Module 12 — Security &amp; Activity Monitoring</h2>
-  <div class="task-card">
-    <ul>
-      <li>User activity audit trail logging every modification/deletion of billing, medical records, or stock adjustments</li>
-      <li>Secure, immutable audit records storing user ID, action description, modified tables, changes diff, IP address, and timestamp</li>
-      <li>Work-hour restrictions preventing specific staff logins outside designated time windows</li>
-    </ul>
-  </div>
+  <h3>M10 — Blood Bank</h3>
+  <div class="task-card"><ul>
+    <li>Donor registry: pet, blood type, eligibility, last donation date (56-day minimum interval)</li>
+    <li>Donation: volume, collection date, expiry date (30 days), status: <code>available / used / expired</code></li>
+    <li>Transfusion: compatibility guard (blood type match required at API level), reaction log</li>
+  </ul></div>
 
-  <h2>Module 13 — Reports &amp; Analytics Dashboard</h2>
-  <div class="task-card">
-    <ul>
-      <li>Dynamic revenue analysis reporting daily, monthly, and yearly branch performance</li>
-      <li>Popularity metrics showcasing top-performing clinical services and best-selling retail products</li>
-      <li>Real-time operational snapshot showing inpatient occupancy rates, pending grooming counts, and appointment loads</li>
-    </ul>
-  </div>
+  <h3>M11 — Loyalty</h3>
+  <div class="task-card"><ul>
+    <li>Membership tiers on owner: Standard / Gold / Platinum — each tier has configurable discount %</li>
+    <li>Points: ฿100 spent = 1 point (earn on invoice payment)</li>
+    <li>Redemption at POS; <code>loyalty_transactions</code> records every earn/redeem event</li>
+  </ul></div>
 
+  <h3>M12 — Audit &amp; Work Hours</h3>
+  <div class="task-card"><ul>
+    <li><code>auditMiddleware</code> wired on billing, medical records, and stock adjustment routes</li>
+    <li>Audit log fields: user, action (INSERT/UPDATE/DELETE), table, record ID, diff JSON, IP, timestamp</li>
+    <li>Records are immutable — no UPDATE/DELETE permitted on <code>audit_logs</code></li>
+    <li>Login blocked outside <code>allowed_start_time</code>–<code>allowed_end_time</code> window if set on user</li>
+  </ul></div>
+
+  <h3>M13 — Reminders</h3>
+  <div class="task-card"><ul>
+    <li>Background cron (configurable schedule, default 08:00 daily) queries appointments due tomorrow</li>
+    <li>Creates <code>pet_reminders</code> rows; currently marks <code>sent</code> without actual dispatch</li>
+    <li>LINE dispatch deferred (requires <code>LINE_CHANNEL_ACCESS_TOKEN</code>); SMS fallback via Twilio also deferred</li>
+    <li>Manual trigger: <code>POST /api/reminders/trigger</code> (admin token)</li>
+  </ul></div>
+
+  <!-- ── NFRs ── -->
   <h2>Non-Functional Requirements</h2>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Requirement</th><th>Spec</th></tr></thead>
     <tbody>
       <tr><td>Tablet breakpoints</td><td>768px portrait, 1024px landscape</td></tr>
-      <tr><td>Tap targets</td><td>≥ 44×44px</td></tr>
-      <tr><td>Offline grace</td><td>Form data preserved locally; synced on reconnect</td></tr>
-      <tr><td>Backup</td><td>Automated daily DB snapshots</td></tr>
-      <tr><td>Encryption</td><td>bcrypt passwords; sensitive fields encrypted at rest</td></tr>
+      <tr><td>Tap targets</td><td>≥ 44×44px on all interactive elements</td></tr>
+      <tr><td>API response time</td><td>List endpoints &lt;300ms; reports &lt;1s (indexed queries)</td></tr>
+      <tr><td>Security</td><td>bcrypt passwords; JWT in-memory only (no localStorage); tenant isolation on every query</td></tr>
+      <tr><td>Offline graceful degradation</td><td>Form data preserved locally on disconnect; synced on reconnect</td></tr>
+      <tr><td>Backup</td><td>Automated daily DB snapshots (production config)</td></tr>
+      <tr><td>Audit coverage</td><td>All billing, EMR, and stock modifications logged immutably</td></tr>
+      <tr><td>Multi-tenancy model</td><td>Shared DB, shared schema — <code>tenant_id</code> discriminator enforced at middleware + repository layers</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- ── Deferred ── -->
+  <h2>Deferred Items (Post-Phase 4)</h2>
+  <div class="callout warn"><span class="callout-icon">📌</span><span>Implemented as stubs or skipped; require external credentials or separate sessions.</span></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Feature</th><th>Blocker</th></tr></thead>
+    <tbody>
+      <tr><td>PDF receipts &amp; prescription slips (pdfkit)</td><td>Needs Thai-compatible font embed; no external API required</td></tr>
+      <tr><td>PromptPay QR gateway (Omise/GB Prime)</td><td>Requires payment gateway credentials</td></tr>
+      <tr><td>LINE/SMS reminder dispatch</td><td>Requires <code>LINE_CHANNEL_ACCESS_TOKEN</code> / Twilio credentials</td></tr>
+      <tr><td>S3 file uploads (pet photos, attachments)</td><td>Requires AWS credentials</td></tr>
+      <tr><td>✅ <s>Screen specs 03–05 (Appointments, Pets, EMR)</s></td><td>Done 2026-06-10 — see <code>.claude/skills/anemal-screen-specs/references/</code></td></tr>
     </tbody>
   </table></div>
 </div>
@@ -754,951 +775,448 @@ CREATE INDEX idx_pet_reminders_pet          ON pet_reminders(tenant_id, pet_id);
 <!-- ══════════════════ AGENTS ══════════════════ -->
 <div class="page" id="page-pm">
   <h1>🎯 PM Agent — Product &amp; Requirement Manager</h1>
-  <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>.claude/agents/pm-agent.md</code> · Invoke: <code>@pm-agent</code></span></div>
+  <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>.claude/agents/pm-agent/AGENT.md</code> · Invoke: <code>@pm-agent</code> · Skill: <code>anemal-functional-reqs</code></span></div>
+  <div class="callout ok"><span class="callout-icon">✅</span><span>All 4 phases complete. PM Agent now governs deferred items and future phases.</span></div>
+
   <h2>Responsibilities</h2>
   <ul>
-    <li>Guard the scope of each development phase</li>
-    <li>Validate features against real veterinary clinic workflows</li>
+    <li>Validate new features against real veterinary clinic workflows before development begins</li>
     <li>Break large features into atomic, developer-ready tasks with clear acceptance criteria</li>
-    <li>Flag scope creep and propose deferral to a later phase</li>
-    <li>Ensure every feature explicitly addresses tablet usability</li>
+    <li>Flag scope creep and route new requests to the correct deferred session</li>
+    <li>Ensure every feature specifies actor (Admin / Doctor / Staff) and device context (Tablet / Web)</li>
+    <li>Own the <code>remaining-tasks.md</code> backlog and session planning</li>
   </ul>
-  <h2>Decision Rules</h2>
-  <ul>
-    <li>MVP first: if a feature is not in Phase 1–3 task lists, it belongs in the backlog</li>
-    <li>Every user story must specify the actor (Admin / Doctor / Staff) and device context</li>
-    <li>Acceptance criteria must be testable by <code>@qa-agent</code></li>
-  </ul>
+
+  <h2>Current Backlog Owner</h2>
+  <div class="callout warn" style="margin-bottom:8px"><span class="callout-icon">🟡</span><span><strong>Phase 1.5-A + 1.5-B ✅ done · Now on Phase 1.5-D — Settings frontend pages.</strong> Must complete Phase 1.5 before Session C (PromptPay QR), Session G (LINE/SMS), and Session F (Payment Gateway). See <a onclick="show('roadmap-upcoming')" href="#">Upcoming Work →</a></span></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Session</th><th>Scope</th><th>Est. Token Cost</th></tr></thead>
+    <tbody>
+      <tr style="opacity:0.55"><td>✅ Session A</td><td><s>Screen Specs 03–05 (Appointments, Pets, EMR)</s> — Done 2026-06-10</td><td>~25%</td></tr>
+      <tr style="opacity:0.55"><td><strong>✅ Session B</strong></td><td><s>PDF receipts + prescription slips (pdfkit, NotoSansThai, no credentials)</s> — Done 2026-06-10 · 161 tests</td><td>~40%</td></tr>
+      <tr style="opacity:0.55"><td><strong>✅ Phase 1.5-A</strong></td><td><s>Settings DB + Encryption (tenant_settings extension, system_settings, AES-256-GCM, audit log)</s> — Done 2026-06-10 · 182 tests</td><td>~45%</td></tr>
+      <tr style="opacity:0.55"><td><strong>✅ Phase 1.5-B</strong></td><td><s>Settings API — S2.1 + S2.2 minimal (superadmin) + S2.3 + TC-S001–S009</s> — Done 2026-06-10 · 206 tests</td><td>~50%</td></tr>
+      <tr><td><strong>🟡 Phase 1.5-D</strong></td><td>Frontend settings pages — S3.1–S3.6 (S3.5 Payment Page unblocks PromptPay QR) ← <em>do now</em></td><td>~55%</td></tr>
+      <tr><td><strong>Phase 1.5-C</strong></td><td>System Settings API + Admin UI (S2.2, S3.7, TC-S008–S010)</td><td>~40%</td></tr>
+      <tr><td><strong>Phase 1.5-D</strong></td><td>Frontend Settings Pages (S3.1–S3.6) — unblocks Sessions C &amp; G when S3.4 &amp; S3.5 done</td><td>~55%</td></tr>
+      <tr><td><strong>▶️ Session C</strong> <span style="color:#dc2626;font-size:11px">⛔ Needs Phase 1.5-D</span></td><td>PromptPay QR UI (qrcode npm, EMVCo payload, no gateway)</td><td>~25%</td></tr>
+      <tr><td>Session D</td><td>Barcode scanning (ZXing) + EMR drug-search wiring</td><td>~30%</td></tr>
+      <tr><td>Session E</td><td>S3 photo &amp; attachment upload (needs AWS keys)</td><td>~35% + credentials</td></tr>
+      <tr><td>Session F</td><td>Payment gateway (Omise/Stripe, webhooks, subscription billing)</td><td>~55% + credentials</td></tr>
+      <tr><td>Session G</td><td>LINE/SMS real dispatch (needs LINE + Twilio tokens)</td><td>~35% + credentials</td></tr>
+    </tbody>
+  </table></div>
+
   <h2>Task Output Format</h2>
   <pre><code>Task ID: &lt;module&gt;-&lt;number&gt;
-Actor: &lt;role&gt;
+Actor: Admin | Doctor | Staff
 Device: Tablet | Web | Both
-Description: &lt;what needs to be built&gt;
+Description: &lt;what to build&gt;
 Acceptance Criteria:
-  - [ ] &lt;criterion&gt;
-Dependencies: &lt;task IDs&gt;</code></pre>
+  - [ ] &lt;testable criterion&gt;
+Dependencies: &lt;task IDs or sessions&gt;</code></pre>
 </div>
 
 <div class="page" id="page-uiux">
   <h1>🎨 UIUX Agent — Interface &amp; Experience Architect</h1>
-  <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>.claude/agents/uiux-agent.md</code> · Invoke: <code>@uiux-agent</code></span></div>
+  <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>.claude/agents/uiux-agent/AGENT.md</code> · Invoke: <code>@uiux-agent</code> · Skills: <code>anemal-design-system</code> · <code>anemal-screen-specs</code></span></div>
+  <div class="callout ok"><span class="callout-icon">✅</span><span>All 8 screens implemented and specced — Screen Specs 03–05 completed in Session A (2026-06-10).</span></div>
+
   <h2>Responsibilities</h2>
   <ul>
-    <li>Design all UI flows and component specs for Tablet (touch-first) and Web</li>
-    <li>Enforce tap-target minimum of <strong>44×44px</strong> on all interactive elements</li>
-    <li>Replace keyboard input with dropdowns, pickers, and toggles wherever possible</li>
-    <li>Design the anatomy canvas component (stylus drawing on animal body diagrams)</li>
-    <li>Own the collapsible sidebar with left/right-hand mode toggle</li>
+    <li>Enforce Compassionate Care System tokens on every component — no raw hex colors in component files</li>
+    <li>Maintain 44×44px tap target minimum and 8px gap between adjacent targets</li>
+    <li>Own the collapsible sidebar and left/right-hand mode toggle</li>
+    <li>Review all frontend PRs for design compliance before merge</li>
+    <li>Write screen spec docs (<code>.claude/skills/anemal-screen-specs/references/</code>) for unspecced screens</li>
   </ul>
+
   <h2>Design Constraints</h2>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Constraint</th><th>Value</th></tr></thead>
     <tbody>
-      <tr><td>Primary device</td><td>iPad/Android tablet — portrait and landscape</td></tr>
-      <tr><td>Secondary device</td><td>Desktop browser at reception counter</td></tr>
-      <tr><td>Font minimum</td><td>16px body, 14px labels</td></tr>
-      <tr><td>Touch target</td><td>44×44px min, 8px gap between adjacent targets</td></tr>
+      <tr><td>Primary device</td><td>iPad / Android tablet — 768px portrait, 1024px landscape</td></tr>
+      <tr><td>Secondary device</td><td>Desktop browser at reception counter (1280px+)</td></tr>
+      <tr><td>Font minimum</td><td>16px body · 14px labels</td></tr>
+      <tr><td>Touch target</td><td>44×44px min · 8px gap between targets</td></tr>
+      <tr><td>Icons</td><td>Material Symbols Outlined only — no emoji in nav</td></tr>
+      <tr><td>Colors</td><td>Tailwind token classes only — no raw hex in components</td></tr>
       <tr><td>Contrast</td><td>WCAG AA minimum</td></tr>
     </tbody>
   </table></div>
-  <h2>Key Screens Owned</h2>
-  <ul>
-    <li>Dashboard (daily schedule summary per doctor)</li>
-    <li>Appointment calendar (day/week view)</li>
-    <li>EMR entry form (SOAP notes + anatomy canvas)</li>
-    <li>Quick search overlay</li>
-    <li>Billing/POS checkout screen</li>
-    <li>Inventory barcode scan screen</li>
-  </ul>
+
+  <h2>Screen Status</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Screen</th><th>Prototype</th><th>React Component</th><th>Spec Doc</th></tr></thead>
+    <tbody>
+      <tr><td>Login</td><td>login_page/code.html</td><td>LoginView.tsx</td><td>✅</td></tr>
+      <tr><td>Dashboard</td><td>dashboard_overview_1024x768/code.html</td><td>ClinicDashboard.tsx</td><td>✅</td></tr>
+      <tr><td>Appointments</td><td>appointment_scheduling_1024x768/code.html</td><td>ClinicAppointments.tsx</td><td>⚠️ Pending</td></tr>
+      <tr><td>Pet &amp; Owner</td><td>pet_owner_management_1024x768/code.html</td><td>ClinicPets.tsx</td><td>⚠️ Pending</td></tr>
+      <tr><td>EMR</td><td>emr_1024x768/code.html</td><td>ClinicEMR.tsx</td><td>⚠️ Pending</td></tr>
+      <tr><td>Inventory</td><td>inventory_management_1024x768/code.html</td><td>ClinicInventory.tsx</td><td>✅</td></tr>
+      <tr><td>Billing/POS</td><td>billing_pos_1024x768/code.html</td><td>ClinicBilling.tsx</td><td>✅</td></tr>
+      <tr><td>Admin</td><td>admin_control_center_1024x768/code.html</td><td>AdminView.tsx</td><td>✅</td></tr>
+    </tbody>
+  </table></div>
 </div>
 
 <div class="page" id="page-db">
   <h1>🗃️ DB Agent — Database Administrator &amp; Architect</h1>
-  <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>.claude/agents/db-agent.md</code> · Invoke: <code>@db-agent</code></span></div>
-  <div class="callout danger"><span class="callout-icon">🚨</span><span><strong>The Iron Rule:</strong> Every SELECT, INSERT, UPDATE, DELETE on a tenant-scoped table MUST include <code>WHERE tenant_id = &lt;current_tenant_id&gt;</code>. No exceptions.</span></div>
+  <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>.claude/agents/db-agent/AGENT.md</code> · Invoke: <code>@db-agent</code> · Skill: <code>anemal-db-context</code></span></div>
+  <div class="callout danger"><span class="callout-icon">🚨</span><span><strong>Iron Rule:</strong> Every SELECT, INSERT, UPDATE, DELETE on a tenant-scoped table MUST include <code>WHERE tenant_id = &lt;current_tenant_id&gt;</code>. No exceptions.</span></div>
+  <div class="callout ok"><span class="callout-icon">✅</span><span>Schema complete — 25 tables, migration <code>20260606090000_phase4_multibranch</code> applied. All indexes created.</span></div>
+
   <h2>Responsibilities</h2>
   <ul>
-    <li>Own and evolve the PostgreSQL schema</li>
-    <li>Enforce multi-tenancy on every table and query</li>
-    <li>Design indexes for fast lookups</li>
-    <li>Review all PRs that touch the database layer</li>
+    <li>Own and evolve the PostgreSQL schema (<code>.claude/specs/database-schema.sql</code> + Prisma schema)</li>
+    <li>Enforce multi-tenancy on every table and query; review every DB-touching PR</li>
     <li>Guard against SQL injection and cross-tenant data leakage</li>
+    <li>Design indexes for tenant-scoped fast lookups</li>
+    <li>Write up/down migration scripts; update schema SQL after each migration</li>
   </ul>
+
   <h2>Schema Change Process</h2>
   <ol>
-    <li>Write the migration SQL with up/down scripts</li>
-    <li>Update <code>.claude/specs/database-schema.sql</code></li>
-    <li>Add indexes for any new foreign keys or search columns</li>
-    <li>Notify <code>@qa-agent</code> to add data-isolation test cases</li>
+    <li>Write migration with <code>npx prisma migrate dev --name &lt;name&gt;</code></li>
+    <li>Update <code>.claude/specs/database-schema.sql</code> to reflect change</li>
+    <li>Add composite index <code>(tenant_id, new_column)</code> for any searchable field</li>
+    <li>Notify <code>@qa-agent</code> to add isolation test cases</li>
+    <li>Log in HistoryLog.md</li>
   </ol>
+
   <h2>Performance Guidelines</h2>
   <ul>
-    <li>Use pagination (LIMIT/OFFSET or cursor-based) for all list endpoints</li>
-    <li>Add composite indexes on <code>(tenant_id, search_column)</code></li>
-    <li>Avoid N+1 queries — use JOINs or batch loads</li>
+    <li>Pagination on all list endpoints (LIMIT/OFFSET or cursor-based)</li>
+    <li>Composite indexes: <code>(tenant_id, search_column)</code></li>
+    <li>No N+1 queries — use Prisma <code>include</code> or batch loads</li>
+    <li>Reports: use <code>COUNT</code> + <code>SUM</code> aggregations, not SELECT *</li>
   </ul>
 </div>
 
 <div class="page" id="page-dev">
   <h1>💻 Dev Agent — Full-Stack Engineer</h1>
-  <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>.claude/agents/dev-agent.md</code> · Invoke: <code>@dev-agent</code></span></div>
+  <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>.claude/agents/dev-agent/AGENT.md</code> · Invoke: <code>@dev-agent</code> · Skills: <code>anemal-coding-rules</code> · <code>anemal-design-system</code></span></div>
+  <div class="callout ok"><span class="callout-icon">✅</span><span>Phase 4 complete. tsc clean, browser-verified. Next sessions: PDF, PromptPay QR, LINE/SMS, S3.</span></div>
+
   <h2>Layered Architecture</h2>
-  <pre><code>Routes → Controllers → Services → Repositories/Models
+  <pre><code>Routes → Controllers → Services → Repositories
                                         ↓
-                                  Prisma (DB)</code></pre>
+                               Prisma Client (PostgreSQL)</code></pre>
+
   <h2>Backend Rules</h2>
   <ul>
-    <li>Controllers are <strong>thin</strong> — only parse request, call service, return response</li>
-    <li>Services contain all business logic — no DB calls directly</li>
-    <li>Repositories handle all DB interaction and always accept <code>tenantId</code> as parameter</li>
-    <li>Middleware handles JWT verification and RBAC before any controller runs</li>
+    <li>Controllers: thin — parse request, call service, return response. No business logic.</li>
+    <li>Services: all business logic. No direct Prisma calls.</li>
+    <li>Repositories: all DB interaction. Always accept <code>tenantId</code> as explicit parameter.</li>
+    <li>Middleware chain: <code>authMiddleware → tenantMiddleware → rbacMiddleware → auditMiddleware</code></li>
+    <li>TypeScript strict mode — explicit return types, no <code>any</code></li>
   </ul>
+
   <h2>Frontend Rules</h2>
   <ul>
-    <li>All tap targets ≥ 44×44px (coordinate with <code>@uiux-agent</code> specs)</li>
-    <li>Use React Query for all server state — no raw <code>useEffect</code> for data fetching</li>
-    <li>Components in <code>components/</code> must be generic and reusable</li>
-    <li>Views in <code>views/</code> compose components into full pages</li>
-    <li>Lazy-load heavy views with <code>React.lazy</code></li>
+    <li>React Query for all server state — no raw <code>useEffect</code> for data fetching</li>
+    <li>Zustand for local/UI state only (<code>authStore</code>, <code>uiStore</code>)</li>
+    <li>Components in <code>components/</code> — generic, reusable, no route logic</li>
+    <li>Views in <code>views/</code> — compose components, own page layout</li>
+    <li>Lazy-load heavy views with <code>React.lazy + Suspense</code></li>
+    <li>All tap targets ≥ 44×44px — enforce via <code>min-h-[44px] min-w-[44px]</code> Tailwind classes</li>
+    <li>Token classes only from <code>tailwind.config.js</code> — no raw hex colors</li>
   </ul>
-  <h2>Code Style</h2>
-  <ul>
-    <li>TypeScript strict mode — both frontend and backend</li>
-    <li>Explicit return types on all exported functions</li>
-    <li>No <code>any</code> types — define interfaces for all API shapes</li>
-  </ul>
+
+  <h2>Available Frontend Routes</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Route</th><th>Component</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td>/login</td><td>LoginView.tsx</td><td>Public</td></tr>
+      <tr><td>/admin/dashboard</td><td>AdminDashboard.tsx</td><td>admin</td></tr>
+      <tr><td>/admin/users</td><td>AdminUsers.tsx</td><td>admin</td></tr>
+      <tr><td>/admin/branches</td><td>AdminBranches.tsx</td><td>admin</td></tr>
+      <tr><td>/admin/blood-bank</td><td>AdminBloodBank.tsx</td><td>admin</td></tr>
+      <tr><td>/admin/audit</td><td>AdminAudit.tsx</td><td>admin</td></tr>
+      <tr><td>/clinic/dashboard</td><td>ClinicDashboard.tsx</td><td>doctor, staff</td></tr>
+      <tr><td>/clinic/appointments</td><td>ClinicAppointments.tsx</td><td>doctor, staff</td></tr>
+      <tr><td>/clinic/pets</td><td>ClinicPets.tsx</td><td>doctor, staff</td></tr>
+      <tr><td>/clinic/pets/:id</td><td>PetProfile.tsx</td><td>doctor, staff</td></tr>
+      <tr><td>/clinic/emr/:id</td><td>ClinicEMR.tsx</td><td>doctor</td></tr>
+      <tr><td>/clinic/inventory</td><td>ClinicInventory.tsx</td><td>doctor, staff</td></tr>
+      <tr><td>/clinic/billing</td><td>ClinicBilling.tsx</td><td>doctor, staff</td></tr>
+    </tbody>
+  </table></div>
 </div>
 
 <div class="page" id="page-qa">
   <h1>🧪 QA Agent — Quality Assurance &amp; Validator</h1>
-  <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>.claude/agents/qa-agent.md</code> · Invoke: <code>@qa-agent</code></span></div>
+  <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>.claude/agents/qa-agent/AGENT.md</code> · Invoke: <code>@qa-agent</code> · Skill: <code>anemal-coding-rules</code></span></div>
+  <div class="callout ok"><span class="callout-icon">✅</span><span>155 tests passing across 15 suites. Full suite green after Phase 4 — <code>tests/integration/phase4.test.ts</code>.</span></div>
+
+  <h2>Test Suite Summary</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Suite</th><th>Tests</th><th>Phase</th></tr></thead>
+    <tbody>
+      <tr><td>middlewares.test.ts</td><td>8</td><td>1</td></tr>
+      <tr><td>authService.test.ts</td><td>5</td><td>1</td></tr>
+      <tr><td>auth.test.ts</td><td>13</td><td>1</td></tr>
+      <tr><td>userManagement.test.ts</td><td>19</td><td>1</td></tr>
+      <tr><td>adminSettings.test.ts</td><td>16</td><td>1</td></tr>
+      <tr><td>rbac.test.ts</td><td>17</td><td>1</td></tr>
+      <tr><td>multitenancy-isolation.test.ts</td><td>9</td><td>1</td></tr>
+      <tr><td>clinicUsage.test.ts</td><td>5</td><td>1</td></tr>
+      <tr><td>integration/auth.test.ts</td><td>6</td><td>1</td></tr>
+      <tr><td>integration/tenantIsolation.test.ts</td><td>6</td><td>1</td></tr>
+      <tr><td>pets + owners + search</td><td>—</td><td>2</td></tr>
+      <tr><td>appointments + EMR</td><td>—</td><td>2</td></tr>
+      <tr><td>inventory + billing</td><td>—</td><td>3</td></tr>
+      <tr><td>integration/phase4.test.ts</td><td>24+</td><td>4</td></tr>
+      <tr><td><strong>Total</strong></td><td><strong>155</strong></td><td>1–4</td></tr>
+    </tbody>
+  </table></div>
+
   <h2>Test Categories</h2>
   <div class="task-card">
-    <h4>1. Data Isolation</h4>
+    <h4>1. Data Isolation (Critical)</h4>
     <ul>
-      <li>Tenant A cannot read, update, or delete Tenant B's records</li>
-      <li>JWT with expired/missing <code>tenant_id</code> rejected at middleware</li>
-      <li>Direct DB ID guessing across tenants returns 403/404</li>
+      <li>Tenant A cannot read, modify, or delete Tenant B's records across all modules</li>
+      <li>JWT with expired/invalid/missing <code>tenant_id</code> → 401</li>
+      <li>Direct ID guessing across tenants → 403/404</li>
     </ul>
   </div>
   <div class="task-card">
-    <h4>2. Input Validation</h4>
-    <ul>
-      <li>Negative or zero values for numeric fields</li>
-      <li>Empty required fields → 400 with field name</li>
-      <li>Strings exceeding column varchar limit → 400 (not 500)</li>
-    </ul>
-  </div>
-  <div class="task-card">
-    <h4>3. Concurrent / Network Edge Cases</h4>
-    <ul>
-      <li>Double-submit (rapid tap of Save) → idempotent or 409</li>
-      <li>Network drop mid-save → DB not in partial state</li>
-      <li>Stale cache after concurrent update</li>
-    </ul>
-  </div>
-  <div class="task-card">
-    <h4>4. RBAC</h4>
+    <h4>2. RBAC Enforcement</h4>
     <ul>
       <li>Staff cannot access doctor-only routes → 403</li>
-      <li>Doctor cannot access admin-only routes → 403</li>
-      <li>No token → 401</li>
+      <li>Doctor/Staff cannot access admin routes → 403</li>
+      <li>No token → 401 on all protected routes</li>
     </ul>
   </div>
+  <div class="task-card">
+    <h4>3. Business Rule Validation</h4>
+    <ul>
+      <li>Double-booking same doctor + time → 409</li>
+      <li>Prescription over available stock → 400</li>
+      <li>Blood transfusion incompatible type → 400</li>
+      <li>Duplicate microchip per tenant → 409</li>
+      <li>Duplicate phone per tenant → 409</li>
+    </ul>
+  </div>
+  <div class="task-card">
+    <h4>4. Atomic Transactions</h4>
+    <ul>
+      <li>Stock deduction + prescription creation in single transaction (all-or-nothing)</li>
+      <li>Branch transfer: dual stock_movements in single transaction</li>
+      <li>Invoice creation on EMR lock: all line items or none</li>
+    </ul>
+  </div>
+
+  <h2>QA Protocol (run after every task)</h2>
+  <p>See <a onclick="show('qaproto')" href="#">QA Protocols page</a> for full 7-section checklist.</p>
+
   <h2>Test Output Format</h2>
   <pre><code>Test Suite: &lt;module&gt;-&lt;task-id&gt;
 Test: &lt;test name&gt;
 Given: &lt;precondition&gt;
 When: &lt;action&gt;
 Then: &lt;expected result&gt;
-Type: happy_path | edge_case | security | ui</code></pre>
+Type: happy_path | edge_case | security | transaction</code></pre>
 </div>
 
-<!-- ══════════════════ PHASE 1 TASKS ══════════════════ -->
-<div class="page" id="page-phase1">
-  <div class="phase-header">
-    <h2>Phase 1 — Foundation &amp; Security</h2>
-    <p>Duration: Weeks 1–4 · Goal: รากฐานระบบ, Authentication, Multi-tenancy, Base Layout · Agents: DB-Agent, Dev-Agent, UIUX-Agent</p>
-  </div>
-  <div class="callout info"><span class="callout-icon">🎯</span><span>Phase 1 Goal: สร้างโครงสร้างพื้นฐานที่ปลอดภัยก่อนพัฒนา Feature จริง เมื่อจบ Phase 1: Login → เห็น Dashboard ว่าง → Logout ได้ โดยข้อมูลแต่ละคลินิกแยกกันอย่างสมบูรณ์</span></div>
+<!-- ══════════════════ ROADMAP HISTORY ══════════════════ -->
+<div class="page" id="page-roadmap-history">
+  <h1>📜 Roadmap History — Completed Phases</h1>
+  <div class="callout ok"><span class="callout-icon">✅</span><span>All 4 phases complete. 155 backend tests passing. Production-ready core platform.</span></div>
 
-  <h2>Module 1.1: Database Foundation</h2>
-
-  <div class="task-card">
-    <h4>Task 1.1.1 — Create Core Schema</h4>
-    <div class="meta"><span class="badge agent-db">@db-agent</span><span class="badge phase">Critical · M (3 days)</span></div>
-    <ul>
-      <li>รัน <code>database-schema.sql</code> ใน PostgreSQL dev environment</li>
-      <li>ตรวจสอบ Foreign Keys, Indexes, Constraints ถูกต้องทั้งหมด</li>
-      <li>เปิดใช้งาน Row Level Security (RLS) ทุก table</li>
-      <li>เขียน seed data (2 Tenants, แต่ละ Tenant มี admin + doctor + staff)</li>
-      <li>✅ Schema รัน error-free ใน fresh PostgreSQL instance</li>
-      <li>✅ RLS policy บังคับให้แต่ละ tenant เห็นเฉพาะข้อมูลตัวเอง</li>
-    </ul>
-  </div>
-
-  <div class="task-card">
-    <h4>Task 1.1.2 — Prisma ORM Setup</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">Critical · S (1 day)</span></div>
-    <ul>
-      <li>ติดตั้ง Prisma และสร้าง <code>schema.prisma</code> ให้ตรงกับ database-schema.sql</li>
-      <li>ตั้งค่า <code>DATABASE_URL</code> ใน <code>.env</code></li>
-      <li>รัน <code>prisma db pull</code> แล้ว introspect schema</li>
-      <li>สร้าง Prisma Client singleton ที่ใส่ tenant context middleware</li>
-      <li>อัปเดตโครงสร้าง DB เพื่อรองรับ Multi-Branch และ RLS</li>
-      <li>✅ <code>prisma generate</code> สำเร็จ ไม่มี error</li>
-      <li>✅ Prisma Client inject <code>tenant_id</code> อัตโนมัติผ่าน middleware</li>
-    </ul>
-  </div>
-
-  <h2>Module 1.2: Authentication &amp; JWT</h2>
-
-  <div class="task-card">
-    <h4>Task 1.2.1 — Auth API: Login &amp; Token</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">Critical · M (2 days)</span></div>
-    <ul>
-      <li><code>POST /api/auth/login</code> — รับ email + password, ตรวจสอบ bcrypt, ออก JWT</li>
-      <li>JWT payload: <code>{ userId, tenantId, role, exp }</code></li>
-      <li><code>POST /api/auth/refresh</code> — รับ Refresh Token ออก Access Token ใหม่</li>
-      <li><code>POST /api/auth/logout</code> — blacklist Refresh Token (Redis หรือ DB table)</li>
-      <li>✅ Login สำเร็จ → <code>accessToken</code> (8h) + <code>refreshToken</code> (30d)</li>
-      <li>✅ Login ผิดรหัส → 401 (ไม่บอกว่า email ถูกหรือเปล่า)</li>
-      <li>✅ Brute force protection (rate limit 5 attempts / 15 min)</li>
-    </ul>
-  </div>
-
-  <div class="task-card">
-    <h4>Task 1.2.2 — Middleware: Tenant Guard &amp; RBAC</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">Critical · M (2 days)</span></div>
-    <ul>
-      <li><code>auth.middleware.ts</code> — ตรวจสอบ JWT, reject expired/invalid</li>
-      <li><code>tenant.middleware.ts</code> — extract <code>tenantId</code> จาก token → inject ใน req</li>
-      <li><code>rbac.middleware.ts</code> — factory function <code>requireRole('admin', 'doctor')</code></li>
-      <li>Set PostgreSQL <code>app.current_tenant_id</code> session variable สำหรับ RLS</li>
-      <li>✅ Request ไม่มี token → 401</li>
-      <li>✅ Request มี token แต่ role ไม่พอ → 403</li>
-      <li>✅ RLS session variable ถูก set ก่อน Query ทุกครั้ง</li>
-    </ul>
-  </div>
-
-  <div class="task-card">
-    <h4>Task 1.2.3 — User Management API</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">High · M (2 days)</span></div>
-    <ul>
-      <li><code>GET /api/users</code> — ดูรายชื่อ user ใน tenant (Admin เท่านั้น)</li>
-      <li><code>POST /api/users</code> — เพิ่ม user ใหม่ใน tenant</li>
-      <li><code>PUT /api/users/:id</code> — แก้ไข user (name, role, is_active)</li>
-      <li><code>DELETE /api/users/:id</code> — soft delete (set is_active = false)</li>
-      <li>✅ Admin เห็นเฉพาะ user ใน tenant ตัวเอง</li>
-      <li>✅ Staff ไม่สามารถเรียก User Management API ได้ → 403</li>
-      <li>✅ ไม่สามารถปิด Admin คนสุดท้ายของ Tenant</li>
-    </ul>
-  </div>
-
-  <h2>Module 1.3: Clinic Onboarding</h2>
-
-  <div class="task-card">
-    <h4>Task 1.3.1 — Tenant Registration</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">High · M (3 days)</span></div>
-    <ul>
-      <li><code>POST /api/onboarding/register</code> — สร้าง Tenant ใหม่ + Admin user แรก</li>
-      <li>ตรวจสอบ subdomain ซ้ำ</li>
-      <li>ส่ง Email ยืนยัน (nodemailer / SendGrid)</li>
-      <li>Trial period 30 วัน (set <code>trial_ends_at</code>)</li>
-      <li>✅ สร้าง Tenant + Admin สำเร็จใน transaction เดียว (all-or-nothing)</li>
-      <li>✅ Subdomain ซ้ำ → 409 Conflict</li>
-      <li>✅ ส่ง Welcome Email สำเร็จ</li>
-    </ul>
-  </div>
-
-  <h2>Module 1.4: Base Layout &amp; Navigation</h2>
-
-  <div class="task-card">
-    <h4>Task 1.4.1 — Frontend Base Layout (Tablet + Web)</h4>
-    <div class="meta"><span class="badge agent-ui">@uiux-agent</span><span class="badge agent-dev">@dev-agent</span><span class="badge phase">High · L (4 days)</span></div>
-    <ul>
-      <li>React Router setup: Protected routes (ต้อง login ก่อน)</li>
-      <li>Base Layout Component: Header + Sidebar + Main Content</li>
-      <li>Sidebar: collapsible (Tablet mode), persistent (Desktop mode)</li>
-      <li>Bottom Navigation Bar (Tablet only, for quick actions)</li>
-      <li>Theme: Light mode (default), Dark mode toggle</li>
-      <li>✅ Layout ปรับตัวได้ระหว่าง Tablet (≤1024px) และ Desktop</li>
-      <li>✅ Sidebar collapse/expand animation เรียบ</li>
-      <li>✅ All navigation items มี icon + label</li>
-    </ul>
-  </div>
-
-  <div class="task-card">
-    <h4>Task 1.4.2 — Dashboard Screen (Empty State)</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">High · M (2 days)</span></div>
-    <ul>
-      <li>Dashboard หน้าหลัก — Today's appointments count, Waiting queue, Quick actions</li>
-      <li>Empty state design สำหรับ new clinic (ยังไม่มีข้อมูล)</li>
-      <li>Responsive: 2-column (Desktop), 1-column (Tablet)</li>
-      <li>✅ Dashboard โหลดได้ ไม่ crash แม้ข้อมูลว่าง</li>
-      <li>✅ Quick action buttons ≥ 44×44px บน Tablet</li>
-    </ul>
-  </div>
-
-  <h2>Module 1.5: QA &amp; Security Validation</h2>
-
-  <div class="task-card">
-    <h4>Task 1.5.1 — Security Test Suite</h4>
-    <div class="meta"><span class="badge agent-qa">@qa-agent</span><span class="badge phase">Critical · M (2 days)</span></div>
-    <ul>
-      <li>เขียน Test Suite: Cross-tenant isolation (ทดสอบทุก API endpoint)</li>
-      <li>เขียน Test: JWT manipulation attempts</li>
-      <li>เขียน Test: Role bypass attempts</li>
-      <li>รัน OWASP basic check</li>
-      <li>✅ ผ่าน Cross-tenant isolation tests 100%</li>
-      <li>✅ ไม่มี data leakage ระหว่าง Tenant</li>
-    </ul>
-  </div>
-
-  <h2>Phase 1 Completion Checklist</h2>
-  <div class="callout ok"><span class="callout-icon">✅</span>
-    <span>All criteria below must be true before Phase 2 begins:
-      <ul style="margin-top:8px">
-        <li>ทุก Task ผ่าน Acceptance Criteria</li>
-        <li>QA Security Test Suite pass 100%</li>
-        <li>Postman Collection สำหรับ Auth APIs ครบ</li>
-        <li>README.md อัปเดต setup instructions</li>
-        <li>Demo: Login → Dashboard → Logout ทำงานได้บน iPad จริง</li>
-        <li>Cross-tenant isolation tests pass</li>
-        <li>All tap targets ≥ 44px; Sidebar collapses; hand-mode persists</li>
-        <li>Git tag <code>v0.1.0</code> created</li>
-      </ul>
-    </span>
-  </div>
-</div>
-
-<!-- ══════════════════ PHASE 2 TASKS ══════════════════ -->
-<div class="page" id="page-phase2">
-  <div class="phase-header">
-    <h2>Phase 2 — Core Clinic Operations</h2>
-    <p>Duration: Weeks 5–12 · Goal: Pet/Owner, Appointment, EMR, Prescription · Agents: All Agents</p>
-  </div>
-  <div class="callout warn"><span class="callout-icon">⚠️</span><span>Prerequisite: Phase 1 complete and all QA protocols passing.</span></div>
-  <div class="callout info"><span class="callout-icon">🎯</span><span>Phase 2 Goal: พัฒนา Core Features ที่คลินิก "ขาดไม่ได้" เมื่อจบ Phase 2: คลินิกสามารถรับผู้ป่วย → บันทึก EMR → จ่ายยา ได้ครบวงจร</span></div>
-
-  <h2>Module 2.1: Pet &amp; Owner Management</h2>
-
-  <div class="task-card">
-    <h4>Task 2.1.1 — Owner CRUD API</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">M (2 days)</span></div>
-    <ul>
-      <li><code>POST /api/owners</code> — สร้างเจ้าของใหม่</li>
-      <li><code>GET /api/owners</code> — รายชื่อเจ้าของ (paginated)</li>
-      <li><code>GET /api/owners/:id</code> — ดูโปรไฟล์พร้อมรายชื่อสัตว์เลี้ยง</li>
-      <li><code>PUT /api/owners/:id</code> — แก้ไขข้อมูล</li>
-      <li>Validation: phone format, email format</li>
-      <li>✅ ทุก Query มี <code>tenant_id</code> guard</li>
-      <li>✅ เบอร์โทรซ้ำในคลินิกเดียวกัน → 409</li>
-      <li>✅ Pagination: default limit 20</li>
-    </ul>
-  </div>
-
-  <div class="task-card">
-    <h4>Task 2.1.2 — Pet CRUD API</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">M (2 days)</span></div>
-    <ul>
-      <li><code>POST /api/pets</code> — สร้างสัตว์เลี้ยงใหม่ (ผูกกับ owner)</li>
-      <li><code>GET /api/pets/:id</code> — ดูโปรไฟล์ + vaccination history</li>
-      <li><code>PUT /api/pets/:id</code> — แก้ไขข้อมูล</li>
-      <li><code>POST /api/pets/:id/photo</code> — อัปโหลดรูปสัตว์ → S3</li>
-      <li>✅ Microchip ID unique per tenant</li>
-      <li>✅ Photo upload returns public URL stored in <code>pets.photo_url</code></li>
-    </ul>
-  </div>
-
-  <div class="task-card">
-    <h4>Task 2.1.3 — Quick Search API</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">S (1 day)</span></div>
-    <ul>
-      <li><code>GET /api/search?q=</code> — ค้นหาจาก: ชื่อสัตว์, ชื่อเจ้าของ, เบอร์โทร, Microchip ID</li>
-      <li>ใช้ PostgreSQL Full-text Search หรือ ILIKE</li>
-      <li>Return: top 10 results, pet + owner info</li>
-      <li>✅ Results scoped to current tenant only</li>
-      <li>✅ Response &lt; 300ms for up to 10,000 pets</li>
-    </ul>
-  </div>
-
-  <div class="task-card">
-    <h4>Task 2.1.4 — Pet &amp; Owner UI (Tablet)</h4>
-    <div class="meta"><span class="badge agent-ui">@uiux-agent</span><span class="badge agent-dev">@dev-agent</span><span class="badge phase">L (5 days)</span></div>
-    <ul>
-      <li>หน้ารายชื่อสัตว์เลี้ยง (Search bar ใหญ่, List cards)</li>
-      <li>หน้าโปรไฟล์สัตว์เลี้ยง (รูป, ข้อมูล, Vaccination timeline)</li>
-      <li>Form เพิ่ม/แก้ไข (Touch-friendly dropdowns, Date picker)</li>
-      <li>Camera capture สำหรับถ่ายรูปสัตว์ (Tablet camera API)</li>
-      <li>✅ Quick search overlay accessible from any screen</li>
-    </ul>
-  </div>
-
-  <h2>Module 2.2: Appointment &amp; Scheduler</h2>
-
-  <div class="task-card">
-    <h4>Task 2.2.1 — Appointment API</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">M (3 days)</span></div>
-    <ul>
-      <li><code>POST /api/appointments</code> — จองนัดหมาย</li>
-      <li><code>GET /api/appointments?date=&amp;doctorId=</code> — ดูตารางนัด</li>
-      <li><code>PUT /api/appointments/:id/status</code> — อัปเดตสถานะ</li>
-      <li>Double-booking detection (ตรวจสอบช่วงเวลาซ้อนทับ)</li>
-      <li>Walk-in queue: <code>POST /api/appointments/walk-in</code></li>
-      <li>✅ No double-booking for same doctor+time slot → 409</li>
-      <li>✅ Status transitions validated</li>
-    </ul>
-  </div>
-
-  <div class="task-card">
-    <h4>Task 2.2.2 — Appointment Calendar UI</h4>
-    <div class="meta"><span class="badge agent-ui">@uiux-agent</span><span class="badge agent-dev">@dev-agent</span><span class="badge phase">L (5 days)</span></div>
-    <ul>
-      <li>Calendar View: Day / Week toggle</li>
-      <li>กรองตามหมอ หรือห้องตรวจ</li>
-      <li>Tap appointment → ดูรายละเอียด / เปลี่ยนสถานะ</li>
-      <li>Add appointment: tap time slot → form popup</li>
-      <li>Today's schedule summary สำหรับหมอ (Tablet sidebar)</li>
-      <li>✅ Drag-to-reschedule works on touch (tablet)</li>
-    </ul>
-  </div>
-
-  <div class="task-card">
-    <h4>Task 2.2.3 — LINE/SMS Reminder (Background Job)</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">M (2 days)</span></div>
-    <ul>
-      <li>Cron job รันทุกเช้า 8:00 → ส่ง reminder นัดวันพรุ่งนี้</li>
-      <li>Integration: LINE Messaging API (ถ้ามี <code>line_user_id</code>)</li>
-      <li>Fallback: SMS ผ่าน Twilio (ถ้าไม่มี LINE)</li>
-      <li>บันทึก <code>reminder_sent_at</code> เพื่อไม่ส่งซ้ำ</li>
-      <li>✅ Cancelled appointments dequeue pending reminders</li>
-    </ul>
-  </div>
-
-  <h2>Module 2.3: Electronic Medical Record (EMR)</h2>
-
-  <div class="task-card">
-    <h4>Task 2.3.1 — EMR API</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">L (4 days)</span></div>
-    <ul>
-      <li><code>POST /api/medical-records</code> — สร้าง EMR record ใหม่</li>
-      <li><code>GET /api/medical-records?petId=</code> — ดู EMR history ของสัตว์ (paginated)</li>
-      <li><code>GET /api/medical-records/:id</code> — ดู EMR ละเอียด</li>
-      <li><code>PUT /api/medical-records/:id</code> — แก้ไข EMR (ล็อค status 'billed')</li>
-      <li><code>POST /api/medical-records/:id/attachments</code> — upload Lab/X-ray</li>
-      <li>✅ SOAP fields + anatomy JSON storage</li>
-      <li>✅ Full treatment timeline ordered by <code>created_at DESC</code></li>
-    </ul>
-  </div>
-
-  <div class="task-card">
-    <h4>Task 2.3.2 — SOAP Note UI (Tablet)</h4>
-    <div class="meta"><span class="badge agent-ui">@uiux-agent</span><span class="badge agent-dev">@dev-agent</span><span class="badge phase">L (5 days)</span></div>
-    <ul>
-      <li>SOAP Note form: S/O/A/P sections แต่ละ tab</li>
-      <li>Vital Signs: ปุ่มตัวเลขใหญ่ (+ / - stepper) ไม่ต้องพิมพ์</li>
-      <li>Quick-select Diagnosis (dropdown + free text)</li>
-      <li>Treatment History Timeline (ด้านล่างหน้าจอ)</li>
-      <li>Attachment viewer (PDF embed, image gallery)</li>
-      <li>✅ SOAP fields autosave as draft every 30 seconds</li>
-      <li>✅ Lab/X-ray file attachment supported (PDF, JPG, PNG)</li>
-    </ul>
-  </div>
-
-  <div class="task-card">
-    <h4>Task 2.3.3 — Anatomy Canvas (Stylus Annotation)</h4>
-    <div class="meta"><span class="badge agent-ui">@uiux-agent</span><span class="badge agent-dev">@dev-agent</span><span class="badge phase">L (5 days)</span></div>
-    <ul>
-      <li>ใช้ Konva.js วาดบน SVG anatomy template</li>
-      <li>Templates: สุนัข (lateral + dorsal), แมว (lateral)</li>
-      <li>เครื่องมือ: ปากกา, ยางลบ, สีปากกา (แดง/ดำ/น้ำเงิน)</li>
-      <li>บันทึก annotation เป็น JSON ใน <code>medical_records.anatomy_annotation</code></li>
-      <li>✅ Canvas saves drawing as JSONB-serialisable path data</li>
-    </ul>
-  </div>
-
-  <div class="task-card">
-    <h4>Task 2.3.4 — Prescription Module</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">M (3 days)</span></div>
-    <ul>
-      <li><code>POST /api/prescriptions</code> — เพิ่มยาใน EMR (ตัดสต็อกอัตโนมัติ)</li>
-      <li><code>DELETE /api/prescriptions/:id</code> — ยกเลิกยา (คืนสต็อก)</li>
-      <li>Prescription UI: ค้นหายาจากชื่อ/barcode, ใส่ปริมาณ, คำแนะนำการใช้</li>
-      <li>แสดง Stock เหลือขณะเลือกยา (แจ้งเตือนถ้าสต็อกน้อย)</li>
-      <li>✅ Deduction is atomic (DB transaction)</li>
-      <li>✅ Prescribing more than available stock → 400</li>
-      <li>✅ Stock below minimum threshold triggers alert event</li>
-    </ul>
-  </div>
-
-  <h2>Module 2.4: Vaccination Management</h2>
-
-  <div class="task-card">
-    <h4>Task 2.4.1 — Vaccination API &amp; UI</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">M (2 days)</span></div>
-    <ul>
-      <li><code>POST /api/vaccinations</code> — บันทึกการฉีดวัคซีน</li>
-      <li><code>GET /api/vaccinations/due-soon?days=30</code> — รายชื่อสัตว์ที่วัคซีนจะหมดใน X วัน</li>
-      <li>Vaccination timeline ในโปรไฟล์สัตว์เลี้ยง</li>
-      <li>แจ้งเตือนบน Dashboard: "5 pets due for vaccination this week"</li>
-    </ul>
-  </div>
-
-  <h2>Phase 2 Completion Checklist</h2>
-  <div class="callout ok"><span class="callout-icon">✅</span>
-    <span>
-      <ul style="margin-top:8px">
-        <li>ทุก API endpoints ผ่าน Postman tests</li>
-        <li>QA: ทดสอบ Cross-tenant isolation ทุก Module</li>
-        <li>QA: ทดสอบ Edge Cases (double-submit, offline save)</li>
-        <li>UIUX: ทดสอบบน iPad จริง — ทุกปุ่ม ≥ 44px</li>
-        <li>Demo walkthrough: รับผู้ป่วย → EMR → จ่ายยา ครบ flow</li>
-      </ul>
-    </span>
-  </div>
-</div>
-
-<!-- ══════════════════ PHASE 3 TASKS ══════════════════ -->
-<div class="page" id="page-phase3">
-  <div class="phase-header">
-    <h2>Phase 3 — Commercial &amp; Billing</h2>
-    <p>Duration: Weeks 13–16 · Focus: Inventory Management, POS, Billing, Subscription · Agents: DB-Agent, Dev-Agent, QA-Agent</p>
-  </div>
-  <div class="callout warn"><span class="callout-icon">⚠️</span><span>Prerequisite: Phase 2 complete and all QA protocols passing.</span></div>
-  <div class="callout info"><span class="callout-icon">🎯</span><span>Phase 3 Goal: ทำให้ระบบพร้อมสำหรับการใช้งานเชิงพาณิชย์จริง — จัดการคลังยา → ออกใบเสร็จ → รับชำระเงิน → ดูรายได้</span></div>
-
-  <h2>Module 3.1: Inventory Management</h2>
-
-  <div class="task-card">
-    <h4>Task 3.1.1 — Inventory API</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">L (4 days)</span></div>
-    <ul>
-      <li><code>POST /api/products</code> — เพิ่มสินค้า/ยา</li>
-      <li><code>GET /api/products</code> — รายการสินค้า (filter by category, search by name/barcode)</li>
-      <li><code>PUT /api/products/:id</code> — แก้ไขราคา, ชื่อ, minimum stock</li>
-      <li><code>POST /api/products/:id/stock-in</code> — รับสินค้าเข้า (บันทึก lot no, expiry)</li>
-      <li><code>GET /api/products/alerts</code> — สินค้าสต็อกต่ำ + ใกล้หมดอายุ</li>
-      <li>✅ Items with expiry within 30 days flagged in API response</li>
-    </ul>
-  </div>
-
-  <div class="task-card">
-    <h4>Task 3.1.2 — Auto Stock Deduction</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">M (2 days)</span></div>
-    <ul>
-      <li>Trigger: เมื่อสร้าง Prescription → ตัด <code>products.stock_qty</code> อัตโนมัติ</li>
-      <li>Trigger: เมื่อยกเลิก Prescription → คืนสต็อก</li>
-      <li>บันทึก <code>stock_movements</code> ทุกครั้ง (in/out/adjustment)</li>
-      <li>ป้องกัน: ไม่ให้จ่ายยาเกินสต็อกที่มี</li>
-      <li>✅ Stock adjustment creates movement log entry (atomic DB transaction)</li>
-    </ul>
-  </div>
-
-  <div class="task-card">
-    <h4>Task 3.1.3 — Inventory UI (Tablet + Web)</h4>
-    <div class="meta"><span class="badge agent-ui">@uiux-agent</span><span class="badge agent-dev">@dev-agent</span><span class="badge phase">L (4 days)</span></div>
-    <ul>
-      <li>รายการสินค้า: Search bar, Category filter, Stock level indicator</li>
-      <li>Stock Alert panel: แดง (หมด), เหลือง (ใกล้หมด/ใกล้หมดอายุ)</li>
-      <li>Barcode Scanner: ใช้กล้อง Tablet สแกน → ค้นหาสินค้า (ZXing.js)</li>
-      <li>Form รับสินค้าเข้า (Stock In form)</li>
-      <li>✅ Camera opens inline (no browser popup)</li>
-      <li>✅ Successful scan auto-fills item search form</li>
-    </ul>
-  </div>
-
-  <h2>Module 3.2: Billing &amp; POS</h2>
-
-  <div class="task-card">
-    <h4>Task 3.2.1 — Invoice Generation API</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">L (4 days)</span></div>
-    <ul>
-      <li><code>POST /api/invoices</code> — สร้าง Invoice จาก <code>medical_record_id</code> (auto-pull items)</li>
-      <li>Auto-generate <code>invoice_no</code> (format: INV-YYYY-MM-NNNN, per tenant)</li>
-      <li>คำนวณ: subtotal, discount, VAT 7%, total</li>
-      <li><code>PUT /api/invoices/:id/payment</code> — บันทึกการชำระเงิน</li>
-      <li>✅ Line items auto-populated from services rendered + drugs prescribed</li>
-      <li>✅ Void invoice creates reversal audit record; does not delete original</li>
-    </ul>
-  </div>
-
-  <div class="task-card">
-    <h4>Task 3.2.2 — PDF Receipt Generation</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">M (2 days)</span></div>
-    <ul>
-      <li>ใช้ <code>pdfkit</code> หรือ <code>puppeteer</code> สร้าง PDF ใบเสร็จ</li>
-      <li>Template: Logo คลินิก, รายการบริการ/ยา, ยอดรวม, VAT</li>
-      <li><code>GET /api/invoices/:id/pdf</code> — download PDF</li>
-      <li><code>POST /api/invoices/:id/send-email</code> — ส่ง PDF ทาง email</li>
-      <li>✅ PDF includes clinic logo, address, tax ID from tenant settings</li>
-    </ul>
-  </div>
-
-  <div class="task-card">
-    <h4>Task 3.2.3 — QR Payment (PromptPay)</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">M (3 days)</span></div>
-    <ul>
-      <li>Generate PromptPay QR Code จาก invoice total</li>
-      <li>แสดง QR บนหน้าจอ Tablet (full-screen mode สำหรับให้ลูกค้าสแกน)</li>
-      <li>Payment confirmation (manual หรือ webhook จาก payment gateway)</li>
-      <li>Integration: Omise หรือ GB Prime Pay (สำหรับบัตรเครดิต)</li>
-      <li>✅ QR code displayed full-screen for owner scan</li>
-      <li>✅ Payment confirmed with status update</li>
-    </ul>
-  </div>
-
-  <div class="task-card">
-    <h4>Task 3.2.4 — POS / Billing UI</h4>
-    <div class="meta"><span class="badge agent-ui">@uiux-agent</span><span class="badge agent-dev">@dev-agent</span><span class="badge phase">L (5 days)</span></div>
-    <ul>
-      <li>หน้าสรุป Invoice: รายการ, ยอดรวม, ปุ่มชำระ</li>
-      <li>Payment method selector: Cash / QR / Card (ปุ่มใหญ่)</li>
-      <li>QR Payment screen: full-screen QR + countdown timer + "Confirm Payment" button</li>
-      <li>Cash payment: คำนวณทอนเงิน (ใส่ยอดรับมา → แสดงเงินทอน)</li>
-      <li>Success screen + Print/Share receipt options</li>
-      <li>✅ All tap targets ≥ 44×44px</li>
-      <li>✅ QR display screen is full-screen, no UI chrome</li>
-    </ul>
-  </div>
-
-  <h2>Module 3.3: Reports &amp; Dashboard</h2>
-
-  <div class="task-card">
-    <h4>Task 3.3.1 — Revenue Reports API</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">M (2 days)</span></div>
-    <ul>
-      <li><code>GET /api/reports/revenue?period=daily|monthly</code> — สรุปรายได้</li>
-      <li><code>GET /api/reports/top-services</code> — บริการที่ทำรายได้สูงสุด</li>
-      <li><code>GET /api/reports/inventory-usage</code> — สินค้าที่ใช้มากที่สุด</li>
-      <li>✅ All metrics strictly scoped to current tenant</li>
-      <li>✅ Data loads within 1 second using pre-aggregated queries</li>
-    </ul>
-  </div>
-
-  <div class="task-card">
-    <h4>Task 3.3.2 — Analytics Dashboard UI</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">M (3 days)</span></div>
-    <ul>
-      <li>Revenue chart: รายวัน / รายเดือน (Recharts / Chart.js)</li>
-      <li>Today's summary: appointments, revenue, new patients</li>
-      <li>Inventory alerts widget</li>
-      <li>Upcoming vaccinations due widget</li>
-    </ul>
-  </div>
-
-  <h2>Module 3.4: SaaS Subscription</h2>
-
-  <div class="task-card">
-    <h4>Task 3.4.1 — Subscription &amp; Plan Management</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">L (4 days)</span></div>
-    <ul>
-      <li>Plan enforcement: ตรวจสอบ plan limit ก่อนทำ action (เช่น user limit per plan)</li>
-      <li><code>GET /api/subscription/status</code> — ดูสถานะ subscription</li>
-      <li>Integration: Omise Subscription / Stripe สำหรับตัดเงินอัตโนมัติรายเดือน</li>
-      <li>ส่ง Email แจ้งเตือน: trial หมด, subscription ใกล้หมด, ชำระเงินไม่สำเร็จ</li>
-    </ul>
-  </div>
-
-  <h2>Phase 3 Completion Checklist</h2>
-  <div class="callout ok"><span class="callout-icon">✅</span>
-    <span>
-      <ul style="margin-top:8px">
-        <li>ทดสอบ Full Flow: รับผู้ป่วย → EMR → จ่ายยา → ออกใบเสร็จ → รับชำระ QR</li>
-        <li>ทดสอบ Inventory: สต็อกตัดถูกต้องทุกกรณี</li>
-        <li>ทดสอบ PDF: ใบเสร็จออกมาถูกต้องตาม format</li>
-        <li>QA: ทดสอบ Billing edge cases (ยกเลิก invoice, refund)</li>
-        <li>Security: ทดสอบว่า invoice ข้าม tenant ไม่ได้</li>
-      </ul>
-    </span>
-  </div>
-</div>
-
-<!-- ══════════════════ PHASE 4 TASKS ══════════════════ -->
-<div class="page" id="page-phase4">
-  <div class="phase-header">
-    <h2>Phase 4 — Advanced Operations &amp; Commercial Scaling</h2>
-    <p>Duration: Weeks 17–20 · Goal: Hospitalization (Inpatient), Grooming, Blood Bank, Loyalty, Auditing &amp; Work Shifts</p>
-  </div>
-  <div class="callout warn"><span class="callout-icon">⚠️</span><span>Prerequisite: Phase 3 complete and all QA protocols passing.</span></div>
-
-  <h2>Module 4.1: Multi-Branch &amp; Transfers</h2>
-  <div class="task-card">
-    <h4>Task 4.1.1 — Branch Management API</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge agent-db">@db-agent</span></div>
-    <ul>
-      <li>Branch CRUD (POST/GET/PUT /api/branches) scoped under current tenant</li>
-      <li>Branch active session check-in validating user branch clearance</li>
-      <li>RLS policy enforcement for <code>branches</code> and branch security checks</li>
-    </ul>
-  </div>
-  <div class="task-card">
-    <h4>Task 4.1.2 — Doctor Shifts Scheduling (เวรการทำงาน)</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge agent-ui">@uiux-agent</span></div>
-    <ul>
-      <li>Doctor shift configurations (POST/GET /api/branches/:id/shifts) in <code>doctor_shifts</code></li>
-      <li>Appointment scheduler check verifying doctor availability shift conflicts</li>
-    </ul>
-  </div>
-  <div class="task-card">
-    <h4>Task 4.1.3 — Multi-Branch Inventory Transfers</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span></div>
-    <ul>
-      <li>Inter-branch stock transfer request, approval, and receiving workflow</li>
-      <li>Database transactions logging dual stock movements (transfer_out and transfer_in)</li>
-    </ul>
-  </div>
-
-  <h2>Module 4.2: Hospitalization (Inpatient) Care</h2>
-  <div class="task-card">
-    <h4>Task 4.2.1 — Admit &amp; Discharge Inpatient API</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span></div>
-    <ul>
-      <li>Admit tracking (cage, doctor, room) + discharge flow auto-billing</li>
-      <li>Active inpatients list dashboard feed</li>
-    </ul>
-  </div>
-  <div class="task-card">
-    <h4>Task 4.2.2 — Daily Inpatient Care Logging (Time Slots)</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge agent-ui">@uiux-agent</span></div>
-    <ul>
-      <li>Structured observation entries (08:00, 12:00, 16:00, 20:00) tracking vitals and meals</li>
-      <li>Tablet touch-optimized cages board grid with quick status badges</li>
-    </ul>
-  </div>
-
-  <h2>Module 4.3: Grooming Scheduler Upgrades</h2>
-  <div class="task-card">
-    <h4>Task 4.3.1 — Grooming Booking &amp; Capacity Management</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge agent-ui">@uiux-agent</span></div>
-    <ul>
-      <li>Grooming queue appointments calendar with daily capacity quota enforcement</li>
-      <li>Groomer tablet status board checklist (scheduled, in_progress, completed)</li>
-    </ul>
-  </div>
-
-  <h2>Module 4.4: Loyalty &amp; Membership System</h2>
-  <div class="task-card">
-    <h4>Task 4.4.1 — Points Calculation &amp; Tiered Discounts</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span></div>
-    <ul>
-      <li>Points accumulation trigger on retail POS and billing checkouts</li>
-      <li>Discounting engine processing tier benefits and point redemptions</li>
-    </ul>
-  </div>
-
-  <h2>Module 4.5: Security Auditing &amp; Login Restrictions</h2>
-  <div class="task-card">
-    <h4>Task 4.5.1 — User Activity Logs (Audit Logs)</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge agent-db">@db-agent</span></div>
-    <ul>
-      <li>Immutable API Gateway interceptor logging state-modifying clinic events to <code>audit_logs</code></li>
-      <li>Audit viewer interface for clinic managers/admins</li>
-    </ul>
-  </div>
-  <div class="task-card">
-    <h4>Task 4.5.2 — Login Time Window Restrictions</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span></div>
-    <ul>
-      <li>Work-hour restrictions setup per user, enforced at <code>tenantGuard</code> middleware</li>
-    </ul>
-  </div>
-
-  <h2>Module 4.6: Blood Bank Management</h2>
-  <div class="task-card">
-    <h4>Task 4.6.1 — Blood Donor Registry &amp; Collection Logs</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge agent-db">@db-agent</span></div>
-    <ul>
-      <li>Donor registry logging blood types, donation logs, and inventory statuses</li>
-    </ul>
-  </div>
-  <div class="task-card">
-    <h4>Task 4.6.2 — Transfusion Records &amp; Safety Guards</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span></div>
-    <ul>
-      <li>Recipient matching validation alerts and transfusion reactions tracking</li>
-    </ul>
-  </div>
-
-  <h2>Module 4.7: Proactive Care Reminders</h2>
-  <div class="task-card">
-    <h4>Task 4.7.1 — Reminders Engine &amp; Status Logs</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">M (2 days)</span></div>
-    <ul>
-      <li><code>POST /api/reminders</code> — กำหนดแจ้งเตือนดูแลสัตว์เลี้ยงเชิงรุก (วันฉีดวัคซีนครั้งถัดไป, วันถ่ายพยาธิ) บันทึกใน <code>pet_reminders</code></li>
-      <li><code>GET /api/reminders/due</code> — รายการที่ถึงกำหนดส่งแจ้งเตือนในแต่ละวัน</li>
-      <li>Background Worker: ค้นหารายการที่ถึงกำหนด → ส่ง SMS/LINE อัตโนมัติ → อัปเดตสถานะเป็น <code>sent</code></li>
-      <li>✅ แจ้งเตือนสุขภาพสัตว์เลี้ยงถูกบันทึกและส่งอัตโนมัติอย่างแม่นยำตาม <code>due_date</code></li>
-    </ul>
-  </div>
-
-  <h2>Module 4.8: Reports &amp; Dashboard Upgrades</h2>
-  <div class="task-card">
-    <h4>Task 4.8.1 — Branch Revenue &amp; Operational Analytics</h4>
-    <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge agent-ui">@uiux-agent</span><span class="badge phase">M (2 days)</span></div>
-    <ul>
-      <li><code>GET /api/reports/branch-revenue</code> — สรุปยอดขายแยกรายสาขา (สถิติตามประเภทสินค้า ยา การตรวจรักษา)</li>
-      <li>Dashboard Snapshot สำหรับ Admin (inpatient count, grooming queue, POS revenue)</li>
-      <li>กราฟ Recharts/Chart.js วิเคราะห์แนวโน้มบริการที่ทำรายได้สูงสุด (Top Services)</li>
-      <li>✅ ข้อมูลแยกตามสาขาและ tenant อย่างเด็ดขาด และโหลดรวดเร็ว</li>
-    </ul>
-  </div>
-
-  <h2>Phase 4 Completion Checklist</h2>
-  <div class="callout ok"><span class="callout-icon">✅</span>
-    <span>
-      <ul style="margin-top:8px">
-        <li>ทุกตารางใหม่ในฐานข้อมูลรันผ่าน SQL script แบบไม่มีข้อผิดพลาด</li>
-        <li>QA: ผ่านการทดสอบความปลอดภัยข้ามสาขา (Cross-branch isolation tests) 100%</li>
-        <li>QA: ทดสอบความถูกต้องของ RLS ใน 10 ตารางใหม่</li>
-        <li>UIUX: ปฏิทินจอง Grooming และแผงควบคุม Inpatient Cages รองรับ Touch targets บนแท็บเล็ต</li>
-        <li>Demo: Flow สมบูรณ์ (บันทึกผู้ป่วยใน → ให้การรักษา → โอนย้ายยา → สะสมคะแนนสมาชิก → ออกบิล)</li>
-      </ul>
-    </span>
-  </div>
-</div>
-
-<!-- ══════════════════ PHASE 1 PLAN ══════════════════ -->
-<div class="page" id="page-phase1plan">
-  <h1>📅 Phase 1 — Implementation Plan (Updated)</h1>
-
-  <h2>Week-by-Week Schedule</h2>
+  <h2>Phase 1 — Foundation &amp; Security</h2>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Week</th><th>Goal</th><th>Tasks</th><th>Owner</th><th>Validator</th></tr></thead>
+    <thead><tr><th>Item</th><th>Detail</th></tr></thead>
     <tbody>
-      <tr><td><strong>Week 1</strong></td><td>DB, Schema &amp; Auth API</td><td>1.1 Schema+Settings+Seed, 1.2 JWT Login, 1.3 Middlewares</td><td>@db-agent + @dev-agent</td><td>@qa-agent</td></tr>
-      <tr><td><strong>Week 2</strong></td><td>Admin Backend APIs</td><td>1.4 Settings+Usage API, 1.5 User CRUD+Roles</td><td>@dev-agent + @db-agent</td><td>@qa-agent</td></tr>
-      <tr><td><strong>Week 3</strong></td><td>Admin Frontend + Login</td><td>1.6 AdminLayout + 6 pages, 1.8 Login redesign</td><td>@uiux-agent + @dev-agent</td><td>@uiux-agent + @qa-agent</td></tr>
-      <tr><td><strong>Week 4</strong></td><td>Clinic Frontend + QA</td><td>1.7 ClinicLayout + Dashboard + stubs; full integration QA</td><td>@dev-agent + @qa-agent</td><td>@pm-agent</td></tr>
+      <tr><td><strong>Status</strong></td><td>✅ Complete</td></tr>
+      <tr><td><strong>Tests</strong></td><td>74 passing (15 suites baseline)</td></tr>
+      <tr><td><strong>Key Deliverables</strong></td><td>Multi-tenant DB schema (Prisma + PostgreSQL), JWT auth (access 8h / refresh 30d), RBAC middleware, tenant isolation enforcement, React + Vite + Tailwind shell, collapsible sidebar, Admin layout + 6 pages, Login page, Clinic dashboard stub</td></tr>
+      <tr><td><strong>Migration</strong></td><td><code>20260101000000_init</code></td></tr>
     </tbody>
   </table></div>
 
-  <h2>Definition of Done — Phase 1</h2>
-  <div class="callout ok"><span class="callout-icon">✅</span>
-    <span>All criteria below must be true before Phase 2 begins:
-      <ul style="margin-top:8px">
-        <li>Login: subdomain auto-detected; role-based redirect works for all 3 roles</li>
-        <li>Admin login → <code>/admin/dashboard</code> with real KPI data</li>
-        <li>Doctor/Staff login → <code>/clinic/dashboard</code></li>
-        <li><code>/admin/*</code> inaccessible to doctor/staff (403/redirect)</li>
-        <li><code>/clinic/*</code> redirects admin to <code>/admin/dashboard</code></li>
-        <li>User management: add/edit/deactivate + role picker works end-to-end</li>
-        <li>Usage quota bars reflect real DB counts</li>
-        <li>Cross-tenant isolation tests pass</li>
-        <li>All tap targets ≥ 44px; sidebar collapses; hand-mode persists</li>
-        <li>Git tag <code>v0.1.0</code> created</li>
-      </ul>
-    </span>
-  </div>
-
-  <h2>Risk &amp; Mitigation</h2>
+  <h2>Phase 2 — Core Clinic Operations</h2>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Risk</th><th>Mitigation</th></tr></thead>
+    <thead><tr><th>Item</th><th>Detail</th></tr></thead>
     <tbody>
-      <tr><td>Role redirect loop (admin ↔ clinic)</td><td>AdminLayout → /clinic; ClinicLayout → /admin. One-way, no loop.</td></tr>
-      <tr><td>tenantId missing from a query</td><td>@db-agent reviews every service function before merge</td></tr>
-      <tr><td>Usage stats slow on large data</td><td>Use Prisma <code>count</code> — no N+1 queries; add indexes</td></tr>
-      <tr><td>Clinic ID auto-detect fails on localhost</td><td>Falls back gracefully to empty field; user types manually</td></tr>
+      <tr><td><strong>Status</strong></td><td>✅ Complete</td></tr>
+      <tr><td><strong>Tests</strong></td><td>104 passing</td></tr>
+      <tr><td><strong>Key Deliverables</strong></td><td>Pet &amp; Owner management (photo, microchip, quick search), Appointments calendar (per doctor/room, time-slot booking, LINE/SMS reminder stubs), EMR (SOAP notes, treatment timeline, lab/X-ray attachments, anatomy canvas stub), Species/Breed/Vaccine master data, full tenant isolation across all new tables</td></tr>
+      <tr><td><strong>Migrations</strong></td><td><code>20260201000000_phase2_pets_owners</code>, <code>20260202000000_phase2_appointments</code>, <code>20260203000000_phase2_emr</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Phase 3 — Commercial (Inventory + Billing)</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Item</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Status</strong></td><td>✅ Complete</td></tr>
+      <tr><td><strong>Tests</strong></td><td>131 passing</td></tr>
+      <tr><td><strong>Key Deliverables</strong></td><td>Drug/supply inventory with auto-deduct on prescription, expiry alerts, barcode scan stub, POS/Billing with invoice + tax receipt generation, QR PromptPay stub, credit card stub, invoice line items linked to EMR visits</td></tr>
+      <tr><td><strong>Migrations</strong></td><td><code>20260401000000_phase3_inventory</code>, <code>20260402000000_phase3_billing</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Phase 4 — Advanced Modules</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Item</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Status</strong></td><td>✅ Complete</td></tr>
+      <tr><td><strong>Tests</strong></td><td>155 passing</td></tr>
+      <tr><td><strong>Key Deliverables</strong></td><td>Hospitalization (inpatient cages, cage assignment, daily rounds, discharge), Grooming (service catalogue, groomer booking, completion tracking), Blood Bank (donor registry, cross-match, transfusion records), Loyalty Program (points earn/redeem per invoice), Audit Log (all write ops recorded per tenant), Multi-branch support (branch table, branch-scoped JWT)</td></tr>
+      <tr><td><strong>Migration</strong></td><td><code>20260606090000_phase4_multibranch</code></td></tr>
     </tbody>
   </table></div>
 </div>
 
-<!-- ══════════════════ CLAUDE CODE GUIDE ══════════════════ -->
-<div class="page" id="page-phase1guide">
-  <h1>⌨️ Claude Code Guide — Phase 1</h1>
-  <div class="callout info"><span class="callout-icon">💡</span><span>Copy each prompt below and paste it into your Claude Code terminal session. Use <code>/clear</code> between tasks.</span></div>
+<!-- ══════════════════ ROADMAP UPCOMING ══════════════════ -->
+<div class="page" id="page-roadmap-upcoming">
+  <h1>🚀 Upcoming Work — Deferred Sessions</h1>
+  <div class="callout info"><span class="callout-icon">💡</span><span>These items were explicitly deferred after Phase 4. All core business logic is in place — these sessions complete the production-readiness layer.</span></div>
 
-  <h2>Step 0 — Open the Project</h2>
-  <pre><code>cd D:\Development\AnimalClinic
-claude</code></pre>
+  <!-- ── Phase 1.5 IN PROGRESS ── -->
+  <div style="border-left:4px solid #d97706;background:#fff;border-radius:8px;padding:16px;margin-bottom:20px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <h2 style="margin:0">🟡 Phase 1.5 — Settings Module <span style="font-size:14px;color:#16a34a">(1.5-A + 1.5-B ✅ done)</span></h2>
+      <span style="background:#fef3c7;color:#d97706;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:700">IN PROGRESS — 1.5-D next</span>
+    </div>
+    <p style="margin:0 0 12px;color:#6b7280;font-size:13px">Must complete before PromptPay QR, LINE/SMS dispatch, and payment gateway sessions. Full spec: <code>.claude/roadmap/phase1.5-settings-tasks.md</code></p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;font-size:13px">
 
-  <h2>Step 1 — Decide Stack</h2>
-  <pre><code>@pm-agent Review the tech stack options in CLAUDE.md.
-Recommend Node.js/Express/Prisma OR Python/FastAPI/SQLAlchemy.
-Then initialise the project with the chosen stack.</code></pre>
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px">
+        <div style="font-weight:700;color:#16a34a;margin-bottom:8px">Sub-session 1.5-A — DB + Encryption ✅ DONE 2026-06-10</div>
+        <ul style="margin:0;padding-left:18px;color:#374151;line-height:1.7">
+          <li>✅ S1.1 — extended <code>tenant_settings</code> (design change: no separate clinic_settings)</li>
+          <li>✅ S1.2 — <code>system_settings</code> table + 10 seed rows</li>
+          <li>✅ S1.3 — <code>settings_audit_log</code> table (field-level, masked secrets)</li>
+          <li>✅ S1.4 — AES-256-GCM utility (<code>utils/encryption.ts</code>)</li>
+          <li>✅ S2.4 — Auto-create via upsert + seed</li>
+        </ul>
+        <div style="margin-top:8px;font-size:11px;color:#6b7280">182 tests passing (21 new) · migration <code>20260610081405</code> · next → 1.5-B</div>
+      </div>
 
-  <h2>Step 2 — Task 1.1: Schema, Settings &amp; Seed</h2>
-  <pre><code>@db-agent @dev-agent
-Implement Task 1.1 from .claude/roadmap/phase1-tasks.md
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px">
+        <div style="font-weight:700;color:#16a34a;margin-bottom:8px">Sub-session 1.5-B — Clinic Settings API ✅ DONE 2026-06-10</div>
+        <ul style="margin:0;padding-left:18px;color:#374151;line-height:1.7">
+          <li>✅ S2.1 — Clinic Settings API (8 endpoints at <code>/api/settings/clinic*</code>)</li>
+          <li>✅ S2.2 — System Settings API (pulled forward, minimal — new <code>superadmin</code> role)</li>
+          <li>✅ S2.3 — Personal Preferences API (<code>/api/settings/personal</code>)</li>
+          <li>✅ S4.1 — Tenant isolation tests TC-S001–S004</li>
+          <li>✅ S4.2 — Encryption validation tests TC-S005–S007 (+TC-S008/S009)</li>
+        </ul>
+        <div style="margin-top:8px;font-size:11px;color:#6b7280">206 tests passing (24 new) · migration <code>20260610134121</code> · next → 1.5-D</div>
+      </div>
 
-1. Prisma schema: tenants, users, tenant_settings (all matching database-schema.sql)
-2. Run migration
-3. Seed dev-clinic + test-clinic (admin/doctor/staff each = 6 users total)
+      <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:12px">
+        <div style="font-weight:700;color:#dc2626;margin-bottom:8px">Sub-session 1.5-C — System Settings Admin UI</div>
+        <ul style="margin:0;padding-left:18px;color:#374151;line-height:1.7">
+          <li>✅ <s>S2.2 — System Settings API</s> done in 1.5-B</li>
+          <li>🔴 S3.7 — System Settings Page (Admin tabs)</li>
+          <li>🟡 S4.3 — TC-S010 timeout test (TC-S008/S009 ✅)</li>
+        </ul>
+        <div style="margin-top:8px;font-size:11px;color:#6b7280">No credentials needed · ~25% token budget</div>
+      </div>
 
-@qa-agent After: run QA protocol sections 1 and 3.</code></pre>
+      <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:12px">
+        <div style="font-weight:700;color:#dc2626;margin-bottom:8px">Sub-session 1.5-D — Frontend Settings Pages</div>
+        <ul style="margin:0;padding-left:18px;color:#374151;line-height:1.7">
+          <li>🔴 S3.1 — Settings Layout &amp; Navigation</li>
+          <li>🔴 S3.2 — Clinic Profile Page</li>
+          <li>🔴 S3.3 — Operating Hours Page</li>
+          <li>🔴 S3.4 — Notifications Page <span style="color:#dc2626">(Session G blocker)</span></li>
+          <li>🔴 S3.5 — Payment Page <span style="color:#dc2626">(Session C blocker)</span></li>
+          <li>🟡 S3.6 — Integrations Page</li>
+        </ul>
+        <div style="margin-top:8px;font-size:11px;color:#6b7280">No credentials needed · ~55% token budget</div>
+      </div>
 
-  <h2>Step 3 — Task 1.2: JWT Login</h2>
-  <pre><code>@dev-agent
-Implement Task 1.2 from .claude/roadmap/phase1-tasks.md
+    </div>
+  </div>
 
-Build POST /auth/login:
-- Validate email + password (bcrypt compare)
-- Look up tenant by subdomain
-- Sign JWT with { userId, tenantId, role } using JWT_SECRET from env
-- Token expiry: 8 hours
-
-@qa-agent Verify: valid → 200 + JWT, wrong password → 401, JWT has tenantId</code></pre>
-
-  <h2>Step 4 — Task 1.3: Middlewares</h2>
-  <pre><code>@dev-agent
-Implement Task 1.3 from .claude/roadmap/phase1-tasks.md
-
-Fill in authMiddleware.ts — verify JWT, attach { userId, tenantId, role } to req.context
-Fill in rbacMiddleware.ts — accept allowedRoles[], return 403 if role not allowed
-
-@db-agent Review both files. Confirm tenantId is available for all downstream calls.
-@qa-agent Run full RBAC matrix (QA Protocols section 2)</code></pre>
-
-  <h2>Step 5 — Task 1.4: User API</h2>
-  <pre><code>@dev-agent
-Implement Task 1.4 from .claude/roadmap/phase1-tasks.md
-
-Build GET/POST/PUT/DELETE /users (admin-only via rbacMiddleware)
-CRITICAL: All queries MUST include WHERE tenant_id = req.context.tenantId
-
-@db-agent Review repository layer — confirm every query filters by tenant_id
-@qa-agent Run cross-tenant tests: Tenant B cannot access Tenant A users</code></pre>
-
-  <h2>Step 6 — Task 1.5: Frontend Shell</h2>
-  <pre><code>@uiux-agent Deliver component specs for sidebar, top nav, left/right-hand toggle.
-Include Tailwind class suggestions.</code></pre>
-  <pre><code>@dev-agent
-Implement Task 1.5 from .claude/roadmap/phase1-tasks.md
-
-Scaffold React + Vite + Tailwind in src/frontend/
-Build app shell: collapsible sidebar, top nav, main content area
-Left/right-hand toggle persists to localStorage
-Test at 768px, 1024px, 1280px</code></pre>
-
-  <h2>Step 7 — Task 1.6: Login Page</h2>
-  <pre><code>@dev-agent
-Implement Task 1.6 from .claude/roadmap/phase1-tasks.md
-
-Build /login page: email, password, submit
-On success: store JWT, redirect to /dashboard
-On failure: inline error (no alert())
-Must be usable on tablet without physical keyboard
-
-@uiux-agent Review at 768px — confirm all tap targets >= 44x44px</code></pre>
-
-  <h2>Step 8 — Phase 1 QA Sign-off</h2>
-  <pre><code>@qa-agent
-Run the complete QA protocol from .claude/roadmap/qa-protocols.md
-Report: PASS ✅ or FAIL ❌ for each item, with fix owner for failures.
-
-@pm-agent Review against Phase 1 Definition of Done in phase1-implementation-plan.md.
-If all criteria met, approve Phase 1 and tag v0.1.0.</code></pre>
-
-  <h2>Useful Commands</h2>
+  <h2>Deferred Session Overview</h2>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
+    <thead><tr><th>Session</th><th>Scope</th><th>Effort</th><th>Prerequisites</th></tr></thead>
     <tbody>
-      <tr><td><code>/clear</code></td><td>Clear conversation — use between tasks</td></tr>
-      <tr><td><code>/init</code></td><td>Re-read CLAUDE.md and reload agent context</td></tr>
-      <tr><td><code>@db-agent</code></td><td>Invoke DB agent persona</td></tr>
-      <tr><td><code>@qa-agent</code></td><td>Invoke QA agent persona</td></tr>
+      <tr style="opacity:0.55">
+        <td><strong>✅ Session A</strong><br><s>Screen Specs 03–05</s></td>
+        <td><s>Write formal UI specs for Appointments (03), Pets &amp; Owner (04), EMR (05) — retroactive documentation from Stitch prototype + shipped component.</s><br><em>Done 2026-06-10 — see <code>.claude/skills/anemal-screen-specs/references/</code></em></td>
+        <td>~25% budget</td>
+        <td>—</td>
+      </tr>
+      <tr style="opacity:0.55">
+        <td><strong>✅ Session B</strong><br><s>PDF Receipts</s></td>
+        <td><s>Generate printable PDF invoices and prescription slips using <code>pdfkit</code> with Thai-compatible font embed (NotoSansThai). Add <code>GET /api/invoices/:id/pdf</code> and <code>GET /api/prescriptions/:id/pdf</code> streaming endpoints. "Download PDF" button in ClinicBilling.</s><br><em>Done 2026-06-10 — 161 tests (6 new PDF tests). Axios blob download with JWT auth.</em></td>
+        <td>~40% budget</td>
+        <td>No external credentials needed. S3 not required — buffer streamed directly.</td>
+      </tr>
+      <tr>
+        <td><strong>▶️ Session C</strong><br>PromptPay QR (UI only)</td>
+        <td>Generate EMVCo PromptPay QR image at POS checkout using the <code>qrcode</code> npm package — no gateway required. <code>POST /api/invoices/:id/promptpay-qr</code> returns base64 PNG. Display in ClinicBilling payment modal.</td>
+        <td>~25% budget</td>
+        <td>No credentials. Full gateway (Omise/Stripe webhooks) deferred to Session F.</td>
+      </tr>
+      <tr>
+        <td><strong>Session D</strong><br>Barcode Scanning (ZXing)</td>
+        <td>Enable camera barcode scan in ClinicInventory. <code>BarcodeScanner.tsx</code> modal using <code>@zxing/browser</code>. Scan → auto-fill product search. Backend: <code>GET /api/products?barcode=&lt;code&gt;</code>.</td>
+        <td>~30% budget</td>
+        <td>No credentials. Also wires EMR drug-search (currently unconnected — see spec 05 deferred items).</td>
+      </tr>
+      <tr>
+        <td><strong>Session E</strong><br>S3 Photo Upload</td>
+        <td>Replace FileReader preview with real AWS S3 pre-signed URL upload for pet photos and EMR attachments. <code>POST /api/upload/presign</code> scoped to <code>tenants/{tenantId}/</code>. <code>usePhotoUpload</code> hook in ClinicPets.</td>
+        <td>~35% budget</td>
+        <td>AWS account + S3 bucket + IAM keys in <code>.env</code></td>
+      </tr>
+      <tr>
+        <td><strong>Session F</strong><br>Payment Gateway</td>
+        <td>Real card + PromptPay via Omise (Thai market). <code>services/payment.service.ts</code>, webhook <code>POST /webhooks/omise</code>, SaaS subscription billing tables + trial/expiry cron.</td>
+        <td>~55% budget</td>
+        <td>Omise API keys + SMTP credentials. Highest complexity session.</td>
+      </tr>
+      <tr>
+        <td><strong>Session G</strong><br>LINE / SMS Dispatch</td>
+        <td>Wire existing reminder worker (<code>workers/reminder.worker.ts</code>) to real LINE Messaging API + Twilio. Store LINE userId on owner record (requires migration + UI). Currently marks reminders <code>sent</code> without dispatching.</td>
+        <td>~35% budget</td>
+        <td>LINE channel access token + Twilio SID / Auth Token</td>
+      </tr>
     </tbody>
   </table></div>
+
+  <h2>Recommended Order</h2>
+  <ol>
+    <li><del><strong>Session A</strong> — screen specs (documentation)</del> ✅ Done 2026-06-10</li>
+    <li><del><strong>Session B</strong> — PDF receipts (no credentials, immediate customer value)</del> ✅ Done 2026-06-10</li>
+    <li><del><strong>Phase 1.5-A</strong> — Settings DB + Encryption (migration, AES-256-GCM, audit log)</del> ✅ Done 2026-06-10 · 182 tests</li>
+    <li><del><strong>Phase 1.5-B</strong> — Settings API (S2.1 · S2.2 minimal · S2.3 · TC-S001–S009)</del> ✅ Done 2026-06-10 · 206 tests</li>
+    <li><strong style="color:#dc2626">Phase 1.5-D</strong> — Frontend Settings Pages (S3.1–S3.6 · unblocks Sessions C &amp; G) ← <em>do now</em></li>
+    <li><strong>Phase 1.5-C</strong> — System Settings Admin UI (S3.7 · TC-S010)</li>
+    <li><strong>Session C</strong> — PromptPay QR UI (blocked until Phase 1.5-D S3.5 done)</li>
+    <li><strong>Session D</strong> — Barcode scanning + EMR drug search wiring</li>
+    <li><strong>Session E</strong> — S3 upload (needs AWS keys)</li>
+    <li><strong>Session G</strong> — LINE/SMS (blocked until Phase 1.5-D S3.4 done · needs LINE + Twilio)</li>
+    <li><strong>Session F</strong> — Payment gateway (blocked until Phase 1.5 complete · needs Omise)</li>
+  </ol>
+
+  <h2>How to Start Phase 1.5-D (next)</h2>
+  <pre><code># Open Claude Code in the project root
+cd D:\Development\AnimalClinic
+claude
+
+# Invoke dev-agent + uiux-agent for Phase 1.5-D (Frontend Settings Pages):
+@dev-agent @uiux-agent Implement Phase 1.5-D — Frontend Settings Pages.
+Tasks:
+  S3.1 — Settings Layout &amp; Navigation (views/settings/SettingsLayout.tsx — collapsible sidebar, role-based sections)
+  S3.2 — Clinic Profile Page (name, logo, address, phone, tax ID, website)
+  S3.3 — Operating Hours Page (per-day toggle ≥44px + time pickers)
+  S3.4 — Notifications Page (LINE OA token masked + Test Send · SMS provider/key) ← Session G blocker
+  S3.5 — Payment Page (PromptPay ID, QR upload/preview) ← Session C blocker
+  S3.6 — Integrations Page (Lab API URL/key + Test Connection)
+Reference: .claude/roadmap/phase1.5-settings-tasks.md for full task list.
+
+# Backend is ready: GET/PUT /api/settings/clinic[*], POST .../test, GET/PUT /api/settings/personal
+# NOTE: secrets arrive masked (••••••••xxxx) — render as-is; backend ignores masked echoes on save.
+# NOTE: follow Compassionate Care tokens + 44px touch targets (anemal-design-system skill).</code></pre>
 </div>
 
 <!-- ══════════════════ QA PROTOCOLS ══════════════════ -->
@@ -1909,259 +1427,87 @@ npm run test:coverage</code></pre>
 <div class="page" id="page-howto">
   <h1>🚀 How to Run Locally (Windows)</h1>
 
-  <div class="callout info"><span class="callout-icon">📋</span><span>This guide covers both <strong>Phase 1</strong> (already complete) and <strong>Phase 2</strong> (Core Clinic Operations) setup. Phase 2 adds S3 file uploads, LINE/SMS reminders, and new API modules.</span></div>
+  <div class="callout ok"><span class="callout-icon">✅</span><span>All 4 phases complete. This guide covers running the <strong>current production build</strong>. External integrations (S3, LINE, Twilio, Omise) are optional — the app runs fully without them.</span></div>
 
   <!-- ── Prerequisites ── -->
   <h2>Prerequisites</h2>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Tool</th><th>Version</th><th>Required for</th></tr></thead>
+    <thead><tr><th>Tool</th><th>Version</th><th>Notes</th></tr></thead>
     <tbody>
-      <tr><td>Node.js</td><td>≥ 20</td><td>Phase 1 + 2</td></tr>
-      <tr><td>PostgreSQL</td><td>16 (local or Docker)</td><td>Phase 1 + 2</td></tr>
-      <tr><td>AWS Account</td><td>—</td><td>Phase 2 (S3 for photo/file uploads)</td></tr>
-      <tr><td>LINE Developer Account</td><td>—</td><td>Phase 2 (appointment reminders)</td></tr>
-      <tr><td>Twilio Account</td><td>—</td><td>Phase 2 (SMS fallback reminders)</td></tr>
+      <tr><td>Node.js</td><td>≥ 20</td><td>Required</td></tr>
+      <tr><td>PostgreSQL</td><td>15 or 16 (local or Docker)</td><td>Required</td></tr>
     </tbody>
   </table></div>
 
-  <!-- ── Step 1 ── -->
+  <!-- ── Step 1: PostgreSQL ── -->
   <h2>Step 1 — Start PostgreSQL</h2>
-  <p><strong>Docker (easiest):</strong></p>
   <pre><code>docker run --name vetclinic-pg -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=vetclinic_dev -p 5432:5432 -d postgres:16</code></pre>
 
-  <!-- ── Step 2 ── -->
-  <h2>Step 2 — Configure .env (Phase 1 + Phase 2)</h2>
-  <p>The <code>.env</code> file must be inside <code>src\backend\</code>. Phase 2 adds S3, LINE, and Twilio variables:</p>
-  <pre><code># File: src\backend\.env
-
-# ── Phase 1 (required) ──────────────────────────────────
-DATABASE_URL=postgresql://postgres:dev@localhost:5432/vetclinic_dev
+  <!-- ── Step 2: .env ── -->
+  <h2>Step 2 — Create <code>src\backend\.env</code></h2>
+  <pre><code>DATABASE_URL=postgresql://postgres:dev@localhost:5432/vetclinic_dev
 JWT_SECRET=vetclinic-dev-jwt-secret-change-in-prod-32chars
 JWT_EXPIRES_IN=8h
 REFRESH_TOKEN_EXPIRES_IN=30d
 PORT=4000
 NODE_ENV=development
 
-# ── Phase 2 — File Upload (AWS S3) ──────────────────────
-AWS_REGION=ap-southeast-1
-AWS_ACCESS_KEY_ID=your-access-key-id
-AWS_SECRET_ACCESS_KEY=your-secret-access-key
-S3_BUCKET_NAME=vetclinic-dev-uploads
-S3_SIGNED_URL_EXPIRES=3600        # seconds
+# Optional — leave blank to skip; app runs without them
+REMINDER_CRON_SCHEDULE=”0 8 * * *”
+LINE_CHANNEL_ACCESS_TOKEN=
+TWILIO_ACCOUNT_SID=
+AWS_ACCESS_KEY_ID=</code></pre>
+  <div class=”callout warn”><span class=”callout-icon”>⚠️</span><span>Prisma reads <code>.env</code> from the directory you run commands in — always <code>cd src\backend</code> first.</span></div>
 
-# ── Phase 2 — LINE Messaging API ────────────────────────
-LINE_CHANNEL_ACCESS_TOKEN=your-line-channel-access-token
-LINE_CHANNEL_SECRET=your-line-channel-secret
-
-# ── Phase 2 — Twilio SMS (fallback) ─────────────────────
-TWILIO_ACCOUNT_SID=your-twilio-account-sid
-TWILIO_AUTH_TOKEN=your-twilio-auth-token
-TWILIO_PHONE_NUMBER=+66XXXXXXXXX
-
-# ── Phase 2 — Reminder Cron ─────────────────────────────
-REMINDER_CRON_SCHEDULE="0 8 * * *"   # Every day at 08:00
-REMINDER_DAYS_AHEAD=1</code></pre>
-  <div class="callout warn"><span class="callout-icon">⚠️</span><span>Prisma CLI reads from <code>src\backend\.env</code> — not the project root. Phase 2 env vars can be left blank during development; features that require them will log a warning but won't crash the server.</span></div>
-
-  <!-- ── Step 3 ── -->
-  <h2>Step 3 — Install Dependencies (Phase 2 adds new packages)</h2>
+  <!-- ── Step 3: DB ── -->
+  <h2>Step 3 — Install &amp; Migrate Database</h2>
   <pre><code>cd src\backend
 npm install
+npm run db:generate    # Regenerate Prisma client
+npm run db:migrate     # Apply all 4-phase migrations
+npm run db:seed        # Seed 2 tenants × 3 users each</code></pre>
+  <div class=”callout ok”><span class=”callout-icon”>✅</span><span>Expected after seed: 6 users across <code>dev-clinic</code> and <code>test-clinic</code>. All 25 tables created.</span></div>
 
-# Phase 2 backend packages (if not already in package.json):
-npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
-npm install @line/bot-sdk twilio
-npm install node-cron multer</code></pre>
-  <pre><code>cd src\frontend
-npm install
+  <!-- ── Step 4: Run ── -->
+  <h2>Step 4 — Start the App</h2>
+  <pre><code># Terminal 1 — Backend API (http://localhost:4000)
+cd src\backend && npm run dev
 
-# Phase 2 frontend packages (if not already in package.json):
-npm install konva react-konva           # Anatomy canvas (EMR)
-npm install @zxing/library              # Barcode scanner (Inventory)
-npm install react-big-calendar dayjs    # Appointment calendar UI</code></pre>
-
-  <!-- ── Step 4 ── -->
-  <h2>Step 4 — Database Setup &amp; Migrations</h2>
-  <pre><code>cd src\backend
-npm run db:generate     # Regenerate Prisma client
-npm run db:migrate      # Apply all migrations (Phase 1 + Phase 2 schema)
-npm run db:seed         # Seed dev data (2 tenants × admin + doctor + staff)</code></pre>
-  <div class="callout ok"><span class="callout-icon">✅</span><span>Expected: 6 users seeded across 2 tenants. Phase 2 tables (owners, pets, appointments, medical_records, vaccinations, prescriptions) are created by migration.</span></div>
-
-  <h3>Phase 2 Prisma Migrations</h3>
-  <p>Run these when adding Phase 2 modules (one migration per module is recommended):</p>
-  <pre><code># After adding Owner/Pet models:
-npx prisma migrate dev --name add-owners-pets
-
-# After adding Appointment model:
-npx prisma migrate dev --name add-appointments
-
-# After adding EMR / Medical Records:
-npx prisma migrate dev --name add-medical-records-prescriptions
-
-# After adding Vaccinations:
-npx prisma migrate dev --name add-vaccinations</code></pre>
-
-  <!-- ── Step 5 ── -->
-  <h2>Step 5 — Run Tests</h2>
-  <pre><code>cd src\backend
-npm test                              # All tests
-npx jest --testPathPattern="tests/unit"    # Unit only (no DB)
-npm run test:security                 # Tenant isolation suite</code></pre>
-
-  <h3>Phase 1 Test Suites (existing)</h3>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>Suite</th><th>Tests</th><th>DB?</th></tr></thead>
-    <tbody>
-      <tr><td><code>tests/unit/middlewares.test.ts</code></td><td>8</td><td>No</td></tr>
-      <tr><td><code>tests/unit/authService.test.ts</code></td><td>5</td><td>No (mocked)</td></tr>
-      <tr><td><code>__tests__/auth.test.ts</code></td><td>13</td><td>Yes</td></tr>
-      <tr><td><code>__tests__/userManagement.test.ts</code></td><td>19</td><td>Yes</td></tr>
-      <tr><td><code>__tests__/adminSettings.test.ts</code></td><td>16</td><td>Yes</td></tr>
-      <tr><td><code>__tests__/rbac.test.ts</code></td><td>17</td><td>Yes</td></tr>
-      <tr><td><code>__tests__/multitenancy-isolation.test.ts</code></td><td>9</td><td>Yes</td></tr>
-      <tr><td><code>__tests__/clinicUsage.test.ts</code></td><td>5</td><td>No (mocked)</td></tr>
-      <tr><td><code>tests/integration/auth.test.ts</code></td><td>6</td><td>Yes</td></tr>
-      <tr><td><code>tests/integration/tenantIsolation.test.ts</code></td><td>6</td><td>Yes</td></tr>
-    </tbody>
-  </table></div>
-
-  <h3>Phase 2 Test Suites (to be created)</h3>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>Suite</th><th>Key Assertions</th><th>Module</th></tr></thead>
-    <tbody>
-      <tr><td><code>__tests__/owners.test.ts</code></td><td>CRUD, duplicate phone → 409, tenant isolation</td><td>2.1</td></tr>
-      <tr><td><code>__tests__/pets.test.ts</code></td><td>CRUD, microchip unique, photo upload URL</td><td>2.1</td></tr>
-      <tr><td><code>__tests__/search.test.ts</code></td><td>Returns top 10, scoped to tenant, &lt;300ms</td><td>2.1</td></tr>
-      <tr><td><code>__tests__/appointments.test.ts</code></td><td>Double-booking → 409, status transitions, walk-in</td><td>2.2</td></tr>
-      <tr><td><code>__tests__/medicalRecords.test.ts</code></td><td>SOAP fields, lock on 'billed', attachment upload</td><td>2.3</td></tr>
-      <tr><td><code>__tests__/prescriptions.test.ts</code></td><td>Atomic stock deduction, over-stock → 400, cancel returns stock</td><td>2.3</td></tr>
-      <tr><td><code>__tests__/vaccinations.test.ts</code></td><td>Due-soon query, timeline order, tenant scope</td><td>2.4</td></tr>
-    </tbody>
-  </table></div>
-
-  <!-- ── Step 6 ── -->
-  <h2>Step 6 — Start Backend</h2>
-  <pre><code>cd src\backend
-npm run dev      # API on http://localhost:4000</code></pre>
-
-  <h3>Phase 2 — Quick API Smoke Tests</h3>
-  <pre><code># 1. Login first — save the token
-TOKEN=$(curl -s -X POST http://localhost:4000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"subdomain":"dev-clinic","email":"doctor@dev-clinic.com","password":"DoctorPass1!"}' \
-  | python -c "import sys,json; print(json.load(sys.stdin)['accessToken'])")
-
-# 2. Create an owner
-curl -X POST http://localhost:4000/api/owners \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"firstName":"สมชาย","lastName":"ใจดี","phone":"0812345678","email":"owner@test.com"}'
-
-# 3. Create a pet (replace OWNER_ID)
-curl -X POST http://localhost:4000/api/pets \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"ownerId":"OWNER_ID","name":"บัตเตอร์","species":"dog","breed":"Golden","gender":"male"}'
-
-# 4. Quick search
-curl "http://localhost:4000/api/search?q=บัตเตอร์" \
-  -H "Authorization: Bearer $TOKEN"
-
-# 5. Book an appointment (replace PET_ID and DOCTOR_ID)
-curl -X POST http://localhost:4000/api/appointments \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"petId":"PET_ID","doctorId":"DOCTOR_ID","appointmentDate":"2026-06-10T10:00:00Z","reason":"annual checkup"}'</code></pre>
-
-  <!-- ── Step 7 ── -->
-  <h2>Step 7 — Start Frontend</h2>
-  <pre><code>cd src\frontend
-npm install
-npm run dev      # UI on http://localhost:5173</code></pre>
-
-  <h3>Phase 2 Frontend Routes</h3>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>Route</th><th>Component</th><th>Module</th></tr></thead>
-    <tbody>
-      <tr><td><code>/clinic/pets</code></td><td><code>ClinicPets.tsx</code></td><td>2.1 — Pet &amp; Owner list</td></tr>
-      <tr><td><code>/clinic/pets/:id</code></td><td><code>PetProfile.tsx</code></td><td>2.1 — Pet profile + vaccination timeline</td></tr>
-      <tr><td><code>/clinic/appointments</code></td><td><code>ClinicAppointments.tsx</code></td><td>2.2 — Calendar view</td></tr>
-      <tr><td><code>/clinic/emr/:id</code></td><td><code>ClinicEMR.tsx</code></td><td>2.3 — SOAP notes + anatomy canvas</td></tr>
-    </tbody>
-  </table></div>
+# Terminal 2 — Frontend UI (http://localhost:5173)
+cd src\frontend && npm install && npm run dev</code></pre>
 
   <!-- ── Login Credentials ── -->
   <h2>Login Credentials</h2>
-  <div class="callout warn"><span class="callout-icon">🔑</span><span>
-    <strong>The “Clinic ID” field is required.</strong> It is case-sensitive and must exactly match the
-    tenant subdomain (e.g. <code>dev-clinic</code>). An empty or wrong Clinic ID makes <em>every</em> login —
-    admin, doctor <strong>and staff</strong> — fail with <code>Invalid credentials. Please try again.</code>
-    On <code>localhost</code> the Clinic ID now auto-fills to <code>dev-clinic</code>; on a real subdomain
-    (<code>dev-clinic.anemal.app</code>) it is detected automatically. Passwords are case-sensitive too.
-  </span></div>
-
-  <h3>Dev Clinic — <code>dev-clinic</code> (primary)</h3>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>Role</th><th>Email</th><th>Password</th><th>Clinic ID</th></tr></thead>
+  <div class=”callout warn”><span class=”callout-icon”>🔑</span><span><strong>Clinic ID is required</strong> and case-sensitive. On <code>localhost</code> it auto-fills as <code>dev-clinic</code>.</span></div>
+  <div class=”tbl-wrap”><table>
+    <thead><tr><th>Clinic ID</th><th>Role</th><th>Email</th><th>Password</th></tr></thead>
     <tbody>
-      <tr><td>Admin</td><td>admin@dev-clinic.com</td><td>AdminPass1!</td><td>dev-clinic</td></tr>
-      <tr><td>Doctor</td><td>doctor@dev-clinic.com</td><td>DoctorPass1!</td><td>dev-clinic</td></tr>
-      <tr><td>Staff</td><td>staff@dev-clinic.com</td><td>StaffPass1!</td><td>dev-clinic</td></tr>
+      <tr><td rowspan=”3”><code>dev-clinic</code></td><td>Admin</td><td>admin@dev-clinic.com</td><td>AdminPass1!</td></tr>
+      <tr><td>Doctor</td><td>doctor@dev-clinic.com</td><td>DoctorPass1!</td></tr>
+      <tr><td>Staff</td><td>staff@dev-clinic.com</td><td>StaffPass1!</td></tr>
+      <tr><td rowspan=”3”><code>test-clinic</code></td><td>Admin</td><td>admin@test-clinic.com</td><td>AdminPass2!</td></tr>
+      <tr><td>Doctor</td><td>doctor@test-clinic.com</td><td>DoctorPass2!</td></tr>
+      <tr><td>Staff</td><td>staff@test-clinic.com</td><td>StaffPass2!</td></tr>
     </tbody>
   </table></div>
 
-  <h3>Test Clinic — <code>test-clinic</code> (isolation testing)</h3>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>Role</th><th>Email</th><th>Password</th><th>Clinic ID</th></tr></thead>
-    <tbody>
-      <tr><td>Admin</td><td>admin@test-clinic.com</td><td>AdminPass2!</td><td>test-clinic</td></tr>
-      <tr><td>Doctor</td><td>doctor@test-clinic.com</td><td>DoctorPass2!</td><td>test-clinic</td></tr>
-      <tr><td>Staff</td><td>staff@test-clinic.com</td><td>StaffPass2!</td><td>test-clinic</td></tr>
-    </tbody>
-  </table></div>
-  <p style="color:#45464d;font-size:14px">⚠️ Note the <strong>different password suffix</strong>: <code>dev-clinic</code> uses
-    <code>…Pass1!</code>, <code>test-clinic</code> uses <code>…Pass2!</code>. Using a <code>test-clinic</code>
-    password against <code>dev-clinic</code> (or vice-versa) is a common cause of “Invalid credentials”.</p>
-
-  <!-- ── Phase 2 Demo Flow ── -->
-  <h2>Phase 2 Demo Flow (End-to-End)</h2>
-  <div class="callout ok"><span class="callout-icon">🎯</span><span>
-    <strong>Full Phase 2 walkthrough:</strong><br>
-    1. Login as <strong>doctor@dev-clinic.com</strong><br>
-    2. Register new owner + pet (with photo from camera on tablet)<br>
-    3. Book appointment from calendar<br>
-    4. Start EMR visit → fill SOAP note → annotate anatomy canvas<br>
-    5. Add prescription → confirm stock deducted<br>
-    6. Record vaccination → verify timeline in pet profile
-  </span></div>
-
-  <!-- ── Reminder Cron (Phase 2) ── -->
-  <h2>Phase 2 — Test Appointment Reminders</h2>
-  <pre><code># Trigger reminder job manually (without waiting for cron)
-curl -X POST http://localhost:4000/api/reminders/trigger \
-  -H "Authorization: Bearer $ADMIN_TOKEN"
-
-# Check reminder log in DB
-# SELECT * FROM pet_reminders ORDER BY created_at DESC LIMIT 10;</code></pre>
-  <div class="callout info"><span class="callout-icon">💡</span><span>LINE reminders require a valid <code>LINE_CHANNEL_ACCESS_TOKEN</code> in <code>.env</code>. If not set, the cron job falls back to Twilio SMS. If neither is configured, it logs <code>"Reminder skipped — no channel configured"</code>.</span></div>
+  <!-- ── Run Tests ── -->
+  <h2>Run Tests</h2>
+  <pre><code>cd src\backend
+npm test                         # All 155 tests
+npm run test:security            # Tenant isolation suite only</code></pre>
 
   <!-- ── Troubleshooting ── -->
   <h2>Troubleshooting</h2>
-  <div class="tbl-wrap"><table>
+  <div class=”tbl-wrap”><table>
     <thead><tr><th>Problem</th><th>Fix</th></tr></thead>
     <tbody>
-      <tr><td>Missing required env var: DATABASE_URL</td><td>Ensure <code>src\backend\.env</code> exists — Prisma reads from the directory you run it in</td></tr>
-      <tr><td>Can't reach database server</td><td>Ensure PostgreSQL / Docker container is running</td></tr>
-      <tr><td>P1003: Database does not exist</td><td>Create vetclinic_dev DB or fix DATABASE_URL</td></tr>
-      <tr><td>Port 4000 in use</td><td>Set PORT=4001 in .env</td></tr>
-      <tr><td>Prisma errors after schema change</td><td><code>npm run db:generate</code> then restart dev server</td></tr>
-      <tr><td>S3 upload fails — InvalidAccessKeyId</td><td>Check <code>AWS_ACCESS_KEY_ID</code> and <code>AWS_SECRET_ACCESS_KEY</code> in <code>.env</code></td></tr>
-      <tr><td>S3 upload fails — NoSuchBucket</td><td>Create the bucket in AWS Console or run <code>aws s3 mb s3://vetclinic-dev-uploads</code></td></tr>
-      <tr><td>LINE reminder not sent</td><td>Verify <code>LINE_CHANNEL_ACCESS_TOKEN</code> is valid and owner has <code>line_user_id</code> set</td></tr>
-      <tr><td>Twilio SMS error 21608</td><td>Trial account — verify the recipient number in Twilio Console first</td></tr>
-      <tr><td>Konva canvas not rendering</td><td>Ensure <code>konva</code> and <code>react-konva</code> are installed: <code>npm install konva react-konva</code></td></tr>
-      <tr><td>Barcode scanner not working</td><td>Browser must have camera permission; ensure HTTPS or localhost</td></tr>
+      <tr><td>Missing DATABASE_URL env var</td><td>Ensure <code>src\backend\.env</code> exists</td></tr>
+      <tr><td>Can't reach database</td><td>Check Docker container is running: <code>docker ps</code></td></tr>
+      <tr><td>P1003: DB does not exist</td><td>Fix DATABASE_URL or create the DB manually</td></tr>
+      <tr><td>Port 4000 in use</td><td>Set <code>PORT=4001</code> in <code>.env</code></td></tr>
+      <tr><td>Prisma client outdated after schema change</td><td><code>npm run db:generate</code> then restart server</td></tr>
+      <tr><td>Barcode scanner / camera not working</td><td>Browser requires HTTPS or localhost; grant camera permission</td></tr>
     </tbody>
   </table></div>
 </div>
@@ -2573,7 +1919,7 @@ claude mcp list</code></pre>
   <h2>Layout</h2>
   <pre><code>┌───────────────────────────────────────────┐
 │  Good morning, Doctor A                   │
-│  Wednesday 3 June 2026 · 09:15 · Doctor   │
+│  Wednesday 10 June 2026 · 09:15 · Doctor  │
 │                                           │
 │  [📅 8][📆 47][🐾 284][💳 38]            │  ← 4 KPI cards
 │                                           │
@@ -2582,22 +1928,349 @@ claude mcp list</code></pre>
 │                                           │
 │  Today's schedule ──────────────────────  │
 │  ┌─────────────────────────────────────┐  │
-│  │  Appointment calendar — Phase 2 →  │  │  ← placeholder
+│  │  Appointment calendar (live)        │  │
 │  └─────────────────────────────────────┘  │
+│                                           │
+│  ⚠️ Low stock alerts  🏥 3 Inpatients    │
 └───────────────────────────────────────────┘</code></pre>
 
   <h2>Clinic Sidebar</h2>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Icon</th><th>Route</th><th>Phase</th></tr></thead>
+    <thead><tr><th>Icon</th><th>Route</th><th>Status</th></tr></thead>
     <tbody>
-      <tr><td>🏠</td><td>/clinic/dashboard</td><td>1 ✅</td></tr>
-      <tr><td>📅</td><td>/clinic/appointments</td><td>2 🚧</td></tr>
-      <tr><td>🐾</td><td>/clinic/pets</td><td>2 🚧</td></tr>
-      <tr><td>📋</td><td>/clinic/emr</td><td>2 🚧</td></tr>
-      <tr><td>💊</td><td>/clinic/inventory</td><td>3 🚧</td></tr>
-      <tr><td>💳</td><td>/clinic/billing</td><td>3 🚧</td></tr>
+      <tr><td>🏠</td><td>/clinic/dashboard</td><td>✅ Phase 1</td></tr>
+      <tr><td>📅</td><td>/clinic/appointments</td><td>✅ Phase 2</td></tr>
+      <tr><td>🐾</td><td>/clinic/pets</td><td>✅ Phase 2</td></tr>
+      <tr><td>📋</td><td>/clinic/emr/:id</td><td>✅ Phase 2</td></tr>
+      <tr><td>💊</td><td>/clinic/inventory</td><td>✅ Phase 3</td></tr>
+      <tr><td>💳</td><td>/clinic/billing</td><td>✅ Phase 3</td></tr>
+      <tr><td>🏥</td><td>/clinic/inpatient</td><td>✅ Phase 4</td></tr>
+      <tr><td>✂️</td><td>/clinic/grooming</td><td>✅ Phase 4</td></tr>
     </tbody>
   </table></div>
+</div>
+
+<!-- ══════════════════ ADMIN BRANCHES ══════════════════ -->
+<div class="page" id="page-admin-branches">
+  <h1>🏢 Branches &amp; Shifts — <code>/admin/branches</code></h1>
+  <div class="callout danger"><span class="callout-icon">🔒</span><span>Admin only.</span></div>
+  <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>src/frontend/src/views/admin/AdminBranches.tsx</code> · API: <code>/api/branches</code>, <code>/api/branches/:id/shifts</code></span></div>
+
+  <h2>Layout</h2>
+  <pre><code>┌────────────────────────────────────────────┐
+│  Branches                     [+ Add branch]│
+│                                            │
+│  ┌──────────────────────────────────────┐  │
+│  │  🏥 Main Branch                      │  │
+│  │  Mon–Fri 08:00–18:00 · 08-123-4567  │  │
+│  │  Doctors on shift: Dr. A (Mon–Wed)   │  │
+│  │  [Edit] [Manage Shifts]             │  │
+│  └──────────────────────────────────────┘  │
+│                                            │
+│  Doctor Shift Schedule ─────────────────── │
+│  [Doctor▼] [Branch▼]                      │
+│  Mon  Tue  Wed  Thu  Fri  Sat  Sun        │
+│  08–18 ░░░ 08–18 ░░░ 08–18 ░░░ ░░░      │
+└────────────────────────────────────────────┘</code></pre>
+
+  <h2>API Endpoints</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td>GET</td><td>/api/branches</td><td>List all branches (admin)</td></tr>
+      <tr><td>POST</td><td>/api/branches</td><td>Create branch</td></tr>
+      <tr><td>PUT</td><td>/api/branches/:id</td><td>Update hours, phone, address</td></tr>
+      <tr><td>GET</td><td>/api/branches/:id/shifts</td><td>Doctor shifts for branch</td></tr>
+      <tr><td>POST</td><td>/api/branches/:id/shifts</td><td>Assign doctor shift</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- ══════════════════ ADMIN BLOOD BANK ══════════════════ -->
+<div class="page" id="page-admin-bloodbank">
+  <h1>🩸 Blood Bank Admin — <code>/admin/blood-bank</code></h1>
+  <div class="callout danger"><span class="callout-icon">🔒</span><span>Admin only.</span></div>
+  <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>src/frontend/src/views/admin/AdminBloodBank.tsx</code></span></div>
+
+  <h2>Layout</h2>
+  <pre><code>┌────────────────────────────────────────────┐
+│  Blood Bank                [+ Add Donor]   │
+│                                            │
+│  Donors ──────────────────────────────── │
+│  🐕 Buddy   DEA 1.1+  Last: 2026-05-01   │
+│  🐱 Luna    A+        Eligible ✅         │
+│                                            │
+│  Inventory ───────────────────────────── │
+│  [A+  · 250ml · exp 2026-07-01 · Available]│
+│  [DEA 1.1+ · 200ml · Used ✗]             │
+│                                            │
+│  Transfusions ──────────────────────────  │
+│  Recipient: Rex · Donation #3 · 150ml     │
+│  Cross-match: Compatible ✅               │
+└────────────────────────────────────────────┘</code></pre>
+
+  <h2>Key Constraints</h2>
+  <ul>
+    <li>Compatibility guard — prevents incompatible blood type transfusion at API level</li>
+    <li>Donations expire after 30 days — status auto-updates to <code>expired</code></li>
+    <li>Minimum donation interval: 56 days per donor (enforced by <code>last_donation_at</code>)</li>
+  </ul>
+</div>
+
+<!-- ══════════════════ ADMIN AUDIT ══════════════════ -->
+<div class="page" id="page-admin-audit">
+  <h1>🔍 Audit Log — <code>/admin/audit</code></h1>
+  <div class="callout danger"><span class="callout-icon">🔒</span><span>Admin only — read-only view.</span></div>
+  <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>src/frontend/src/views/admin/AdminAudit.tsx</code> · API: <code>GET /api/audit</code></span></div>
+
+  <h2>Layout</h2>
+  <pre><code>┌────────────────────────────────────────────┐
+│  Audit Log                                 │
+│  [All actions▼] [User▼] [Table▼] [Date📅] │
+│                                            │
+│  2026-06-10 14:32 · staff@dev-clinic.com  │
+│  DELETE · invoice_items · record #47      │
+│  IP: 192.168.1.10                         │
+│  ─────────────────────────────────────── │
+│  2026-06-10 13:10 · doctor@dev-clinic.com │
+│  UPDATE · medical_records · #82           │
+└────────────────────────────────────────────┘</code></pre>
+
+  <h2>Logged Fields</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Field</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>user_id / email</td><td>Who performed the action</td></tr>
+      <tr><td>action</td><td>INSERT / UPDATE / DELETE</td></tr>
+      <tr><td>table_name + record_id</td><td>What was modified</td></tr>
+      <tr><td>details (JSON)</td><td>Before/after diff</td></tr>
+      <tr><td>ip_address</td><td>Client IP at request time</td></tr>
+      <tr><td>created_at</td><td>Timestamp (immutable)</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout warn"><span class="callout-icon">🔒</span><span>Audit records are immutable — no UPDATE or DELETE allowed on <code>audit_logs</code>. The <code>auditMiddleware</code> is wired on billing, medical records, and stock adjustments routes.</span></div>
+</div>
+
+<!-- ══════════════════ CLINIC APPOINTMENTS ══════════════════ -->
+<div class="page" id="page-clinic-appts">
+  <h1>📅 Appointments — <code>/clinic/appointments</code></h1>
+  <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>src/frontend/src/views/clinic/ClinicAppointments.tsx</code></span></div>
+
+  <h2>Layout</h2>
+  <pre><code>┌────────────────────────────────────────────┐
+│  Appointments      [Day][Week] [+ New appt]│
+│  ◀ Mon 9 Jun 2026 ▶                       │
+│                                            │
+│  Dr. A            Dr. B                   │
+│  08:00 ──────── ┌──────────────────┐      │
+│  09:00          │ Buddy · Checkup  │      │
+│  10:00 ┌──────┐ └──────────────────┘      │
+│  10:00 │ Rex  │                           │
+│  11:00 └──────┘                           │
+│                                            │
+│  Walk-in queue ─────── [+ Walk-in]         │
+│  ● Luna · waiting · 08:45                 │
+└────────────────────────────────────────────┘</code></pre>
+
+  <h2>Business Rules</h2>
+  <ul>
+    <li>Double-booking same doctor + time slot → <code>409 Conflict</code></li>
+    <li>Status flow: <code>scheduled → confirmed → in_progress → completed / cancelled</code></li>
+    <li>Walk-in appointments bypass the time slot check</li>
+    <li>Appointment reminder cron runs daily at 08:00 (configurable via <code>REMINDER_CRON_SCHEDULE</code>)</li>
+  </ul>
+</div>
+
+<!-- ══════════════════ CLINIC PETS ══════════════════ -->
+<div class="page" id="page-clinic-pets">
+  <h1>🐕 Pets &amp; Owners — <code>/clinic/pets</code></h1>
+  <div class="callout info"><span class="callout-icon">📁</span><span>Files: <code>ClinicPets.tsx</code> · <code>PetProfile.tsx</code></span></div>
+
+  <h2>Layout — Pet List</h2>
+  <pre><code>┌────────────────────────────────────────────┐
+│  Pets & Owners     [🔍 Search…] [+ New pet]│
+│                                            │
+│  🐕 Buddy Golden  Owner: John D.  active  │
+│     Last visit: 2026-05-15                │
+│  🐱 Luna Tabby    Owner: Jane S.  active  │
+│     ⚠️ Isolation alert                   │
+└────────────────────────────────────────────┘</code></pre>
+
+  <h2>Pet Profile</h2>
+  <pre><code>┌────────────────────────────────────────────┐
+│  [Photo]  Buddy · Male · Golden Retriever  │
+│           Born: 2019-03-12  · 28.5 kg     │
+│           Microchip: 123456789012345       │
+│           ⚠️ Allergy: Penicillin           │
+│                                            │
+│  Owner ─ John Doe · 081-234-5678          │
+│          john@email.com  🥇 Gold member   │
+│                                            │
+│  Vaccination Timeline ──────────────────  │
+│  ✅ Rabies    2025-06-01  next: 2026-06-01│
+│  ✅ DHPP      2025-06-01  next: 2026-06-01│
+│                                            │
+│  Visit History (EMR) ───────────────────  │
+│  2026-05-15  Annual checkup  Dr. A        │
+└────────────────────────────────────────────┘</code></pre>
+
+  <h2>Search</h2>
+  <p>Quick search (<code>GET /api/search?q=</code>) matches pet name, owner phone, or microchip ID. Returns top 10, scoped to tenant, &lt;300ms.</p>
+</div>
+
+<!-- ══════════════════ CLINIC EMR ══════════════════ -->
+<div class="page" id="page-clinic-emr">
+  <h1>📋 EMR — <code>/clinic/emr/:id</code></h1>
+  <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>src/frontend/src/views/clinic/ClinicEMR.tsx</code></span></div>
+
+  <h2>Layout</h2>
+  <pre><code>┌────────────────────────────────────────────┐
+│  EMR — Buddy · Visit 2026-06-10            │
+│  Status: [in_progress] [→ Lock & Bill]     │
+│                                            │
+│  SOAP ──────────────────────────────────  │
+│  S: [Owner reports lethargy since Monday  ]│
+│  O: [Temp 38.5°C  HR 80bpm  RR 20/min   ]│
+│     [Weight 28.5 kg                      ]│
+│  A: [Mild gastroenteritis                ]│
+│  P: [Metronidazole 250mg BID × 5 days    ]│
+│                                            │
+│  Anatomy Canvas ────────────────────────  │
+│  [Dog outline — stylus/finger annotation] │
+│                                            │
+│  Prescriptions ─────────────── [+ Add Rx] │
+│  Metronidazole 250mg × 10 tabs  [Remove]  │
+│                                            │
+│  Attachments ─────────────── [+ Upload]   │
+│  xray-20260610.pdf                        │
+└────────────────────────────────────────────┘</code></pre>
+
+  <h2>Status Rules</h2>
+  <ul>
+    <li><code>in_progress</code> → editable; <code>billed</code> → locked (no edits)</li>
+    <li>Locking EMR auto-creates invoice from services + prescriptions</li>
+    <li>Prescription creation atomically deducts <code>branch_inventory</code></li>
+  </ul>
+</div>
+
+<!-- ══════════════════ CLINIC INVENTORY ══════════════════ -->
+<div class="page" id="page-clinic-inventory">
+  <h1>💊 Inventory — <code>/clinic/inventory</code></h1>
+  <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>src/frontend/src/views/clinic/ClinicInventory.tsx</code></span></div>
+
+  <h2>Layout</h2>
+  <pre><code>┌────────────────────────────────────────────┐
+│  Inventory      [🔍 Search] [📷 Scan] [+]  │
+│  [All▼] [Category▼]                       │
+│                                            │
+│  ⚠️ Alerts ─────────────────────────────  │
+│  🔴 Amoxicillin 250mg  stock: 2 (min 10)  │
+│  🟡 Rimadyl 100mg     exp: 2026-07-15     │
+│                                            │
+│  Products ──────────────────────────────  │
+│  Metronidazole 250mg  SKU:MET250           │
+│  Stock: 45 tabs · ฿12/tab                 │
+│  Lot: L2025-11 · Exp: 2027-01-01          │
+│  [Edit] [Stock In] [Transfer →]           │
+└────────────────────────────────────────────┘</code></pre>
+
+  <h2>Features</h2>
+  <ul>
+    <li>Barcode/QR scan via camera (ZXing.js) → auto-fills search</li>
+    <li>Stock auto-deducted on EMR prescription; stock returned on cancellation</li>
+    <li>Inter-branch transfer workflow: request → dispatch → receive (atomic transaction)</li>
+    <li>Low-stock alerts (below <code>min_stock_qty</code>) and expiry alerts (within 30 days)</li>
+  </ul>
+</div>
+
+<!-- ══════════════════ CLINIC BILLING ══════════════════ -->
+<div class="page" id="page-clinic-billing">
+  <h1>💳 Billing / POS — <code>/clinic/billing</code></h1>
+  <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>src/frontend/src/views/clinic/ClinicBilling.tsx</code></span></div>
+
+  <h2>Layout</h2>
+  <pre><code>┌────────────────────────────────────────────┐
+│  Invoice INV-2026-06-0042   [Print] [PDF]  │
+│  Buddy · Dr. A · 2026-06-10               │
+│                                            │
+│  Items ─────────────────────────────────  │
+│  Consultation fee       ฿500.00           │
+│  Metronidazole 250mg×10  ฿120.00          │
+│  ──────────────────────────────────────   │
+│  Subtotal               ฿620.00           │
+│  Discount (Gold -5%)    -฿31.00           │
+│  VAT 7%                  ฿41.23           │
+│  Total                  ฿630.23           │
+│                                            │
+│  Payment ───────────────────────────────  │
+│  [💵 Cash] [📱 QR] [💳 Card]             │
+│                                            │
+│  QR screen → full-screen PromptPay QR     │
+│  Cash → enter amount → show change        │
+└────────────────────────────────────────────┘</code></pre>
+
+  <h2>Business Rules</h2>
+  <ul>
+    <li>Invoice auto-generated when EMR is locked to <code>billed</code></li>
+    <li>Loyalty points earned: ฿100 spent = 1 point (Gold/Platinum tier discounts applied)</li>
+    <li>Void invoice creates reversal audit record — original is never deleted</li>
+    <li>Invoice number format: <code>INV-YYYY-MM-NNNN</code> (per tenant, auto-incremented)</li>
+  </ul>
+</div>
+
+<!-- ══════════════════ CLINIC INPATIENT ══════════════════ -->
+<div class="page" id="page-clinic-inpatient">
+  <h1>🏥 Inpatient — <code>/clinic/inpatient</code></h1>
+  <div class="callout info"><span class="callout-icon">📁</span><span>Files: Cage board component in <code>ClinicDashboard.tsx</code> · API: <code>/api/hospitalizations</code></span></div>
+
+  <h2>Layout — Cage Board</h2>
+  <pre><code>┌────────────────────────────────────────────┐
+│  Inpatient Board            [+ Admit]      │
+│  3 admitted · 1 critical                  │
+│                                            │
+│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐     │
+│  │ A1   │ │ A2   │ │ A3   │ │ B1   │     │
+│  │ Buddy│ │ Luna │ │ ░░░  │ │ Rex  │     │
+│  │ Day 3│ │ Day 1│ │      │ │ ⚠️   │     │
+│  └──────┘ └──────┘ └──────┘ └──────┘     │
+│                                            │
+│  Daily Care Log (Time Slots) ───────────  │
+│  Buddy · 08:00  Temp:38.1 Fed:✅ Meds:✅  │
+│  Buddy · 12:00  Temp:38.3 Fed:✅ Meds:✅  │
+└────────────────────────────────────────────┘</code></pre>
+
+  <h2>Discharge Flow</h2>
+  <p>Discharge auto-compiles hospitalization logs + cage charges into a billing invoice. Status: <code>admitted → discharged</code>.</p>
+</div>
+
+<!-- ══════════════════ CLINIC GROOMING ══════════════════ -->
+<div class="page" id="page-clinic-grooming">
+  <h1>✂️ Grooming — <code>/clinic/grooming</code></h1>
+  <div class="callout info"><span class="callout-icon">📁</span><span>File: Grooming queue component · API: <code>/api/grooming-bookings</code></span></div>
+
+  <h2>Layout</h2>
+  <pre><code>┌────────────────────────────────────────────┐
+│  Grooming Queue     Today: 5 bookings      │
+│  Groomer: [All▼]   [+ Book]               │
+│                                            │
+│  ┌────────────────────────────────────┐   │
+│  │ 09:00  Buddy   Bath+cut  Groomer A │   │
+│  │        [Scheduled] → [Start] [✓]  │   │
+│  ├────────────────────────────────────┤   │
+│  │ 10:00  Luna    Bath only Groomer B │   │
+│  │        [In Progress ⏳]            │   │
+│  ├────────────────────────────────────┤   │
+│  │ 11:30  Rex     Full groom          │   │
+│  │        [Completed ✅]              │   │
+│  └────────────────────────────────────┘   │
+└────────────────────────────────────────────┘</code></pre>
+
+  <h2>Rules</h2>
+  <ul>
+    <li>Daily capacity quota per groomer enforced — overbooking → <code>409</code></li>
+    <li>Status flow: <code>scheduled → in_progress → completed / cancelled</code></li>
+    <li>Grooming queue is separate from clinical appointment queue</li>
+  </ul>
 </div>
 
 <!-- ══════════════════ CHANGELOG ══════════════════ -->
@@ -2637,7 +2310,42 @@ claude mcp list</code></pre>
       <li>Prisma maps table names but not columns → DB columns are camelCase; pre-existing Phase 2 raw SQL (prescription deduct, appointment double-booking) used snake_case and silently failed. All raw SQL now double-quotes camelCase columns and is test-covered.</li>
     </ul>
   </div>
-  <div class="callout info"><span class="callout-icon">➡️</span><span><strong>Next:</strong> Phase 4 — branch_id in JWT + branch_inventory, transfers, PDF/QR/gateway, inpatient/grooming/blood-bank/loyalty/audit. See <code>.claude/roadmap/phase4-tasks.md</code>.</span></div>
+  <div class="callout info"><span class="callout-icon">➡️</span><span>Phase 4 implemented — see entry below.</span></div>
+
+  <h2>2026-06-09 — Phase 4 Advanced Operations Complete</h2>
+  <div class="cl-entry new">
+    <div class="cl-date">2026-06-09</div>
+    <p><strong>Phase 4 implemented.</strong> 155 tests passing (131 prior + 24 new). Multi-branch management, inter-branch inventory transfers, hospitalization (cage board), grooming scheduler, blood bank registry + transfusion guard, loyalty/points (earn on POS, redeem ≤20%), write-once audit logs, proactive reminder worker, admin pages for Branches / Blood Bank / Audit.</p>
+  </div>
+  <h3>📁 New Backend</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Module</th><th>Highlights</th></tr></thead>
+    <tbody>
+      <tr><td>Branch + Doctor Shifts</td><td><code>/api/branches</code> CRUD · shift scheduling · <code>branchId</code> in JWT</td></tr>
+      <tr><td>Transfers</td><td>Inter-branch stock transfer with dual <code>StockMovement</code> ledger</td></tr>
+      <tr><td>Hospitalization</td><td>Admit → care (4 time-slots/day) → discharge with auto-billing aggregation</td></tr>
+      <tr><td>Blood Bank</td><td>Donor registry + collection bags + transfusion compatibility guard (409 INCOMPATIBLE_BLOOD)</td></tr>
+      <tr><td>Grooming</td><td>Booking + day-timeline + status cycle (booked→in-progress→done)</td></tr>
+      <tr><td>Loyalty</td><td>Earn on POS payment, tiered, redeem capped at 20% of invoice</td></tr>
+      <tr><td>Audit</td><td>Write-once interceptor wired globally via <code>auditMiddleware</code></td></tr>
+      <tr><td>Reminders</td><td>Hourly background worker — LINE/SMS dispatch deferred (currently marks <code>sent</code>)</td></tr>
+      <tr><td>Reports</td><td><code>/api/reports/branch-revenue</code></td></tr>
+    </tbody>
+  </table></div>
+  <h3>✏️ Frontend</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>View</th><th>Change</th></tr></thead>
+    <tbody>
+      <tr><td><code>views/clinic/ClinicInpatient.tsx</code></td><td>New — cage board + 3-step care modal + discharge</td></tr>
+      <tr><td><code>views/clinic/ClinicGrooming.tsx</code></td><td>New — day timeline + booking modal + status cycle</td></tr>
+      <tr><td><code>views/admin/AdminBranches.tsx</code></td><td>New — Branch CRUD + doctor shift scheduling</td></tr>
+      <tr><td><code>views/admin/AdminBloodBank.tsx</code></td><td>New — 3 tabs (donors/bags/transfusions) + compatibility guard</td></tr>
+      <tr><td><code>views/admin/AdminAudit.tsx</code></td><td>New — read-only audit table + filters + JSON-diff expand</td></tr>
+      <tr><td><code>views/admin/AdminDashboard.tsx</code></td><td>Updated — inpatient/grooming KPIs + branch revenue chart</td></tr>
+      <tr><td><code>views/clinic/ClinicBilling.tsx</code></td><td>Updated — loyalty balance/tier display, redeem at checkout, earned toast</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout info"><span class="callout-icon">⚠️</span><span><strong>Deferred:</strong> Real LINE/SMS dispatch, PDF receipts (pdfkit), PromptPay QR gateway (Omise/Stripe), barcode scanning (ZXing), S3 photo upload, SaaS subscription billing cron.</span></div>
 
   <h2>2026-06-04 — Phase 2 Core Clinic Operations Complete</h2>
   <div class="cl-entry new">
@@ -3140,53 +2848,6 @@ class="bg-primary-fixed text-on-primary-fixed
     </tbody>
   </table></div>
 
-  <h2>Phase 1 — Foundation &amp; Shell (19 files)</h2>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>#</th><th>File</th><th>Change</th><th>Status</th></tr></thead>
-    <tbody>
-      <tr><td>P1-01</td><td><code>src/frontend/index.html</code></td><td>Add Google Fonts + Material Symbols &lt;link&gt; tags</td><td style="color:#16a34a;font-weight:700">✅ Done</td></tr>
-      <tr><td>P1-02</td><td><code>src/frontend/tailwind.config.js</code></td><td>Fix primary/secondary; remove <code>brand</code> indigo palette</td><td style="color:#16a34a;font-weight:700">✅ Done</td></tr>
-      <tr><td>P1-03</td><td><code>src/frontend/src/index.css</code></td><td>Add Material Symbols CSS, <code>.bento-grid</code>, <code>.glass-card</code></td><td style="color:#16a34a;font-weight:700">✅ Done</td></tr>
-      <tr><td>P1-04</td><td><code>DESIGN.md</code></td><td>Rewrite with Compassionate Care System spec</td><td style="color:#16a34a;font-weight:700">✅ Done</td></tr>
-      <tr><td>P1-05</td><td><code>.claude/specs/design-system-tokens.md</code></td><td>Create token developer cheat-sheet</td><td style="color:#16a34a;font-weight:700">✅ Done</td></tr>
-      <tr><td>P1-06</td><td><code>.claude/specs/screen-specs/00-shared-layout.md</code></td><td>Create sidebar + topnav spec</td><td style="color:#16a34a;font-weight:700">✅ Done</td></tr>
-      <tr><td>P1-07</td><td><code>src/frontend/src/components/MaterialIcon.tsx</code></td><td>Create icon wrapper component</td><td style="color:#16a34a;font-weight:700">✅ Done</td></tr>
-      <tr><td>P1-08</td><td><code>src/frontend/src/layouts/ClinicLayout.tsx</code></td><td>Reskin sidebar; wire TopNav</td><td style="color:#16a34a;font-weight:700">✅ Done</td></tr>
-      <tr><td>P1-09</td><td><code>src/frontend/src/layouts/AdminLayout.tsx</code></td><td>Reskin sidebar</td><td style="color:#16a34a;font-weight:700">✅ Done</td></tr>
-      <tr><td>P1-10</td><td><code>src/frontend/src/components/TopNav.tsx</code></td><td>Build top nav bar component</td><td style="color:#16a34a;font-weight:700">✅ Done</td></tr>
-      <tr><td>P1-11</td><td><code>src/frontend/src/views/LoginView.tsx</code></td><td>Full redesign — split layout per prototype</td><td style="color:#16a34a;font-weight:700">✅ Done</td></tr>
-      <tr><td>P1-12</td><td><code>src/frontend/src/views/clinic/ClinicDashboard.tsx</code></td><td>Full redesign — 12-col bento grid</td><td style="color:#16a34a;font-weight:700">✅ Done</td></tr>
-      <tr><td>P1-13</td><td><code>src/frontend/src/views/admin/*.tsx</code></td><td>Remove <code>brand-*</code> → use <code>primary</code>/<code>secondary</code></td><td style="color:#16a34a;font-weight:700">✅ Done</td></tr>
-      <tr><td>P1-14</td><td><code>.claude/agents/uiux-agent.md</code></td><td>Add design system references</td><td style="color:#16a34a;font-weight:700">✅ Done</td></tr>
-      <tr><td>P1-15</td><td><code>.claude/roadmap/phase1-tasks.md</code></td><td>Add design reference links to UI tasks</td><td style="color:#16a34a;font-weight:700">✅ Done</td></tr>
-      <tr><td>P1-16</td><td><code>.claude/specs/screen-specs/01-login.md</code></td><td>Create login screen spec</td><td style="color:#16a34a;font-weight:700">✅ Done</td></tr>
-      <tr><td>P1-17</td><td><code>.claude/specs/screen-specs/02-dashboard.md</code></td><td>Create dashboard screen spec</td><td style="color:#16a34a;font-weight:700">✅ Done</td></tr>
-      <tr><td>P1-18</td><td><code>.claude/specs/screen-specs/08-admin.md</code></td><td>Create admin screen spec</td><td style="color:#16a34a;font-weight:700">✅ Done</td></tr>
-      <tr><td>P1-19</td><td><code>docs/index.html</code></td><td>Add design alignment status column</td><td style="color:#16a34a;font-weight:700">✅ Done</td></tr>
-    </tbody>
-  </table></div>
-  <div class="callout info" style="margin-top:16px"><span class="callout-icon">✅</span><span>All 19 Phase 1 design alignment tasks complete as of 2026-06-04. Phase 2 UI spec files (03-appointments, 04-pet-owner, 05-emr) should be created before Phase 2 UI implementation begins.</span></div>
-
-  <h2>Phase 2 — Before Core Clinic UI (7 files)</h2>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>#</th><th>File</th><th>Change</th></tr></thead>
-    <tbody>
-      <tr><td>P2-01 to P2-03</td><td><code>.claude/specs/screen-specs/03,04,05-*.md</code></td><td>Create Appointments, Pet/Owner, EMR specs</td></tr>
-      <tr><td>P2-04</td><td><code>.claude/roadmap/phase2-tasks.md</code></td><td>Add design reference links</td></tr>
-      <tr><td>P2-05 to P2-07</td><td><code>views/clinic/ClinicAppointments/Pets/EMR.tsx</code></td><td>Redesign per spec</td></tr>
-    </tbody>
-  </table></div>
-
-  <h2>Phase 3 — Before Commercial UI (5 files)</h2>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>#</th><th>File</th><th>Change</th></tr></thead>
-    <tbody>
-      <tr><td>P3-01 to P3-02</td><td><code>.claude/specs/screen-specs/06,07-*.md</code></td><td>Create Inventory, Billing specs</td></tr>
-      <tr><td>P3-03</td><td><code>.claude/roadmap/phase3-tasks.md</code></td><td>Add design reference links</td></tr>
-      <tr><td>P3-04 to P3-05</td><td><code>views/clinic/ClinicInventory/Billing.tsx</code></td><td>Redesign per spec</td></tr>
-    </tbody>
-  </table></div>
-
   <h2>Non-Negotiable Rules</h2>
   <div class="callout danger">
     <span class="callout-icon">🚨</span>
@@ -3196,8 +2857,7 @@ class="bg-primary-fixed text-on-primary-fixed
         <li>No raw hex values in components — use token names from <code>tailwind.config.js</code> only</li>
         <li>No emoji in navigation — Material Symbols Outlined exclusively</li>
         <li>All interactive elements <code>min-h-[44px] min-w-[44px]</code></li>
-        <li>Keep sidebar collapsible toggle — reskin only, don't remove the feature</li>
-        <li>Run <code>npm run lint</code> from <code>src/frontend/</code> after every file change</li>
+        <li>All 19 Phase 1 design alignment tasks complete · Phase 2 specs (03–05) written 2026-06-10</li>
       </ul>
     </span>
   </div>
@@ -3208,41 +2868,46 @@ class="bg-primary-fixed text-on-primary-fixed
 
 <script>
 const pages = {
-  home:           { title: 'Home',                    badge: 'Overview' },
-  claude:         { title: 'CLAUDE.md',               badge: 'Architecture' },
-  functional:     { title: 'Functional Requirements', badge: 'Specs' },
-  schema:         { title: 'Database Schema',         badge: 'Specs' },
-  pm:             { title: 'PM Agent',                badge: 'Agents' },
-  uiux:           { title: 'UIUX Agent',              badge: 'Agents' },
-  db:             { title: 'DB Agent',                badge: 'Agents' },
-  dev:            { title: 'Dev Agent',               badge: 'Agents' },
-  qa:             { title: 'QA Agent',                badge: 'Agents' },
-  phase1:         { title: 'Phase 1 — Foundation',    badge: 'Roadmap' },
-  phase2:         { title: 'Phase 2 — Core Ops',      badge: 'Roadmap' },
-  phase3:         { title: 'Phase 3 — Commercial',    badge: 'Roadmap' },
-  phase4:         { title: 'Phase 4 — Advanced Ops',  badge: 'Roadmap' },
-  phase1plan:     { title: 'Phase 1 Plan',            badge: 'Roadmap' },
-  phase1guide:    { title: 'Claude Code Guide',       badge: 'Roadmap' },
-  qaproto:        { title: 'QA Protocols',            badge: 'Roadmap' },
-  howto:          { title: 'How to Run',              badge: 'Setup' },
-  admin:          { title: 'Admin Page',              badge: 'Features' },
-  'page-login':       { title: 'Login Page',          badge: 'UI Page' },
-  'page-admin-dash':  { title: 'Admin Dashboard',     badge: 'UI Page' },
-  'page-admin-users': { title: 'Users & Roles',       badge: 'UI Page' },
-  'page-admin-usage': { title: 'Usage Statistics',    badge: 'UI Page' },
-  'page-clinic-dash': { title: 'Clinic Dashboard',    badge: 'UI Page' },
-  mcp:            { title: 'MCP Servers',             badge: 'Setup' },
-  changelog:      { title: 'Changelog',               badge: 'History' },
-  'design-system':  { title: 'Design System',         badge: 'Design' },
-  'design-tokens':  { title: 'Design Tokens',         badge: 'Design' },
-  'design-screens': { title: 'Screen Specs',          badge: 'Design' },
-  'design-plan':    { title: 'Alignment Plan',        badge: 'Design' },
+  home:                  { title: 'Home',                    badge: 'Overview' },
+  howto:                 { title: 'How to Run',              badge: 'Setup' },
+  changelog:             { title: 'Changelog',               badge: 'History' },
+  mcp:                   { title: 'MCP Servers',             badge: 'Setup' },
+  claude:                { title: 'CLAUDE.md',               badge: 'Architecture' },
+  functional:            { title: 'Functional Requirements', badge: 'Architecture' },
+  schema:                { title: 'Database Schema',         badge: 'Architecture' },
+  pm:                    { title: 'PM Agent',                badge: 'Agents' },
+  uiux:                  { title: 'UIUX Agent',              badge: 'Agents' },
+  db:                    { title: 'DB Agent',                badge: 'Agents' },
+  dev:                   { title: 'Dev Agent',               badge: 'Agents' },
+  qa:                    { title: 'QA Agent',                badge: 'Agents' },
+  'design-system':       { title: 'Design System',           badge: 'Design' },
+  'design-tokens':       { title: 'Design Tokens',           badge: 'Design' },
+  'design-screens':      { title: 'Screen Specs',            badge: 'Design' },
+  'design-plan':         { title: 'Alignment Plan',          badge: 'Design' },
+  'roadmap-upcoming':    { title: 'Upcoming Work',           badge: 'Roadmap' },
+  qaproto:               { title: 'QA Protocols',            badge: 'Roadmap' },
+  'roadmap-history':     { title: 'Completed Phases',        badge: 'Roadmap' },
+  'page-login':          { title: 'Login Page',              badge: 'UI Page' },
+  'page-admin-dash':     { title: 'Admin Dashboard',         badge: 'UI Page' },
+  'page-admin-users':    { title: 'Users & Roles',           badge: 'UI Page' },
+  'page-admin-usage':    { title: 'Usage Statistics',        badge: 'UI Page' },
+  'page-admin-branches': { title: 'Branch Management',       badge: 'UI Page' },
+  'page-admin-bloodbank':{ title: 'Blood Bank Admin',        badge: 'UI Page' },
+  'page-admin-audit':    { title: 'Audit Log',               badge: 'UI Page' },
+  'page-clinic-dash':    { title: 'Clinic Dashboard',        badge: 'UI Page' },
+  'page-clinic-appts':   { title: 'Appointments',            badge: 'UI Page' },
+  'page-clinic-pets':    { title: 'Pets & Owners',           badge: 'UI Page' },
+  'page-clinic-emr':     { title: 'EMR',                     badge: 'UI Page' },
+  'page-clinic-inventory':{ title: 'Inventory',              badge: 'UI Page' },
+  'page-clinic-billing': { title: 'Billing / POS',           badge: 'UI Page' },
+  'page-clinic-inpatient':{ title: 'Inpatient',              badge: 'UI Page' },
+  'page-clinic-grooming':{ title: 'Grooming',                badge: 'UI Page' },
 }
 
 function show(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
-  const page = document.getElementById('page-' + id)
+  const page = document.getElementById('page-' + id) || document.getElementById(id)
   if (page) { page.classList.add('active') }
   document.querySelectorAll('.nav-item').forEach(n => {
     if (n.getAttribute('onclick')?.includes("'" + id + "'")) n.classList.add('active')
@@ -3293,6 +2958,12 @@ function highlightText(el, q) {
     node.parentNode.replaceChild(frag, node)
   })
 }
+
+document.getElementById('search').addEventListener('input', e => {
+  doSearch(e.target.value.trim())
+})
+
+show('home')
 </script>
 </body>
 </html>

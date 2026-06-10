@@ -2,6 +2,118 @@
 
 ---
 
+## 📅 Log Entry: 2026-06-10 — Phase 1.5-B: Settings API (S2.1, S2.2-minimal, S2.3, S4.1, S4.2)
+
+### 🎯 Summary
+HTTP layer for the Settings module. 10 endpoints at `/api/settings` (clinic profile/notifications/payment/integrations/hours — admin only; personal preferences — all roles) plus a minimal System Settings API at `/admin/system-settings` gated by a **new `superadmin` Role enum value** (user-approved decision; seed login `super@anemal.co`). Test endpoints (`/notifications/test`, `/integrations/test`, `/smtp/test`) are fully stateless with a 10s timeout. Added a **masked-echo guard**: a client saving back the masked `••••••••xxxx` value can never overwrite a stored secret. Tests: 206 total (182 + 24 new, TC-S001–S009).
+
+### 📂 Files Changed
+| File | Action |
+|---|---|
+| `src/backend/prisma/schema.prisma` + `migrations/20260610134121_phase1_5b_settings_api/` (incl. `down.sql`) | `superadmin` enum value; `users.language` + `users.defaultCalendarView` |
+| `src/backend/controllers/settings.controller.ts` | **NEW** — per-section `.strict()` zod schemas (body `tenantId` → 400), thin handlers |
+| `src/backend/routes/settings.routes.ts` | **NEW** — mounted at `/api/settings` |
+| `src/backend/controllers/system-settings.controller.ts` + `routes/system-settings.routes.ts` | **NEW** — minimal S2.2, superadmin-only |
+| `src/backend/services/connection-test.service.ts` | **NEW** — stateless LINE / SMS / Lab / SMTP checks, never writes DB |
+| `src/backend/services/user-preferences.service.ts` + `models/user.repository.ts` | **NEW service** — tenant-scoped per-user prefs |
+| `src/backend/services/tenant-settings.service.ts` | Masked-echo guard for secret fields |
+| `src/backend/types/index.ts`, `middlewares/rbac.middleware.ts`, `services/auth.service.ts` | Role unions extended with `superadmin` |
+| `src/backend/prisma/seed.ts` | Superadmin seed user (`super@anemal.co` / `SuperPass1!`) |
+| `src/backend/app.ts` | Mount `/api/settings` + `/admin/system-settings` |
+| `src/backend/tests/integration/settings-api.test.ts` | **NEW** — 24 endpoint tests (TC-S001–S009 + hours/prefs/no-persist) |
+
+### ✅ Verification
+- `npx tsc --noEmit` clean; migration applied to `vetclinic_dev`; reseed OK
+- All 206 tests pass (24 new) — isolation, RBAC, ciphertext-in-DB, masked responses, stateless test endpoints
+- Superadmin ↔ clinic-admin route separation verified both directions (403 each way)
+
+### ➡️ Next Step
+Phase 1.5-D — Settings frontend (S3.1 layout, S3.2 profile, S3.3 hours, S3.4 notifications, S3.5 payment page → **unblocks Session C PromptPay QR**, S3.6 integrations, S3.7 system settings page). All APIs are ready.
+
+---
+
+## 📅 Log Entry: 2026-06-10 — Phase 1.5-A: Settings DB + Encryption (S1.1–S1.4, S2.4)
+
+### 🎯 Summary
+Database foundation for the Settings & Configuration module. **Design decision (user-approved):** extended the existing `tenant_settings` table instead of creating the roadmap's `clinic_settings` (avoids duplicating logo/phone/address/taxId; `tenant.name` stays the source of truth for clinic name). New: `system_settings` (platform-global, 10 seeded rows, Anemal branding), `settings_audit_log` (field-level trail, `tenantId NULL` = system change), and AES-256-GCM encryption for secret fields (`lineOaToken`, `smsApiKey`, `gbprimepaySecret`, `labApiKey`) — stored as `enc:v1:<iv>:<tag>:<ct>`, masked (`••••••••xxxx`) on read. Tests: 182 total (161 + 21 new).
+
+### 📂 Files Changed
+| File | Action |
+|---|---|
+| `src/backend/prisma/schema.prisma` | Extended `TenantSettings` (12 new cols + `updatedBy` FK); new `SystemSettings`, `SettingsAuditLog` models |
+| `src/backend/prisma/migrations/20260610081405_phase1_5a_settings/` | **NEW** — migration + idempotent system_settings seed + `down.sql` (first migration with a down script) |
+| `src/backend/utils/encryption.ts` | **NEW** — `encryptField`/`decryptField`/`maskSecret`/`isEncrypted` (AES-256-GCM, versioned format, legacy-plaintext passthrough) |
+| `src/backend/config/env.ts` | `SETTINGS_ENCRYPTION_KEY` required at startup (`.env` + `.env.example` updated) |
+| `src/backend/models/system-settings.repository.ts` | **NEW** — thin Prisma wrapper (not tenant-scoped; super-admin only at route layer) |
+| `src/backend/models/settings-audit.repository.ts` | **NEW** — `createMany` / `list` |
+| `src/backend/models/tenant-settings.repository.ts` | Added `upsertSettingsWithAudit` (upsert + audit rows in one `$transaction`) |
+| `src/backend/services/tenant-settings.service.ts` | `SECRET_FIELDS` encrypt-on-write / mask-on-read; per-field audit diff; `getDecryptedSettings` for future dispatch code |
+| `src/backend/services/system-settings.service.ts` | **NEW** — same pattern, `tenantId: null` audits |
+| `src/backend/prisma/seed.ts` | Explicit `tenantSettings` upsert per seeded tenant (S2.4) |
+| `src/backend/tests/unit/encryption.test.ts` | **NEW** — roundtrip, unique IV, tamper, masking (TC-S007) |
+| `src/backend/tests/integration/settings.test.ts` | **NEW** — ciphertext-in-DB (TC-S005), masked reads (TC-S006), audit rows, isolation, seeds |
+
+### ✅ Verification
+- `npx tsc --noEmit` clean; migration applied cleanly to `vetclinic_dev`
+- All 182 tests pass (21 new)
+- DB direct read confirms `smsApiKey` stored as `enc:v1:...`, never plaintext
+- `system_settings` row count = 10 after migration
+
+### ➡️ Next Step
+Phase 1.5-B — Backend API (S2.1 clinic settings endpoints, S2.2 system settings endpoints, S2.3 personal preferences). Service layer is ready; controllers/routes + RBAC guards (admin-only PUT, super-admin for system settings) are what remains. After that, S3.5 Payment Page unblocks Session C (PromptPay QR).
+
+---
+
+## 📅 Log Entry: 2026-06-10 — Session B: PDF Receipts + Prescription Slips
+
+### 🎯 Summary
+Added server-side PDF generation for invoices and prescription slips using `pdfkit` with NotoSansThai font embed for Thai character support. Two new streaming endpoints and a "Download PDF" button in ClinicBilling alongside the existing "Print Receipt" button. Tests: 161 total (155 + 6 new PDF tests).
+
+### 📂 Files Changed
+| File | Action |
+|---|---|
+| `src/backend/assets/fonts/NotoSansThai-Regular.ttf` | **NEW** — Thai-compatible font for pdfkit (37KB, from Google Fonts) |
+| `src/backend/services/pdf.service.ts` | **NEW** — `generateInvoicePdf(tenantId, id)` + `generatePrescriptionPdf(tenantId, id)` → Buffer |
+| `src/backend/models/prescription.repository.ts` | Added `findPrescriptionWithDetails()` (drug + medicalRecord + pet + owner) |
+| `src/backend/controllers/invoice.controller.ts` | Added `downloadInvoicePdf` handler |
+| `src/backend/controllers/prescription.controller.ts` | Added `handleDownloadPrescriptionPdf` handler |
+| `src/backend/routes/invoice.routes.ts` | Added `GET /:id/pdf` (before `/:id` to avoid masking) |
+| `src/backend/routes/prescription.routes.ts` | Added `GET /:id/pdf` |
+| `src/frontend/src/views/clinic/ClinicBilling.tsx` | `downloadPdf()` helper + "PDF" button in SuccessModal |
+| `src/backend/tests/integration/pdf.test.ts` | **NEW** — 6 tests: happy path + 404 + tenant isolation for both endpoints |
+
+### ✅ Verification
+- `npx tsc --noEmit` clean
+- All 161 tests pass (6 new PDF tests included)
+- Invoice PDF contains `%PDF` magic bytes, `Content-Type: application/pdf`
+- Tenant B cannot access Tenant A's invoice or prescription PDF (→ 404)
+
+---
+
+## 📅 Log Entry: 2026-06-10 — Session A: Screen Specs 03–05 written
+
+### 🎯 Summary
+Closed the documentation gap for the three Phase-2 screens that shipped without formal specs. Each spec was extracted from the Stitch prototype + the actual shipped component, following the `02-dashboard.md` structure (Layout → header → component anatomy with exact Tailwind classes → Behaviour/API table → deferred items).
+
+### 📂 Files Changed
+| File | Action |
+|---|---|
+| `.claude/skills/anemal-screen-specs/references/03-appointments.md` | **NEW** — calendar grid, status colors, booking panel, detail modal |
+| `.claude/skills/anemal-screen-specs/references/04-pet-owner.md` | **NEW** — master/detail split, species chips, 3 modals, tabs |
+| `.claude/skills/anemal-screen-specs/references/05-emr.md` | **NEW** — 3-column workspace, SOAP tabs, vital steppers, anatomy canvas, prescriptions |
+| `.claude/skills/anemal-screen-specs/SKILL.md` | Index rows 03–05 → Implemented; removed "not specced" warning |
+| `CLAUDE.md` / `session-summary.md` / `.claude/roadmap/remaining-tasks.md` / `docs/*.html` | Removed "Screen specs 03–05" from deferred lists; Session A marked done |
+
+### 🐞 Findings recorded as deferred items (no code changed)
+- `ClinicEMR.tsx` hardcodes `doctorId: 1` on save — should come from the auth store.
+- EMR drug-search input is not wired to any query — `selectedDrug` is unreachable via search until Session D (barcode) wires it.
+
+### ✅ Verification
+- No raw hex colors in the three new specs (grep clean); the documented `PEN_COLORS` canvas exception lives only in component code.
+- All API endpoints in spec Behaviour tables match the actual `api.*` calls in each view.
+
+---
+
 ## 📅 Log Entry: 2026-06-09 — Application rebrand → "Anemal"
 
 ### 🎯 Summary
@@ -462,3 +574,56 @@ Resume the interrupted Phase 4 build. A prior session had scaffolded the full Ph
 ### 📌 Still open (next session)
 Phase 4 **frontend** (Inpatient cage board, Grooming calendar, Branch/Loyalty/Blood Bank pages, admin dashboard snapshot); `/api/reports/branch-revenue`; real SMS/LINE dispatch in the reminder worker.
 
+
+---
+
+## 📅 Log Entry: 2026-06-09 — Project Cleanup & Skill Migration Session
+
+### 🎯 Motivation
+Reduce token consumption in future sessions by migrating spec content to agent skills, cleaning up obsolete files, updating stale HTML docs, and producing a session-divided remaining task plan.
+
+### 📂 Changes
+
+| File | Action | Description |
+|---|---|---|
+| `.claude/skills/anemal-coding-rules/` | **NEW** | SKILL.md + `references/coding-rules.md` — full coding standards for @dev-agent + @qa-agent |
+| `.claude/skills/anemal-design-system/` | **NEW** | SKILL.md + `references/tokens.md` + `references/sidebar-spec.md` — design system for @uiux-agent + @dev-agent |
+| `.claude/skills/anemal-screen-specs/` | **NEW** | SKILL.md + `references/` (6 screen spec files: 00-shared, 01-login, 02-dashboard, 06-inventory, 07-billing, 08-admin) |
+| `.claude/skills/anemal-functional-reqs/` | **NEW** | SKILL.md + `references/functional-reqs.md` — FR matrix for @pm-agent |
+| `.claude/skills/anemal-db-context/` | **NEW** | SKILL.md + `references/database-schema.sql` — DB context for @db-agent |
+| `.claude/specs/CODING_RULES.md` | **DELETED** | Moved into `anemal-coding-rules` skill |
+| `.claude/specs/design-system-tokens.md` | **DELETED** | Moved into `anemal-design-system` skill |
+| `.claude/specs/sidebar-component-spec.md` | **DELETED** | Moved into `anemal-design-system` skill |
+| `.claude/specs/functional-reqs.md` | **DELETED** | Moved into `anemal-functional-reqs` skill |
+| `.claude/specs/screen-specs/` | **DELETED** | Moved into `anemal-screen-specs` skill |
+| `.claude/specs/generate_docx_spec.py` | **DELETED** | One-time script, no longer needed |
+| `.claude/specs/System_Specification.docx` | **DELETED** | Binary duplicate of .md version |
+| `.claude/roadmap/phase1-claude-code-guide.md` | **DELETED** | Phase 1-specific CLI guide, Phase 1 complete |
+| `.claude/roadmap/phase1-implementation-plan.md` | **DELETED** | Phase 1-specific planning doc, Phase 1 complete |
+| `.claude/roadmap/remaining-tasks.md` | **NEW** | Session-divided remaining task plan (7 sessions A–G) |
+| `docs/dashboard.html` | **UPDATED** | Phase 4 complete (155 tests, all rows green, deferred items section) |
+| `docs/functional_spec_detailed.html` | **UPDATED** | Phase 4 Planned → Complete, version 1.2 |
+| `docs/index.html` | **UPDATED** | Added Phase 4 changelog entry |
+| `CLAUDE.md` | **UPDATED** | Tech stack confirmed (Node/Express/Prisma), phases show completion status, deferred items listed |
+| `session-summary.md` | **UPDATED** | Phase 2/4 headers corrected, deferred items section |
+
+### ✅ Skill Architecture Decision
+All 5 skills are **project-level** (`.claude/skills/`), not global — content is Anemal-specific.
+Pattern: 3-tier progressive disclosure — SKILL.md description (triggers) → SKILL.md body (critical rules) → `references/` (full content).
+This avoids loading 800+ lines of coding rules on every invocation.
+
+
+---
+
+## 2026-06-10 — Phase 1.5 Settings Module Added
+
+**Action:** Merged Phase 1.5 Settings & Configuration module into project roadmap as 🔴 CRITICAL top priority.
+
+**Files changed:**
+- `.claude/roadmap/phase1.5-settings-tasks.md` — **NEW** — Full task spec for Phase 1.5 (14 tasks: S1.1–S1.4, S2.1–S2.4, S3.1–S3.7, S4.1–S4.3)
+- `.claude/roadmap/remaining-tasks.md` — Phase 1.5 inserted above Sessions C–G; 4 sub-sessions defined (1.5-A through 1.5-D)
+- `CLAUDE.md` — Development Phases table updated; Phase 1.5 added as In Progress CRITICAL
+
+**Rationale:** Sessions C (PromptPay QR), G (LINE/SMS dispatch), and F (Payment Gateway) all require `clinic_settings` DB infrastructure and AES-256 encryption utility. Phase 1.5 must complete before those sessions can begin.
+
+**Tasks added:** 14 tasks (10 Critical, 4 High) | 10 acceptance test cases (TC-S001–TC-S010)

@@ -1,8 +1,18 @@
 # Session Summary — Anemal
-> Last updated: 2026-06-09 | อ่านไฟล์นี้ก่อนเริ่ม session ใหม่ทุกครั้ง
+> Last updated: 2026-06-10 (Phase 1.5-B Settings API) | อ่านไฟล์นี้ก่อนเริ่ม session ใหม่ทุกครั้ง
 >
-> **Status:** Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ · **Phase 4 ✅ backend (155 tests) + frontend Sessions A & B complete**
+> **Status:** Phase 1–4 ✅ · Phase 1.5-A (DB+Encryption) ✅ · **Phase 1.5-B (Settings API) ✅ — 206 tests** · Next: **Phase 1.5-D Settings UI**
 > Dev DB: Docker `vetclinic-pg` (postgres:16) — **must run with `-p 5432:5432`**. `cd src/backend && npm run db:migrate / db:seed / npm test`.
+
+---
+
+## ✅ Phase 1.5-B — Settings API (2026-06-10, this session)
+
+- **10 endpoints at `/api/settings`**: GET/PUT `/clinic`, PUT `/clinic/notifications|payment|integrations|hours`, POST `/clinic/notifications/test` + `/clinic/integrations/test` (stateless, 10s timeout, mocked-fetch tests), GET/PUT `/personal` (language th|en, calendar view day|week|month — new `users.language`/`users.defaultCalendarView` columns).
+- **Minimal S2.2 pulled forward (user-approved):** new **`superadmin` Role enum value** + `/admin/system-settings` routes (GET /, GET/PUT /:key, POST /smtp/test). Seed login: `super@anemal.co` / `SuperPass1!`. Superadmin ↔ clinic-admin routes are mutually 403.
+- **Masked-echo guard** in `tenant-settings.service.ts`: PUT with `••••••••xxxx` never overwrites a stored secret.
+- Migration `20260610134121_phase1_5b_settings_api` (+ down.sql). Tests: `tests/integration/settings-api.test.ts` — TC-S001–S009 all pass. **206 total (was 182).**
+- **Next:** Phase 1.5-D frontend settings pages (S3.1–S3.6; S3.5 Payment Page unblocks Session C PromptPay QR), then 1.5-C Admin UI (S3.7).
 
 ---
 
@@ -75,7 +85,7 @@
 
 ---
 
-## 🔜 Phase 2 — Core Clinic Operations (ยังไม่เริ่ม)
+## ✅ Phase 2 — Core Clinic Operations (เสร็จแล้ว)
 
 ### สิ่งที่ต้องทำ (ตามลำดับ)
 1. **Fix Phase 1 bugs** (3 รายการข้างบน)
@@ -98,18 +108,21 @@
 
 ---
 
-## 🔜 Phase 4 — Advanced Operations (spec-only, ยังไม่เริ่ม)
+## ✅ Phase 4 — Advanced Operations (เสร็จแล้ว)
 
-- Multi-branch management + inter-branch inventory transfers
-- Doctor shift scheduling
-- Inpatient care (cage board)
-- Grooming scheduler
-- Loyalty/membership system
-- Audit logs (write-once)
-- Login time-window restriction (`allowed_start_time` / `allowed_end_time`)
-- Blood bank: donor registry + transfusion safety guards
+All implemented. See session-summary Phase 4 section above for detail.
 
-> **หมายเหตุ:** Phase 4 tables มีใน `database-schema.sql` แล้ว แต่ยังไม่อยู่ใน Prisma schema (spec-only)
+**Still deferred (post-Phase 4):**
+- Real LINE/SMS dispatch in reminder worker (currently marks `sent` without dispatching)
+- PDF receipts + prescription slips (pdfkit)
+- PromptPay QR real gateway (Omise/Stripe) + webhooks
+- Barcode scanning (ZXing camera)
+- S3 pre-signed URL for pet photo upload
+- SaaS subscription billing tables + trial/expiry cron
+
+**Session A done (2026-06-10):** Screen specs 03–05 written (`.claude/skills/anemal-screen-specs/references/03-appointments.md`, `04-pet-owner.md`, `05-emr.md`) + SKILL.md index updated. Found while speccing: `ClinicEMR.tsx` hardcodes `doctorId: 1`; EMR drug search not wired to a query (fix in Session D).
+
+> **Phase 4 complete.** All tables migrated and in Prisma schema. 155 tests pass.
 
 ---
 

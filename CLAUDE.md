@@ -27,10 +27,10 @@ This project uses a 5-agent collaboration model. Always identify which agent rol
 ## Tech Stack
 
 ### Backend
-- **Runtime:** Node.js (Express) or Python (FastAPI) — TBD per Phase 1 decision
-- **Database:** PostgreSQL
-- **Auth:** JWT — `tenant_id` must be embedded in every token
-- **ORM:** Prisma (Node) or SQLAlchemy (Python)
+- **Runtime:** Node.js + Express
+- **Database:** PostgreSQL 15+
+- **Auth:** JWT (`{ userId, tenantId, branchId, role }`) — token 8h TTL, in-memory only
+- **ORM:** Prisma
 
 ### Frontend
 - **Framework:** React.js (Web + Tablet responsive)
@@ -52,7 +52,7 @@ This is enforced via:
 2. All repository/service functions receive `tenantId` as an explicit parameter — never derived inside the function.
 3. `@db-agent` reviews any DB-touching PR for isolation compliance.
 
-See `.claude/specs/database-schema.sql` for the full schema.
+See `.claude/skills/anemal-db-context/references/database-schema.sql` for the full schema.
 
 ---
 
@@ -75,11 +75,15 @@ design-alignment-plan.md           # Full UI alignment plan (gap analysis + file
 
 .claude/
   agents/          # Agent system prompts (pm, uiux, db, dev, qa)
+  skills/          # Project-level skills (loaded by agents)
+    anemal-coding-rules/     # @dev-agent + @qa-agent — full coding standards
+    anemal-design-system/    # @uiux-agent + @dev-agent — tokens + sidebar spec
+    anemal-screen-specs/     # @uiux-agent + @dev-agent — per-screen layout specs
+    anemal-functional-reqs/  # @pm-agent — FR matrix, NFRs, integrations
+    anemal-db-context/       # @db-agent — schema, multi-tenancy rules, migration rules
   specs/
-    design-system-tokens.md        # Developer token cheat-sheet (to be created)
-    screen-specs/                  # Per-screen component specs (to be created)
-    database-schema.sql
-    functional-reqs.md
+    System_Specification.md  # Stakeholder system spec (read-only reference)
+    database-schema.sql      # Full DDL (authoritative source — also in anemal-db-context)
   roadmap/         # Phase task lists & QA protocols
 
 src/
@@ -150,19 +154,17 @@ npx prisma generate
 
 ## Development Phases
 
-| Phase | Focus | Ref |
-|-------|-------|-----|
-| 1 | Foundation — multi-tenancy, auth, RBAC, base layout + **UI shell (Login, Dashboard, Sidebar redesign)** | `.claude/roadmap/phase1-tasks.md` |
-| 2 | Core clinic ops — Pet/Owner, Appointments, EMR | `.claude/roadmap/phase2-tasks.md` |
-| 3 | Commercial — Inventory, POS/Billing | `.claude/roadmap/phase3-tasks.md` |
-| 4 | Advanced — Hospitalization, Grooming, Blood Bank, Loyalty | `.claude/roadmap/phase4-tasks.md` |
+| Phase | Focus | Status |
+|-------|-------|--------|
+| 1 | Foundation — multi-tenancy, auth, RBAC, base layout | ✅ Complete (74 tests) |
+| 2 | Core clinic ops — Pet/Owner, Appointments, EMR | ✅ Complete (104 tests) |
+| 3 | Commercial — Inventory, POS/Billing | ✅ Complete (131 tests) |
+| 4 | Advanced — Hospitalization, Grooming, Blood Bank, Loyalty, Audit | ✅ Complete (155 tests) |
+| **1.5** | **Settings & Configuration — clinic profile, operating hours, notifications, payment, integrations, encryption** | **🔴 In Progress — CRITICAL · 1.5-A DB + Encryption ✅ · 1.5-B Settings API ✅ (206 tests, incl. `superadmin` role) · next: 1.5-D Settings UI** |
 
 QA protocol (run at end of every task): `.claude/roadmap/qa-protocols.md`
 
-**UI implementation order** (from `design-alignment-plan.md`):
-- Phase 1 UI: Login → Base Layout (Sidebar + TopNav) → Dashboard → Admin reskin
-- Phase 2 UI: Appointments → Pet & Owner → EMR
-- Phase 3 UI: Inventory → Billing/POS
+**Deferred / Upcoming (see `.claude/roadmap/remaining-tasks.md`):** Phase 1.5 Settings module (🔴 CRITICAL — in progress) · PromptPay QR UI · Barcode scanning (ZXing) · S3 photo upload · LINE/SMS real dispatch · Payment gateway (Omise/Stripe) · SaaS subscription billing
 
 ---
 
@@ -236,26 +238,24 @@ All UI work **must** conform to the **Compassionate Care System** defined in:
 - **No emoji in navigation** — use Material Symbols Outlined exclusively
 
 
-## Developer Coding Rules
+## Agent Skills
 
-All implementation work must comply with `.claude/specs/CODING_RULES.md`, which defines:
-- Directory structure & naming conventions
-- Layered architecture pattern (Route → Controller → Service → Repository)
-- TypeScript strict-mode rules
-- Security (JWT, multi-tenant isolation, injection prevention, secrets)
-- Input validation (Zod schemas, shared `src/shared/schemas/`)
-- Error handling (typed `AppError`, structured logging, HTTP status codes)
-- Database rules (tenant scoping, migrations, indexes)
-- Testing requirements (unit, integration, security isolation)
-- Frontend component rules (Tailwind tokens, touch targets, React Query)
-- Design patterns (Repository, Strategy, Observer, Optimistic Lock, Idempotency Key)
-- **GitHub workflow** (branch naming, Conventional Commits, PR rules, code review checklist)
-- **CI/CD & environment** (env var management, secrets rotation, deploy checklist)
+All agents must load the relevant project skill before starting work:
+
+| Skill | Agent | When to use |
+|---|---|---|
+| `anemal-coding-rules` | @dev-agent, @qa-agent | Any implementation, PR review, CI/CD, or security task |
+| `anemal-design-system` | @uiux-agent, @dev-agent | Any frontend/UI/component work |
+| `anemal-screen-specs` | @uiux-agent, @dev-agent | Any screen implementation or review |
+| `anemal-functional-reqs` | @pm-agent | Scope validation, user stories, priority disputes |
+| `anemal-db-context` | @db-agent | Schema design, migrations, query review, isolation checks |
+
+Skills live in `.claude/skills/<skill-name>/`. Each has a `SKILL.md` (instructions) and a `references/` directory (full content).
 
 ---
 
 ## Tracking
 - Update the task everytime the work is completed, if the work are interupted and cannot complete, please save to the file that claude can be read to resume, and after finish the task, this file should be cleared.
 - Tracking all changes in HistoryLog.
-- Every development, plan , test , rule, design. All of changes should be update back to the related markdown files only what is needed to add (try keep it short and effective), all HTML pages that present status, and also CLAUDE.md itself, don't forget the historylog and sessionlog to track.
+- Every development, plan , test , rule, design. All of changes should be update back to the related markdown files only what is needed to add (try keep it short and effective), all HTML pages that present status and the upcoming work page, and also CLAUDE.md itself, don't forget the historylog and sessionlog to track.
 - Providing the guide the step that should be do next in the HTML file to give instruction to user to continue the development work.
