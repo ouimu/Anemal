@@ -284,8 +284,8 @@
 
   <div class="nav-group">
     <div class="nav-group-label">Roadmap</div>
-    <a class="nav-item" onclick="show('roadmap-upcoming')" href="#" style="color:#d97706;font-weight:700">
-      <span class="icon">🟡</span>Phase 1.5-D — Settings UI
+    <a class="nav-item" onclick="show('roadmap-upcoming')" href="#" style="color:#16a34a;font-weight:700">
+      <span class="icon">✅</span>Phase 1.5 — Settings UI (Complete)
     </a>
     <a class="nav-item" onclick="show('roadmap-upcoming')" href="#">
       <span class="icon">🔜</span>Upcoming Work
@@ -320,14 +320,14 @@
   <!-- ── Build Status ── -->
   <div class="callout ok" style="margin-top:16px">
     <span class="callout-icon">🎉</span>
-    <span><strong>All 4 development phases complete + Phase 1.5-A (DB + Encryption) and 1.5-B (Settings API incl. minimal S2.2 + <code>superadmin</code> role) done.</strong> 206 backend tests passing · tsc clean (2026-06-10). <strong style="color:#dc2626">Next: Phase 1.5-D Settings frontend pages</strong> (S3.5 Payment Page unblocks PromptPay QR); 1.5-C is now only the System Settings Admin UI.</span>
+    <span><strong>All 4 phases + Phase 1.5-A (DB + Encryption) and 1.5-B (Settings API, <code>superadmin</code> role) done.</strong> 206 backend tests passing · tsc clean (2026-06-10). <strong style="color:#d97706">Phase 1 planned (3 plans, 2 waves) — Settings Shell + Clinic Profile ready to execute.</strong> Next: <code>/gsd:execute-phase 1</code> — SettingsLayout + ClinicProfilePage. S3.5 Payment unblocks PromptPay QR; S3.4 Notifications unblocks LINE/SMS.</span>
   </div>
 
   <!-- ── Stats ── -->
   <div class="stat-row">
     <div class="stat"><div class="n" style="color:#16a34a">4/4</div><div class="l">Phases Done</div></div>
-    <div class="stat"><div class="n" style="color:#16a34a">161</div><div class="l">Tests Passing</div></div>
-    <div class="stat"><div class="n">25</div><div class="l">DB Tables</div></div>
+    <div class="stat"><div class="n" style="color:#16a34a">206</div><div class="l">Tests Passing</div></div>
+    <div class="stat"><div class="n">28</div><div class="l">DB Tables</div></div>
     <div class="stat"><div class="n">13</div><div class="l">API Modules</div></div>
     <div class="stat"><div class="n">8</div><div class="l">Screen Prototypes</div></div>
     <div class="stat"><div class="n">5</div><div class="l">Agents</div></div>
@@ -342,6 +342,8 @@
       <tr><td><strong>Phase 2</strong></td><td>Pet/Owner, Appointments, EMR, Anatomy Canvas</td><td>104</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
       <tr><td><strong>Phase 3</strong></td><td>Inventory, POS/Billing, Reports, Subscription</td><td>131</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
       <tr><td><strong>Phase 4</strong></td><td>Inpatient, Grooming, Blood Bank, Loyalty, Audit, Branches</td><td>155</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
+      <tr><td><strong>Phase 1.5-A/B</strong></td><td>Settings DB + Encryption + Settings API (<code>superadmin</code> role, TC-S001–S009)</td><td>206</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
+      <tr style="background:#fffbeb"><td><strong>Phase 1.5-C/D</strong></td><td>Settings Frontend Pages + System Settings Admin UI (GSD plan ready)</td><td>—</td><td><span style="color:#d97706;font-weight:700">🟡 In Progress</span></td></tr>
     </tbody>
   </table></div>
 
@@ -375,13 +377,13 @@
     </div>
     <div class="card" onclick="show('roadmap-upcoming')" style="border-color:#d9770644;background:linear-gradient(135deg,#fff 0%,#fffbeb 100%)">
       <div class="card-icon">🟡</div>
-      <div class="card-title">Phase 1.5-D — Settings UI <span style="font-size:11px;background:#fef3c7;color:#d97706;padding:2px 6px;border-radius:4px;font-weight:700">IN PROGRESS</span></div>
-      <div class="card-desc">1.5-A DB ✅ · 1.5-B Settings API ✅ (206 tests, TC-S001–S009) · Now: frontend settings pages — S3.5 Payment Page unblocks PromptPay QR.</div>
+      <div class="card-title">Phase 1.5 Frontend <span style="font-size:11px;background:#fef3c7;color:#d97706;padding:2px 6px;border-radius:4px;font-weight:700">PHASE 1 PLANNED</span></div>
+      <div class="card-desc">1.5-A DB ✅ · 1.5-B API ✅ (206 tests) · 3 plans, 2 waves ready · Run <code>/gsd:execute-phase 1</code> to build SettingsLayout + ClinicProfilePage.</div>
     </div>
     <div class="card" onclick="show('roadmap-upcoming')">
       <div class="card-icon">🔜</div>
       <div class="card-title">Upcoming Work</div>
-      <div class="card-desc">Phase 1.5 Settings (CRITICAL) · C: PromptPay QR · D: Barcode · E: S3 · F: Gateway · G: LINE/SMS</div>
+      <div class="card-desc">Phase 3: Integrations + Admin UI (1.5-D 5/6 done) · C: PromptPay QR · D: Barcode · E: S3 · F: Gateway · G: LINE/SMS</div>
     </div>
     <div class="card" onclick="show('qaproto')">
       <div class="card-icon">✅</div>
@@ -722,6 +724,9 @@ npm run dev            # Start Vite on :5173</code></pre>
       <tr><td>23</td><td><code>audit_logs</code></td><td>✅</td><td>—</td><td>id, tenant_id, user_id, action, table_name, record_id, details, ip_address, created_at</td></tr>
       <tr><td>24</td><td><code>doctor_shifts</code></td><td>✅</td><td>✅</td><td>id, tenant_id, branch_id, doctor_id, day_of_week, start_time, end_time</td></tr>
       <tr><td>25</td><td><code>pet_reminders</code></td><td>✅</td><td>—</td><td>id, tenant_id, pet_id, reminder_type, due_date, status, channel</td></tr>
+      <tr><td>26</td><td><code>tenant_settings</code> <span style="font-size:11px;background:#fef3c7;color:#d97706;padding:1px 5px;border-radius:3px">Phase 1.5-A</span></td><td>✅</td><td>—</td><td>id, tenant_id (unique), operatingHours JSONB, lineOaToken, smsApiKey, promptpayId, gbprimepaySecret, labApiKey (AES-256 encrypted fields), updatedBy FK</td></tr>
+      <tr><td>27</td><td><code>system_settings</code> <span style="font-size:11px;background:#fef3c7;color:#d97706;padding:1px 5px;border-radius:3px">Phase 1.5-A</span></td><td>—</td><td>—</td><td>key PK, value, description, category (platform/smtp/feature_flags), is_secret, updated_by, updated_at</td></tr>
+      <tr><td>28</td><td><code>settings_audit_log</code> <span style="font-size:11px;background:#fef3c7;color:#d97706;padding:1px 5px;border-radius:3px">Phase 1.5-A</span></td><td>partial</td><td>—</td><td>id, tenant_id (nullable — NULL for system changes), changed_by, table_name, field_name, old_value, new_value (secrets masked), changed_at</td></tr>
     </tbody>
   </table></div>
 
@@ -788,7 +793,7 @@ CREATE INDEX idx_pet_reminders_pet          ON pet_reminders(tenant_id, pet_id);
   </ul>
 
   <h2>Current Backlog Owner</h2>
-  <div class="callout warn" style="margin-bottom:8px"><span class="callout-icon">🟡</span><span><strong>Phase 1.5-A + 1.5-B ✅ done · Now on Phase 1.5-D — Settings frontend pages.</strong> Must complete Phase 1.5 before Session C (PromptPay QR), Session G (LINE/SMS), and Session F (Payment Gateway). See <a onclick="show('roadmap-upcoming')" href="#">Upcoming Work →</a></span></div>
+  <div class="callout ok" style="margin-bottom:8px"><span class="callout-icon">✅</span><span><strong>Phase 1.5 fully complete (1.5-A/B/C/D all done) · IntegrationsPage, SystemSettingsPage, TC-S010, hook URL fix done 2026-06-11.</strong> Session C (PromptPay QR) and G (LINE/SMS) unblocked. See <a onclick="show('roadmap-upcoming')" href="#">Upcoming Work →</a></span></div>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Session</th><th>Scope</th><th>Est. Token Cost</th></tr></thead>
     <tbody>
@@ -948,7 +953,7 @@ Dependencies: &lt;task IDs or sessions&gt;</code></pre>
 <div class="page" id="page-qa">
   <h1>🧪 QA Agent — Quality Assurance &amp; Validator</h1>
   <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>.claude/agents/qa-agent/AGENT.md</code> · Invoke: <code>@qa-agent</code> · Skill: <code>anemal-coding-rules</code></span></div>
-  <div class="callout ok"><span class="callout-icon">✅</span><span>155 tests passing across 15 suites. Full suite green after Phase 4 — <code>tests/integration/phase4.test.ts</code>.</span></div>
+  <div class="callout ok"><span class="callout-icon">✅</span><span>206 tests passing across 17 suites. Phase 4 complete + Phase 1.5-A/B Settings API suite (TC-S001–S009, isolation, encryption).</span></div>
 
   <h2>Test Suite Summary</h2>
   <div class="tbl-wrap"><table>
@@ -968,7 +973,9 @@ Dependencies: &lt;task IDs or sessions&gt;</code></pre>
       <tr><td>appointments + EMR</td><td>—</td><td>2</td></tr>
       <tr><td>inventory + billing</td><td>—</td><td>3</td></tr>
       <tr><td>integration/phase4.test.ts</td><td>24+</td><td>4</td></tr>
-      <tr><td><strong>Total</strong></td><td><strong>155</strong></td><td>1–4</td></tr>
+      <tr><td>integration/settings-api.test.ts</td><td>24</td><td>1.5</td></tr>
+      <tr><td>unit/encryption.test.ts</td><td>~6</td><td>1.5</td></tr>
+      <tr><td><strong>Total</strong></td><td><strong>206</strong></td><td>1–1.5</td></tr>
     </tbody>
   </table></div>
 
@@ -1079,7 +1086,7 @@ Type: happy_path | edge_case | security | transaction</code></pre>
   <div style="border-left:4px solid #d97706;background:#fff;border-radius:8px;padding:16px;margin-bottom:20px">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
       <h2 style="margin:0">🟡 Phase 1.5 — Settings Module <span style="font-size:14px;color:#16a34a">(1.5-A + 1.5-B ✅ done)</span></h2>
-      <span style="background:#fef3c7;color:#d97706;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:700">IN PROGRESS — 1.5-D next</span>
+      <span style="background:#f0fdf4;color:#16a34a;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:700">✅ COMPLETE — 1.5-D 6/6 · 1.5-C done · TC-S010 added</span>
     </div>
     <p style="margin:0 0 12px;color:#6b7280;font-size:13px">Must complete before PromptPay QR, LINE/SMS dispatch, and payment gateway sessions. Full spec: <code>.claude/roadmap/phase1.5-settings-tasks.md</code></p>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;font-size:13px">
@@ -1108,27 +1115,27 @@ Type: happy_path | edge_case | security | transaction</code></pre>
         <div style="margin-top:8px;font-size:11px;color:#6b7280">206 tests passing (24 new) · migration <code>20260610134121</code> · next → 1.5-D</div>
       </div>
 
-      <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:12px">
-        <div style="font-weight:700;color:#dc2626;margin-bottom:8px">Sub-session 1.5-C — System Settings Admin UI</div>
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px">
+        <div style="font-weight:700;color:#16a34a;margin-bottom:8px">Sub-session 1.5-C — System Settings Admin UI ✅ DONE 2026-06-11</div>
         <ul style="margin:0;padding-left:18px;color:#374151;line-height:1.7">
           <li>✅ <s>S2.2 — System Settings API</s> done in 1.5-B</li>
-          <li>🔴 S3.7 — System Settings Page (Admin tabs)</li>
-          <li>🟡 S4.3 — TC-S010 timeout test (TC-S008/S009 ✅)</li>
+          <li>✅ S3.7 — SystemSettingsPage (superadmin accordion: Platform / SMTP / Feature Flags)</li>
+          <li>✅ S4.3 — TC-S010 timeout test added to settings-api.test.ts</li>
         </ul>
-        <div style="margin-top:8px;font-size:11px;color:#6b7280">No credentials needed · ~25% token budget</div>
+        <div style="margin-top:8px;font-size:11px;color:#6b7280">2026-06-11 · useSystemSettings hook · /admin/system-settings routes</div>
       </div>
 
-      <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:12px">
-        <div style="font-weight:700;color:#dc2626;margin-bottom:8px">Sub-session 1.5-D — Frontend Settings Pages</div>
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px">
+        <div style="font-weight:700;color:#16a34a;margin-bottom:8px">Sub-session 1.5-D — Frontend Settings Pages ✅ DONE 2026-06-11</div>
         <ul style="margin:0;padding-left:18px;color:#374151;line-height:1.7">
-          <li>🔴 S3.1 — Settings Layout &amp; Navigation</li>
-          <li>🔴 S3.2 — Clinic Profile Page</li>
-          <li>🔴 S3.3 — Operating Hours Page</li>
-          <li>🔴 S3.4 — Notifications Page <span style="color:#dc2626">(Session G blocker)</span></li>
-          <li>🔴 S3.5 — Payment Page <span style="color:#dc2626">(Session C blocker)</span></li>
-          <li>🟡 S3.6 — Integrations Page</li>
+          <li>✅ S3.1 — Settings Layout &amp; Navigation</li>
+          <li>✅ S3.2 — Clinic Profile Page</li>
+          <li>✅ S3.3 — Operating Hours Page</li>
+          <li>✅ S3.4 — Notifications Page <span style="color:#16a34a;font-size:12px">(Session G unblocked)</span></li>
+          <li>✅ S3.5 — Payment Page <span style="color:#16a34a;font-size:12px">(Session C unblocked)</span></li>
+          <li>✅ S3.6 — Integrations Page <span style="color:#16a34a;font-size:12px">(done 2026-06-11)</span></li>
         </ul>
-        <div style="margin-top:8px;font-size:11px;color:#6b7280">No credentials needed · ~55% token budget</div>
+        <div style="margin-top:8px;font-size:11px;color:#6b7280">6/6 complete · URL bug fixed in all hooks · Phase 1.5 fully done</div>
       </div>
 
     </div>
@@ -1189,34 +1196,39 @@ Type: happy_path | edge_case | security | transaction</code></pre>
     <li><del><strong>Session B</strong> — PDF receipts (no credentials, immediate customer value)</del> ✅ Done 2026-06-10</li>
     <li><del><strong>Phase 1.5-A</strong> — Settings DB + Encryption (migration, AES-256-GCM, audit log)</del> ✅ Done 2026-06-10 · 182 tests</li>
     <li><del><strong>Phase 1.5-B</strong> — Settings API (S2.1 · S2.2 minimal · S2.3 · TC-S001–S009)</del> ✅ Done 2026-06-10 · 206 tests</li>
-    <li><strong style="color:#dc2626">Phase 1.5-D</strong> — Frontend Settings Pages (S3.1–S3.6 · unblocks Sessions C &amp; G) ← <em>do now</em></li>
-    <li><strong>Phase 1.5-C</strong> — System Settings Admin UI (S3.7 · TC-S010)</li>
-    <li><strong>Session C</strong> — PromptPay QR UI (blocked until Phase 1.5-D S3.5 done)</li>
+    <li><del><strong>Phase 1.5-D (S3.1–S3.5)</strong> — Settings Layout, Clinic Profile, Operating Hours, Notifications, Payment</del> ✅ Done 2026-06-11 · Sessions C &amp; G unblocked</li>
+    <li><del><strong>Phase 3 (1.5-D S3.6 + 1.5-C)</strong> — IntegrationsPage, SystemSettingsPage, TC-S010, hook URL fix</del> ✅ Done 2026-06-11 · Phase 1.5 fully complete</li>
+    <li><strong style="color:#d97706">Session C</strong> — PromptPay QR UI ✅ unblocked (S3.5 done) ← <em>do now</em></li>
     <li><strong>Session D</strong> — Barcode scanning + EMR drug search wiring</li>
     <li><strong>Session E</strong> — S3 upload (needs AWS keys)</li>
-    <li><strong>Session G</strong> — LINE/SMS (blocked until Phase 1.5-D S3.4 done · needs LINE + Twilio)</li>
+    <li><strong>Session G</strong> — LINE/SMS ✅ unblocked (S3.4 done · needs LINE + Twilio)</li>
     <li><strong>Session F</strong> — Payment gateway (blocked until Phase 1.5 complete · needs Omise)</li>
   </ol>
 
-  <h2>How to Start Phase 1.5-D (next)</h2>
-  <pre><code># Open Claude Code in the project root
-cd D:\Development\AnimalClinic
-claude
+  <h2>How to Start — Session C Next ▶️</h2>
+  <div class="callout ok" style="margin-bottom:12px"><span class="callout-icon">✅</span><span>Phase 1.5 fully complete as of 2026-06-11 (all 1.5-A/B/C/D done). Next: Session C — PromptPay QR UI (no credentials needed).</span></div>
+  <pre><code># Session C: PromptPay QR UI — execute now
+/gsd:execute-phase session-c
 
-# Invoke dev-agent + uiux-agent for Phase 1.5-D (Frontend Settings Pages):
-@dev-agent @uiux-agent Implement Phase 1.5-D — Frontend Settings Pages.
-Tasks:
-  S3.1 — Settings Layout &amp; Navigation (views/settings/SettingsLayout.tsx — collapsible sidebar, role-based sections)
-  S3.2 — Clinic Profile Page (name, logo, address, phone, tax ID, website)
-  S3.3 — Operating Hours Page (per-day toggle ≥44px + time pickers)
-  S3.4 — Notifications Page (LINE OA token masked + Test Send · SMS provider/key) ← Session G blocker
-  S3.5 — Payment Page (PromptPay ID, QR upload/preview) ← Session C blocker
-  S3.6 — Integrations Page (Lab API URL/key + Test Connection)
-Reference: .claude/roadmap/phase1.5-settings-tasks.md for full task list.
+# Or plan it first:
+/gsd:plan-phase session-c
 
-# Backend is ready: GET/PUT /api/settings/clinic[*], POST .../test, GET/PUT /api/settings/personal
-# NOTE: secrets arrive masked (••••••••xxxx) — render as-is; backend ignores masked echoes on save.
-# NOTE: follow Compassionate Care tokens + 44px touch targets (anemal-design-system skill).</code></pre>
+# ── What Phase 3 builds ──
+# IntegrationsPage.tsx — LINE OA token, Twilio SID, external service toggles
+# SystemSettingsPage.tsx (superadmin only) — platform-global config
+# TC-S010 — session timeout integration test
+
+# ── Already done (Phase 1 + 2) ──
+# SettingsLayout.tsx ✅ · ClinicProfilePage.tsx ✅
+# OperatingHoursPage.tsx ✅ · NotificationsPage.tsx ✅ · PaymentPage.tsx ✅
+
+# ── Backend already live ──
+# GET/PUT /api/v1/settings/clinic[/*]  — clinic admin
+# GET/PUT /api/v1/admin/system-settings/:key  — superadmin only
+# GET/PUT /api/v1/settings/personal  — all roles
+# Secrets arrive masked (••••••••xxxx) — backend ignores masked echoes on save</code></pre>
+
+  <div class="callout info" style="margin-top:12px"><span class="callout-icon">📋</span><span>Planning files: <code>.planning/PROJECT.md</code> · <code>.planning/ROADMAP.md</code> · <code>.planning/REQUIREMENTS.md</code> · Full task spec: <code>.claude/roadmap/phase1.5-settings-tasks.md</code></span></div>
 </div>
 
 <!-- ══════════════════ QA PROTOCOLS ══════════════════ -->
@@ -1451,6 +1463,10 @@ JWT_EXPIRES_IN=8h
 REFRESH_TOKEN_EXPIRES_IN=30d
 PORT=4000
 NODE_ENV=development
+
+# Required — AES-256-GCM key for settings secrets (Phase 1.5-A)
+# Generate: openssl rand -hex 32
+SETTINGS_ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000
 
 # Optional — leave blank to skip; app runs without them
 REMINDER_CRON_SCHEDULE=”0 8 * * *”

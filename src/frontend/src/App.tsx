@@ -34,6 +34,8 @@ const ClinicProfilePage  = lazy(() => import('./views/settings/ClinicProfilePage
 const OperatingHoursPage = lazy(() => import('./views/settings/OperatingHoursPage'))
 const NotificationsPage  = lazy(() => import('./views/settings/NotificationsPage'))
 const PaymentPage        = lazy(() => import('./views/settings/PaymentPage'))
+const IntegrationsPage   = lazy(() => import('./views/settings/IntegrationsPage'))
+const SystemSettingsPage = lazy(() => import('./views/settings/SystemSettingsPage'))
 
 const Loader = () => (
   <div className="flex items-center justify-center h-screen">
@@ -82,6 +84,8 @@ export default function App() {
           <Route path="hours"         element={<OperatingHoursPage/>}/>
           <Route path="notifications" element={<NotificationsPage/>}/>
           <Route path="payment"       element={<PaymentPage/>}/>
+          <Route path="integrations"  element={<IntegrationsPage/>}/>
+          <Route path="system"        element={<SystemSettingsPage/>}/>
         </Route>
 
         {/* Legacy + catch-all */}

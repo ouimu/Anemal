@@ -32,6 +32,9 @@ export interface ClinicSettingsData {
   paymentQrUrl?:      string | null
   gbprimepayPublic?:  string | null
   gbprimepaySecret?:  string | null
+  // Phase 3 fields — integrations (labApiKey arrives masked from API)
+  labApiUrl?:  string | null
+  labApiKey?:  string | null
 }
 
 export interface ClinicProfileInput {
@@ -47,7 +50,7 @@ export interface ClinicProfileInput {
 export function useClinicSettings() {
   return useQuery<ClinicSettingsData>({
     queryKey: ['settings', 'clinic'],
-    queryFn: () => api.get('/api/v1/settings/clinic').then(r => r.data.data),
+    queryFn: () => api.get('/api/settings/clinic').then(r => r.data.data),
   })
 }
 
@@ -55,7 +58,7 @@ export function useUpdateClinicProfile() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data: ClinicProfileInput) =>
-      api.put('/api/v1/settings/clinic', data).then(r => r.data),
+      api.put('/api/settings/clinic', data).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['settings', 'clinic'] }),
   })
 }

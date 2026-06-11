@@ -24,7 +24,7 @@ export interface NotificationsTestResult {
 export function useNotificationsSettings() {
   return useQuery<ClinicSettingsData>({
     queryKey: ['settings', 'clinic'],
-    queryFn: () => api.get('/api/v1/settings/clinic').then(r => r.data.data),
+    queryFn: () => api.get('/api/settings/clinic').then(r => r.data.data),
   })
 }
 
@@ -32,7 +32,7 @@ export function useUpdateNotifications() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data: NotificationsInput) =>
-      api.put('/api/v1/settings/clinic/notifications', data).then(r => r.data),
+      api.put('/api/settings/clinic/notifications', data).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['settings', 'clinic'] }),
   })
 }
@@ -40,6 +40,6 @@ export function useUpdateNotifications() {
 export function useTestNotifications() {
   return useMutation({
     mutationFn: (data: NotificationsTestInput) =>
-      api.post('/api/v1/settings/clinic/notifications/test', data).then(r => r.data.data as NotificationsTestResult),
+      api.post('/api/settings/clinic/notifications/test', data).then(r => r.data.data as NotificationsTestResult),
   })
 }

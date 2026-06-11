@@ -12,7 +12,7 @@ export interface PaymentInput {
 export function usePaymentSettings() {
   return useQuery<ClinicSettingsData>({
     queryKey: ['settings', 'clinic'],
-    queryFn: () => api.get('/api/v1/settings/clinic').then(r => r.data.data),
+    queryFn: () => api.get('/api/settings/clinic').then(r => r.data.data),
   })
 }
 
@@ -20,7 +20,7 @@ export function useUpdatePayment() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data: PaymentInput) =>
-      api.put('/api/v1/settings/clinic/payment', data).then(r => r.data),
+      api.put('/api/settings/clinic/payment', data).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['settings', 'clinic'] }),
   })
 }

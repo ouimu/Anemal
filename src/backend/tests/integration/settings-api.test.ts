@@ -274,6 +274,27 @@ describe('stateless connection tests (S2.1) — fetch mocked', () => {
     expect(res.body.data.detail).toContain('401')
   })
 
+  it('POST /clinic/notifications/test for sms channel → 200 + result', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 200 } as Response)
+    const res = await request(server)
+      .post('/api/settings/clinic/notifications/test')
+      .set('Authorization', `Bearer ${adminA}`)
+      .send({ channel: 'sms', smsProvider: 'thaibulksms', smsApiKey: 'test-key' })
+    expect(res.status).toBe(200)
+    expect(typeof res.body.data.success).toBe('boolean')
+  })
+
+  it('sms test with no API key stored → 200 + failure detail (no SMS key)', async () => {
+    // adminB has no SMS key stored; provide smsProvider but no key → falls back to stored (empty)
+    const res = await request(server)
+      .post('/api/settings/clinic/notifications/test')
+      .set('Authorization', `Bearer ${adminB}`)
+      .send({ channel: 'sms', smsProvider: 'thaibulksms' })
+    expect(res.status).toBe(200)
+    expect(res.body.data.success).toBe(false)
+    expect(res.body.data.detail).toMatch(/api key/i)
+  })
+
   it('test endpoints never persist data', async () => {
     global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 200 } as Response)
     const before = await prisma.tenantSettings.findUnique({ where: { tenantId: tidA } })
@@ -283,5 +304,28 @@ describe('stateless connection tests (S2.1) — fetch mocked', () => {
       .send({ labApiUrl: 'https://lab.example.com/api', labApiKey: 'lab-key-1' })
     const after = await prisma.tenantSettings.findUnique({ where: { tenantId: tidA } })
     expect(after).toEqual(before)
+  })
+})
+
+describe('TC-S010 — integrations test-connection timeout', () => {
+  it('returns { success: false } within 10 s when target URL never responds', async () => {
+    jest.useFakeTimers()
+    const originalFetch = global.fetch
+    global.fetch = jest.fn(() => new Promise(() => {})) as unknown as typeof fetch
+
+    const responsePromise = request(server)
+      .post('/api/settings/clinic/integrations/test')
+      .set('Authorization', `Bearer ${adminA}`)
+      .send({ labApiUrl: 'https://lab.example.com/api', labApiKey: 'lab-key-1' })
+
+    await jest.advanceTimersByTimeAsync(10_001)
+    const response = await responsePromise
+
+    expect(response.status).toBe(200)
+    expect(response.body.data.success).toBe(false)
+    expect(response.body.data.detail).toMatch(/timed out/i)
+
+    global.fetch = originalFetch
+    jest.useRealTimers()
   })
 })
