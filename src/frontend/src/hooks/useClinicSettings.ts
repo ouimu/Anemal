@@ -20,6 +20,18 @@ export interface ClinicSettingsData {
   smsRemindersEnabled?: boolean
   lineRemindersEnabled?: boolean
   planTier?:            string
+  // Phase 2 fields — operating hours
+  operatingHours?: Record<'mon'|'tue'|'wed'|'thu'|'fri'|'sat'|'sun', { open: string; close: string } | null>
+  // Phase 2 fields — notifications (secret fields arrive masked from API)
+  lineOaToken?:    string | null
+  smsProvider?:    'thaibulksms' | 'thsms' | '' | null
+  smsApiKey?:      string | null
+  smsSenderName?:  string | null
+  // Phase 2 fields — payment (gbprimepaySecret arrives masked from API)
+  promptpayId?:       string | null
+  paymentQrUrl?:      string | null
+  gbprimepayPublic?:  string | null
+  gbprimepaySecret?:  string | null
 }
 
 export interface ClinicProfileInput {
