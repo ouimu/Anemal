@@ -36,13 +36,28 @@ export default function PaymentPage() {
   function handleQrChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setErrors(p => ({ ...p, paymentQrUrl: 'Only image files are accepted' }))
+      return
+    }
     if (file.size > 500_000) {
       setErrors(p => ({ ...p, paymentQrUrl: 'QR image must be under 500KB' }))
       return
     }
+    setErrors(p => ({ ...p, paymentQrUrl: '' }))
     const reader = new FileReader()
-    reader.onload = ev => setForm(p => ({ ...p, paymentQrUrl: ev.target?.result as string }))
+    reader.onload = ev => {
+      if (ev.target?.result) {
+        setForm(p => ({ ...p, paymentQrUrl: ev.target!.result as string }))
+      }
+    }
     reader.readAsDataURL(file)
+  }
+
+  const MASK_PREFIX = '••••'
+  function stripMask(v: string): string | undefined {
+    if (!v || v.startsWith(MASK_PREFIX)) return undefined
+    return v
   }
 
   function handleQrDrop(e: React.DragEvent) {
@@ -72,10 +87,10 @@ export default function PaymentPage() {
     if (!validate()) return
     try {
       await update.mutateAsync({
-        promptpayId:      form.promptpayId      || undefined,
-        paymentQrUrl:     form.paymentQrUrl     || undefined,
-        gbprimepayPublic: form.gbprimepayPublic || undefined,
-        gbprimepaySecret: form.gbprimepaySecret || undefined,
+        promptpayId:      form.promptpayId  || undefined,
+        paymentQrUrl:     form.paymentQrUrl || undefined,
+        gbprimepayPublic: stripMask(form.gbprimepayPublic),
+        gbprimepaySecret: stripMask(form.gbprimepaySecret),
       })
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
@@ -150,6 +165,10 @@ export default function PaymentPage() {
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleQrDrop}
             onClick={() => qrRef.current?.click()}
+            role="button"
+            tabIndex={0}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') qrRef.current?.click() }}
+            aria-label="Upload PromptPay QR image"
             className={`flex-1 min-h-[44px] border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-colors px-md py-sm gap-xs
               ${isDragging ? 'border-primary bg-surface-container-low' : 'border-outline-variant hover:border-primary'}`}
           >
