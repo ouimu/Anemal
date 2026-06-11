@@ -19,7 +19,7 @@ last_updated: "2026-06-10T14:26:14.711Z"
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| 1 — Settings Shell + Clinic Profile | 🟡 In Progress (2/3 plans done) | 01A ✅ 01B ✅ complete; 01C pending (Wave 2) |
+| 1 — Settings Shell + Clinic Profile | 🟡 In Progress (3/3 plans done — awaiting human checkpoint) | 01A ✅ 01B ✅ 01C ✅ complete; checkpoint:human-verify pending |
 | 2 — Operational Settings Pages | ⬜ Not started | Blocked by Phase 1 |
 | 3 — Integrations, System Admin + QA | ⬜ Not started | Blocked by Phase 2 |
 
@@ -34,6 +34,7 @@ last_updated: "2026-06-10T14:26:14.711Z"
 | 2026-06-11 | SettingsLayout has no hard redirect; role filter on ALL_NAV array only | All roles can access /settings; backend RBAC is the authoritative gate |
 | 2026-06-11 | Logo field read-only in 01B; upload deferred to 01C | T-01B-01 mitigation: 500KB guard + data-URL preview belongs in logo upload plan |
 | 2026-06-11 | No onError in useMutation — TanStack Query v5 removed it | Errors surfaced via update.error in component; catch block silences unhandled rejection |
+| 2026-06-11 | Drop zone uses flex-1 min-h-[44px] not fixed w-20 h-20 | Allows drop zone to expand to available width while still meeting UX-02 44px touch target |
 
 ## Blockers
 
@@ -41,7 +42,7 @@ None.
 
 ## Next Action
 
-Execute Phase 1 Wave 2 remaining: run plan 01C (logo upload + touch target audit + 768px responsive polish).
+Human verify Phase 1 success criteria 1–4 (see 01C-PLAN.md checkpoint task). Type "approved" if all pass.
 
 ---
 *State initialized: 2026-06-10*
