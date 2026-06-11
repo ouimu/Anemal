@@ -30,7 +30,10 @@ const AdminBloodBank = lazy(() => import('./views/admin/AdminBloodBank'))
 const AdminAudit     = lazy(() => import('./views/admin/AdminAudit'))
 
 // ── Settings pages ───────────────────────────────────────────────────────────
-const ClinicProfilePage = lazy(() => import('./views/settings/ClinicProfilePage'))
+const ClinicProfilePage  = lazy(() => import('./views/settings/ClinicProfilePage'))
+const OperatingHoursPage = lazy(() => import('./views/settings/OperatingHoursPage'))
+const NotificationsPage  = lazy(() => import('./views/settings/NotificationsPage'))
+const PaymentPage        = lazy(() => import('./views/settings/PaymentPage'))
 
 const Loader = () => (
   <div className="flex items-center justify-center h-screen">
@@ -76,6 +79,9 @@ export default function App() {
         <Route path="/settings" element={<ProtectedRoute><SettingsLayout/></ProtectedRoute>}>
           <Route index element={<Navigate to="/settings/clinic-profile" replace/>}/>
           <Route path="clinic-profile" element={<ClinicProfilePage/>}/>
+          <Route path="hours"         element={<OperatingHoursPage/>}/>
+          <Route path="notifications" element={<NotificationsPage/>}/>
+          <Route path="payment"       element={<PaymentPage/>}/>
         </Route>
 
         {/* Legacy + catch-all */}
