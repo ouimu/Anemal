@@ -49,10 +49,19 @@ Plans:
 2. Clinic admin enters a LINE OA token, saves, revisits the page — token displays as `••••••••xxxx`; clicking 👁 reveals it; saving without changing it does NOT clear the stored value
 3. Clinic admin enters PromptPay ID and uploads a static QR image — QR preview renders below the upload area; saving persists both values
 
+Plans:
+- [x] 02A-PLAN.md — Hooks (useOperatingHoursSettings, useNotificationsSettings, usePaymentSettings) + App.tsx routes (Wave 1) ✅
+- [x] 02B-PLAN.md — OperatingHoursPage + NotificationsPage (Wave 2) ✅
+- [x] 02C-PLAN.md — PaymentPage (Wave 2, parallel with 02B) ✅
+
 **Files:**
+- `src/frontend/src/hooks/useOperatingHoursSettings.ts` (new)
+- `src/frontend/src/hooks/useNotificationsSettings.ts` (new)
+- `src/frontend/src/hooks/usePaymentSettings.ts` (new)
 - `src/frontend/src/views/settings/OperatingHoursPage.tsx` (new)
 - `src/frontend/src/views/settings/NotificationsPage.tsx` (new)
 - `src/frontend/src/views/settings/PaymentPage.tsx` (new)
+- `src/frontend/src/App.tsx` (updated — 3 lazy imports + 3 routes)
 
 ---
 
