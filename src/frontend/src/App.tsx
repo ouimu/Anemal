@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import LoginView from './views/LoginView'
 import AdminLayout from './layouts/AdminLayout'
 import ClinicLayout from './layouts/ClinicLayout'
+import SettingsLayout from './layouts/SettingsLayout'
 
 // ── Admin pages ──────────────────────────────────────────────────────────────
 const AdminDashboard    = lazy(() => import('./views/admin/AdminDashboard'))
@@ -27,6 +28,9 @@ const ClinicGrooming     = lazy(() => import('./views/clinic/ClinicGrooming'))
 const AdminBranches  = lazy(() => import('./views/admin/AdminBranches'))
 const AdminBloodBank = lazy(() => import('./views/admin/AdminBloodBank'))
 const AdminAudit     = lazy(() => import('./views/admin/AdminAudit'))
+
+// ── Settings pages ───────────────────────────────────────────────────────────
+const ClinicProfilePage = lazy(() => import('./views/settings/ClinicProfilePage'))
 
 const Loader = () => (
   <div className="flex items-center justify-center h-screen">
@@ -66,6 +70,12 @@ export default function App() {
           <Route path="billing"      element={<ClinicBilling/>}/>
           <Route path="inpatient"    element={<ClinicInpatient/>}/>
           <Route path="grooming"     element={<ClinicGrooming/>}/>
+        </Route>
+
+        {/* ── Settings section (/settings/*) ── auth-only, role filtered in layout */}
+        <Route path="/settings" element={<ProtectedRoute><SettingsLayout/></ProtectedRoute>}>
+          <Route index element={<Navigate to="/settings/clinic-profile" replace/>}/>
+          <Route path="clinic-profile" element={<ClinicProfilePage/>}/>
         </Route>
 
         {/* Legacy + catch-all */}
