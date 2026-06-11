@@ -25,7 +25,7 @@
 
 Plans:
 - [x] 01A-PLAN.md — Settings shell: SettingsLayout + /settings route registration (Wave 1) ✅
-- [ ] 01B-PLAN.md — Clinic Profile form: useClinicSettings hook + ClinicProfilePage wired to GET/PUT API (Wave 2)
+- [x] 01B-PLAN.md — Clinic Profile form: useClinicSettings hook + ClinicProfilePage wired to GET/PUT API (Wave 2) ✅
 - [ ] 01C-PLAN.md — Logo upload + touch target audit + 768px responsive polish (Wave 2, parallel with 01B)
 
 **Files:**
