@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import MaterialIcon from '../../components/MaterialIcon'
 import { useAuthStore } from '../../store/authStore'
 import { useClinicSettings, useUpdateClinicProfile } from '../../hooks/useClinicSettings'
@@ -23,6 +23,8 @@ export default function ClinicProfilePage() {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [saved, setSaved] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!data) return
@@ -36,6 +38,32 @@ export default function ClinicProfilePage() {
       logoUrl: data.logoUrl  ?? '',
     })
   }, [data])
+
+  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 500_000) {
+      setErrors(p => ({ ...p, logoUrl: 'Logo must be under 500KB' }))
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = ev => setForm(p => ({ ...p, logoUrl: ev.target?.result as string }))
+    reader.readAsDataURL(file)
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files?.[0]
+    if (!file || !file.type.startsWith('image/')) return
+    if (file.size > 500_000) {
+      setErrors(p => ({ ...p, logoUrl: 'Logo must be under 500KB' }))
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = ev => setForm(p => ({ ...p, logoUrl: ev.target?.result as string }))
+    reader.readAsDataURL(file)
+  }
 
   function validate(): boolean {
     const e: Record<string, string> = {}
@@ -178,14 +206,42 @@ export default function ClinicProfilePage() {
           {errors.website && <p className="text-label-md text-error">{errors.website}</p>}
         </div>
 
-        {/* Logo URL — read-only until Plan 01C implements upload */}
+        {/* ── Logo ────────────────────────────────────────────────────── */}
         <div className="flex flex-col gap-xs">
-          <label className="text-body-sm font-medium text-on-surface-variant">
-            Logo URL
-          </label>
-          <p className="text-body-md text-on-surface-variant px-md py-sm border border-outline-variant rounded-xl bg-surface-container-low min-h-[44px] flex items-center">
-            {form.logoUrl || <span className="text-on-surface-variant opacity-50">Logo upload available in next update</span>}
-          </p>
+          <label className="text-body-sm font-medium text-on-surface-variant">Clinic Logo</label>
+          <div className="flex items-center gap-md">
+            {/* Preview */}
+            <div className="w-20 h-20 rounded-xl border border-outline-variant overflow-hidden bg-surface-container-low flex items-center justify-center flex-shrink-0">
+              {form.logoUrl ? (
+                <img src={form.logoUrl} alt="Clinic logo preview" className="w-full h-full object-cover" />
+              ) : (
+                <MaterialIcon name="add_photo_alternate" size={32} className="text-on-surface-variant" />
+              )}
+            </div>
+            {/* Drop zone */}
+            <div
+              onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleDrop}
+              onClick={() => fileRef.current?.click()}
+              className={`flex-1 min-h-[44px] border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-colors px-md py-sm gap-xs
+                ${isDragging ? 'border-primary bg-surface-container-low' : 'border-outline-variant hover:border-primary'}`}
+            >
+              <MaterialIcon name="upload" size={20} className="text-on-surface-variant" />
+              <span className="text-body-sm text-on-surface-variant text-center">
+                Drag &amp; drop or click to upload
+              </span>
+              <span className="text-label-md text-on-surface-variant">PNG, JPG — max 500KB</span>
+            </div>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleLogoChange}
+            />
+          </div>
+          {errors.logoUrl && <p className="text-label-md text-error">{errors.logoUrl}</p>}
         </div>
 
         {/* Sticky save button row */}
