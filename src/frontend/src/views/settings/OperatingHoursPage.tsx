@@ -36,6 +36,7 @@ export default function OperatingHoursPage() {
     () => Object.fromEntries(DAY_KEYS.map(k => [k, { ...DEFAULT_DAY }])) as Record<DayKey, DayState>
   )
   const [saved, setSaved] = useState(false)
+  const [timeError, setTimeError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!data?.operatingHours) return
@@ -54,6 +55,13 @@ export default function OperatingHoursPage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
+    setTimeError(null)
+    for (const k of DAY_KEYS) {
+      if (hours[k].enabled && hours[k].close <= hours[k].open) {
+        setTimeError(`${DAY_LABELS[k]}: closing time must be after opening time`)
+        return
+      }
+    }
     const operatingHours = Object.fromEntries(
       DAY_KEYS.map(k => [
         k,
@@ -100,6 +108,13 @@ export default function OperatingHoursPage() {
         </div>
       )}
 
+      {/* Time validation error */}
+      {timeError && (
+        <div className="mb-md px-md py-sm bg-error/10 border border-error/30 rounded-xl text-body-md text-error">
+          {timeError}
+        </div>
+      )}
+
       {/* Day rows */}
       <div className="bg-surface rounded-2xl border border-outline-variant p-lg flex flex-col">
         {DAY_KEYS.map(k => (
@@ -128,6 +143,7 @@ export default function OperatingHoursPage() {
                   type="time"
                   value={hours[k].open}
                   onChange={e => setHours(p => ({ ...p, [k]: { ...p[k], open: e.target.value } }))}
+                  aria-label={`${DAY_LABELS[k]} opening time`}
                   className="min-h-[44px] px-md border border-outline-variant rounded-xl text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary"
                 />
                 <span className="text-body-md text-on-surface-variant">to</span>
@@ -135,6 +151,7 @@ export default function OperatingHoursPage() {
                   type="time"
                   value={hours[k].close}
                   onChange={e => setHours(p => ({ ...p, [k]: { ...p[k], close: e.target.value } }))}
+                  aria-label={`${DAY_LABELS[k]} closing time`}
                   className="min-h-[44px] px-md border border-outline-variant rounded-xl text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary"
                 />
               </div>
