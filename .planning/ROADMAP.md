@@ -14,6 +14,7 @@
 
 **Goal:** Build the settings navigation shell and wire the Clinic Profile page to the live API. Establish the layout pattern all subsequent pages will follow.
 **Mode:** mvp
+**Plans:** 3 plans
 
 **Requirements:** LAYOUT-01, LAYOUT-02, LAYOUT-03, LAYOUT-04, CLINIC-01, CLINIC-02, CLINIC-03, UX-01, UX-02, UX-03
 
@@ -22,8 +23,13 @@
 2. Clinic admin updates Clinic Name and Phone, saves, refreshes — values persist (confirmed via `GET /api/v1/settings/clinic`)
 3. All interactive elements on the Clinic Profile page have ≥44px touch targets and the page renders at 768px without horizontal scroll
 
+Plans:
+- [ ] 01A-PLAN.md — Settings shell: SettingsLayout + /settings route registration (Wave 1)
+- [ ] 01B-PLAN.md — Clinic Profile form: useClinicSettings hook + ClinicProfilePage wired to GET/PUT API (Wave 2)
+- [ ] 01C-PLAN.md — Logo upload + touch target audit + 768px responsive polish (Wave 2, parallel with 01B)
+
 **Files:**
-- `src/frontend/src/views/settings/SettingsLayout.tsx` (new)
+- `src/frontend/src/layouts/SettingsLayout.tsx` (new)
 - `src/frontend/src/views/settings/ClinicProfilePage.tsx` (new)
 - `src/frontend/src/views/settings/index.ts` (barrel)
 - `src/frontend/src/hooks/useClinicSettings.ts` (React Query hook)
