@@ -5,6 +5,7 @@ import {
   useNotificationsSettings,
   useUpdateNotifications,
   useTestNotifications,
+  type NotificationsInput,
 } from '../../hooks/useNotificationsSettings'
 
 interface NotificationsForm {
@@ -61,7 +62,8 @@ export default function NotificationsPage() {
       const res = await testNotifications.mutateAsync({ channel })
       setTestResult({ channel, status: res.status, message: res.message })
     } catch (e) {
-      setTestResult({ channel, status: 'error', message: (e as Error).message })
+      const msg = e instanceof Error ? e.message : String(e)
+      setTestResult({ channel, status: 'error', message: msg })
     } finally {
       setTestLoading(null)
     }
@@ -69,8 +71,17 @@ export default function NotificationsPage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
+    const MASK_PREFIX = '••••'
+    const payload: NotificationsInput = {
+      lineRemindersEnabled: form.lineRemindersEnabled,
+      smsProvider:          form.smsProvider,
+      smsSenderName:        form.smsSenderName,
+      smsRemindersEnabled:  form.smsRemindersEnabled,
+    }
+    if (!form.lineOaToken.startsWith(MASK_PREFIX)) payload.lineOaToken = form.lineOaToken
+    if (!form.smsApiKey.startsWith(MASK_PREFIX))   payload.smsApiKey   = form.smsApiKey
     try {
-      await update.mutateAsync(form)
+      await update.mutateAsync(payload)
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } catch {
