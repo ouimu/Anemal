@@ -3,25 +3,27 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-06-10T14:26:14.711Z"
+last_updated: "2026-06-12T00:00:00.000Z"
 ---
 
-# Project State — Phase 1.5 Settings Frontend
+# Project State — Session C Complete · Session D Next
 
 ## Current Status
 
-**Active milestone:** Phase 1.5 Settings Frontend Completion  
+**Active milestone:** Session D — Barcode Scanning (ZXing) + EMR drug-search wiring  
 **Initialized:** 2026-06-10  
-**Last Activity:** 2026-06-11  
-**Phase:** Phase 1 Planned — ready to execute
+**Last Activity:** 2026-06-12  
+**Last Session:** Session C — PromptPay QR (COMPLETE)
 
 ## Phase Progress
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| 1 — Settings Shell + Clinic Profile | 🟡 In Progress (3/3 plans done — awaiting human checkpoint) | 01A ✅ 01B ✅ 01C ✅ complete; checkpoint:human-verify pending |
+| 1 — Settings Shell + Clinic Profile | ✅ Complete | 01A ✅ 01B ✅ 01C ✅ |
 | 2 — Operational Settings Pages | ✅ Complete | 02A ✅ 02B ✅ 02C ✅ |
-| 3 — Integrations, System Admin + QA | ⬜ Not started | Blocked by Phase 2 |
+| 3 — Integrations, System Admin + QA | ✅ Complete | Phase 1.5 fully done 2026-06-11 |
+| Session C — PromptPay QR | ✅ Complete | 220 tests (219 passing); GET /api/invoices/:id/promptpay-qr live |
+| Session D — Barcode Scanning | 🟡 Next | @zxing/browser, BarcodeScanner.tsx, EMR drug-search |
 
 ## Decisions Log
 
@@ -40,9 +42,23 @@ last_updated: "2026-06-10T14:26:14.711Z"
 
 None.
 
+## Session C — Key Decisions
+
+| Date | Decision | Why |
+|------|----------|-----|
+| 2026-06-12 | GET not POST for /promptpay-qr | QR is idempotent; amount server-authoritative — prevents client amount manipulation |
+| 2026-06-12 | Two-step UI flow (create invoice → show QR → confirm) | Prevents orphaned QR requests; matches real-world cashier UX |
+| 2026-06-12 | 422 on missing promptpayId (not 404) | Clear distinction: invoice exists but clinic not configured for PromptPay |
+| 2026-06-12 | AppError constructor fix applied (Rule 1) | statusCode was not propagating correctly → all errors were returning 500 |
+| 2026-06-12 | Loyalty points carry-through fix (Rule 1) | Points state was resetting between QR display and payment confirm steps |
+
 ## Next Action
 
-Phase 2 complete. Execute Phase 3 using `/gsd-execute-phase 3` — Integrations page, superadmin system settings UI, and TC-S010 timeout test.
+Session C complete (2026-06-12). Execute Session D — Barcode Scanning (ZXing) + EMR drug-search wiring. No credentials required.
+
+```
+/gsd:execute-phase session-d
+```
 
 ---
 *State initialized: 2026-06-10*

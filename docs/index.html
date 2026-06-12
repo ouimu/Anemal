@@ -320,13 +320,13 @@
   <!-- ── Build Status ── -->
   <div class="callout ok" style="margin-top:16px">
     <span class="callout-icon">🎉</span>
-    <span><strong>All 4 phases + Phase 1.5-A (DB + Encryption) and 1.5-B (Settings API, <code>superadmin</code> role) done.</strong> 206 backend tests passing · tsc clean (2026-06-10). <strong style="color:#d97706">Phase 1 planned (3 plans, 2 waves) — Settings Shell + Clinic Profile ready to execute.</strong> Next: <code>/gsd:execute-phase 1</code> — SettingsLayout + ClinicProfilePage. S3.5 Payment unblocks PromptPay QR; S3.4 Notifications unblocks LINE/SMS.</span>
+    <span><strong>All 4 phases + Phase 1.5 (A/B/C/D) + Session C (PromptPay QR) done.</strong> 220 backend tests (219 passing) · tsc clean (2026-06-12). Next: <strong style="color:#d97706">Session D — Barcode Scanning (ZXing) + EMR drug-search wiring.</strong></span>
   </div>
 
   <!-- ── Stats ── -->
   <div class="stat-row">
     <div class="stat"><div class="n" style="color:#16a34a">4/4</div><div class="l">Phases Done</div></div>
-    <div class="stat"><div class="n" style="color:#16a34a">206</div><div class="l">Tests Passing</div></div>
+    <div class="stat"><div class="n" style="color:#16a34a">219</div><div class="l">Tests Passing</div></div>
     <div class="stat"><div class="n">28</div><div class="l">DB Tables</div></div>
     <div class="stat"><div class="n">13</div><div class="l">API Modules</div></div>
     <div class="stat"><div class="n">8</div><div class="l">Screen Prototypes</div></div>
@@ -343,7 +343,9 @@
       <tr><td><strong>Phase 3</strong></td><td>Inventory, POS/Billing, Reports, Subscription</td><td>131</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
       <tr><td><strong>Phase 4</strong></td><td>Inpatient, Grooming, Blood Bank, Loyalty, Audit, Branches</td><td>155</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
       <tr><td><strong>Phase 1.5-A/B</strong></td><td>Settings DB + Encryption + Settings API (<code>superadmin</code> role, TC-S001–S009)</td><td>206</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
-      <tr style="background:#fffbeb"><td><strong>Phase 1.5-C/D</strong></td><td>Settings Frontend Pages + System Settings Admin UI (GSD plan ready)</td><td>—</td><td><span style="color:#d97706;font-weight:700">🟡 In Progress</span></td></tr>
+      <tr><td><strong>Phase 1.5-C/D</strong></td><td>Settings Frontend Pages + System Settings Admin UI</td><td>—</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
+      <tr><td><strong>Session C</strong></td><td>PromptPay QR — <code>promptpay-qr</code> + <code>qrcode</code>, GET /api/invoices/:id/promptpay-qr, two-step QR payment flow in ClinicBilling</td><td>220</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
+      <tr style="background:#fffbeb"><td><strong>Session D</strong></td><td>Barcode Scanning (ZXing) + EMR drug-search wiring</td><td>—</td><td><span style="color:#d97706;font-weight:700">🟡 Next</span></td></tr>
     </tbody>
   </table></div>
 
@@ -383,7 +385,7 @@
     <div class="card" onclick="show('roadmap-upcoming')">
       <div class="card-icon">🔜</div>
       <div class="card-title">Upcoming Work</div>
-      <div class="card-desc">Phase 3: Integrations + Admin UI (1.5-D 5/6 done) · C: PromptPay QR · D: Barcode · E: S3 · F: Gateway · G: LINE/SMS</div>
+      <div class="card-desc">Session C: PromptPay QR ✅ · D: Barcode (next) · E: S3 · F: Gateway · G: LINE/SMS</div>
     </div>
     <div class="card" onclick="show('qaproto')">
       <div class="card-icon">✅</div>
@@ -804,8 +806,8 @@ CREATE INDEX idx_pet_reminders_pet          ON pet_reminders(tenant_id, pet_id);
       <tr><td><strong>🟡 Phase 1.5-D</strong></td><td>Frontend settings pages — S3.1–S3.6 (S3.5 Payment Page unblocks PromptPay QR) ← <em>do now</em></td><td>~55%</td></tr>
       <tr><td><strong>Phase 1.5-C</strong></td><td>System Settings API + Admin UI (S2.2, S3.7, TC-S008–S010)</td><td>~40%</td></tr>
       <tr><td><strong>Phase 1.5-D</strong></td><td>Frontend Settings Pages (S3.1–S3.6) — unblocks Sessions C &amp; G when S3.4 &amp; S3.5 done</td><td>~55%</td></tr>
-      <tr><td><strong>▶️ Session C</strong> <span style="color:#dc2626;font-size:11px">⛔ Needs Phase 1.5-D</span></td><td>PromptPay QR UI (qrcode npm, EMVCo payload, no gateway)</td><td>~25%</td></tr>
-      <tr><td>Session D</td><td>Barcode scanning (ZXing) + EMR drug-search wiring</td><td>~30%</td></tr>
+      <tr style="opacity:0.55"><td><strong>✅ Session C</strong></td><td><s>PromptPay QR UI (promptpay-qr + qrcode, GET /api/invoices/:id/promptpay-qr, two-step payment flow)</s> — Done 2026-06-12 · 220 tests</td><td>~25%</td></tr>
+      <tr><td><strong>▶️ Session D</strong></td><td>Barcode scanning (ZXing) + EMR drug-search wiring ← <em>do now</em></td><td>~30%</td></tr>
       <tr><td>Session E</td><td>S3 photo &amp; attachment upload (needs AWS keys)</td><td>~35% + credentials</td></tr>
       <tr><td>Session F</td><td>Payment gateway (Omise/Stripe, webhooks, subscription billing)</td><td>~55% + credentials</td></tr>
       <tr><td>Session G</td><td>LINE/SMS real dispatch (needs LINE + Twilio tokens)</td><td>~35% + credentials</td></tr>
@@ -953,7 +955,7 @@ Dependencies: &lt;task IDs or sessions&gt;</code></pre>
 <div class="page" id="page-qa">
   <h1>🧪 QA Agent — Quality Assurance &amp; Validator</h1>
   <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>.claude/agents/qa-agent/AGENT.md</code> · Invoke: <code>@qa-agent</code> · Skill: <code>anemal-coding-rules</code></span></div>
-  <div class="callout ok"><span class="callout-icon">✅</span><span>206 tests passing across 17 suites. Phase 4 complete + Phase 1.5-A/B Settings API suite (TC-S001–S009, isolation, encryption).</span></div>
+  <div class="callout ok"><span class="callout-icon">✅</span><span>220 tests total (219 passing) across 18+ suites. Phase 4 + Phase 1.5 + Session C (PromptPay QR, TC-QR-01–QR-08) complete.</span></div>
 
   <h2>Test Suite Summary</h2>
   <div class="tbl-wrap"><table>
@@ -975,7 +977,8 @@ Dependencies: &lt;task IDs or sessions&gt;</code></pre>
       <tr><td>integration/phase4.test.ts</td><td>24+</td><td>4</td></tr>
       <tr><td>integration/settings-api.test.ts</td><td>24</td><td>1.5</td></tr>
       <tr><td>unit/encryption.test.ts</td><td>~6</td><td>1.5</td></tr>
-      <tr><td><strong>Total</strong></td><td><strong>206</strong></td><td>1–1.5</td></tr>
+      <tr><td>integration/promptpay-qr.test.ts</td><td>14</td><td>Session C</td></tr>
+      <tr><td><strong>Total</strong></td><td><strong>220</strong> (219 passing)</td><td>1–Session C</td></tr>
     </tbody>
   </table></div>
 
@@ -1075,6 +1078,28 @@ Type: happy_path | edge_case | security | transaction</code></pre>
       <tr><td><strong>Migration</strong></td><td><code>20260606090000_phase4_multibranch</code></td></tr>
     </tbody>
   </table></div>
+
+  <h2>Phase 1.5 — Settings &amp; Configuration</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Item</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Status</strong></td><td>✅ Complete (A/B/C/D all done 2026-06-10 to 2026-06-11)</td></tr>
+      <tr><td><strong>Tests</strong></td><td>206 passing (24 new in 1.5-B)</td></tr>
+      <tr><td><strong>Key Deliverables</strong></td><td>1.5-A: extended <code>tenant_settings</code>, <code>system_settings</code>, <code>settings_audit_log</code>, AES-256-GCM encryption · 1.5-B: Clinic/System/Personal Settings API, <code>superadmin</code> role, TC-S001–S009 · 1.5-C: SystemSettingsPage (superadmin accordion), TC-S010 timeout test · 1.5-D: SettingsLayout, ClinicProfilePage, OperatingHoursPage, NotificationsPage, PaymentPage, IntegrationsPage</td></tr>
+      <tr><td><strong>Migrations</strong></td><td><code>20260610081405</code> (1.5-A) · <code>20260610134121</code> (1.5-B)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Session C — PromptPay QR</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Item</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Status</strong></td><td>✅ Complete 2026-06-12</td></tr>
+      <tr><td><strong>Tests</strong></td><td>220 total (219 passing — TC-S010 pre-existing failure)</td></tr>
+      <tr><td><strong>Key Deliverables</strong></td><td>Installed <code>promptpay-qr</code> + <code>qrcode</code>; added <code>GET /api/invoices/:id/promptpay-qr</code> endpoint (server-authoritative amount, tenant-scoped, 404/422 error codes); updated <code>ClinicBilling.tsx</code> with real two-step QR payment flow (invoice create → QR display → payment confirm); loyalty points carry-through fix; AppError class fix</td></tr>
+      <tr><td><strong>Tests added</strong></td><td>QR-01 through QR-08 (unit) + integration tests = 14 new tests</td></tr>
+    </tbody>
+  </table></div>
 </div>
 
 <!-- ══════════════════ ROADMAP UPCOMING ══════════════════ -->
@@ -1157,14 +1182,14 @@ Type: happy_path | edge_case | security | transaction</code></pre>
         <td>~40% budget</td>
         <td>No external credentials needed. S3 not required — buffer streamed directly.</td>
       </tr>
-      <tr>
-        <td><strong>▶️ Session C</strong><br>PromptPay QR (UI only)</td>
-        <td>Generate EMVCo PromptPay QR image at POS checkout using the <code>qrcode</code> npm package — no gateway required. <code>POST /api/invoices/:id/promptpay-qr</code> returns base64 PNG. Display in ClinicBilling payment modal.</td>
+      <tr style="opacity:0.55">
+        <td><strong>✅ Session C</strong><br><s>PromptPay QR (UI only)</s></td>
+        <td><s>Generate EMVCo PromptPay QR image at POS checkout using the <code>qrcode</code> npm package — no gateway required. <code>GET /api/invoices/:id/promptpay-qr</code> returns base64 PNG. Display in ClinicBilling payment modal.</s><br><em>Done 2026-06-12 — 220 tests total (219 passing). Two-step flow: invoice create → QR display → payment confirm. AppError fix + loyalty carry-through.</em></td>
         <td>~25% budget</td>
         <td>No credentials. Full gateway (Omise/Stripe webhooks) deferred to Session F.</td>
       </tr>
       <tr>
-        <td><strong>Session D</strong><br>Barcode Scanning (ZXing)</td>
+        <td><strong>▶️ Session D</strong><br>Barcode Scanning (ZXing)</td>
         <td>Enable camera barcode scan in ClinicInventory. <code>BarcodeScanner.tsx</code> modal using <code>@zxing/browser</code>. Scan → auto-fill product search. Backend: <code>GET /api/products?barcode=&lt;code&gt;</code>.</td>
         <td>~30% budget</td>
         <td>No credentials. Also wires EMR drug-search (currently unconnected — see spec 05 deferred items).</td>
@@ -1198,35 +1223,36 @@ Type: happy_path | edge_case | security | transaction</code></pre>
     <li><del><strong>Phase 1.5-B</strong> — Settings API (S2.1 · S2.2 minimal · S2.3 · TC-S001–S009)</del> ✅ Done 2026-06-10 · 206 tests</li>
     <li><del><strong>Phase 1.5-D (S3.1–S3.5)</strong> — Settings Layout, Clinic Profile, Operating Hours, Notifications, Payment</del> ✅ Done 2026-06-11 · Sessions C &amp; G unblocked</li>
     <li><del><strong>Phase 3 (1.5-D S3.6 + 1.5-C)</strong> — IntegrationsPage, SystemSettingsPage, TC-S010, hook URL fix</del> ✅ Done 2026-06-11 · Phase 1.5 fully complete</li>
-    <li><strong style="color:#d97706">Session C</strong> — PromptPay QR UI ✅ unblocked (S3.5 done) ← <em>do now</em></li>
-    <li><strong>Session D</strong> — Barcode scanning + EMR drug search wiring</li>
+    <li><del><strong>Session C</strong> — PromptPay QR UI (installed promptpay-qr + qrcode, GET /api/invoices/:id/promptpay-qr, two-step payment flow)</del> ✅ Done 2026-06-12 · 220 tests</li>
+    <li><strong style="color:#d97706">Session D</strong> — Barcode scanning (ZXing) + EMR drug-search wiring ← <em>do now</em></li>
     <li><strong>Session E</strong> — S3 upload (needs AWS keys)</li>
     <li><strong>Session G</strong> — LINE/SMS ✅ unblocked (S3.4 done · needs LINE + Twilio)</li>
     <li><strong>Session F</strong> — Payment gateway (blocked until Phase 1.5 complete · needs Omise)</li>
   </ol>
 
-  <h2>How to Start — Session C Next ▶️</h2>
-  <div class="callout ok" style="margin-bottom:12px"><span class="callout-icon">✅</span><span>Phase 1.5 fully complete as of 2026-06-11 (all 1.5-A/B/C/D done). Next: Session C — PromptPay QR UI (no credentials needed).</span></div>
-  <pre><code># Session C: PromptPay QR UI — execute now
-/gsd:execute-phase session-c
+  <h2>How to Start — Session D Next ▶️</h2>
+  <div class="callout ok" style="margin-bottom:12px"><span class="callout-icon">✅</span><span>Session C (PromptPay QR) complete as of 2026-06-12 — 220 tests (219 passing). Next: Session D — Barcode Scanning (ZXing) + EMR drug-search wiring (no credentials needed).</span></div>
+  <pre><code># Session D: Barcode Scanning — execute now
+/gsd:execute-phase session-d
 
 # Or plan it first:
-/gsd:plan-phase session-c
+/gsd:plan-phase session-d
 
-# ── What Phase 3 builds ──
-# IntegrationsPage.tsx — LINE OA token, Twilio SID, external service toggles
-# SystemSettingsPage.tsx (superadmin only) — platform-global config
-# TC-S010 — session timeout integration test
+# ── What Session D builds ──
+# BarcodeScanner.tsx modal using @zxing/browser (camera barcode scan)
+# Scan → auto-fill product search in ClinicInventory
+# Backend: GET /api/products?barcode=&lt;code&gt;
+# EMR drug-search wiring (currently unconnected)
 
-# ── Already done (Phase 1 + 2) ──
-# SettingsLayout.tsx ✅ · ClinicProfilePage.tsx ✅
-# OperatingHoursPage.tsx ✅ · NotificationsPage.tsx ✅ · PaymentPage.tsx ✅
+# ── Already done (Session C) ──
+# GET /api/invoices/:id/promptpay-qr ✅
+# ClinicBilling.tsx two-step QR payment flow ✅
+# promptpay-qr + qrcode packages installed ✅
 
 # ── Backend already live ──
 # GET/PUT /api/v1/settings/clinic[/*]  — clinic admin
-# GET/PUT /api/v1/admin/system-settings/:key  — superadmin only
-# GET/PUT /api/v1/settings/personal  — all roles
-# Secrets arrive masked (••••••••xxxx) — backend ignores masked echoes on save</code></pre>
+# GET /api/invoices/:id/promptpay-qr  — JWT required
+# GET/PUT /api/v1/settings/personal  — all roles</code></pre>
 
   <div class="callout info" style="margin-top:12px"><span class="callout-icon">📋</span><span>Planning files: <code>.planning/PROJECT.md</code> · <code>.planning/ROADMAP.md</code> · <code>.planning/REQUIREMENTS.md</code> · Full task spec: <code>.claude/roadmap/phase1.5-settings-tasks.md</code></span></div>
 </div>

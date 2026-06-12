@@ -170,8 +170,10 @@ tr:hover td{background:#f8fafc}
   <div style="padding:16px;margin-top:auto;border-top:1px solid #1e293b">
     <div style="font-size:11px;color:#475569">
       <div>Phase 1–3: <span class="status-complete">✓ Complete</span></div>
-      <div style="margin-top:2px">Phase 4: <span class="status-planned">⊙ Planned</span></div>
-      <div style="margin-top:6px;color:#334155">Tests: 131 passing</div>
+      <div style="margin-top:2px">Phase 4: <span class="status-complete">✓ Complete</span></div>
+      <div style="margin-top:2px">Phase 1.5-A/B: <span class="status-complete">✓ Complete</span></div>
+      <div style="margin-top:2px">Session C: <span class="status-complete">✓ Complete</span></div>
+      <div style="margin-top:6px;color:#334155">Tests: 220 total (219 passing)</div>
     </div>
   </div>
 </nav>
@@ -180,15 +182,14 @@ tr:hover td{background:#f8fafc}
 <div id="main">
   <div id="topbar">
     <h2 id="current-section-title">Anemal SaaS — Detailed Functional Specification</h2>
-    <span class="badge-phase ph-complete">Phase 1–3 Complete</span>
-    <span class="badge-phase ph-planned">Phase 4 Planned</span>
+    <span class="badge-phase ph-complete">Phase 1–4 Complete</span>
   </div>
   <div id="content">
 
     <!-- ═══════════════════════════════════════════════════════════ -->
     <section id="overview">
     <h1>Anemal SaaS — Detailed Functional Specification</h1>
-    <p><strong>Version:</strong> 1.1 &nbsp;|&nbsp; <strong>Date:</strong> 2026-06-05 &nbsp;|&nbsp; <strong>Status:</strong> Phase 3 Complete / Phase 4 Planned</p>
+    <p><strong>Version:</strong> 1.3 &nbsp;|&nbsp; <strong>Date:</strong> 2026-06-12 &nbsp;|&nbsp; <strong>Status:</strong> Phases 1–4 + 1.5 (A/B/C/D) + Session C (PromptPay QR) Complete · 220 tests (219 passing)</p>
 
     <div class="toc">
       <h3>Table of Contents</h3>
@@ -238,7 +239,9 @@ tr:hover td{background:#f8fafc}
       <tr><td>1</td><td>Foundation &amp; Security</td><td>Auth, Multi-tenancy, Base UI, Dashboard</td><td class="status-complete">✓ Complete</td></tr>
       <tr><td>2</td><td>Core Clinic Operations</td><td>Pet/Owner, Appointments, EMR, Prescription</td><td class="status-complete">✓ Complete</td></tr>
       <tr><td>3</td><td>Commercial Operations</td><td>Inventory, Billing/POS, Reports, SaaS plans</td><td class="status-complete">✓ Complete</td></tr>
-      <tr><td>4</td><td>Advanced &amp; Scaling</td><td>Inpatient, Grooming, Blood Bank, Loyalty, Multi-Branch</td><td class="status-planned">⊙ Planned</td></tr>
+      <tr><td>4</td><td>Advanced &amp; Scaling</td><td>Inpatient, Grooming, Blood Bank, Loyalty, Multi-Branch</td><td class="status-complete">✓ Complete</td></tr>
+      <tr><td>1.5-A/B</td><td>Settings &amp; Configuration (Backend)</td><td>DB schema, AES-256-GCM encryption, Settings API, <code>superadmin</code> role, TC-S001–S009</td><td class="status-complete">✓ Complete</td></tr>
+      <tr><td>1.5-C/D</td><td>Settings &amp; Configuration (Frontend)</td><td>7 settings pages, System Settings Admin UI, TC-S010</td><td class="status-planned">⊙ In Progress</td></tr>
     </table></div>
     </section>
 
@@ -830,6 +833,20 @@ tr:hover td{background:#f8fafc}
       <h4 class="subsection">Additional Details</h4>
       <p><strong>VAT Formula:</strong> <code>taxable = subtotal − discount; tax = ROUND(taxable × 0.07, 2); total = taxable + tax</code></p>
       <p><strong>PromptPay QR:</strong> QR code generated dynamically using EMVCo standard with amount and merchant ID embedded. Displayed full-screen on Tablet for owner to scan. Payment confirmation received via bank webhook → invoice status updated to <code>paid</code> automatically.</p>
+
+      <h4 class="subsection">PromptPay QR API Endpoint (Session C — 2026-06-12)</h4>
+      <div class="success-box">Session C complete — <code>promptpay-qr</code> + <code>qrcode</code> packages installed; real server-side QR generation live. Two-step UI flow: invoice create → QR display → payment confirm.</div>
+      <div class="tbl-wrap"><table>
+        <tr><th>Field</th><th>Value</th></tr>
+        <tr><td>Method</td><td><code>GET</code></td></tr>
+        <tr><td>Path</td><td><code>/api/invoices/:id/promptpay-qr</code></td></tr>
+        <tr><td>Auth</td><td>JWT required (clinic admin / staff)</td></tr>
+        <tr><td>Response (200)</td><td><code>{ success: true, dataUrl: "data:image/png;base64,..." }</code></td></tr>
+        <tr><td>Error 404</td><td>Invoice not found or belongs to a different tenant</td></tr>
+        <tr><td>Error 422</td><td>No <code>promptpayId</code> configured for this clinic in <code>tenant_settings</code></td></tr>
+        <tr><td>Amount source</td><td>Server-authoritative — read from <code>invoice.totalAmount</code>; never derived from request body</td></tr>
+        <tr><td>QR standard</td><td>EMVCo PromptPay (Thai QR payment standard)</td></tr>
+      </table></div>
       <p><strong>Invoice Numbering:</strong> Format <code>INV-YYYY-MM-NNNN</code> where NNNN is sequential per tenant per month, padded to 4 digits. Unique constraint enforced at DB level.</p>
       <p><strong>Loyalty Integration:</strong> After payment, loyalty points are calculated (1 pt per 100 THB) and added to owner's account. Tier upgrade check runs after every point earn event.</p>
       <h4 class="subsection">Testing Criteria</h4>
@@ -853,7 +870,7 @@ tr:hover td{background:#f8fafc}
       <div class="module-header">
         <span class="module-id">FR-08</span>
         <span class="module-title">Inpatient Management</span>
-        <span class="module-phase ph-planned">Phase 4 — Planned</span>
+        <span class="module-phase ph-complete">Phase 4 — Complete</span>
       </div>
 
       <h4 class="subsection">Description</h4>
@@ -910,7 +927,7 @@ tr:hover td{background:#f8fafc}
       <div class="module-header">
         <span class="module-id">FR-09</span>
         <span class="module-title">Grooming Management</span>
-        <span class="module-phase ph-planned">Phase 4 — Planned</span>
+        <span class="module-phase ph-complete">Phase 4 — Complete</span>
       </div>
 
       <h4 class="subsection">Description</h4>
@@ -956,7 +973,7 @@ tr:hover td{background:#f8fafc}
       <div class="module-header">
         <span class="module-id">FR-10</span>
         <span class="module-title">Blood Bank</span>
-        <span class="module-phase ph-planned">Phase 4 — Planned</span>
+        <span class="module-phase ph-complete">Phase 4 — Complete</span>
       </div>
 
       <h4 class="subsection">Description</h4>
@@ -1007,7 +1024,7 @@ tr:hover td{background:#f8fafc}
       <div class="module-header">
         <span class="module-id">FR-11</span>
         <span class="module-title">Loyalty &amp; Membership</span>
-        <span class="module-phase ph-planned">Phase 4 — Planned</span>
+        <span class="module-phase ph-complete">Phase 4 — Complete</span>
       </div>
 
       <h4 class="subsection">Description</h4>
@@ -1053,7 +1070,7 @@ tr:hover td{background:#f8fafc}
       <div class="module-header">
         <span class="module-id">FR-12</span>
         <span class="module-title">Security &amp; Audit</span>
-        <span class="module-phase ph-planned">Phase 4 — Planned</span>
+        <span class="module-phase ph-complete">Phase 4 — Complete</span>
       </div>
 
       <h4 class="subsection">Description</h4>
@@ -1286,5 +1303,8 @@ const observer = new IntersectionObserver((entries) => {
 
 sections.forEach(s => observer.observe(s));
 </script>
+<div style="text-align:center;padding:16px 24px;border-top:1px solid #e2e8f0;margin-top:32px;font-size:13px;color:#64748b">
+  <a href="index.html" style="color:#006c4a;font-weight:600;text-decoration:none">← Full Project Documentation</a>
+</div>
 </body>
 </html>
