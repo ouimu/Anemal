@@ -5,10 +5,11 @@ import generatePayload from 'promptpay-qr'
 import QRCode from 'qrcode'
 import prisma from '../config/db'
 import { getOrCreateSettings } from '../models/tenant-settings.repository'
+import { AppError } from '../utils/errors'
 
 export async function generatePromptpayQr(tenantId: number, invoiceId: number): Promise<string> {
   if (!invoiceId || invoiceId <= 0) {
-    throw Object.assign(new Error('Invalid invoice ID'), { status: 400 })
+    throw new AppError(400, 'Invalid invoice ID', 'INVALID_INVOICE_ID')
   }
 
   // Tenant-isolated invoice fetch — returns null if invoiceId belongs to a different tenant.
@@ -16,15 +17,15 @@ export async function generatePromptpayQr(tenantId: number, invoiceId: number): 
     where: { id: invoiceId, tenantId },
     select: { totalAmount: true, paymentStatus: true },
   })
-  if (!invoice) throw Object.assign(new Error('Invoice not found'), { status: 404 })
+  if (!invoice) throw new AppError(404, 'Invoice not found', 'NOT_FOUND')
 
   if (invoice.paymentStatus === 'void' || invoice.paymentStatus === 'refunded') {
-    throw Object.assign(new Error('Cannot generate QR for a voided or refunded invoice'), { status: 422 })
+    throw new AppError(422, 'Cannot generate QR for a voided or refunded invoice', 'INVOICE_VOID_OR_REFUNDED')
   }
 
   const settings = await getOrCreateSettings(tenantId)
   if (!settings.promptpayId) {
-    throw Object.assign(new Error('PromptPay ID not configured for this clinic'), { status: 422 })
+    throw new AppError(422, 'PromptPay ID not configured for this clinic', 'PROMPTPAY_ID_NOT_CONFIGURED')
   }
 
   // Handle Prisma Decimal (has .toNumber()) or plain number/string.
