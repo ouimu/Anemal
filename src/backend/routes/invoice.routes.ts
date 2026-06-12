@@ -9,6 +9,8 @@ router.use(authMiddleware)
 
 router.get('/', ctrl.listInvoices)
 router.post('/', validate(createInvoiceSchema), ctrl.createInvoice)
+router.get('/:id/pdf', ctrl.downloadInvoicePdf)
+router.get('/:id/promptpay-qr', ctrl.generatePromptpayQr)
 router.get('/:id', ctrl.getInvoice)
 router.put('/:id/payment', validate(paymentSchema), ctrl.recordPayment)
 

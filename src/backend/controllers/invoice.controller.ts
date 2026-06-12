@@ -1,6 +1,8 @@
 // Invoice / billing controller — thin HTTP handlers.
 import { Request, Response, NextFunction } from 'express'
 import * as invoiceService from '../services/invoice.service'
+import * as pdfService from '../services/pdf.service'
+import * as promptpayQrService from '../services/promptpay-qr.service'
 import { requireBranchId } from '../utils/context'
 
 export async function listInvoices(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -32,5 +34,23 @@ export async function recordPayment(req: Request, res: Response, next: NextFunct
   try {
     const data = await invoiceService.recordPayment(req.context!.tenantId, Number(req.params.id), req.body.paymentMethod)
     res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export async function generatePromptpayQr(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const dataUrl = await promptpayQrService.generatePromptpayQr(req.context!.tenantId, Number(req.params.id))
+    res.json({ success: true, dataUrl })
+  } catch (err) { next(err) }
+}
+
+export async function downloadInvoicePdf(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { tenantId } = req.context!
+    const id = Number(req.params.id)
+    const buffer = await pdfService.generateInvoicePdf(tenantId, id)
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `attachment; filename="invoice-${id}.pdf"`)
+    res.send(buffer)
   } catch (err) { next(err) }
 }
