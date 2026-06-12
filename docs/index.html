@@ -320,7 +320,7 @@
   <!-- ── Build Status ── -->
   <div class="callout ok" style="margin-top:16px">
     <span class="callout-icon">🎉</span>
-    <span><strong>All 4 phases + Phase 1.5 (A/B/C/D) + Session C (PromptPay QR) done.</strong> 220 backend tests (219 passing) · tsc clean (2026-06-12). Next: <strong style="color:#d97706">Session D — Barcode Scanning (ZXing) + EMR drug-search wiring.</strong></span>
+    <span><strong>All 4 phases + Phase 1.5 (A/B/C/D) + Session C (PromptPay QR) + Session D (Barcode Scanning) done.</strong> 220 backend tests (219 passing) · tsc clean (2026-06-12). Next: <strong style="color:#d97706">Session E — S3 Photo Upload (needs AWS keys).</strong></span>
   </div>
 
   <!-- ── Stats ── -->
@@ -345,7 +345,8 @@
       <tr><td><strong>Phase 1.5-A/B</strong></td><td>Settings DB + Encryption + Settings API (<code>superadmin</code> role, TC-S001–S009)</td><td>206</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
       <tr><td><strong>Phase 1.5-C/D</strong></td><td>Settings Frontend Pages + System Settings Admin UI</td><td>—</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
       <tr><td><strong>Session C</strong></td><td>PromptPay QR — <code>promptpay-qr</code> + <code>qrcode</code>, GET /api/invoices/:id/promptpay-qr, two-step QR payment flow in ClinicBilling</td><td>220</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
-      <tr style="background:#fffbeb"><td><strong>Session D</strong></td><td>Barcode Scanning (ZXing) + EMR drug-search wiring</td><td>—</td><td><span style="color:#d97706;font-weight:700">🟡 Next</span></td></tr>
+      <tr><td><strong>Session D</strong></td><td>Barcode Scanning (ZXing) — BarcodeScanner modal + useBarcodeScanner hook wired into ClinicInventory</td><td>—</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
+      <tr style="background:#fffbeb"><td><strong>Session E</strong></td><td>S3 Photo Upload (needs AWS keys)</td><td>—</td><td><span style="color:#d97706;font-weight:700">🟡 Next</span></td></tr>
     </tbody>
   </table></div>
 
@@ -385,7 +386,7 @@
     <div class="card" onclick="show('roadmap-upcoming')">
       <div class="card-icon">🔜</div>
       <div class="card-title">Upcoming Work</div>
-      <div class="card-desc">Session C: PromptPay QR ✅ · D: Barcode (next) · E: S3 · F: Gateway · G: LINE/SMS</div>
+      <div class="card-desc">Session C: PromptPay QR ✅ · D: Barcode ✅ · E: S3 (next) · F: Gateway · G: LINE/SMS</div>
     </div>
     <div class="card" onclick="show('qaproto')">
       <div class="card-icon">✅</div>
@@ -807,7 +808,8 @@ CREATE INDEX idx_pet_reminders_pet          ON pet_reminders(tenant_id, pet_id);
       <tr><td><strong>Phase 1.5-C</strong></td><td>System Settings API + Admin UI (S2.2, S3.7, TC-S008–S010)</td><td>~40%</td></tr>
       <tr><td><strong>Phase 1.5-D</strong></td><td>Frontend Settings Pages (S3.1–S3.6) — unblocks Sessions C &amp; G when S3.4 &amp; S3.5 done</td><td>~55%</td></tr>
       <tr style="opacity:0.55"><td><strong>✅ Session C</strong></td><td><s>PromptPay QR UI (promptpay-qr + qrcode, GET /api/invoices/:id/promptpay-qr, two-step payment flow)</s> — Done 2026-06-12 · 220 tests</td><td>~25%</td></tr>
-      <tr><td><strong>▶️ Session D</strong></td><td>Barcode scanning (ZXing) + EMR drug-search wiring ← <em>do now</em></td><td>~30%</td></tr>
+      <tr style="opacity:0.55"><td><strong>✅ Session D</strong></td><td><s>Barcode scanning (ZXing) — BarcodeScanner modal + useBarcodeScanner hook wired into ClinicInventory</s> — Done 2026-06-12</td><td>~30%</td></tr>
+      <tr><td><strong>▶️ Session E</strong></td><td>S3 photo &amp; attachment upload ← <em>do now (needs AWS keys)</em></td><td>~35% + credentials</td></tr>
       <tr><td>Session E</td><td>S3 photo &amp; attachment upload (needs AWS keys)</td><td>~35% + credentials</td></tr>
       <tr><td>Session F</td><td>Payment gateway (Omise/Stripe, webhooks, subscription billing)</td><td>~55% + credentials</td></tr>
       <tr><td>Session G</td><td>LINE/SMS real dispatch (needs LINE + Twilio tokens)</td><td>~35% + credentials</td></tr>
@@ -1100,6 +1102,17 @@ Type: happy_path | edge_case | security | transaction</code></pre>
       <tr><td><strong>Tests added</strong></td><td>QR-01 through QR-08 (unit) + integration tests = 14 new tests</td></tr>
     </tbody>
   </table></div>
+
+  <h2>Session D — Barcode Scanning (ZXing)</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Item</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Status</strong></td><td>✅ Complete 2026-06-12</td></tr>
+      <tr><td><strong>Tests</strong></td><td>220 (no new backend tests — frontend-only change)</td></tr>
+      <tr><td><strong>Key Deliverables</strong></td><td><code>BarcodeScanner.tsx</code> modal with live camera feed + aim overlay + loading/error states; <code>useBarcodeScanner.ts</code> hook using <code>@zxing/browser 0.2.0</code> + <code>@zxing/library 0.22.0</code>; StrictMode-safe cleanup (<code>IScannerControls.stop()</code> + raw <code>MediaStream</code> track stop); <code>ClinicInventory.tsx</code> wired with Scan button, <code>scanning</code> state, <code>handleBarcodeScan</code> useCallback (input sanitised: trim + 100-char cap). No backend changes — existing <code>GET /api/products?search=</code> endpoint used.</td></tr>
+      <tr><td><strong>Security</strong></td><td>ZXing output treated as untrusted: <code>trim().slice(0,100)</code> before entering React state; Prisma <code>contains</code> is parameterised (no SQL injection risk)</td></tr>
+    </tbody>
+  </table></div>
 </div>
 
 <!-- ══════════════════ ROADMAP UPCOMING ══════════════════ -->
@@ -1188,11 +1201,11 @@ Type: happy_path | edge_case | security | transaction</code></pre>
         <td>~25% budget</td>
         <td>No credentials. Full gateway (Omise/Stripe webhooks) deferred to Session F.</td>
       </tr>
-      <tr>
-        <td><strong>▶️ Session D</strong><br>Barcode Scanning (ZXing)</td>
-        <td>Enable camera barcode scan in ClinicInventory. <code>BarcodeScanner.tsx</code> modal using <code>@zxing/browser</code>. Scan → auto-fill product search. Backend: <code>GET /api/products?barcode=&lt;code&gt;</code>.</td>
+      <tr style="opacity:0.55">
+        <td><strong>✅ Session D</strong><br><s>Barcode Scanning (ZXing)</s></td>
+        <td><s>Enable camera barcode scan in ClinicInventory. <code>BarcodeScanner.tsx</code> modal using <code>@zxing/browser</code>. Scan → auto-fill product search.</s><br><em>Done 2026-06-12 — BarcodeScanner modal + useBarcodeScanner hook wired into ClinicInventory. StrictMode-safe cleanup. Input sanitised before state.</em></td>
         <td>~30% budget</td>
-        <td>No credentials. Also wires EMR drug-search (currently unconnected — see spec 05 deferred items).</td>
+        <td>No credentials needed.</td>
       </tr>
       <tr>
         <td><strong>Session E</strong><br>S3 Photo Upload</td>
@@ -1224,19 +1237,19 @@ Type: happy_path | edge_case | security | transaction</code></pre>
     <li><del><strong>Phase 1.5-D (S3.1–S3.5)</strong> — Settings Layout, Clinic Profile, Operating Hours, Notifications, Payment</del> ✅ Done 2026-06-11 · Sessions C &amp; G unblocked</li>
     <li><del><strong>Phase 3 (1.5-D S3.6 + 1.5-C)</strong> — IntegrationsPage, SystemSettingsPage, TC-S010, hook URL fix</del> ✅ Done 2026-06-11 · Phase 1.5 fully complete</li>
     <li><del><strong>Session C</strong> — PromptPay QR UI (installed promptpay-qr + qrcode, GET /api/invoices/:id/promptpay-qr, two-step payment flow)</del> ✅ Done 2026-06-12 · 220 tests</li>
-    <li><strong style="color:#d97706">Session D</strong> — Barcode scanning (ZXing) + EMR drug-search wiring ← <em>do now</em></li>
+    <li><del><strong>Session D</strong> — Barcode scanning (ZXing) — BarcodeScanner modal + useBarcodeScanner hook wired into ClinicInventory</del> ✅ Done 2026-06-12</li>
     <li><strong>Session E</strong> — S3 upload (needs AWS keys)</li>
     <li><strong>Session G</strong> — LINE/SMS ✅ unblocked (S3.4 done · needs LINE + Twilio)</li>
     <li><strong>Session F</strong> — Payment gateway (blocked until Phase 1.5 complete · needs Omise)</li>
   </ol>
 
-  <h2>How to Start — Session D Next ▶️</h2>
-  <div class="callout ok" style="margin-bottom:12px"><span class="callout-icon">✅</span><span>Session C (PromptPay QR) complete as of 2026-06-12 — 220 tests (219 passing). Next: Session D — Barcode Scanning (ZXing) + EMR drug-search wiring (no credentials needed).</span></div>
-  <pre><code># Session D: Barcode Scanning — execute now
-/gsd:execute-phase session-d
+  <h2>How to Start — Session E Next ▶️</h2>
+  <div class="callout ok" style="margin-bottom:12px"><span class="callout-icon">✅</span><span>Session D (Barcode Scanning) complete as of 2026-06-12. Next: Session E — S3 Photo Upload (needs AWS keys) or Session G — LINE/SMS (needs LINE + Twilio tokens).</span></div>
+  <pre><code># Session E: S3 Photo Upload — needs AWS credentials
+/gsd:execute-phase session-e
 
-# Or plan it first:
-/gsd:plan-phase session-d
+# Session G: LINE/SMS dispatch — needs LINE channel token + Twilio
+/gsd:execute-phase session-g
 
 # ── What Session D builds ──
 # BarcodeScanner.tsx modal using @zxing/browser (camera barcode scan)

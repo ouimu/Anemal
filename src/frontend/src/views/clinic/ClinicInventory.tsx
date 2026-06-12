@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import MaterialIcon from '../../components/MaterialIcon'
+import BarcodeScanner from '../../components/BarcodeScanner'
 import {
   useProducts, useInventoryAlerts, useCreateProduct, useUpdateProduct, useStockIn, useDeactivateProduct,
   PRODUCT_CATEGORIES, type Product,
@@ -27,6 +28,12 @@ export default function ClinicInventory() {
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<Product | null>(null)
   const [stockingIn, setStockingIn] = useState<Product | null>(null)
+  const [scanning, setScanning] = useState(false)
+
+  const handleBarcodeScan = useCallback((barcode: string) => {
+    setSearch(barcode.trim().slice(0, 100))
+    setScanning(false)
+  }, [])
 
   const { data, isLoading } = useProducts({ search, category })
   const { data: alerts } = useInventoryAlerts()
@@ -76,6 +83,14 @@ export default function ClinicInventory() {
           <option value="">All categories</option>
           {PRODUCT_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
+        <button
+          onClick={() => setScanning(true)}
+          className="flex items-center gap-sm bg-surface border border-outline-variant rounded-full px-lg min-h-[44px] text-body-sm text-on-surface hover:bg-surface-container-low transition-colors"
+          aria-label="Open barcode scanner"
+        >
+          <MaterialIcon name="qr_code_scanner" size={18} />
+          Scan
+        </button>
       </div>
 
       {/* Products table */}
@@ -131,6 +146,12 @@ export default function ClinicInventory() {
         <ProductModal product={editing} onClose={() => { setAdding(false); setEditing(null) }} />
       )}
       {stockingIn && <StockInModal product={stockingIn} onClose={() => setStockingIn(null)} />}
+      {scanning && (
+        <BarcodeScanner
+          onScan={handleBarcodeScan}
+          onClose={() => setScanning(false)}
+        />
+      )}
     </div>
   )
 }

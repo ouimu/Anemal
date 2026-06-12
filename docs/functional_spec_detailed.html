@@ -763,7 +763,7 @@ tr:hover td{background:#f8fafc}
         <tr><td>FR-06-04</td><td>Full stock ledger: every movement (in/out/transfer/adjustment/expired) recorded</td><td><span class="must">MUST</span></td></tr>
         <tr><td>FR-06-05</td><td>Multi-branch transfer with confirm-receipt approval workflow</td><td><span class="must">MUST</span></td></tr>
         <tr><td>FR-06-06</td><td>Min-stock alert and near-expiry (≤30 days) alert per lot</td><td><span class="must">MUST</span></td></tr>
-        <tr><td>FR-06-07</td><td>Barcode scan via Tablet camera (ZXing.js) or hardware scanner</td><td><span class="should">SHOULD</span></td></tr>
+        <tr><td>FR-06-07</td><td>Barcode scan via Tablet camera (ZXing.js) or hardware scanner — <strong>✅ Implemented (Session D, 2026-06-12):</strong> <code>@zxing/browser 0.2.0</code> + <code>@zxing/library 0.22.0</code>. <code>BarcodeScanner.tsx</code> modal with <code>useBarcodeScanner</code> hook; decodes on first valid frame, auto-fills <code>GET /api/products?search=</code> (existing endpoint, no backend change). Handles <code>NotAllowedError</code>, <code>NotFoundError</code>, <code>NotReadableError</code>. StrictMode-safe cleanup: <code>IScannerControls.stop()</code> + <code>MediaStream.getVideoTracks().forEach(t =&gt; t.stop())</code>. iOS Safari: <code>playsInline</code> required. ZXing output sanitised: <code>trim().slice(0,100)</code> before entering React state.</td><td><span class="should">SHOULD</span></td></tr>
       </table></div>
       <h4 class="subsection">Multi-Branch Transfer Flow</h4>
       <ol class="flow-steps">
