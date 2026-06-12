@@ -1,7 +1,8 @@
-﻿import React, { useState, useCallback } from 'react'
+﻿import React, { useState, useCallback, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
+import { usePhotoUpload } from '../../hooks/usePhotoUpload'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Owner { id: number; firstName: string; lastName: string; phone: string; email?: string; lineId?: string; address?: string; pets: Pet[] }
@@ -77,15 +78,30 @@ function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerId: numb
   const [form, setForm] = useState({ name: '', species: 'canine', breed: '', color: '', gender: '', birthDate: '', microchipId: '', allergies: '', underlyingConditions: '' })
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [photoFile, setPhotoFile]       = useState<File | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { uploadPhoto, isUploading, uploadError } = usePhotoUpload()
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setPhotoFile(file)
+    setPhotoPreview(URL.createObjectURL(file))
+  }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     setError('')
     try {
+      let photoUrl: string | null = null
+      if (photoFile) {
+        photoUrl = await uploadPhoto(photoFile)
+      }
       await api.post('/api/pets', {
         ownerId,
         name: form.name,
@@ -97,20 +113,53 @@ function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerId: numb
         microchipId: form.microchipId || null,
         allergies: form.allergies || null,
         underlyingConditions: form.underlyingConditions || null,
+        photoUrl,
       })
       onSuccess()
-    } catch (err: any) {
-      setError(err.response?.data?.error ?? 'Failed to save')
+    } catch (err: unknown) {
+      if (!uploadError) {
+        setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save')
+      }
     } finally { setSaving(false) }
   }
+
+  const busy = saving || isUploading
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-lg">
       <div className="bg-surface rounded-xl shadow-lg w-full max-w-md p-xl overflow-y-auto max-h-[90vh]">
         <h3 className="text-headline-sm font-headline font-bold text-primary mb-xs">New Pet</h3>
         <p className="text-body-sm text-on-surface-variant mb-lg">Owner: {ownerName}</p>
-        {error && <p className="text-error text-body-sm mb-md">{error}</p>}
+        {(error || uploadError) && <p className="text-error text-body-sm mb-md">{error || uploadError}</p>}
         <form onSubmit={submit} className="flex flex-col gap-md">
+          {/* Photo upload */}
+          <div className="flex items-center gap-md">
+            <div className="w-16 h-16 rounded-xl bg-surface-container-high flex items-center justify-center overflow-hidden flex-shrink-0 border border-outline-variant">
+              {photoPreview
+                ? <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                : <MaterialIcon name="pets" size={28} className="text-on-surface-variant" />
+              }
+            </div>
+            <div className="flex flex-col gap-xs flex-1">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-sm bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm min-h-[44px] text-body-sm font-medium hover:bg-surface-container transition-colors"
+              >
+                <MaterialIcon name="photo_camera" size={18} className="text-on-surface-variant" />
+                {photoFile ? 'Change photo' : 'Add photo (optional)'}
+              </button>
+              {isUploading && <p className="text-body-sm text-on-surface-variant">Uploading…</p>}
+            </div>
+          </div>
+
           <input required className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Pet name" value={form.name} onChange={set('name')} />
           <div className="flex gap-md">
             <select className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.species} onChange={set('species')}>
@@ -136,7 +185,7 @@ function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerId: numb
           <textarea className="bg-surface-container-low rounded-lg px-md py-sm min-h-[80px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary resize-none" placeholder="Underlying conditions (optional)" value={form.underlyingConditions} onChange={set('underlyingConditions')} />
           <div className="flex gap-md pt-sm">
             <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? 'Saving…' : 'Save Pet'}</button>
+            <button type="submit" disabled={busy} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{busy ? 'Saving…' : 'Save Pet'}</button>
           </div>
         </form>
       </div>

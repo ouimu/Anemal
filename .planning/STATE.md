@@ -10,10 +10,10 @@ last_updated: "2026-06-12T00:00:00.000Z"
 
 ## Current Status
 
-**Active milestone:** Session D — Barcode Scanning (ZXing) + EMR drug-search wiring  
+**Active milestone:** Session G — LINE/SMS Real Dispatch  
 **Initialized:** 2026-06-10  
 **Last Activity:** 2026-06-12  
-**Last Session:** Session C — PromptPay QR (COMPLETE)
+**Last Session:** Session E — S3 Photo Upload (COMPLETE)
 
 ## Phase Progress
 
@@ -22,8 +22,10 @@ last_updated: "2026-06-12T00:00:00.000Z"
 | 1 — Settings Shell + Clinic Profile | ✅ Complete | 01A ✅ 01B ✅ 01C ✅ |
 | 2 — Operational Settings Pages | ✅ Complete | 02A ✅ 02B ✅ 02C ✅ |
 | 3 — Integrations, System Admin + QA | ✅ Complete | Phase 1.5 fully done 2026-06-11 |
-| Session C — PromptPay QR | ✅ Complete | 220 tests (219 passing); GET /api/invoices/:id/promptpay-qr live |
-| Session D — Barcode Scanning | 🟡 Next | @zxing/browser, BarcodeScanner.tsx, EMR drug-search |
+| Session C — PromptPay QR | ✅ Complete | 220 tests; GET /api/invoices/:id/promptpay-qr live |
+| Session D — Barcode Scanning | ✅ Complete | @zxing/browser, BarcodeScanner.tsx wired into ClinicInventory |
+| Session E — S3 Photo Upload | ✅ Complete | 226 tests; POST /api/upload/presign, usePhotoUpload hook, AddPetModal photo UI |
+| Session G — LINE/SMS Dispatch | 🟡 Next | Needs LINE channel token + Twilio credentials |
 
 ## Decisions Log
 
@@ -52,12 +54,22 @@ None.
 | 2026-06-12 | AppError constructor fix applied (Rule 1) | statusCode was not propagating correctly → all errors were returning 500 |
 | 2026-06-12 | Loyalty points carry-through fix (Rule 1) | Points state was resetting between QR display and payment confirm steps |
 
+## Session E — Key Decisions
+
+| Date | Decision | Why |
+|------|----------|-----|
+| 2026-06-12 | Lazy S3 client (no singleton) | Avoids startup crash when AWS env vars are blank |
+| 2026-06-12 | Skeleton implementation with jest mocks | AWS credentials not available; tests pass without real S3 |
+| 2026-06-12 | Key prefix `tenants/{tenantId}/pets/` | Multi-tenant isolation enforced at storage layer |
+| 2026-06-12 | 503 STORAGE_NOT_CONFIGURED on missing vars | Clear operator error vs. runtime error distinction |
+| 2026-06-12 | `URL.createObjectURL` for preview (not FileReader) | Simpler, synchronous, no memory leak concern with revoke |
+
 ## Next Action
 
-Session C complete (2026-06-12). Execute Session D — Barcode Scanning (ZXing) + EMR drug-search wiring. No credentials required.
+Session E complete (2026-06-12). Execute Session G — LINE/SMS Real Dispatch (needs LINE + Twilio credentials).
 
 ```
-/gsd:execute-phase session-d
+/gsd:execute-phase session-g
 ```
 
 ---
