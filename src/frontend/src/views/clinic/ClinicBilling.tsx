@@ -33,6 +33,7 @@ export default function ClinicBilling() {
   const [paid, setPaid] = useState<Invoice | null>(null)
   const [earnedMsg, setEarnedMsg] = useState('')
   const [addingRetail, setAddingRetail] = useState(false)
+  const [pendingInvoiceId, setPendingInvoiceId] = useState<number | null>(null)
 
   const qc = useQueryClient()
   const createInvoice = useCreateInvoice()
@@ -43,6 +44,15 @@ export default function ClinicBilling() {
     queryKey: ['loyalty', pet?.ownerId],
     enabled: !!pet?.ownerId,
     queryFn: () => api.get(`/api/loyalty/owners/${pet!.ownerId}`).then((r) => r.data.data),
+  })
+
+  // PromptPay QR code — fetched after invoice creation, before payment confirmation.
+  const { data: qrDataUrl, isLoading: qrLoading, isError: qrError } = useQuery<string>({
+    queryKey: ['promptpay-qr', pendingInvoiceId],
+    queryFn: () => api.get(`/api/invoices/${pendingInvoiceId}/promptpay-qr`).then(r => r.data.dataUrl),
+    enabled: method === 'qr_promptpay' && pendingInvoiceId != null,
+    staleTime: Infinity,
+    retry: false,
   })
 
   // Pet search (quick search returns pet results).
@@ -90,7 +100,7 @@ export default function ClinicBilling() {
 
   function reset() {
     setPet(null); setPetQuery(''); setRecordId(null); setCart([]); setDiscount(''); setRedeemPts(0)
-    setMethod('cash'); setTendered(''); setErr(''); setPaid(null); setEarnedMsg('')
+    setMethod('cash'); setTendered(''); setErr(''); setPaid(null); setEarnedMsg(''); setPendingInvoiceId(null)
   }
 
   function addService() {
@@ -117,6 +127,10 @@ export default function ClinicBilling() {
         discount: discountNum,
         taxRate: TAX_RATE,
       })
+      if (method === 'qr_promptpay') {
+        setPendingInvoiceId(invoice.id)
+        return  // stop here — user scans QR, then clicks "Payment Received"
+      }
       const settled = await recordPayment.mutateAsync({ id: invoice.id, paymentMethod: method })
       // Redeem loyalty points (best-effort — payment already succeeded).
       if (pet?.ownerId && redeemDiscount > 0) {
@@ -130,6 +144,27 @@ export default function ClinicBilling() {
       setPaid(settled)
     } catch (e: unknown) {
       setErr((e as { response?: { data?: { error?: string } } }).response?.data?.error ?? 'Could not finalize the sale.')
+    }
+  }
+
+  async function handlePromptpayConfirm() {
+    if (!pendingInvoiceId) return
+    setErr('')
+    try {
+      const settled = await recordPayment.mutateAsync({ id: pendingInvoiceId, paymentMethod: method })
+      // Redeem loyalty points (best-effort — payment already succeeded).
+      if (pet?.ownerId && redeemDiscount > 0) {
+        try {
+          await api.post('/api/loyalty/redeem', { ownerId: pet.ownerId, points: redeemDiscount, invoiceTotal: subtotal })
+          qc.invalidateQueries({ queryKey: ['loyalty', pet.ownerId] })
+        } catch { /* best-effort */ }
+      }
+      const earned = Math.floor(Number(settled.totalAmount) / 100)
+      if (pet?.ownerId && earned > 0) setEarnedMsg(`+${earned} loyalty point${earned !== 1 ? 's' : ''} earned`)
+      setPendingInvoiceId(null)
+      setPaid(settled)
+    } catch (e: unknown) {
+      setErr((e as { response?: { data?: { error?: string } } }).response?.data?.error ?? 'Could not record payment.')
     }
   }
 
@@ -282,12 +317,35 @@ export default function ClinicBilling() {
 
             {method === 'qr_promptpay' && (
               <div className="flex flex-col items-center gap-sm mb-md py-md bg-surface-container-low rounded-lg">
-                <div className="w-40 h-40 rounded-lg bg-surface border border-outline-variant flex items-center justify-center">
-                  <MaterialIcon name="qr_code_2" size={120} className="text-primary" />
+                <div className="w-40 h-40 rounded-lg bg-surface border border-outline-variant flex items-center justify-center overflow-hidden">
+                  {pendingInvoiceId == null && (
+                    <MaterialIcon name="qr_code_2" size={48} className="text-on-surface-variant opacity-40" />
+                  )}
+                  {pendingInvoiceId != null && qrLoading && (
+                    <MaterialIcon name="progress_activity" size={48} className="text-on-surface-variant animate-spin" />
+                  )}
+                  {pendingInvoiceId != null && qrError && (
+                    <MaterialIcon name="qr_code_2" size={48} className="text-on-surface-variant" />
+                  )}
+                  {pendingInvoiceId != null && qrDataUrl && !qrLoading && (
+                    <img src={qrDataUrl} alt="PromptPay QR" className="w-full h-full object-contain" />
+                  )}
                 </div>
+                {pendingInvoiceId == null && (
+                  <p className="text-label-sm text-on-surface-variant text-center px-sm">Click Confirm to generate QR</p>
+                )}
+                {pendingInvoiceId != null && qrError && (
+                  <p className="text-label-sm text-error text-center px-sm">QR unavailable — check PromptPay ID in Settings</p>
+                )}
                 <p className="text-label-md text-on-surface-variant uppercase tracking-wider">Scan to pay · {baht(total)}</p>
-                <p className="text-label-md text-on-surface-variant">PromptPay QR (gateway integration: Phase 4)</p>
               </div>
+            )}
+            {method === 'qr_promptpay' && pendingInvoiceId != null && (
+              <button onClick={handlePromptpayConfirm} disabled={recordPayment.isPending}
+                      className="w-full min-h-[56px] rounded-lg bg-secondary text-secondary-on font-semibold text-body-md hover:bg-secondary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-sm mb-md">
+                <MaterialIcon name="check_circle" size={20} />
+                {recordPayment.isPending ? 'Processing…' : 'Payment Received'}
+              </button>
             )}
 
             {method === 'credit_card' && (
@@ -379,6 +437,16 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 function SuccessModal({ invoice, pet, method, earnedMsg, onClose }: { invoice: Invoice; pet: { petName: string; ownerName: string } | null; method: string; earnedMsg?: string; onClose: () => void }) {
+  async function downloadPdf() {
+    const res = await api.get(`/api/invoices/${invoice.id}/pdf`, { responseType: 'blob' })
+    const url = URL.createObjectURL(new Blob([res.data as BlobPart], { type: 'application/pdf' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${invoice.invoiceNo}.pdf`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   function print() {
     const items = (invoice.items ?? [])
       .map((i) => `<tr><td>${i.description}</td><td style="text-align:center">${Number(i.quantity)}</td><td style="text-align:right">${baht(Number(i.unitPrice))}</td><td style="text-align:right">${baht(Number(i.totalPrice))}</td></tr>`)
@@ -417,10 +485,13 @@ function SuccessModal({ invoice, pet, method, earnedMsg, onClose }: { invoice: I
           </p>
         )}
         <div className="flex gap-sm">
-          <button onClick={print} className="flex-1 min-h-[44px] rounded-lg border border-primary text-primary font-medium hover:bg-surface-container-low transition-colors flex items-center justify-center gap-sm">
-            <MaterialIcon name="print" size={18} /> Print Receipt
+          <button onClick={print} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-on-surface-variant font-medium hover:bg-surface-container-low transition-colors flex items-center justify-center gap-xs text-body-sm">
+            <MaterialIcon name="print" size={16} /> Print
           </button>
-          <button onClick={onClose} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on font-semibold hover:bg-primary/90 transition-colors">Done</button>
+          <button onClick={downloadPdf} className="flex-1 min-h-[44px] rounded-lg border border-secondary text-secondary font-medium hover:bg-surface-container-low transition-colors flex items-center justify-center gap-xs text-body-sm">
+            <MaterialIcon name="download" size={16} /> PDF
+          </button>
+          <button onClick={onClose} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on font-semibold hover:bg-primary/90 transition-colors text-body-sm">Done</button>
         </div>
       </div>
     </div>
