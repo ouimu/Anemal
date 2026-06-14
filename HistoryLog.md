@@ -2,6 +2,21 @@
 
 ---
 
+## Log Entry: 2026-06-14 — Phase reorder: i18n moved from Phase 11 to Phase 9
+
+### Changes
+- Phase 11 (i18n Rollout) → Phase 9 (immediately after Phase 8 RBAC)
+- Phase 9 (Payment Gateway) → Phase 10
+- Phase 10 (LINE/SMS Dispatch) → Phase 11
+- Rationale: i18n is credential-free; depends on Phase 8 RBAC permission catalogue + Platform Console tenant_settings.default_locale
+- Stable IDs unchanged: 5-A...5-G, T-5x-nn, phase5-rbac-platform-tasks.md, SPEC-RBAC-PLATFORM-01
+- Proposal file: .planning/phases/PHASE-REORDER-PROPOSAL.md
+
+### Files updated
+CLAUDE.md · .planning/STATE.md · HistoryLog.md
+
+---
+
 ## 📅 Log Entry: 2026-06-14 — Phase 7 UI Redesign Sign-off COMPLETE
 
 ### Changes

@@ -6,26 +6,28 @@ status: unknown
 last_updated: "2026-06-12T00:00:00.000Z"
 ---
 
-# Project State — Session C Complete · Session D Next
+# Project State — Phases 1–6 Complete · Phase 7 (UI redesign) Next
+
+> Backlog re-sequenced 2026-06-13 (full clean resequence → linear Phase 1–11). Redesign track (7+8) prioritized; i18n Rollout = Phase 9 (credential-free); Payment Gateway + LINE/SMS postponed to Phase 10–11. Map + QA validation: `../PHASE-RESEQUENCE.md`.
 
 ## Current Status
 
-**Active milestone:** Session G — LINE/SMS Real Dispatch  
+**Active milestone:** Phase 7 — UI Redesign completion & sign-off (then Phase 8 — RBAC/Platform)  
 **Initialized:** 2026-06-10  
-**Last Activity:** 2026-06-12  
-**Last Session:** Session E — S3 Photo Upload (COMPLETE)
+**Last Activity:** 2026-06-13  
+**Last completed:** Phase 6 (enhancements A–E) — S3 Photo Upload · 226 tests
 
-## Phase Progress
+## Phase Progress *(new numbering · old label in notes)*
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| 1 — Settings Shell + Clinic Profile | ✅ Complete | 01A ✅ 01B ✅ 01C ✅ |
-| 2 — Operational Settings Pages | ✅ Complete | 02A ✅ 02B ✅ 02C ✅ |
-| 3 — Integrations, System Admin + QA | ✅ Complete | Phase 1.5 fully done 2026-06-11 |
-| Session C — PromptPay QR | ✅ Complete | 220 tests; GET /api/invoices/:id/promptpay-qr live |
-| Session D — Barcode Scanning | ✅ Complete | @zxing/browser, BarcodeScanner.tsx wired into ClinicInventory |
-| Session E — S3 Photo Upload | ✅ Complete | 226 tests; POST /api/upload/presign, usePhotoUpload hook, AddPetModal photo UI |
-| Session G — LINE/SMS Dispatch | 🟡 Next | Needs LINE channel token + Twilio credentials |
+| 5 — Settings & Configuration | ✅ Complete | was 1.5; GSD Phases 1–3 (Shell/Profile, Operational, Integrations+SysAdmin+QA); fully done 2026-06-11 |
+| 6 — Production-readiness enhancements | ✅ Complete | was Sessions A–E (screen specs, PDF, PromptPay QR, barcode, S3); 226 tests |
+| **7 — UI Redesign completion & sign-off** | ▶️ Priority | verify Appointments/Pets/EMR vs Compassionate Care specs (presentational only) |
+| **8 — RBAC, Platform Console & Restructure** | ▶️ Priority | was Phase 5; SPEC-RBAC-PLATFORM-01; sub-tasks 5-A…5-G |
+| 9 — i18n Rollout | 📋 Planned | full clinic-screen Thai (EN/TH); extends i18n foundation (module, app-shell, Noto Sans Thai, cross-device sync) to all clinic screens; credential-free; depends on Phase 8 RBAC permission catalogue + tenant_settings.default_locale |
+| 10 — Payment Gateway & Subscription Billing | ⏸ Postponed | was Session F; needs Omise + SMTP |
+| 11 — LINE/SMS Real Dispatch | ⏸ Postponed | was Session G; needs LINE + Twilio |
 
 ## Decisions Log
 
@@ -66,11 +68,26 @@ None.
 
 ## Next Action
 
-Session E complete (2026-06-12). Execute Session G — LINE/SMS Real Dispatch (needs LINE + Twilio credentials).
+Phases 1–6 complete. **Priority: Phase 7 — UI Redesign sign-off** (verify Appointments/Pets/EMR; presentational only — no routing/IA changes), then **Phase 8 — RBAC/Platform** (start sub-task 5-A; write T-5B-00 regression guard first). **Next (credential-free): Phase 9 — i18n Rollout** (full clinic-screen Thai; extends existing i18n foundation). Phase 10 (Payment Gateway) and Phase 11 (LINE/SMS) postponed until credentials available.
 
 ```
-/gsd:execute-phase session-g
+/gsd:execute-phase 05-rbac-platform-restructure   # Phase 8 (sub-tasks keep 5-x IDs)
 ```
 
 ---
 *State initialized: 2026-06-10*
+
+---
+
+## Phase 8 queued — RBAC + Platform Console (was "Phase 5"; designed 2026-06-13 by @ba-agent)
+
+RBAC + Platform Console + structure restructure designed and documented (no code yet, per scope
+decision D3). Artefacts: spec `SPEC-RBAC-PLATFORM-01`, tasks `phase5-rbac-platform-tasks.md`,
+skills `anemal-rbac-matrix` / `anemal-platform-console` / `anemal-ba-toolkit`, agent `@ba-agent`,
+GSD phase `05-rbac-platform-restructure`. Ready for Claude Code to implement.
+
+| Decision | Choice |
+|---|---|
+| SuperAdmin placement | Separate Platform Console (`/platform/*`) |
+| RBAC granularity | Configurable roles per clinic (system roles seeded + clone/customize) |
+| This round scope | Plan + docs + BA agent + skills only |
