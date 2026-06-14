@@ -2,14 +2,16 @@
 import { useQuery } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
+import { useAuthStore } from '../../store/authStore'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Pet { id: number; name: string; species: string; photoUrl?: string; allergies?: string; underlyingConditions?: string; owner?: { firstName: string; lastName: string; phone: string } }
-interface MedicalRecord { id: number; petId: number; createdAt: string; assessment?: string; subjective?: string; objective?: string; plan?: string; weightKg?: number; temperatureC?: number; heartRateBpm?: number; respRateRpm?: number; anatomyAnnotation?: any; prescriptions?: Prescription[]; attachments?: Attachment[] }
+interface MedicalRecord { id: number; petId: number; createdAt: string; assessment?: string; subjective?: string; objective?: string; plan?: string; weightKg?: number; temperatureC?: number; heartRateBpm?: number; respRateRpm?: number; anatomyAnnotation?: AnatomyAnnotation; prescriptions?: Prescription[]; attachments?: Attachment[] }
 interface Prescription { id: number; quantity: number; unit?: string; dosageInstruction?: string; drug: { id: number; name: string; unit?: string; stockQuantity: number } }
 interface Attachment { id: number; fileName: string; fileUrl: string; fileType?: string }
 interface Drug { id: number; name: string; unit?: string; stockQuantity: number; barcode?: string }
 interface SearchResult { petId: number; petName: string; species: string; ownerName: string; phone: string }
+interface AnatomyAnnotation { template: string; imageData: string }
 
 // ─── Anatomy Canvas ───────────────────────────────────────────────────────────
 const TEMPLATES = ['Canine - Lateral', 'Canine - Dorsal', 'Feline - Lateral']
@@ -18,7 +20,7 @@ const TEMPLATES = ['Canine - Lateral', 'Canine - Dorsal', 'Feline - Lateral']
 // so these mirror the error / on-surface / info token hexes from tailwind.config.js.
 const PEN_COLORS = ['#EF4444', '#191c1e', '#0EA5E9'] as const
 
-function AnatomyCanvas({ value, onChange }: { value: any; onChange: (v: any) => void }) {
+function AnatomyCanvas({ value, onChange }: { value: AnatomyAnnotation | null; onChange: (v: AnatomyAnnotation | null) => void }) {
   const canvasRef  = useRef<HTMLCanvasElement>(null)
   const drawing    = useRef(false)
   const [tool, setTool]     = useState<'pen' | 'eraser'>('pen')
@@ -36,6 +38,8 @@ function AnatomyCanvas({ value, onChange }: { value: any; onChange: (v: any) => 
     } else {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
     }
+  // value.imageData intentionally excluded — canvas is redrawn only on template change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [template])
 
   const getPos = (e: React.PointerEvent) => {
@@ -170,8 +174,8 @@ function PrescriptionPanel({ recordId, prescriptions, onRefresh }: {
       setQty(1)
       setInstruction('')
       onRefresh()
-    } catch (err: any) {
-      setError(err.response?.data?.error ?? 'Failed to add')
+    } catch (err) {
+      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to add')
     } finally { setSaving(false) }
   }
 
@@ -179,7 +183,7 @@ function PrescriptionPanel({ recordId, prescriptions, onRefresh }: {
     try {
       await api.delete(`/api/prescriptions/${id}`)
       onRefresh()
-    } catch { }
+    } catch { /* deletion failure is non-critical; UI will re-fetch */ }
   }
 
   return (
@@ -242,6 +246,8 @@ type SoapTab = typeof SOAP_TABS[number]
 
 // ─── Main View ────────────────────────────────────────────────────────────────
 export default function ClinicEMR() {
+  const { userId } = useAuthStore()
+
   // Patient selection state
   const [patientSearch, setPatientSearch] = useState('')
   const [selectedPetId, setSelectedPetId] = useState<number | null>(null)
@@ -258,7 +264,7 @@ export default function ClinicEMR() {
   const [tempC, setTempC]             = useState<number | null>(null)
   const [heartRate, setHeartRate]     = useState<number | null>(null)
   const [respRate, setRespRate]       = useState<number | null>(null)
-  const [anatomy, setAnatomy]         = useState<any>(null)
+  const [anatomy, setAnatomy]         = useState<AnatomyAnnotation | null>(null)
   const [saving, setSaving]           = useState(false)
   const [saveMsg, setSaveMsg]         = useState('')
 
@@ -308,6 +314,8 @@ export default function ClinicEMR() {
       setRespRate(record.respRateRpm ?? null)
       setAnatomy(record.anatomyAnnotation ?? null)
     }
+  // record intentionally excluded — effect re-runs only when the record ID changes, not on field updates
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [record?.id, isNewRecord])
 
   const resetForm = () => {
@@ -327,7 +335,7 @@ export default function ClinicEMR() {
     setSaving(true)
     setSaveMsg('')
     try {
-      const body = { petId: selectedPetId, doctorId: 1, subjective, objective, assessment, plan, weightKg, temperatureC: tempC, heartRateBpm: heartRate, respRateRpm: respRate, anatomyAnnotation: anatomy }
+      const body = { petId: selectedPetId, doctorId: userId, subjective, objective, assessment, plan, weightKg, temperatureC: tempC, heartRateBpm: heartRate, respRateRpm: respRate, anatomyAnnotation: anatomy }
 
       if (isNewRecord) {
         const res = await api.post('/api/medical-records', body)
@@ -340,8 +348,8 @@ export default function ClinicEMR() {
       refetchRecords()
       setSaveMsg('Saved')
       setTimeout(() => setSaveMsg(''), 2000)
-    } catch (err: any) {
-      setSaveMsg(err.response?.data?.error ?? 'Failed to save')
+    } catch (err) {
+      setSaveMsg((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save')
     } finally { setSaving(false) }
   }
 

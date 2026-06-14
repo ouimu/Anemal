@@ -6,7 +6,8 @@ import { usePhotoUpload } from '../../hooks/usePhotoUpload'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Owner { id: number; firstName: string; lastName: string; phone: string; email?: string; lineId?: string; address?: string; pets: Pet[] }
-interface Pet   { id: number; ownerId: number; name: string; species: string; breed?: string; color?: string; birthDate?: string; gender?: string; weightKg?: number; microchipId?: string; photoUrl?: string; allergies?: string; underlyingConditions?: string; isActive: boolean; owner?: Owner; vaccinations?: Vaccination[]; medicalRecords?: any[] }
+interface MedicalRecordSummary { id: number; createdAt: string; assessment?: string }
+interface Pet   { id: number; ownerId: number; name: string; species: string; breed?: string; color?: string; birthDate?: string; gender?: string; weightKg?: number; microchipId?: string; photoUrl?: string; allergies?: string; underlyingConditions?: string; isActive: boolean; owner?: Owner; vaccinations?: Vaccination[]; medicalRecords?: MedicalRecordSummary[] }
 interface Vaccination { id: number; vaccineName: string; administeredAt: string; nextDueAt?: string; batchNo?: string; notes?: string }
 
 // ─── Species chip colors ──────────────────────────────────────────────────────
@@ -45,8 +46,8 @@ function AddOwnerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
     try {
       await api.post('/api/owners', { ...form, email: form.email || null, address: form.address || null, lineId: form.lineId || null })
       onSuccess()
-    } catch (err: any) {
-      setError(err.response?.data?.error ?? 'Failed to save')
+    } catch (err) {
+      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save')
     } finally { setSaving(false) }
   }
 
@@ -209,8 +210,8 @@ function AddVaccinationModal({ petId, onClose, onSuccess }: { petId: number; onC
     try {
       await api.post('/api/vaccinations', { petId, ...form, nextDueAt: form.nextDueAt || null, batchNo: form.batchNo || null, notes: form.notes || null })
       onSuccess()
-    } catch (err: any) {
-      setError(err.response?.data?.error ?? 'Failed to save')
+    } catch (err) {
+      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save')
     } finally { setSaving(false) }
   }
 
@@ -237,7 +238,7 @@ function AddVaccinationModal({ petId, onClose, onSuccess }: { petId: number; onC
 }
 
 // ─── Pet Detail Tabs ──────────────────────────────────────────────────────────
-const TABS = ['Overview', 'Medical History', 'Vaccinations'] as const
+const TABS = ['Overview', 'Medical', 'Vaccinations'] as const
 type Tab = typeof TABS[number]
 
 function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVaccination: () => void }) {
@@ -319,7 +320,7 @@ function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVaccinatio
         </div>
       )}
 
-      {tab === 'Medical History' && (
+      {tab === 'Medical' && (
         <div>
           {pet.medicalRecords?.length ? pet.medicalRecords.map(r => (
             <div key={r.id} className="flex justify-between items-center min-h-[48px] border-b border-outline-variant/50 py-sm">
