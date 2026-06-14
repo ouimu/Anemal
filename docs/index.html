@@ -284,8 +284,8 @@
 
   <div class="nav-group">
     <div class="nav-group-label">Roadmap</div>
-    <a class="nav-item" onclick="show('roadmap-upcoming')" href="#" style="color:#16a34a;font-weight:700">
-      <span class="icon">✅</span>Phase 1.5 — Settings UI (Complete)
+    <a class="nav-item" onclick="show('roadmap-upcoming')" href="#" style="color:#006c4a;font-weight:700">
+      <span class="icon">▶️</span>Phase 8 — RBAC &amp; Platform (Active)
     </a>
     <a class="nav-item" onclick="show('roadmap-upcoming')" href="#">
       <span class="icon">🔜</span>Upcoming Work
@@ -294,7 +294,7 @@
       <span class="icon">✅</span>QA Protocols
     </a>
     <a class="nav-item" onclick="show('roadmap-history')" href="#">
-      <span class="icon">📚</span>Completed Phases
+      <span class="icon">📚</span>Completed Phases (1–7)
     </a>
   </div>
 </nav>
@@ -346,9 +346,9 @@
       <tr><td><strong>Phase 6</strong> <span style="font-size:11px;color:#6b7280">(was Sessions A–E)</span></td><td>Production-readiness enhancements — screen specs, PDF receipts, PromptPay QR UI, barcode scan, S3 photo upload</td><td>226</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
       <tr><td><strong>Phase 7</strong> <span style="font-size:11px;color:#6b7280">(redesign)</span></td><td>UI Redesign completion &amp; sign-off — Compassionate Care closeout/verification of Appointments, Pets, EMR (presentational only)</td><td>226</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
       <tr style="background:#f0fdf8"><td><strong>Phase 8</strong> <span style="font-size:11px;color:#6b7280">(was Phase 5)</span></td><td>RBAC, Platform Console &amp; Restructure — two-plane authz, configurable roles, plan quotas, IA cleanup (designed)</td><td>—</td><td><span style="color:#006c4a;font-weight:700">▶️ Priority</span></td></tr>
-      <tr style="opacity:0.7"><td><strong>Phase 9</strong> <span style="font-size:11px;color:#6b7280">(was Session F)</span></td><td>Payment Gateway &amp; Subscription Billing — Omise/Stripe, webhooks, SaaS billing + cron</td><td>—</td><td><span style="color:#6b7280;font-weight:700">⏸ Postponed (Omise + SMTP)</span></td></tr>
-      <tr style="opacity:0.7"><td><strong>Phase 10</strong> <span style="font-size:11px;color:#6b7280">(was Session G)</span></td><td>LINE/SMS real dispatch — wire reminder worker to LINE + Twilio</td><td>—</td><td><span style="color:#6b7280;font-weight:700">⏸ Postponed (LINE + Twilio)</span></td></tr>
-      <tr><td><strong>Phase 11</strong> <span style="font-size:11px;color:#6b7280">(new)</span></td><td>i18n Rollout — full clinic-screen Thai (EN/TH). Foundation shipped (i18n module, app-shell strings, Noto Sans Thai, theme+language cross-device sync); extends coverage to all clinic screens</td><td>—</td><td><span style="color:#2563eb;font-weight:700">📋 Planned</span></td></tr>
+      <tr><td><strong>Phase 9</strong> <span style="font-size:11px;color:#6b7280">(new)</span></td><td>i18n Rollout — full clinic-screen Thai (EN/TH); extends existing i18n foundation to all clinic screens</td><td>—</td><td><span style="color:#2563eb;font-weight:700">📋 Planned</span></td></tr>
+      <tr style="opacity:0.7"><td><strong>Phase 10</strong> <span style="font-size:11px;color:#6b7280">(was Session F)</span></td><td>Payment Gateway &amp; Subscription Billing — Omise/Stripe, webhooks, SaaS billing + cron</td><td>—</td><td><span style="color:#6b7280;font-weight:700">⏸ Postponed (Omise + SMTP)</span></td></tr>
+      <tr style="opacity:0.7"><td><strong>Phase 11</strong> <span style="font-size:11px;color:#6b7280">(was Session G)</span></td><td>LINE/SMS Real Dispatch — wire reminder worker to LINE + Twilio</td><td>—</td><td><span style="color:#6b7280;font-weight:700">⏸ Postponed (LINE + Twilio)</span></td></tr>
     </tbody>
   </table></div>
 
@@ -388,7 +388,7 @@
     <div class="card" onclick="show('roadmap-upcoming')">
       <div class="card-icon">🔜</div>
       <div class="card-title">Upcoming Work</div>
-      <div class="card-desc">Re-sequenced 1–10. ▶️ Phase 7 UI redesign · Phase 8 RBAC/Platform (designed). ⏸ Phase 9 Payment Gateway · Phase 10 LINE/SMS (credential-gated).</div>
+      <div class="card-desc">Re-sequenced 1–11. ▶️ Phase 8 RBAC/Platform (designed). 📋 Phase 9 i18n. ⏸ Phase 10 Payment Gateway · Phase 11 LINE/SMS (credential-gated).</div>
     </div>
     <div class="card" onclick="show('qaproto')">
       <div class="card-icon">✅</div>
@@ -800,7 +800,7 @@ CREATE INDEX idx_pet_reminders_pet          ON pet_reminders(tenant_id, pet_id);
   </ul>
 
   <h2>Current Backlog Owner</h2>
-  <div class="callout ok" style="margin-bottom:8px"><span class="callout-icon">✅</span><span><strong>Phases 1–7 complete (226 tests).</strong> Phase 7 UI redesign sign-off done 2026-06-14 (EMR doctorId fixed, Pets tab aligned). <strong>Next: Phase 8 (RBAC + Platform Console)</strong>. Phase 9/10 postponed (credential-gated). Map + QA: <code>PHASE-RESEQUENCE.md</code>. See <a onclick="show('roadmap-upcoming')" href="#">Upcoming Work →</a></span></div>
+  <div class="callout ok" style="margin-bottom:8px"><span class="callout-icon">✅</span><span><strong>Phases 1–7 complete (226 tests).</strong> Phase 7 UI redesign sign-off done 2026-06-14 (EMR doctorId fixed, Pets tab aligned). <strong>Next: Phase 8 (RBAC + Platform Console)</strong>. Phase 10/11 postponed (credential-gated). Map + QA: <code>PHASE-RESEQUENCE.md</code>. See <a onclick="show('roadmap-upcoming')" href="#">Upcoming Work →</a></span></div>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Phase</th><th>Scope</th><th>Est. Token Cost</th></tr></thead>
     <tbody>
@@ -809,8 +809,9 @@ CREATE INDEX idx_pet_reminders_pet          ON pet_reminders(tenant_id, pet_id);
       <tr style="opacity:0.55"><td><strong>✅ Phase 6</strong> <span style="font-size:11px;color:#6b7280">(was A–E)</span></td><td><s>PDF receipts, PromptPay QR UI, barcode scan, S3 photo upload</s> — Done 2026-06-12 · 226 tests</td><td>~40%</td></tr>
       <tr style="opacity:0.55"><td><strong>✅ Phase 7</strong></td><td><s>UI Redesign completion &amp; sign-off — verify Appointments/Pets/EMR against Compassionate Care specs + 44px audit</s> — Done 2026-06-14 · 226 tests</td><td>~20%</td></tr>
       <tr style="background:#f0fdf8"><td><strong>▶️ Phase 8</strong> <span style="font-size:11px;color:#6b7280">(was Phase 5)</span></td><td>RBAC, Platform Console &amp; Restructure — sub-tasks 5-A…5-G (regression guard first) ← <em>then</em></td><td>multi-session</td></tr>
-      <tr style="opacity:0.7"><td><strong>⏸ Phase 9</strong> <span style="font-size:11px;color:#6b7280">(was F)</span></td><td>Payment gateway (Omise/Stripe, webhooks, subscription billing) — postponed</td><td>~55% + credentials</td></tr>
-      <tr style="opacity:0.7"><td><strong>⏸ Phase 10</strong> <span style="font-size:11px;color:#6b7280">(was G)</span></td><td>LINE/SMS real dispatch — postponed</td><td>~35% + credentials</td></tr>
+      <tr><td><strong>📋 Phase 9</strong> <span style="font-size:11px;color:#6b7280">(new)</span></td><td>i18n Rollout — full clinic-screen Thai (EN/TH); extends existing i18n foundation to all clinic screens</td><td>~20%</td></tr>
+      <tr style="opacity:0.7"><td><strong>⏸ Phase 10</strong> <span style="font-size:11px;color:#6b7280">(was F)</span></td><td>Payment gateway (Omise/Stripe, webhooks, subscription billing) — postponed</td><td>~55% + credentials</td></tr>
+      <tr style="opacity:0.7"><td><strong>⏸ Phase 11</strong> <span style="font-size:11px;color:#6b7280">(was G)</span></td><td>LINE/SMS real dispatch — postponed</td><td>~35% + credentials</td></tr>
     </tbody>
   </table></div>
 
@@ -1032,16 +1033,17 @@ Type: happy_path | edge_case | security | transaction</code></pre>
 
 <!-- ══════════════════ ROADMAP HISTORY ══════════════════ -->
 <div class="page" id="page-roadmap-history">
-  <h1>📜 Roadmap History — Completed Phases</h1>
-  <div class="callout ok"><span class="callout-icon">✅</span><span>Phases 1–6 complete. 226 backend tests passing. Production-ready core platform.</span></div>
-  <div class="callout info"><span class="callout-icon">🔄</span><span><strong>2026-06-13 — Phase re-sequence (full clean resequence).</strong> Backlog flattened to a linear Phase 1–10. <code>1.5→5</code>, Sessions <code>A–E→6</code>, redesign closeout <code>→7</code>, RBAC/Platform <code>Phase 5→8</code>, Payment Gateway <code>F→9</code> (postponed), LINE/SMS <code>G→10</code> (postponed). Redesign track (7+8) prioritized. Stable IDs kept (<code>SPEC-RBAC-PLATFORM-01</code>, <code>phase5-rbac-platform-tasks.md</code>, sub-tasks <code>5-A…5-G</code>). Map + QA validation in <code>PHASE-RESEQUENCE.md</code>. Also corrected stale Phase 1.5 status (was "in progress" → confirmed ✅ complete, 226 tests).</span></div>
+  <h1>📜 Roadmap History — Completed Phases (1–7)</h1>
+  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>Phases 1–7 complete. 226 backend tests passing.</strong> Production-ready core platform with full UI redesign sign-off.</span></div>
+  <div class="callout info"><span class="callout-icon">🔄</span><span><strong>2026-06-13 — Full clean re-sequence.</strong> Backlog flattened to linear Phase 1–10+. <code>1.5→5</code> · Sessions <code>A–E→6</code> · Redesign closeout <code>→7</code> · RBAC/Platform <code>Phase 5→8</code> · Payment Gateway <code>→9</code> (postponed) · LINE/SMS <code>→10</code> (postponed). Stable IDs kept: <code>SPEC-RBAC-PLATFORM-01</code>, <code>phase5-rbac-platform-tasks.md</code>, sub-tasks <code>5-A…5-G</code>. Full map: <code>PHASE-RESEQUENCE.md</code>.</span></div>
+  <div class="callout info"><span class="callout-icon">🔄</span><span><strong>2026-06-14 — Phase reorder (i18n promotion).</strong> i18n Rollout promoted from Phase 11 → <strong>Phase 9</strong> (no credential dependency, can follow Phase 8 immediately). Payment Gateway shifted <code>9→10</code>; LINE/SMS shifted <code>10→11</code>. Stable IDs unchanged.</span></div>
 
   <h2>Phase 1 — Foundation &amp; Security</h2>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Item</th><th>Detail</th></tr></thead>
     <tbody>
       <tr><td><strong>Status</strong></td><td>✅ Complete</td></tr>
-      <tr><td><strong>Tests</strong></td><td>74 passing (15 suites baseline)</td></tr>
+      <tr><td><strong>Tests</strong></td><td>74 passing</td></tr>
       <tr><td><strong>Key Deliverables</strong></td><td>Multi-tenant DB schema (Prisma + PostgreSQL), JWT auth (access 8h / refresh 30d), RBAC middleware, tenant isolation enforcement, React + Vite + Tailwind shell, collapsible sidebar, Admin layout + 6 pages, Login page, Clinic dashboard stub</td></tr>
       <tr><td><strong>Migration</strong></td><td><code>20260101000000_init</code></td></tr>
     </tbody>
@@ -1054,7 +1056,7 @@ Type: happy_path | edge_case | security | transaction</code></pre>
       <tr><td><strong>Status</strong></td><td>✅ Complete</td></tr>
       <tr><td><strong>Tests</strong></td><td>104 passing</td></tr>
       <tr><td><strong>Key Deliverables</strong></td><td>Pet &amp; Owner management (photo, microchip, quick search), Appointments calendar (per doctor/room, time-slot booking, LINE/SMS reminder stubs), EMR (SOAP notes, treatment timeline, lab/X-ray attachments, anatomy canvas stub), Species/Breed/Vaccine master data, full tenant isolation across all new tables</td></tr>
-      <tr><td><strong>Migrations</strong></td><td><code>20260201000000_phase2_pets_owners</code>, <code>20260202000000_phase2_appointments</code>, <code>20260203000000_phase2_emr</code></td></tr>
+      <tr><td><strong>Migrations</strong></td><td><code>20260201000000_phase2_pets_owners</code> · <code>20260202000000_phase2_appointments</code> · <code>20260203000000_phase2_emr</code></td></tr>
     </tbody>
   </table></div>
 
@@ -1065,7 +1067,7 @@ Type: happy_path | edge_case | security | transaction</code></pre>
       <tr><td><strong>Status</strong></td><td>✅ Complete</td></tr>
       <tr><td><strong>Tests</strong></td><td>131 passing</td></tr>
       <tr><td><strong>Key Deliverables</strong></td><td>Drug/supply inventory with auto-deduct on prescription, expiry alerts, barcode scan stub, POS/Billing with invoice + tax receipt generation, QR PromptPay stub, credit card stub, invoice line items linked to EMR visits</td></tr>
-      <tr><td><strong>Migrations</strong></td><td><code>20260401000000_phase3_inventory</code>, <code>20260402000000_phase3_billing</code></td></tr>
+      <tr><td><strong>Migrations</strong></td><td><code>20260401000000_phase3_inventory</code> · <code>20260402000000_phase3_billing</code></td></tr>
     </tbody>
   </table></div>
 
@@ -1080,152 +1082,91 @@ Type: happy_path | edge_case | security | transaction</code></pre>
     </tbody>
   </table></div>
 
-  <h2>Phase 1.5 — Settings &amp; Configuration</h2>
+  <h2>Phase 5 — Settings &amp; Configuration <span style="font-size:12px;color:#6b7280;font-weight:400">(was Phase 1.5)</span></h2>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Item</th><th>Detail</th></tr></thead>
     <tbody>
-      <tr><td><strong>Status</strong></td><td>✅ Complete (A/B/C/D all done 2026-06-10 to 2026-06-11)</td></tr>
-      <tr><td><strong>Tests</strong></td><td>206 passing (24 new in 1.5-B)</td></tr>
-      <tr><td><strong>Key Deliverables</strong></td><td>1.5-A: extended <code>tenant_settings</code>, <code>system_settings</code>, <code>settings_audit_log</code>, AES-256-GCM encryption · 1.5-B: Clinic/System/Personal Settings API, <code>superadmin</code> role, TC-S001–S009 · 1.5-C: SystemSettingsPage (superadmin accordion), TC-S010 timeout test · 1.5-D: SettingsLayout, ClinicProfilePage, OperatingHoursPage, NotificationsPage, PaymentPage, IntegrationsPage</td></tr>
-      <tr><td><strong>Migrations</strong></td><td><code>20260610081405</code> (1.5-A) · <code>20260610134121</code> (1.5-B)</td></tr>
+      <tr><td><strong>Status</strong></td><td>✅ Complete 2026-06-10 to 2026-06-11 (sub-sessions A/B/C/D)</td></tr>
+      <tr><td><strong>Tests</strong></td><td>206 passing (24 new in sub-session B)</td></tr>
+      <tr><td><strong>Key Deliverables</strong></td>
+        <td>
+          <strong>A — DB + Encryption:</strong> extended <code>tenant_settings</code>, <code>system_settings</code> (10 seed rows), <code>settings_audit_log</code>, AES-256-GCM utility<br>
+          <strong>B — Settings API:</strong> Clinic / System / Personal APIs at <code>/api/settings/*</code>, <code>superadmin</code> role, TC-S001–S009<br>
+          <strong>C — System Settings UI:</strong> SystemSettingsPage accordion (Platform / SMTP / Feature Flags), TC-S010 timeout test<br>
+          <strong>D — Frontend Settings Pages:</strong> SettingsLayout, ClinicProfilePage, OperatingHoursPage, NotificationsPage, PaymentPage, IntegrationsPage
+        </td>
+      </tr>
+      <tr><td><strong>Migrations</strong></td><td><code>20260610081405</code> (A) · <code>20260610134121</code> (B)</td></tr>
     </tbody>
   </table></div>
 
-  <h2>Session C — PromptPay QR</h2>
+  <h2>Phase 6 — Production-Readiness Enhancements <span style="font-size:12px;color:#6b7280;font-weight:400">(was Sessions A–E)</span></h2>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Item</th><th>Detail</th></tr></thead>
     <tbody>
-      <tr><td><strong>Status</strong></td><td>✅ Complete 2026-06-12</td></tr>
-      <tr><td><strong>Tests</strong></td><td>220 total (219 passing — TC-S010 pre-existing failure)</td></tr>
-      <tr><td><strong>Key Deliverables</strong></td><td>Installed <code>promptpay-qr</code> + <code>qrcode</code>; added <code>GET /api/invoices/:id/promptpay-qr</code> endpoint (server-authoritative amount, tenant-scoped, 404/422 error codes); updated <code>ClinicBilling.tsx</code> with real two-step QR payment flow (invoice create → QR display → payment confirm); loyalty points carry-through fix; AppError class fix</td></tr>
-      <tr><td><strong>Tests added</strong></td><td>QR-01 through QR-08 (unit) + integration tests = 14 new tests</td></tr>
+      <tr><td><strong>Status</strong></td><td>✅ Complete 2026-06-10 to 2026-06-12</td></tr>
+      <tr><td><strong>Tests</strong></td><td>226 passing</td></tr>
+      <tr><td><strong>Key Deliverables</strong></td>
+        <td>
+          <strong>Screen Specs (A):</strong> Formal UI specs for Appointments (03), Pets (04), EMR (05) in <code>.claude/skills/anemal-screen-specs/references/</code><br>
+          <strong>PDF Receipts (B):</strong> <code>GET /api/invoices/:id/pdf</code> + <code>/api/prescriptions/:id/pdf</code> via <code>pdfkit</code> with NotoSansThai; "Download PDF" button in ClinicBilling<br>
+          <strong>PromptPay QR (C):</strong> <code>GET /api/invoices/:id/promptpay-qr</code> using <code>promptpay-qr</code> + <code>qrcode</code>; two-step payment flow in ClinicBilling; TC-QR-01–08<br>
+          <strong>Barcode Scanning (D):</strong> <code>BarcodeScanner.tsx</code> modal + <code>useBarcodeScanner</code> hook via <code>@zxing/browser</code>; wired into ClinicInventory; StrictMode-safe cleanup<br>
+          <strong>S3 Photo Upload (E):</strong> <code>POST /api/upload/presign</code> (AWS S3 pre-signed URL, tenant-scoped); <code>usePhotoUpload</code> hook; photo UI in AddPetModal
+        </td>
+      </tr>
     </tbody>
   </table></div>
 
-  <h2>Session D — Barcode Scanning (ZXing)</h2>
+  <h2>Phase 7 — UI Redesign Completion &amp; Sign-off <span style="font-size:12px;color:#6b7280;font-weight:400">(Compassionate Care closeout)</span></h2>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Item</th><th>Detail</th></tr></thead>
     <tbody>
-      <tr><td><strong>Status</strong></td><td>✅ Complete 2026-06-12</td></tr>
-      <tr><td><strong>Tests</strong></td><td>220 (no new backend tests — frontend-only change)</td></tr>
-      <tr><td><strong>Key Deliverables</strong></td><td><code>BarcodeScanner.tsx</code> modal with live camera feed + aim overlay + loading/error states; <code>useBarcodeScanner.ts</code> hook using <code>@zxing/browser 0.2.0</code> + <code>@zxing/library 0.22.0</code>; StrictMode-safe cleanup (<code>IScannerControls.stop()</code> + raw <code>MediaStream</code> track stop); <code>ClinicInventory.tsx</code> wired with Scan button, <code>scanning</code> state, <code>handleBarcodeScan</code> useCallback (input sanitised: trim + 100-char cap). No backend changes — existing <code>GET /api/products?search=</code> endpoint used.</td></tr>
-      <tr><td><strong>Security</strong></td><td>ZXing output treated as untrusted: <code>trim().slice(0,100)</code> before entering React state; Prisma <code>contains</code> is parameterised (no SQL injection risk)</td></tr>
+      <tr><td><strong>Status</strong></td><td>✅ Complete 2026-06-14</td></tr>
+      <tr><td><strong>Tests</strong></td><td>226 passing (no new backend tests — presentational-only scope)</td></tr>
+      <tr><td><strong>Scope</strong></td><td>Visual verification + sign-off of <code>ClinicAppointments</code>, <code>ClinicPets</code>, <code>ClinicEMR</code> against Stitch prototypes and screen-specs 03/04/05. No routing or IA changes (those belong to Phase 8-E).</td></tr>
+      <tr><td><strong>Key Deliverables</strong></td>
+        <td>
+          EMR <code>doctorId</code> field bug fixed · Pets tab label aligned to design tokens · 44×44px touch-target audit passed on all three screens · <code>design-alignment-plan.md</code> Phase 2 stamped COMPLETE
+        </td>
+      </tr>
     </tbody>
   </table></div>
 </div>
 
 <!-- ══════════════════ ROADMAP UPCOMING ══════════════════ -->
 <div class="page" id="page-roadmap-upcoming">
-  <h1>🚀 Upcoming Work — Deferred Sessions</h1>
-  <div class="callout info"><span class="callout-icon">💡</span><span>These items were explicitly deferred after Phase 4. All core business logic is in place — these sessions complete the production-readiness layer.</span></div>
+  <h1>🚀 Upcoming Work</h1>
+  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>Phases 1–7 complete · 226 tests passing.</strong> Phase 8 (RBAC + Platform Console) is the active priority. Phase 9 (i18n) planned. Phases 10 &amp; 11 postponed (credential-gated).</span></div>
 
-  <!-- ── Phase 1.5 IN PROGRESS ── -->
-  <div style="border-left:4px solid #d97706;background:#fff;border-radius:8px;padding:16px;margin-bottom:20px">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-      <h2 style="margin:0">🟡 Phase 1.5 — Settings Module <span style="font-size:14px;color:#16a34a">(1.5-A + 1.5-B ✅ done)</span></h2>
-      <span style="background:#f0fdf4;color:#16a34a;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:700">✅ COMPLETE — 1.5-D 6/6 · 1.5-C done · TC-S010 added</span>
-    </div>
-    <p style="margin:0 0 12px;color:#6b7280;font-size:13px">Must complete before PromptPay QR, LINE/SMS dispatch, and payment gateway sessions. Full spec: <code>.claude/roadmap/phase1.5-settings-tasks.md</code></p>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;font-size:13px">
-
-      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px">
-        <div style="font-weight:700;color:#16a34a;margin-bottom:8px">Sub-session 1.5-A — DB + Encryption ✅ DONE 2026-06-10</div>
-        <ul style="margin:0;padding-left:18px;color:#374151;line-height:1.7">
-          <li>✅ S1.1 — extended <code>tenant_settings</code> (design change: no separate clinic_settings)</li>
-          <li>✅ S1.2 — <code>system_settings</code> table + 10 seed rows</li>
-          <li>✅ S1.3 — <code>settings_audit_log</code> table (field-level, masked secrets)</li>
-          <li>✅ S1.4 — AES-256-GCM utility (<code>utils/encryption.ts</code>)</li>
-          <li>✅ S2.4 — Auto-create via upsert + seed</li>
-        </ul>
-        <div style="margin-top:8px;font-size:11px;color:#6b7280">182 tests passing (21 new) · migration <code>20260610081405</code> · next → 1.5-B</div>
-      </div>
-
-      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px">
-        <div style="font-weight:700;color:#16a34a;margin-bottom:8px">Sub-session 1.5-B — Clinic Settings API ✅ DONE 2026-06-10</div>
-        <ul style="margin:0;padding-left:18px;color:#374151;line-height:1.7">
-          <li>✅ S2.1 — Clinic Settings API (8 endpoints at <code>/api/settings/clinic*</code>)</li>
-          <li>✅ S2.2 — System Settings API (pulled forward, minimal — new <code>superadmin</code> role)</li>
-          <li>✅ S2.3 — Personal Preferences API (<code>/api/settings/personal</code>)</li>
-          <li>✅ S4.1 — Tenant isolation tests TC-S001–S004</li>
-          <li>✅ S4.2 — Encryption validation tests TC-S005–S007 (+TC-S008/S009)</li>
-        </ul>
-        <div style="margin-top:8px;font-size:11px;color:#6b7280">206 tests passing (24 new) · migration <code>20260610134121</code> · next → 1.5-D</div>
-      </div>
-
-      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px">
-        <div style="font-weight:700;color:#16a34a;margin-bottom:8px">Sub-session 1.5-C — System Settings Admin UI ✅ DONE 2026-06-11</div>
-        <ul style="margin:0;padding-left:18px;color:#374151;line-height:1.7">
-          <li>✅ <s>S2.2 — System Settings API</s> done in 1.5-B</li>
-          <li>✅ S3.7 — SystemSettingsPage (superadmin accordion: Platform / SMTP / Feature Flags)</li>
-          <li>✅ S4.3 — TC-S010 timeout test added to settings-api.test.ts</li>
-        </ul>
-        <div style="margin-top:8px;font-size:11px;color:#6b7280">2026-06-11 · useSystemSettings hook · /admin/system-settings routes</div>
-      </div>
-
-      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px">
-        <div style="font-weight:700;color:#16a34a;margin-bottom:8px">Sub-session 1.5-D — Frontend Settings Pages ✅ DONE 2026-06-11</div>
-        <ul style="margin:0;padding-left:18px;color:#374151;line-height:1.7">
-          <li>✅ S3.1 — Settings Layout &amp; Navigation</li>
-          <li>✅ S3.2 — Clinic Profile Page</li>
-          <li>✅ S3.3 — Operating Hours Page</li>
-          <li>✅ S3.4 — Notifications Page <span style="color:#16a34a;font-size:12px">(Session G unblocked)</span></li>
-          <li>✅ S3.5 — Payment Page <span style="color:#16a34a;font-size:12px">(Session C unblocked)</span></li>
-          <li>✅ S3.6 — Integrations Page <span style="color:#16a34a;font-size:12px">(done 2026-06-11)</span></li>
-        </ul>
-        <div style="margin-top:8px;font-size:11px;color:#6b7280">6/6 complete · URL bug fixed in all hooks · Phase 1.5 fully done</div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ── Re-sequence banner ── -->
-  <div class="callout ok" style="margin-bottom:20px;border-left:4px solid #006c4a"><span class="callout-icon">🔄</span><span><strong>Backlog re-sequenced 2026-06-13 (full clean resequence → linear Phase 1–10).</strong> Redesign track (Phase 7 + 8) is the priority; Payment Gateway → Phase 9 and LINE/SMS → Phase 10 are postponed (credential-gated). Old→new map + QA validation: <code>PHASE-RESEQUENCE.md</code>. Stable IDs unchanged: <code>SPEC-RBAC-PLATFORM-01</code>, <code>phase5-rbac-platform-tasks.md</code>, sub-tasks <code>5-A…5-G</code>.</span></div>
-
-  <!-- ── Phase 7 — UI Redesign (PRIORITY) ── -->
+  <!-- ── Phase 8 — ACTIVE PRIORITY ── -->
   <div style="border-left:4px solid #006c4a;background:#fff;border-radius:8px;padding:16px;margin-bottom:20px">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-      <h2 style="margin:0">▶️ Phase 7 — UI Redesign completion &amp; sign-off</h2>
-      <span style="background:#dcfce7;color:#006c4a;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:700">PRIORITY — do now</span>
+      <h2 style="margin:0">▶️ Phase 8 — RBAC, Platform Console &amp; Structure Restructure</h2>
+      <span style="background:#dcfce7;color:#006c4a;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:700">ACTIVE PRIORITY · 📐 DESIGNED — ready to build</span>
     </div>
-    <p style="margin:0 0 12px;color:#6b7280;font-size:13px">Compassionate Care closeout/verification of <code>ClinicAppointments</code>, <code>ClinicPets</code>, <code>ClinicEMR</code> (design-alignment Phase 2). Finding: screens already use design tokens (zero <code>brand-*</code>) + <code>MaterialIcon</code> — scope is <strong>verification + sign-off, not a rebuild</strong>.</p>
-    <div style="background:#f0fdf8;border:1px solid #86efac;border-radius:8px;padding:12px;font-size:13px">
-      <ul style="margin:0;padding-left:18px;color:#374151;line-height:1.7">
-        <li>@uiux-agent — verify P2-05/06/07 vs <code>screen-specs/03/04/05</code> + Stitch prototypes (768px + 1024px)</li>
-        <li>@qa-agent — touch-target audit (≥44×44px) on the three screens</li>
-        <li>@pm-agent — stamp <code>design-alignment-plan.md</code> Phase 2 COMPLETE</li>
-      </ul>
-      <div style="margin-top:8px;font-size:11px;color:#b45309">⚠️ Presentational only — NO routing/nav/IA changes here (those belong to Phase 8-E) to avoid rework.</div>
-    </div>
-  </div>
-
-  <!-- ── Phase 8 (was Phase 5) DESIGNED — PRIORITY ── -->
-  <div style="border-left:4px solid #006c4a;background:#fff;border-radius:8px;padding:16px;margin-bottom:20px">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-      <h2 style="margin:0">▶️ Phase 8 — RBAC, Platform Console &amp; Structure Restructure <span style="font-size:13px;color:#6b7280">(was Phase 5)</span></h2>
-      <span style="background:#dcfce7;color:#006c4a;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:700">PRIORITY · 📐 DESIGNED — ready to build</span>
-    </div>
-    <p style="margin:0 0 12px;color:#6b7280;font-size:13px">Two-plane authorization (Clinic vs Platform), configurable permission roles per clinic, plan-based quotas, and IA cleanup. BA spec: <code>.claude/specs/RBAC_Platform_Restructure_Spec.md</code> · tasks: <code>.claude/roadmap/phase5-rbac-platform-tasks.md</code> (sub-task IDs keep the <code>5-x</code> prefix) · skills: <code>anemal-rbac-matrix</code> / <code>anemal-platform-console</code> / <code>anemal-ba-toolkit</code> · agent: <code>@ba-agent</code></p>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;font-size:13px">
+    <p style="margin:0 0 12px;color:#6b7280;font-size:13px">Two-plane authorization (Clinic vs Platform), configurable permission roles per clinic, plan-based quotas, and IA cleanup. BA spec: <code>.claude/specs/RBAC_Platform_Restructure_Spec.md</code> · Tasks: <code>.claude/roadmap/phase5-rbac-platform-tasks.md</code> · Skills: <code>anemal-rbac-matrix</code> / <code>anemal-platform-console</code> / <code>anemal-ba-toolkit</code></p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;font-size:13px;margin-bottom:12px">
       <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px">
-        <div style="font-weight:700;color:#2563eb;margin-bottom:8px">5-A/5-B — RBAC foundation + enforcement</div>
+        <div style="font-weight:700;color:#2563eb;margin-bottom:8px">5-A / 5-B — RBAC Foundation + Enforcement</div>
         <ul style="margin:0;padding-left:18px;color:#374151;line-height:1.7">
-          <li><code>permissions</code>/<code>roles</code>/<code>role_permissions</code> + <code>users.role_id</code></li>
+          <li><code>permissions</code> / <code>roles</code> / <code>role_permissions</code> + <code>users.role_id</code></li>
           <li><code>requirePermission()</code> on every clinic route (view vs edit)</li>
-          <li>Doctor ≠ billing · Staff ≠ EMR edit · regression guard first</li>
+          <li>Doctor ≠ billing · Staff ≠ EMR edit · T-5B-00 regression guard first</li>
           <li>Configurable custom roles per clinic (clone + toggle)</li>
         </ul>
       </div>
       <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px">
-        <div style="font-weight:700;color:#2563eb;margin-bottom:8px">5-C/5-D — Platform plane + Console</div>
+        <div style="font-weight:700;color:#2563eb;margin-bottom:8px">5-C / 5-D — Platform Plane + Console</div>
         <ul style="margin:0;padding-left:18px;color:#374151;line-height:1.7">
           <li><code>platform_users</code> (no tenant) + plane-scoped JWT</li>
           <li>Customer/tenant CRUD · plan/package management</li>
-          <li>Per-customer quotas (branches/staff/owners) → <code>409</code></li>
+          <li>Per-customer quotas (branches/staff/owners) → <code>409</code> on breach</li>
           <li>Per-tenant provisioning (S3, LINE, SMTP)</li>
         </ul>
       </div>
       <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px">
-        <div style="font-weight:700;color:#2563eb;margin-bottom:8px">5-E/5-F/5-G — Frontend + QA</div>
+        <div style="font-weight:700;color:#2563eb;margin-bottom:8px">5-E / 5-F / 5-G — Frontend + QA</div>
         <ul style="margin:0;padding-left:18px;color:#374151;line-height:1.7">
           <li>Three shells: <code>/clinic</code> · <code>/clinic-admin</code> · <code>/platform</code></li>
           <li>Guards: <code>RequirePlane</code> / <code>RequirePermission</code> / <code>&lt;Can&gt;</code></li>
@@ -1234,113 +1175,88 @@ Type: happy_path | edge_case | security | transaction</code></pre>
         </ul>
       </div>
     </div>
-    <div style="margin-top:8px;font-size:11px;color:#6b7280">Designed 2026-06-13 by @ba-agent · no code yet · start with sub-task 5-A (write T-5B-00 regression guard before enforcing 5-B)</div>
+    <div style="font-size:11px;color:#6b7280">Designed 2026-06-13 by @ba-agent · No code yet · Start with sub-task 5-A → write T-5B-00 regression guard before enforcing 5-B</div>
   </div>
 
-  <h2>Deferred Session Overview</h2>
+  <!-- ── Phase 9 — Planned ── -->
+  <div style="border-left:4px solid #2563eb;background:#fff;border-radius:8px;padding:16px;margin-bottom:16px;opacity:0.85">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <h2 style="margin:0;color:#2563eb">📋 Phase 9 — i18n Rollout (Thai / English)</h2>
+      <span style="background:#eff6ff;color:#2563eb;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:700">PLANNED</span>
+    </div>
+    <p style="margin:0 0 8px;color:#6b7280;font-size:13px">Full clinic-screen Thai (EN/TH). Foundation already shipped: i18n module, app-shell strings, Noto Sans Thai font, theme + language cross-device sync. This phase extends coverage to all clinic screens.</p>
+    <div style="font-size:12px;color:#9ca3af;background:#f8fafc;border-radius:6px;padding:8px 12px;display:inline-block">⏳ Planned after Phase 8 · No credential dependencies</div>
+  </div>
+
+  <!-- ── Phase 10 — Postponed ── -->
+  <div style="border-left:4px solid #e2e8f0;background:#fff;border-radius:8px;padding:16px;margin-bottom:16px;opacity:0.75">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <h2 style="margin:0;color:#6b7280">⏸ Phase 10 — Payment Gateway &amp; Subscription Billing</h2>
+      <span style="background:#f1f5f9;color:#6b7280;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:700">POSTPONED — credential-gated</span>
+    </div>
+    <p style="margin:0 0 8px;color:#6b7280;font-size:13px">Real card + PromptPay via Omise (Thai market). <code>services/payment.service.ts</code>, webhook <code>POST /webhooks/omise</code>, SaaS subscription billing tables + trial/expiry cron. Sequenced after Phase 8 so billing builds on the plan/quota model.</p>
+    <div style="font-size:12px;color:#9ca3af;background:#f8fafc;border-radius:6px;padding:8px 12px;display:inline-block">🔑 Requires: Omise API keys + SMTP credentials</div>
+  </div>
+
+  <!-- ── Phase 11 — Postponed ── -->
+  <div style="border-left:4px solid #e2e8f0;background:#fff;border-radius:8px;padding:16px;margin-bottom:20px;opacity:0.75">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <h2 style="margin:0;color:#6b7280">⏸ Phase 11 — LINE / SMS Real Dispatch</h2>
+      <span style="background:#f1f5f9;color:#6b7280;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:700">POSTPONED — credential-gated</span>
+    </div>
+    <p style="margin:0 0 8px;color:#6b7280;font-size:13px">Wire existing reminder worker (<code>workers/reminder.worker.ts</code>) to real LINE Messaging API + Twilio. Store LINE userId on owner record (migration + UI). Currently marks reminders <code>sent</code> without dispatching. Settings prerequisites already done in Phase 5.</p>
+    <div style="font-size:12px;color:#9ca3af;background:#f8fafc;border-radius:6px;padding:8px 12px;display:inline-block">🔑 Requires: LINE channel access token + Twilio SID / Auth Token</div>
+  </div>
+
+  <h2>Execution Order Summary</h2>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Session</th><th>Scope</th><th>Effort</th><th>Prerequisites</th></tr></thead>
+    <thead><tr><th>Phase</th><th>Scope</th><th>Status</th><th>Gate / Blocker</th></tr></thead>
     <tbody>
-      <tr style="opacity:0.55">
-        <td><strong>✅ Session A</strong><br><s>Screen Specs 03–05</s></td>
-        <td><s>Write formal UI specs for Appointments (03), Pets &amp; Owner (04), EMR (05) — retroactive documentation from Stitch prototype + shipped component.</s><br><em>Done 2026-06-10 — see <code>.claude/skills/anemal-screen-specs/references/</code></em></td>
-        <td>~25% budget</td>
-        <td>—</td>
-      </tr>
-      <tr style="opacity:0.55">
-        <td><strong>✅ Session B</strong><br><s>PDF Receipts</s></td>
-        <td><s>Generate printable PDF invoices and prescription slips using <code>pdfkit</code> with Thai-compatible font embed (NotoSansThai). Add <code>GET /api/invoices/:id/pdf</code> and <code>GET /api/prescriptions/:id/pdf</code> streaming endpoints. "Download PDF" button in ClinicBilling.</s><br><em>Done 2026-06-10 — 161 tests (6 new PDF tests). Axios blob download with JWT auth.</em></td>
-        <td>~40% budget</td>
-        <td>No external credentials needed. S3 not required — buffer streamed directly.</td>
-      </tr>
-      <tr style="opacity:0.55">
-        <td><strong>✅ Session C</strong><br><s>PromptPay QR (UI only)</s></td>
-        <td><s>Generate EMVCo PromptPay QR image at POS checkout using the <code>qrcode</code> npm package — no gateway required. <code>GET /api/invoices/:id/promptpay-qr</code> returns base64 PNG. Display in ClinicBilling payment modal.</s><br><em>Done 2026-06-12 — 220 tests total (219 passing). Two-step flow: invoice create → QR display → payment confirm. AppError fix + loyalty carry-through.</em></td>
-        <td>~25% budget</td>
-        <td>No credentials. Full gateway (Omise/Stripe webhooks) deferred to Session F.</td>
-      </tr>
-      <tr style="opacity:0.55">
-        <td><strong>✅ Session D</strong><br><s>Barcode Scanning (ZXing)</s></td>
-        <td><s>Enable camera barcode scan in ClinicInventory. <code>BarcodeScanner.tsx</code> modal using <code>@zxing/browser</code>. Scan → auto-fill product search.</s><br><em>Done 2026-06-12 — BarcodeScanner modal + useBarcodeScanner hook wired into ClinicInventory. StrictMode-safe cleanup. Input sanitised before state.</em></td>
-        <td>~30% budget</td>
-        <td>No credentials needed.</td>
-      </tr>
-      <tr style="opacity:0.55">
-        <td><strong>✅ Session E</strong><br><s>S3 Photo Upload</s> <span style="font-size:11px;color:#6b7280">(→ Phase 6)</span></td>
-        <td><s>Real AWS S3 pre-signed URL upload for pet photos. <code>POST /api/upload/presign</code> scoped to <code>tenants/{tenantId}/</code>. <code>usePhotoUpload</code> hook.</s><br><em>Done 2026-06-12 — 226 tests (mocked; activate with AWS keys).</em></td>
-        <td>~35% budget</td>
-        <td>AWS account + S3 bucket + IAM keys in <code>.env</code></td>
-      </tr>
-      <tr style="opacity:0.7">
-        <td><strong>⏸ Phase 9</strong><br>Payment Gateway <span style="font-size:11px;color:#6b7280">(was Session F)</span></td>
-        <td><strong>Postponed.</strong> Real card + PromptPay via Omise (Thai market). <code>services/payment.service.ts</code>, webhook <code>POST /webhooks/omise</code>, SaaS subscription billing tables + trial/expiry cron. <em>Sequenced after Phase 8 so billing builds on the plan/quota model.</em></td>
-        <td>~55% budget</td>
-        <td>Omise API keys + SMTP credentials. Highest complexity.</td>
-      </tr>
-      <tr style="opacity:0.7">
-        <td><strong>⏸ Phase 10</strong><br>LINE / SMS Dispatch <span style="font-size:11px;color:#6b7280">(was Session G)</span></td>
-        <td><strong>Postponed.</strong> Wire existing reminder worker (<code>workers/reminder.worker.ts</code>) to real LINE Messaging API + Twilio. Store LINE userId on owner record (migration + UI). Currently marks reminders <code>sent</code> without dispatching. <em>Settings prerequisites already done in Phase 5.</em></td>
-        <td>~35% budget</td>
-        <td>LINE channel access token + Twilio SID / Auth Token</td>
-      </tr>
+      <tr style="opacity:0.5"><td><strong>1–7</strong></td><td>Foundation → UI redesign</td><td>✅ Complete (226 tests)</td><td>—</td></tr>
+      <tr style="background:#f0fdf8"><td><strong>8</strong></td><td>RBAC + Platform Console + IA restructure</td><td><strong>▶️ Active priority</strong></td><td>Start sub-task 5-A</td></tr>
+      <tr><td><strong>9</strong></td><td>i18n full rollout (EN/TH)</td><td>📋 Planned</td><td>After Phase 8</td></tr>
+      <tr style="opacity:0.7"><td><strong>10</strong></td><td>Payment Gateway (Omise/Stripe + SaaS billing)</td><td>⏸ Postponed</td><td>Omise + SMTP keys</td></tr>
+      <tr style="opacity:0.7"><td><strong>11</strong></td><td>LINE / SMS real dispatch</td><td>⏸ Postponed</td><td>LINE token + Twilio SID</td></tr>
     </tbody>
   </table></div>
 
-  <h2>Recommended Order</h2>
-  <ol>
-    <li><del><strong>Session A</strong> — screen specs (documentation)</del> ✅ Done 2026-06-10</li>
-    <li><del><strong>Session B</strong> — PDF receipts (no credentials, immediate customer value)</del> ✅ Done 2026-06-10</li>
-    <li><del><strong>Phase 1.5-A</strong> — Settings DB + Encryption (migration, AES-256-GCM, audit log)</del> ✅ Done 2026-06-10 · 182 tests</li>
-    <li><del><strong>Phase 1.5-B</strong> — Settings API (S2.1 · S2.2 minimal · S2.3 · TC-S001–S009)</del> ✅ Done 2026-06-10 · 206 tests</li>
-    <li><del><strong>Phase 1.5-D (S3.1–S3.5)</strong> — Settings Layout, Clinic Profile, Operating Hours, Notifications, Payment</del> ✅ Done 2026-06-11 · Sessions C &amp; G unblocked</li>
-    <li><del><strong>Phase 3 (1.5-D S3.6 + 1.5-C)</strong> — IntegrationsPage, SystemSettingsPage, TC-S010, hook URL fix</del> ✅ Done 2026-06-11 · Phase 1.5 fully complete</li>
-    <li><del><strong>Session C</strong> — PromptPay QR UI (installed promptpay-qr + qrcode, GET /api/invoices/:id/promptpay-qr, two-step payment flow)</del> ✅ Done 2026-06-12 · 220 tests</li>
-    <li><del><strong>Session D</strong> — Barcode scanning (ZXing) — BarcodeScanner modal + useBarcodeScanner hook wired into ClinicInventory</del> ✅ Done 2026-06-12</li>
-    <li><del><strong>Session E</strong> — S3 photo upload (@aws-sdk/client-s3, POST /api/upload/presign, usePhotoUpload hook, AddPetModal photo UI)</del> ✅ Done 2026-06-12 · 226 tests <span style="font-size:11px;color:#6b7280">(→ Phase 6)</span></li>
-    <li><del><strong>Phase 7</strong> — UI redesign sign-off (verify Appointments/Pets/EMR, 44px audit)</del> ✅ Done 2026-06-14 · EMR doctorId fixed · Pets tab label aligned</li>
-    <li><strong>▶️ Phase 8</strong> — RBAC, Platform Console &amp; Restructure (was Phase 5; start 5-A, regression guard first) — <em>PRIORITY, do now</em></li>
-    <li><strong>⏸ Phase 9</strong> — Payment gateway (was Session F; needs Omise + SMTP) — postponed</li>
-    <li><strong>⏸ Phase 10</strong> — LINE/SMS dispatch (was Session G; needs LINE + Twilio) — postponed</li>
-  </ol>
+  <h2>How to Start Phase 8 ▶️</h2>
+  <div class="callout ok" style="margin-bottom:12px"><span class="callout-icon">▶️</span><span>Start with sub-task <strong>5-A</strong> (RBAC schema + seed + permission middleware). <strong>Write the T-5B-00 regression guard before enforcing 5-B.</strong> All 226 existing tests must stay green throughout.</span></div>
 
-  <h2>How to Start — Phase 8 Next ▶️</h2>
-  <div class="callout ok" style="margin-bottom:12px"><span class="callout-icon">▶️</span><span>Phases 1–7 complete · 226 tests passing. <strong>Phase 8 (RBAC + Platform Console &amp; Restructure)</strong> is the active priority — start with 5-A (RBAC schema + seed + permission middleware), regression guard first. Phase 9 (Payment Gateway) and Phase 10 (LINE/SMS) postponed until credentials available.</span></div>
+  <h3>Delegate to Agents (copy/paste into Claude Code)</h3>
+  <pre><code># Phase 8 — sub-task 5-A: RBAC schema + migration
+Use the db-agent subagent.
+Task: Phase 8 sub-task 5-A — create permissions/roles/role_permissions tables + users.role_id
+Load: anemal-db-context, anemal-rbac-matrix, .claude/specs/RBAC_Platform_Restructure_Spec.md §9
+Deliver: Prisma migration (+down) and updated schema.prisma; report file paths + isolation test
 
-  <h3>Invoke Next Phase from Claude Code</h3>
-  <pre><code># Phase 7: UI redesign sign-off (use @uiux-agent, then @qa-agent)
-Use the @uiux-agent subagent.
-Task: Phase 7 — verify ClinicAppointments/ClinicPets/ClinicEMR vs screen-specs 03/04/05
-Load skill: anemal-design-system, anemal-screen-specs
-Deliver: gap report + 44px audit; stamp design-alignment-plan.md Phase 2 COMPLETE (presentational only)
+# Phase 8 — sub-task 5-B: Permission enforcement (after T-5B-00 regression guard)
+Use the qa-agent subagent.
+Task: Write T-5B-00 regression guard — baseline test that all 226 existing tests still pass post-RBAC migration
+Load: anemal-rbac-matrix, .claude/roadmap/phase5-rbac-platform-tasks.md
+Deliver: test file at src/backend/src/tests/integration/rbac-regression.test.ts
 
-# Phase 8-A/8-B: RBAC foundation (use @db-agent first, then @dev-agent + @qa-agent)
-Use the @db-agent subagent.
-Task: Phase 8 (sub-task 5-A) — Create permissions/roles schema + migration
-Load skill: anemal-db-context, anemal-rbac-matrix, RBAC_Platform_Restructure_Spec.md
-Deliver: Prisma migration + schema.prisma update + isolation test; QA writes T-5B-00 regression guard FIRST
-
-# Phase 9 / Phase 10 — POSTPONED (credential-gated)
-# Phase 9 (was Session F): Payment gateway — needs Omise API keys + SMTP
-# Phase 10 (was Session G): LINE/SMS dispatch — needs LINE token + Twilio SID/Auth</code></pre>
+# Phase 9 — i18n Rollout (planned — no credential dependencies)
+# Phase 10 / Phase 11 — POSTPONED (credential-gated)
+# Phase 10: Payment gateway — needs Omise API keys + SMTP
+# Phase 11: LINE/SMS dispatch — needs LINE token + Twilio SID/Auth</code></pre>
 
   <!-- ── Test Scripts ── -->
-  <h2>📊 Test Scripts & QA Protocol by Phase</h2>
-  <div class="callout warn"><span class="callout-icon">⚠️</span><span>Before starting any phase, always run the corresponding test suite AND verify tenant isolation. No exceptions.</span></div>
+  <h2>📊 Test Commands by Phase</h2>
+  <div class="callout warn"><span class="callout-icon">⚠️</span><span>Always run <code>multitenancy-isolation.test.ts</code> and TypeScript compile check before starting any phase. No exceptions.</span></div>
 
-  <h3>Phase-by-Phase Test Commands</h3>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Phase / Session</th><th>Test Command</th><th>Expected Count</th><th>Isolation Tests</th></tr></thead>
+    <thead><tr><th>Phase</th><th>Test Command</th><th>Expected Count</th><th>Key Isolation Check</th></tr></thead>
     <tbody>
-      <tr><td><strong>Phase 1</strong> (done)</td><td><code>npm test -- --testNamePattern="Phase 1|Auth|RBAC"</code></td><td>74</td><td><code>multitenancy-isolation.test.ts</code> (9 tests)</td></tr>
-      <tr><td><strong>Phase 2</strong> (done)</td><td><code>npm test -- --testNamePattern="Phase 2|Pets|Appointments|EMR"</code></td><td>104</td><td>Pet/Owner/Appt isolation per tenant</td></tr>
-      <tr><td><strong>Phase 3</strong> (done)</td><td><code>npm test -- --testNamePattern="Phase 3|Inventory|Billing"</code></td><td>131</td><td>Inventory by branch + tenant, billing per tenant</td></tr>
-      <tr><td><strong>Phase 4</strong> (done)</td><td><code>npm test -- --testNamePattern="Phase 4|Inpatient|Grooming|Blood|Loyalty"</code></td><td>155</td><td>All advanced module isolation</td></tr>
-      <tr><td><strong>Phase 1.5 A/B</strong> (done)</td><td><code>npm test -- --testNamePattern="settings-api|encryption"</code></td><td>206</td><td>TC-S001–S009 encryption + API isolation</td></tr>
-      <tr><td><strong>Session C</strong> (done)</td><td><code>npm test -- --testNamePattern="promptpay|QR"</code></td><td>220 (tc-qr-01–qr-08)</td><td>QR endpoint tenant scoping</td></tr>
-      <tr><td><strong>Session D</strong> (done)</td><td>Frontend only — no new backend tests</td><td>220</td><td>BarcodeScanner input sanitization</td></tr>
-      <tr><td><strong>Session E</strong> (done)</td><td>S3 stub tests (presigned URL generation)</td><td>226</td><td>S3 key prefix scoped to tenant/{id}</td></tr>
-      <tr style="background:#f0fdf8"><td><strong>Phase 8</strong> (next · was Phase 5)</td><td><code>npm test -- --testNamePattern="permissions|RBAC|roles"</code></td><td>260+ (25+ new)</td><td>Permission matrix enforcement · plane isolation (clinic vs platform) · T-5B-00 regression guard first</td></tr>
-      <tr style="opacity:0.7"><td><strong>Phase 10</strong> (postponed · was Session G)</td><td><code>npm test -- --testNamePattern="reminders|LINE|Twilio"</code></td><td>235+ (10+ new)</td><td>Reminder dispatch per tenant · owner.line_user_id scoped</td></tr>
+      <tr style="opacity:0.5"><td><strong>1</strong> (done)</td><td><code>npm test -- --testNamePattern="Phase 1|Auth|RBAC"</code></td><td>74</td><td><code>multitenancy-isolation.test.ts</code></td></tr>
+      <tr style="opacity:0.5"><td><strong>2</strong> (done)</td><td><code>npm test -- --testNamePattern="Phase 2|Pets|Appointments|EMR"</code></td><td>104</td><td>Pet/Owner/Appt per-tenant isolation</td></tr>
+      <tr style="opacity:0.5"><td><strong>3</strong> (done)</td><td><code>npm test -- --testNamePattern="Phase 3|Inventory|Billing"</code></td><td>131</td><td>Inventory + billing per tenant</td></tr>
+      <tr style="opacity:0.5"><td><strong>4</strong> (done)</td><td><code>npm test -- --testNamePattern="Phase 4|Inpatient|Grooming|Blood|Loyalty"</code></td><td>155</td><td>All advanced module isolation</td></tr>
+      <tr style="opacity:0.5"><td><strong>5</strong> (done)</td><td><code>npm test -- --testNamePattern="settings-api|encryption"</code></td><td>206</td><td>TC-S001–S009 encryption + API isolation</td></tr>
+      <tr style="opacity:0.5"><td><strong>6</strong> (done)</td><td><code>npm test</code> (full suite)</td><td>226</td><td>QR endpoint tenant scoping · S3 key prefix scoped to <code>tenant/{id}</code></td></tr>
+      <tr style="opacity:0.5"><td><strong>7</strong> (done)</td><td>Frontend-only — no new backend tests</td><td>226</td><td>Touch targets 44×44px verified manually</td></tr>
+      <tr style="background:#f0fdf8"><td><strong>8</strong> (next)</td><td><code>npm test -- --testNamePattern="permissions|RBAC|roles"</code></td><td>260+ (25+ new)</td><td>Permission matrix · plane isolation (clinic vs platform) · T-5B-00 first</td></tr>
+      <tr style="opacity:0.7"><td><strong>10</strong> (postponed)</td><td><code>npm test -- --testNamePattern="reminders|LINE|Twilio"</code></td><td>235+ (10+ new)</td><td>Reminder dispatch · <code>owner.line_user_id</code> scoped per tenant</td></tr>
     </tbody>
   </table></div>
 
