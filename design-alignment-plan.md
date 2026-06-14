@@ -512,15 +512,17 @@ SETTINGS TAB (form):
 
 ### Phase 2 — Before Phase 2 UI work begins
 
-| # | Target file | Instruction |
+> **Status: COMPLETE** (2026-06-14) — All 3 screens verified: tokens ✅, 44px ✅, Material Symbols ✅, structure ✅. EMR doctorId fixed (now from useAuthStore). Pets tab label aligned to spec.
+
+| # | Target file | Status |
 |---|---|---|
-| P2-01 | `.claude/specs/screen-specs/03-appointments.md` | Create |
-| P2-02 | `.claude/specs/screen-specs/04-pet-owner.md` | Create |
-| P2-03 | `.claude/specs/screen-specs/05-emr.md` | Create |
-| P2-04 | `.claude/roadmap/phase2-tasks.md` | Add design references |
-| P2-05 | `src/frontend/src/views/clinic/ClinicAppointments.tsx` | Redesign per spec |
-| P2-06 | `src/frontend/src/views/clinic/ClinicPets.tsx` | Redesign per spec |
-| P2-07 | `src/frontend/src/views/clinic/ClinicEMR.tsx` | Redesign per spec |
+| P2-01 | `.claude/specs/screen-specs/03-appointments.md` | ✅ Done |
+| P2-02 | `.claude/specs/screen-specs/04-pet-owner.md` | ✅ Done |
+| P2-03 | `.claude/specs/screen-specs/05-emr.md` | ✅ Done |
+| P2-04 | `.claude/roadmap/phase2-tasks.md` | ✅ Done |
+| P2-05 | `src/frontend/src/views/clinic/ClinicAppointments.tsx` | ✅ Verified |
+| P2-06 | `src/frontend/src/views/clinic/ClinicPets.tsx` | ✅ Verified + tab label fixed |
+| P2-07 | `src/frontend/src/views/clinic/ClinicEMR.tsx` | ✅ Verified + doctorId fixed |
 
 ### Phase 3 — Commercial UI
 

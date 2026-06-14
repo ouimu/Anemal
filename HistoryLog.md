@@ -2,6 +2,149 @@
 
 ---
 
+## 📅 Log Entry: 2026-06-14 — Phase 7 UI Redesign Sign-off COMPLETE
+
+### Changes
+- **ClinicEMR.tsx** — Fixed `doctorId` hardcoded to `1`; now uses `const { userId } = useAuthStore()` (spec requirement: doctorId must come from auth store)
+- **ClinicPets.tsx** — Tab label `'Medical History'` → `'Medical'` (aligned to screen-spec 04)
+- **design-alignment-plan.md** — Phase 2 stamped COMPLETE (2026-06-14); all 7 P2-xx items marked ✅
+- **docs/index.html** — Phase 7 → ✅ Complete (226 tests); Phase 8 → ▶️ Priority (do now)
+
+### QA Sign-off
+All 10 criteria PASS: no `brand-*` classes, no emoji, no raw hex outside canvas, 44px targets throughout, Material Symbols only, layout structure matches specs 03/04/05, `doctorId` from auth store.
+
+### Commit
+`4c85830` — fix(phase7): EMR doctorId from auth store; Pets tab label aligned to spec
+
+---
+
+## 📅 Log Entry: 2026-06-13 — Preference cross-device sync (backend) + Phase 11 i18n planned
+
+### 🎯 Summary
+Follow-up to the profile-avatar popup. (b) **Theme + language now persist server-side** and hydrate across devices/logins via `/api/settings/personal`. (a) **Full clinic-screen Thai translation added to the roadmap as Phase 11** (planned, not built this pass).
+
+### 🗄️ Backend (DB change — @db-agent review needed)
+- `users.theme VARCHAR(10) NOT NULL DEFAULT 'light'` added (`schema.prisma` + migration `20260614090000_add_user_theme`).
+- `user.repository.ts` getPreferences select + updatePreferences data include `theme`; `user-preferences.service.ts` interfaces include `theme`; `personalPrefsSchema` adds `theme: enum(light|dark)`.
+- Tenant-scoping unchanged (`updateMany where {id,tenantId}`), so isolation preserved.
+
+### 💻 Frontend
+- New `hooks/usePersonalPreferences.ts`: `usePersonalPreferencesQuery` (enabled when authed), `useSavePreferences` (PUT), `usePreferenceHydration` (hydrate uiStore once from server).
+- `App.tsx` calls `usePreferenceHydration()`. `ProfileMenu` + `PreferencesPage` save to server on toggle (uiStore = instant apply; server = durable cross-device).
+
+### 🗺️ Plan
+- **Phase 11 — i18n Rollout (full clinic-screen Thai)** added to `PHASE-RESEQUENCE.md`, `README.md`, `docs/index.html` with task breakdown + acceptance criteria. Independent of Phase 8; recommended to pair with the Phase 7 redesign track.
+
+### ⚠️ Verify locally (sandbox mount stale — can't run here)
+`cd src/backend && npx prisma migrate dev` (or `prisma migrate deploy`) then `npx prisma generate`; `npm test`. `cd src/frontend && npx tsc --noEmit && npm run lint`. Note: DB default language is `th`; on first login the server value hydrates and wins over the uiStore default (`en`) — expected for the Thai-first market.
+
+---
+
+## 📅 Log Entry: 2026-06-13 — Profile-avatar popup: language (EN/TH) + dark-mode toggles
+
+### 🎯 Summary
+Clicking the top-right avatar now opens a popup with a **language toggle (English / ไทย)** and a **dark-mode toggle**. Built fully functional with a shared store, plus the dark-token engine and i18n scaffolding the features require. Both toggles also remain on the Preferences page, reading the **same** store (no divergence).
+
+### 🧩 Conflict validation (code ↔ design) and resolution
+| # | Conflict found | Resolution |
+|---|---|---|
+| 1 | Existing dark-mode toggle was a **dead switch** — set `data-theme` but tailwind had no `darkMode`, no dark tokens; Stitch design is light-only | Converted all color tokens to **CSS variables** (`rgb(var(--x) / <alpha>)`), `darkMode:'class'`, authored a `.dark` palette in `index.css`; `App.tsx` toggles `.dark` on `<html>`. Existing token classes flip automatically — no per-component edits. ⚠️ Dark palette is **net-new (not from Stitch)** → needs design-owner sign-off; Stitch prototypes untouched. |
+| 2 | Language selector was **non-functional** — no i18n, all strings hardcoded EN; UI fonts lack Thai glyphs | Added dependency-free i18n (`src/i18n`, `useT()` reading uiStore) + EN/TH dicts; translated the app shell (TopNav, sidebar nav, profile popup, Preferences). Added **Noto Sans Thai** to font stack. ⚠️ Page bodies still EN until more keys added; Thai webfont is a design-system addition → sign-off. |
+| 3 | Three competing preference stores (PreferencesPage localStorage vs uiStore vs backend `users.language`) | Single source of truth = **uiStore** (`theme`,`language`, persisted). PreferencesPage refactored onto it; notification prefs kept local. Backend `/api/settings/personal` sync = follow-up. |
+| 4 | Avatar was a `<div>` (no a11y) | New `ProfileMenu` = real `<button>` with `aria-haspopup/expanded`, `role="switch"` toggle, Esc + click-outside close, all targets ≥44×44px. |
+
+### 📂 Files
+New: `src/components/ProfileMenu.tsx`, `src/i18n/index.ts`.
+Changed: `tailwind.config.js` (tokens→CSS vars, darkMode, Thai font), `src/index.css` (:root/.dark palettes, theme-aware base + glass-card), `src/store/uiStore.ts` (+theme/+language), `src/App.tsx` (apply theme/lang to <html>), `src/components/TopNav.tsx` (ProfileMenu + i18n), `src/views/settings/PreferencesPage.tsx` (uiStore + i18n), `src/layouts/ClinicLayout.tsx` + `AdminLayout.tsx` (nav i18n), `index.html` (Noto Sans Thai).
+
+### ⚠️ Verification note
+Sandbox `tsc` could not be run reliably — the Linux mount served a stale, size-clamped snapshot of app-side writes (false errors). Files verified complete via direct read. **Run locally before commit:** `cd src/frontend && npx tsc --noEmit && npm run lint`. Manual review: imports all used, token map is 1:1 with prior palette, persisted store key unchanged (`vetclinic-ui`; new keys default light/en).
+
+---
+
+## 📅 Log Entry: 2026-06-14 — Per-agent model assignment (subagent `model:` frontmatter)
+
+### 🎯 Summary
+Assigned an explicit Claude model to each of the 6 subagents (previously none declared a `model:`, so all inherited the orchestrator's model). Tiered by cognitive demand: `opus` for the two reasoning gatekeepers, `sonnet` for the build/spec roles.
+
+| Agent | Model | Rationale |
+|---|---|---|
+| `@ba-agent` | `opus` | Requirement correctness, RBAC/authorization design, gap analysis, architecture trade-offs — upstream errors cascade |
+| `@qa-agent` | `opus` | Adversarial verification, edge-case discovery, tenant-isolation & RBAC deny-path proofs (security boundary) |
+| `@db-agent` | `sonnet` | Schema/migration/isolation is rule-driven (`anemal-db-context`); sufficient. Consider temporary `opus` bump for Phase 8 RBAC schema |
+| `@dev-agent` | `sonnet` | High-volume layered implementation from ready tasks |
+| `@uiux-agent` | `sonnet` | Prototype → token-compliant spec mapping (pattern-following) |
+| `@pm-agent` | `sonnet` | Structured task breakdown + scope judgment (`haiku` viable for pure templated breakdowns) |
+
+### 📂 Files Changed
+| File | Action |
+|---|---|
+| `.claude/agents/{ba,pm,uiux,db,dev,qa}-agent.md` | Added `model:` frontmatter line after `name:` |
+| `CLAUDE.md` | Agent System table — added **Model** column + model-rationale note |
+| `docs/index.html` | Agent System table — added **Model** column + rationale footnote |
+
+### ⚠️ Notes
+- Values are aliases (`opus`/`sonnet`/`haiku`/`inherit`); take effect on next subagent run. Confirm alias→model mapping resolves as expected in the runtime environment.
+- No code/schema/test impact — config-only change; 226-test baseline unaffected.
+
+---
+
+## 📅 Log Entry: 2026-06-13 — Doc cleanup (obsolete files removed)
+
+### 🎯 Summary
+PM cleanup pass. **Deleted permanently** (user-approved): `session-checkpoint.md` (stale resume checkpoint for an already-shipped refactor; CLAUDE.md rule says clear it) and `docs/vetcare_functional_spec.tex` (off-brand LaTeX, superseded by `docs/functional_spec_detailed.html`). Fixed the two live links to the deleted `.tex` in `functional_spec_detailed.html`. Refreshed stale phase content in `README.md`, `.planning/STATE.md`, `session-summary.md`; rebranded `HOW-TO-RUN.md` infra names (`vetclinic-pg`/`vetclinic_dev` → `anemal-pg`/`anemal_dev`).
+
+### ⚠️ Left for a writable session
+`.claude/skills/anemal-functional-reqs/references/functional-reqs.md` line 3 still references the deleted `.tex` — `.claude/` is read-only in this session. Update that line (drop the `.tex` reference) next time `.claude/` is editable. Historical HistoryLog entries that mention the `.tex` are kept as-is (record of past work).
+
+---
+
+## 📅 Log Entry: 2026-06-13 — Phase Re-sequence (full clean resequence) + tracker drift fix
+
+### 🎯 Summary
+PM/BA/QA pass to re-prioritize the backlog. Postponed Payment Gateway (Session F) and LINE/SMS (Session G); elevated the **redesign track** to top priority. Flattened the mixed Phase/Session backlog into a single linear **Phase 1–10** execution order. Old→new: `1.5→5`, Sessions `A–E→6`, UI-redesign closeout `→7`, RBAC/Platform `Phase 5→8`, Payment Gateway `F→9` (postponed), LINE/SMS `G→10` (postponed). **Stable identifiers were intentionally NOT renamed** (`SPEC-RBAC-PLATFORM-01`, `phase5-rbac-platform-tasks.md`, sub-tasks `5-A…5-G`) to preserve cross-references and git history.
+
+### 🔎 QA validation outcome
+No code/schema/test conflicts (documentation-level resequence). Reorder actually **fixes** a latent ordering issue — Payment Gateway's SaaS billing now follows Phase 8's plan/quota model. `superadmin` interim role (Phase 5) is migrated by Phase 8 T-5C-03 (already planned). Phase 7 constrained to presentational work only (routing/IA belongs to 8-E). Only residual risk: reference integrity, mitigated by carrying the old→new map. Test baseline 226 preserved.
+
+### 🩹 Tracker drift corrected
+`CLAUDE.md` + `session-summary.md` said Phase 1.5 was "🔴 in progress · next 1.5-D"; `docs/` + `.planning/` confirm it is complete (226 tests). Corrected to ✅ as Phase 5.
+
+### 📂 Files Changed
+| File | Action |
+|---|---|
+| `PHASE-RESEQUENCE.md` (root, NEW) | Master worklist: old→new map, priority track, postponed phases, full QA validation |
+| `CLAUDE.md` | Development Phases table re-sequenced 1–10 + map; "Running Phase 8" + "Authorization (Phase 8)" headers; status pointer → PHASE-RESEQUENCE.md |
+| `docs/index.html` | Build banner, stats (6/10), Phase Progress table, quick-nav cards, PM backlog table, Upcoming Work (Phase 7+8 priority blocks, deferred overview, recommended order, how-to-start, test commands), Roadmap History entry |
+| `docs/functional_spec_detailed.html` | Sidebar phase status + topbar badge |
+| `session-summary.md` | Stale "next 1.5-D" status corrected |
+
+---
+
+## 📅 Log Entry: 2026-06-13 — Documentation Update: Agent Invocation Guide + Test Scripts
+
+### 🎯 Summary
+Updated `docs/index.html` to guide users on invoking agents for next development phases (Session G — LINE/SMS, Phase 5 — RBAC + Platform Console). Added comprehensive "Using Agents for Development" section in How to Run, explaining the 6-agent collaboration model + standard workflow + code examples for each next session. Added "Test Scripts & QA Protocol by Phase" section in Upcoming Work: phase-by-phase test commands, pre/post-development QA checklists, isolation verification, and QA sign-off templates.
+
+### 📂 Files Changed
+| File | Action |
+|---|---|
+| `docs/index.html` line 1517+ | **Updated How to Run intro** — now mentions Phase 1.5 + Sessions C/D/E completion + agent invocation |
+| `docs/index.html` line 1590+ | **NEW: "🤖 Using Agents for Development" section** — 6-agent table, standard workflow (5 steps), invocation syntax examples, Session G/F/Phase 5 templates |
+| `docs/index.html` line 1286+ | **NEW: "📊 Test Scripts & QA Protocol by Phase" section** — test commands per phase, expected test counts, isolation verification, pre/post-dev checklists, QA sign-off template, sample output |
+| `docs/index.html` line ~320 | **Updated home build status** — now emphasizes "226 tests passing" + "next: Session G or Phase 5" |
+
+### ✅ Verification
+- docs/index.html now guides both running the app locally AND invoking agents for Phase 5/Session G
+- Test script commands are phase-specific and actionable (developers can copy/paste)
+- QA checklists match `.claude/roadmap/qa-protocols.md` and project practices
+- All agent invocation examples include skill references + deliverable expectations
+
+### ➡️ Next Step
+Developers/orchestrators can now follow "How to Run" → "Using Agents" flow to start Phase 5-A (RBAC foundation) or Session G (LINE/SMS) without ambiguity. Phase 1.5 is fully documented as complete; all prerequisites are clear.
+
+---
+
 ## 📅 Log Entry: 2026-06-10 — Phase 1.5-B: Settings API (S2.1, S2.2-minimal, S2.3, S4.1, S4.2)
 
 ### 🎯 Summary
@@ -627,3 +770,44 @@ This avoids loading 800+ lines of coding rules on every invocation.
 **Rationale:** Sessions C (PromptPay QR), G (LINE/SMS dispatch), and F (Payment Gateway) all require `clinic_settings` DB infrastructure and AES-256 encryption utility. Phase 1.5 must complete before those sessions can begin.
 
 **Tasks added:** 14 tasks (10 Critical, 4 High) | 10 acceptance test cases (TC-S001–TC-S010)
+
+---
+
+## 2026-06-13 — Phase 5 design: RBAC, Platform Console & Structure Restructure (BA/planning only, no code)
+
+**Context:** Product owner requested clearer roles (Staff vs Doctor view/edit; Clinic Admin scope),
+a separated application-level SuperAdmin, page-level access control, and a cleaner structure.
+**Decisions:** D1 separate Platform Console · D2 configurable roles per clinic · D3 plan+docs only.
+
+**Created:**
+- `.claude/specs/RBAC_Platform_Restructure_Spec.md` (SPEC-RBAC-PLATFORM-01) — exec summary, AS-IS/TO-BE gap analysis, two-plane model, permission matrix, Platform Console domain, target structure, proposed DDL, risks, acceptance criteria, phasing.
+- `.claude/agents/ba-agent/SKILL.md` — Senior BA / Solution Consultant agent (6th agent).
+- `.claude/skills/anemal-rbac-matrix/` (SKILL.md + references/permission-matrix.md — authoritative codes, default grid, route→permission map, migration mapping).
+- `.claude/skills/anemal-platform-console/` (SKILL.md + references/platform-domain.md — SaaS admin domain, API & screen inventory, default plans).
+- `.claude/skills/anemal-ba-toolkit/` (SKILL.md + references/templates.md — BA method & templates).
+- `.claude/roadmap/phase5-rbac-platform-tasks.md` — atomic, developer-ready tasks (5-A…5-G) with acceptance criteria.
+- `.planning/phases/05-rbac-platform-restructure/` — 05-RESEARCH.md, 05-PLAN.md (GSD).
+
+**Updated:** CLAUDE.md (6-agent model, Authorization architecture rule, roles, Phase 5 row, skills table, structure), `anemal-functional-reqs` (FR-14/15/16), `anemal-db-context` (Phase 5 tables pointer), `.planning/ROADMAP.md`, `.planning/STATE.md`.
+
+**Status:** Designed, not implemented. Ready for Claude Code (start 5-A; write 5-B-00 regression guard before enforcement).
+
+---
+
+## 2026-06-13 — Agent system wired as real Claude Code subagents + orchestration
+
+**Problem found:** the 6 "agents" lived at `.claude/agents/<name>/SKILL.md` (subfolders) — NOT the
+Claude Code subagent format (`.claude/agents/<name>.md`), so they were never discovered/invocable as
+subagents; `settings.json contextPaths` also pointed to non-existent `*.md` files.
+
+**Done (decision: Real subagents + Orchestrator):**
+- Created `.claude/agents/{ba,pm,uiux,db,dev,qa}-agent.md` — proper subagent files (frontmatter
+  `name`+`description` tuned for auto-delegation; body = concise system prompt that loads the deep
+  `<name>/SKILL.md` + relevant project skills; isolated-context rules; hard rules per role).
+- Added **Development Workflow & Agent Orchestration** to CLAUDE.md: router table, standard pipeline
+  (ba→pm→db/uiux→dev→qa), Phase 5 run order, and copy-paste prompt templates ("Use the <x> subagent…").
+- Fixed `.claude/settings.json contextPaths` to a lean valid set (CLAUDE.md, qa-protocols,
+  database-schema); subagents are auto-discovered so are no longer listed there.
+
+**Security flag (action for owner):** `.claude/settings.local.json` contains a live GitHub PAT in
+plaintext — rotate/revoke it, move to an untracked `.env`, ensure the file is git-ignored. Not auto-edited.
