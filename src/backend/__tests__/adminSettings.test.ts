@@ -21,10 +21,10 @@ let adminId: number
 const SUBDOMAIN = `settings-test-${Date.now()}`
 
 function adminToken() {
-  return `Bearer ${signToken({ userId: adminId, tenantId, role: 'admin' })}`
+  return `Bearer ${signToken({ userId: adminId, tenantId, plane: 'clinic', permSetVersion: 1, role: 'admin' })}`
 }
 function doctorToken() {
-  return `Bearer ${signToken({ userId: adminId + 1000, tenantId, role: 'doctor' })}`
+  return `Bearer ${signToken({ userId: adminId + 1000, tenantId, plane: 'clinic', permSetVersion: 1, role: 'doctor' })}`
 }
 
 beforeAll(async () => {
@@ -174,7 +174,7 @@ describe('admin-1.4 — PUT /admin/settings', () => {
 
   test('settings-11: Staff on PUT /admin/settings → 403', async () => {
     // Type: security / RBAC
-    const staffTok = `Bearer ${signToken({ userId: 99999, tenantId, role: 'staff' })}`
+    const staffTok = `Bearer ${signToken({ userId: 99999, tenantId, plane: 'clinic', permSetVersion: 1, role: 'staff' })}`
     await request(server)
       .put('/admin/settings')
       .set('Authorization', staffTok)

@@ -29,8 +29,8 @@ beforeAll(async () => {
   // Phase 4: every operating context has a branch; snapshot requires one in the token.
   const bA = await prisma.branch.create({ data: { tenantId: tidA, name: 'Main' } })
   const bB = await prisma.branch.create({ data: { tenantId: tidB, name: 'Main' } })
-  tokenA = signToken({ userId: uA.id, tenantId: tidA, branchId: bA.id, role: 'admin' })
-  tokenB = signToken({ userId: uB.id, tenantId: tidB, branchId: bB.id, role: 'admin' })
+  tokenA = signToken({ userId: uA.id, tenantId: tidA, branchId: bA.id, plane: 'clinic', permSetVersion: 1, role: 'admin' })
+  tokenB = signToken({ userId: uB.id, tenantId: tidB, branchId: bB.id, plane: 'clinic', permSetVersion: 1, role: 'admin' })
 
   // Tenant A: one PAID invoice of 500 today. Tenant B: nothing.
   await prisma.invoice.create({

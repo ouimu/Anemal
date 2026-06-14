@@ -2,7 +2,7 @@ import http from 'http'
 import type { Express } from 'express'
 
 
-let signToken: (p: { userId: number; tenantId: number; role: string }) => string
+let signToken: (p: { userId: number; tenantId: number; plane: 'clinic' | 'platform'; permSetVersion: number; role: string }) => string
 let server: http.Server
 let baseUrl: string
 
@@ -48,7 +48,7 @@ beforeAll(async () => {
 afterAll(() => new Promise<void>(resolve => server.close(() => resolve())))
 
 const token = (role: 'admin' | 'doctor' | 'staff') =>
-  signToken({ userId: 1, tenantId: 1, role })
+  signToken({ userId: 1, tenantId: 1, plane: 'clinic', permSetVersion: 1, role })
 
 async function get(path: string, authToken?: string) {
   const headers: Record<string, string> = {}

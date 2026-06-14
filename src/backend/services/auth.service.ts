@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt'
 import { AppError } from '../utils/errors'
 import { signToken } from '../config/jwt'
 import * as authRepo from '../models/auth.repository'
+import { computePermSetVersion } from './permission.service'
 import type { JwtPayload, LoginRequest, LoginResponse } from '../types'
 
 export class AuthError extends AppError {
@@ -45,8 +46,16 @@ export async function login(body: LoginRequest): Promise<LoginResponse> {
 
   await authRepo.touchLastLogin(user.id)
 
-  // 5. Sign JWT — tenantId + branchId embedded
-  const token = signToken({ userId: user.id, tenantId: tenant.id, branchId: user.branchId ?? undefined, role: user.role })
+  // 5. Sign JWT — tenantId + branchId + plane + permSetVersion embedded
+  const permSetVersion = await computePermSetVersion(user.id, tenant.id)
+  const token = signToken({
+    userId:         user.id,
+    tenantId:       tenant.id,
+    branchId:       user.branchId ?? undefined,
+    plane:          'clinic',
+    permSetVersion,
+    role:           user.role,
+  })
 
   return {
     token,
@@ -68,6 +77,7 @@ export async function switchBranch(
   const branch = await authRepo.findBranchById(tenantId, targetBranchId)
   if (!branch) throw new AuthError('Branch not found', 404)
 
-  const token = signToken({ userId, tenantId, branchId: targetBranchId, role })
+  const permSetVersion = await computePermSetVersion(userId, tenantId)
+  const token = signToken({ userId, tenantId, branchId: targetBranchId, plane: 'clinic', permSetVersion, role })
   return { token, userId, tenantId, branchId: targetBranchId, role, name: user.name }
 }

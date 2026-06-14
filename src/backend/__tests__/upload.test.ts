@@ -58,7 +58,7 @@ beforeAll(async () => {
   const user = await prisma.user.create({
     data: { tenantId, name: 'Upload Admin', email: `upload-${Date.now()}@test.local`, passwordHash: hash, role: 'admin' },
   })
-  adminToken = signToken({ userId: user.id, tenantId, branchId: branch.id, role: 'admin' })
+  adminToken = signToken({ userId: user.id, tenantId, branchId: branch.id, plane: 'clinic', permSetVersion: 1, role: 'admin' })
 })
 
 beforeEach(() => {

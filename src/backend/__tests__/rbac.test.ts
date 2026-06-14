@@ -29,7 +29,7 @@ const SUBDOMAIN = `rbac-test-${Date.now()}`
 
 // Token factory
 function tok(userId: number, tenantId: number, role: 'admin' | 'doctor' | 'staff') {
-  return `Bearer ${signToken({ userId, tenantId, role })}`
+  return `Bearer ${signToken({ userId, tenantId, plane: 'clinic', permSetVersion: 1, role })}`
 }
 
 function expiredTok(userId: number, tenantId: number, role: 'admin' | 'doctor' | 'staff') {

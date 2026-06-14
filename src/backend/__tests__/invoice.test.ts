@@ -35,8 +35,8 @@ beforeAll(async () => {
   const bA = await prisma.branch.create({ data: { tenantId: tidA, name: 'Main' } })
   const bB = await prisma.branch.create({ data: { tenantId: tidB, name: 'Main' } })
   branchAId = bA.id
-  tokenA = signToken({ userId: uA.id, tenantId: tidA, branchId: bA.id, role: 'admin' })
-  tokenB = signToken({ userId: uB.id, tenantId: tidB, branchId: bB.id, role: 'admin' })
+  tokenA = signToken({ userId: uA.id, tenantId: tidA, branchId: bA.id, plane: 'clinic', permSetVersion: 1, role: 'admin' })
+  tokenB = signToken({ userId: uB.id, tenantId: tidB, branchId: bB.id, plane: 'clinic', permSetVersion: 1, role: 'admin' })
   doctorId = uA.id
 
   const owner = await prisma.owner.create({ data: { tenantId: tidA, firstName: 'Jane', lastName: 'Doe', phone: `08${ts.toString().slice(-8)}` } })

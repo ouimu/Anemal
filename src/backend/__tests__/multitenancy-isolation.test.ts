@@ -49,7 +49,7 @@ afterAll(async () => {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function tokenFor(userId: number, tenantId: number, role: string) {
-  return signToken({ userId, tenantId, role: role as 'admin' | 'doctor' | 'staff' })
+  return signToken({ userId, tenantId, plane: 'clinic', permSetVersion: 1, role })
 }
 
 // ═════════════════════════════════════════════════════════════════════════════

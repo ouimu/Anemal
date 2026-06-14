@@ -13,6 +13,9 @@ jest.mock('../../config/db', () => ({
 jest.mock('../../config/jwt', () => ({
   signToken: jest.fn().mockReturnValue('mock.jwt.token'),
 }))
+jest.mock('../../services/permission.service', () => ({
+  computePermSetVersion: jest.fn().mockResolvedValue(1),
+}))
 
 import prisma from '../../config/db'
 

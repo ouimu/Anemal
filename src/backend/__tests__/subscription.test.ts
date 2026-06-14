@@ -25,8 +25,8 @@ beforeAll(async () => {
   // Starter plan (default). Start with a single admin user.
   const admin = await prisma.user.create({ data: { tenantId: tid, name: 'Admin', email: `sub-admin-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
   const staff = await prisma.user.create({ data: { tenantId: tid, name: 'Staff', email: `sub-staff-${ts}@t.local`, passwordHash: hash, role: 'staff' } })
-  adminToken = signToken({ userId: admin.id, tenantId: tid, role: 'admin' })
-  staffToken = signToken({ userId: staff.id, tenantId: tid, role: 'staff' })
+  adminToken = signToken({ userId: admin.id, tenantId: tid, plane: 'clinic', permSetVersion: 1, role: 'admin' })
+  staffToken = signToken({ userId: staff.id, tenantId: tid, plane: 'clinic', permSetVersion: 1, role: 'staff' })
 })
 
 afterAll(async () => {

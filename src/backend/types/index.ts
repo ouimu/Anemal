@@ -3,12 +3,14 @@
 
 // JWT token payload
 export interface JwtPayload {
-  userId:   number
-  tenantId: number
-  branchId?: number   // active branch (Phase 4)
-  role:     'admin' | 'doctor' | 'staff' | 'superadmin'
-  iat?:     number
-  exp?:     number
+  userId:         number
+  tenantId:       number
+  branchId?:      number    // active branch (Phase 4)
+  plane:          'clinic' | 'platform'
+  permSetVersion: number
+  role:           string    // transitional — kept until T-5B-02
+  iat?:           number
+  exp?:           number
 }
 
 // Augment Express Request with authenticated context

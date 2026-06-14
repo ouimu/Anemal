@@ -22,7 +22,7 @@ let targetUserId: number
 const SUBDOMAIN = `users-test-${Date.now()}`
 
 function adminToken() {
-  return `Bearer ${signToken({ userId: adminId, tenantId, role: 'admin' })}`
+  return `Bearer ${signToken({ userId: adminId, tenantId, plane: 'clinic', permSetVersion: 1, role: 'admin' })}`
 }
 
 beforeAll(async () => {

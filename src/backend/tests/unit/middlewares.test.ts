@@ -14,7 +14,7 @@ function mockRes() {
 }
 function mockNext(): NextFunction { return jest.fn() }
 
-const validPayload = { userId: 1, tenantId: 1, role: 'admin' as const }
+const validPayload = { userId: 1, tenantId: 1, plane: 'clinic' as const, permSetVersion: 1, role: 'admin' as const }
 
 describe('authMiddleware', () => {
   beforeEach(() => jest.clearAllMocks())
@@ -48,7 +48,7 @@ describe('authMiddleware', () => {
 
 describe('rbacMiddleware — RBAC matrix', () => {
   function reqWithRole(role: string) {
-    return { context: { userId: 1, tenantId: 1, role } } as unknown as Request
+    return { context: { userId: 1, tenantId: 1, plane: 'clinic' as const, permSetVersion: 1, role } } as unknown as Request
   }
 
   it('allows admin to admin-only route', () => {
