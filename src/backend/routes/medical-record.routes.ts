@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { authMiddleware } from '../middlewares/auth.middleware'
+import { requirePlane, requirePermission } from '../middlewares/permission.middleware'
 import { validate } from '../middlewares/validate.middleware'
 import {
   handleListMedicalRecords, handleGetMedicalRecord,
@@ -10,10 +11,10 @@ import { createMedicalRecordSchema, updateMedicalRecordSchema, addAttachmentSche
 const router = Router()
 router.use(authMiddleware)
 
-router.get('/',            handleListMedicalRecords)
-router.get('/:id',         handleGetMedicalRecord)
-router.post('/',           validate(createMedicalRecordSchema), handleCreateMedicalRecord)
-router.put('/:id',         validate(updateMedicalRecordSchema), handleUpdateMedicalRecord)
-router.post('/:id/attachments', validate(addAttachmentSchema), handleAddAttachment)
+router.get('/',                 requirePlane('clinic'), requirePermission('emr.view'),   handleListMedicalRecords)
+router.get('/:id',              requirePlane('clinic'), requirePermission('emr.view'),   handleGetMedicalRecord)
+router.post('/',                requirePlane('clinic'), requirePermission('emr.create'), validate(createMedicalRecordSchema), handleCreateMedicalRecord)
+router.put('/:id',              requirePlane('clinic'), requirePermission('emr.edit'),   validate(updateMedicalRecordSchema), handleUpdateMedicalRecord)
+router.post('/:id/attachments', requirePlane('clinic'), requirePermission('emr.attach'), validate(addAttachmentSchema),       handleAddAttachment)
 
 export default router
