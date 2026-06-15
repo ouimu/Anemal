@@ -4,7 +4,7 @@ import dotenv from 'dotenv'
 import path from 'path'
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') })
 
-import { PrismaClient, Role } from '@prisma/client'
+import { PrismaClient, LegacyRole } from '@prisma/client'
 import bcrypt from 'bcrypt'
 
 const prisma = new PrismaClient()
@@ -49,15 +49,15 @@ async function main() {
 
   const usersToSeed = [
     // Tenant A
-    { tenantId: tenantA.id, name: 'Admin A',  email: 'admin@dev-clinic.com',  role: Role.admin,  password: 'AdminPass1!' },
-    { tenantId: tenantA.id, name: 'Doctor A', email: 'doctor@dev-clinic.com', role: Role.doctor, password: 'DoctorPass1!' },
-    { tenantId: tenantA.id, name: 'Staff A',  email: 'staff@dev-clinic.com',  role: Role.staff,  password: 'StaffPass1!' },
+    { tenantId: tenantA.id, name: 'Admin A',  email: 'admin@dev-clinic.com',  role: LegacyRole.admin,  password: 'AdminPass1!' },
+    { tenantId: tenantA.id, name: 'Doctor A', email: 'doctor@dev-clinic.com', role: LegacyRole.doctor, password: 'DoctorPass1!' },
+    { tenantId: tenantA.id, name: 'Staff A',  email: 'staff@dev-clinic.com',  role: LegacyRole.staff,  password: 'StaffPass1!' },
     // Platform superadmin (Phase 1.5-B) — system_settings access only; lives under dev-clinic
-    { tenantId: tenantA.id, name: 'Platform Super', email: 'super@anemal.co', role: Role.superadmin, password: 'SuperPass1!' },
+    { tenantId: tenantA.id, name: 'Platform Super', email: 'super@anemal.co', role: LegacyRole.superadmin, password: 'SuperPass1!' },
     // Tenant B
-    { tenantId: tenantB.id, name: 'Admin B',  email: 'admin@test-clinic.com',  role: Role.admin,  password: 'AdminPass2!' },
-    { tenantId: tenantB.id, name: 'Doctor B', email: 'doctor@test-clinic.com', role: Role.doctor, password: 'DoctorPass2!' },
-    { tenantId: tenantB.id, name: 'Staff B',  email: 'staff@test-clinic.com',  role: Role.staff,  password: 'StaffPass2!' },
+    { tenantId: tenantB.id, name: 'Admin B',  email: 'admin@test-clinic.com',  role: LegacyRole.admin,  password: 'AdminPass2!' },
+    { tenantId: tenantB.id, name: 'Doctor B', email: 'doctor@test-clinic.com', role: LegacyRole.doctor, password: 'DoctorPass2!' },
+    { tenantId: tenantB.id, name: 'Staff B',  email: 'staff@test-clinic.com',  role: LegacyRole.staff,  password: 'StaffPass2!' },
   ]
 
   for (const u of usersToSeed) {
