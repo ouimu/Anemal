@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { validate } from '../middlewares/validate.middleware'
 import { authMiddleware } from '../middlewares/auth.middleware'
+import { requirePlane } from '../middlewares/permission.middleware'
 import { handleLogin, loginSchema, handleSwitchBranch, switchBranchSchema } from '../controllers/auth.controller'
 
 const router = Router()
@@ -9,6 +10,7 @@ const router = Router()
 router.post('/login', validate(loginSchema), handleLogin)
 
 // POST /auth/switch-branch — re-issue token scoped to another branch (Phase 4)
-router.post('/switch-branch', authMiddleware, validate(switchBranchSchema), handleSwitchBranch)
+// requirePlane('clinic') only — no permission code needed (any authenticated clinic user may switch branch)
+router.post('/switch-branch', authMiddleware, requirePlane('clinic'), validate(switchBranchSchema), handleSwitchBranch)
 
 export default router
