@@ -1,7 +1,8 @@
 // @db-agent reviewed — RBAC check runs AFTER authMiddleware which sets req.context
+// T-5C-03: superadmin removed from Role (migrated to platform_users)
 import { Request, Response, NextFunction } from 'express'
 
-type Role = 'admin' | 'doctor' | 'staff' | 'superadmin'
+type Role = 'admin' | 'doctor' | 'staff'
 
 export function rbacMiddleware(allowedRoles: Role[]) {
   return (req: Request, res: Response, next: NextFunction): void => {

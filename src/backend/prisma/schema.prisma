@@ -1,5 +1,6 @@
 // @db-agent reviewed — every tenant-scoped model has tenantId
 // RULE: All queries must pass tenantId explicitly; never derive inside service
+// Phase 8 (5-A): RBAC foundation — permissions, roles, role_permissions, user_roles, platform_users, plans, tenant_quotas
 
 generator client {
   provider = "prisma-client-js"
@@ -16,6 +17,8 @@ model Tenant {
   subdomain String   @unique @db.VarChar(100)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
+  // Phase 8 (5-A): subscription plan link
+  planId    Int?
 
   users          User[]
   owners         Owner[]
@@ -43,6 +46,11 @@ model Tenant {
   loyaltyTransactions LoyaltyTransaction[]
   auditLogs           AuditLog[]
   petReminders        PetReminder[]
+  // Phase 8 (5-A): RBAC
+  plan      Plan?         @relation(fields: [planId], references: [id])
+  quota     TenantQuota?
+  roles     ClinicRole[]
+  userRoles UserRole[]
 
   @@map("tenants")
 }
@@ -98,17 +106,23 @@ model User {
   name             String   @db.VarChar(255)
   email            String   @db.VarChar(255)
   passwordHash     String   @db.VarChar(255)
-  role             Role
+  role             LegacyRole
+  // Phase 8 (5-A): FK to new roles table; nullable during migration; legacy role string kept until 5-C
+  roleId           Int?
   isActive         Boolean  @default(true)
   allowedStartTime String?  @db.VarChar(5) // "HH:MM" login window start (Phase 4)
   allowedEndTime   String?  @db.VarChar(5) // "HH:MM" login window end
-  language            String @default("th")   @db.VarChar(5)  // personal preference (Phase 1.5-B)
-  defaultCalendarView String @default("week") @db.VarChar(10) // day | week | month
+  language            String @default("th")    @db.VarChar(5)  // personal preference (Phase 1.5-B)
+  defaultCalendarView String @default("week")  @db.VarChar(10) // day | week | month
+  theme               String @default("light") @db.VarChar(10) // light | dark (personal preference, 2026-06-13)
   lastLoginAt      DateTime?
   createdAt        DateTime @default(now())
 
   tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   branch       Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  // Phase 8 (5-A): primary role reference (display/fallback); effective perms come from userRoles union
+  roleRef      ClinicRole? @relation("UserPrimaryRole", fields: [roleId], references: [id])
+  userRoles    UserRole[]
   appointments Appointment[]
   medicalRecords MedicalRecord[]
   // Phase 1.5 settings back-relations
@@ -122,11 +136,13 @@ model User {
   @@map("users")
 }
 
-enum Role {
+// Legacy role enum — superadmin removed in T-5C-03 (migrated to platform_users)
+enum LegacyRole {
   admin
   doctor
   staff
-  superadmin // platform operator — system_settings access only (Phase 1.5-B)
+
+  @@map("Role")
 }
 
 // Platform-global settings — NOT tenant-scoped; super-admin only (Phase 1.5)
@@ -702,4 +718,124 @@ model PetReminder {
   @@index([tenantId, dueDate, status])
   @@index([tenantId, petId])
   @@map("pet_reminders")
+}
+
+// ─── Phase 8 (5-A): RBAC Foundation ─────────────────────────────────────────
+
+// Permission catalogue — global, no tenant_id
+// Seeded once; not tenant-scoped; never filtered by tenantId
+model Permission {
+  code        String           @id @db.VarChar(80)
+  module      String           @db.VarChar(50)
+  action      String           @db.VarChar(30)
+  description String?          @db.VarChar(255)
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+// Roles: tenantId NULL = system template (seeded); tenantId SET = clinic custom role
+// ISOLATION: queries for clinic-custom roles must always filter WHERE tenant_id = :tenantId
+// System roles (tenantId=NULL) are visible to all tenants (no filter on list of system roles)
+model ClinicRole {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int?     // NULL = system template; SET = tenant-scoped custom role
+  name        String   @db.VarChar(80)
+  key         String   @db.VarChar(50)
+  isSystem    Boolean  @default(false)
+  description String?  @db.VarChar(255)
+  permVersion Int      @default(1)  // bumped on permission change -> busts Redis/JWT cache
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  permissions RolePermission[]
+  userRoles   UserRole[]
+  primaryUsers User[]          @relation("UserPrimaryRole")
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("roles")
+}
+
+// Join table: roles <-> permissions
+model RolePermission {
+  roleId         Int
+  permissionCode String @db.VarChar(80)
+
+  role       ClinicRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionCode], references: [code], onDelete: Cascade)
+
+  @@id([roleId, permissionCode])
+  @@map("role_permissions")
+}
+
+// Join table: users <-> roles (CR-01 multi-role support)
+// tenantId on join table enforces isolation: only query WHERE tenantId = :tenantId
+model UserRole {
+  userId   Int
+  roleId   Int
+  tenantId Int  // denormalized for isolation — must match user's tenantId
+
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   ClinicRole @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  tenant Tenant     @relation(fields: [tenantId], references: [id])
+
+  @@id([userId, roleId])
+  @@index([tenantId, userId])
+  @@map("user_roles")
+}
+
+// Platform plane identity — NOT tenant-scoped (no tenantId column)
+// This is the ONLY non-tenant identity table in the system
+model PlatformUser {
+  id           Int          @id @default(autoincrement())
+  name         String       @db.VarChar(255)
+  email        String       @unique @db.VarChar(255)
+  passwordHash String       @db.VarChar(255)
+  role         PlatformRole
+  isActive     Boolean      @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime     @default(now())
+
+  @@map("platform_users")
+}
+
+enum PlatformRole {
+  platform_super_admin
+  platform_support
+
+  @@map("platform_role")
+}
+
+// Subscription plans / packages
+model Plan {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique @db.VarChar(50)  // 'starter'|'professional'|'clinic_plus'
+  name        String   @db.VarChar(100)
+  priceMonth  Decimal  @default(0) @db.Decimal(10, 2)
+  maxBranches Int      @default(1)
+  maxUsers    Int      @default(5)
+  maxOwners   Int?     // NULL = unlimited
+  features    Json     @default("{}")
+  isActive    Boolean  @default(true)
+
+  tenants Tenant[]
+
+  @@map("plans")
+}
+
+// Per-tenant quota overrides (NULL field = inherit from plan)
+// ISOLATION: PK is tenant_id; always access as WHERE tenantId = :tenantId
+model TenantQuota {
+  tenantId    Int      @id
+  maxBranches Int?
+  maxUsers    Int?
+  maxOwners   Int?
+  updatedById Int?     // platform_users.id (cross-plane FK intentionally not enforced at DB level)
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_quotas")
 }

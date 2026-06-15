@@ -1,4 +1,5 @@
 // Phase 1.5-B — Settings API endpoint tests (TC-S001–TC-S007)
+// T-5C-03: system-settings now requires platform plane; superadmin row removed from users.
 // @qa-agent — endpoint-level RBAC, tenant isolation, and encryption checks.
 import request from 'supertest'
 import { Server } from 'http'
@@ -7,6 +8,7 @@ import app from '../../app'
 import prisma from '../../config/db'
 import { decryptField } from '../../utils/encryption'
 import { testLab } from '../../services/connection-test.service'
+import { signPlatformToken } from '../../config/jwt'
 import { seedUserRoles, cleanupUserRoles } from '../helpers/seedUserRoles'
 
 const SUB_A = 'settings-api-a'
@@ -20,7 +22,8 @@ let adminA = ''
 let adminB = ''
 let staffA = ''
 let doctorA = ''
-let superToken = ''
+let platformToken = ''
+let platformUserId = 0
 
 async function login(subdomain: string, email: string): Promise<string> {
   const res = await request(server).post('/auth/login').send({ subdomain, email, password: PASSWORD })
@@ -43,10 +46,21 @@ beforeAll(async () => {
       { tenantId: tidA, name: 'Admin A',  email: 'admin@a.test',  passwordHash, role: 'admin' },
       { tenantId: tidA, name: 'Staff A',  email: 'staff@a.test',  passwordHash, role: 'staff' },
       { tenantId: tidA, name: 'Doctor A', email: 'doctor@a.test', passwordHash, role: 'doctor' },
-      { tenantId: tidA, name: 'Super',    email: 'super@a.test',  passwordHash, role: 'superadmin' },
       { tenantId: tidB, name: 'Admin B',  email: 'admin@b.test',  passwordHash, role: 'admin' },
     ],
   })
+
+  // T-5C-03: create a platform user for system-settings access
+  const platformUser = await prisma.platformUser.create({
+    data: {
+      name:         'SysAdmin',
+      email:        'sysadmin@test.anemal',
+      passwordHash: 'x',
+      role:         'platform_super_admin',
+    },
+  })
+  platformUserId = platformUser.id
+  platformToken = signPlatformToken({ platformUserId: platformUser.id, plane: 'platform', role: 'platform_super_admin' })
 
   // Seed UserRole rows so requirePermission() resolves permissions for these users
   const [uAdminA, uStaffA, uDoctorA, uAdminB] = await Promise.all([
@@ -55,8 +69,6 @@ beforeAll(async () => {
     prisma.user.findFirstOrThrow({ where: { tenantId: tidA, email: 'doctor@a.test' } }),
     prisma.user.findFirstOrThrow({ where: { tenantId: tidB, email: 'admin@b.test'  } }),
   ])
-  // Note: superadmin user is NOT seeded with a clinic role. During Phase 8 (T-5B-02), superadmin
-  // cannot access clinic system-settings until they migrate to the platform plane (T-5C-03).
   await seedUserRoles(prisma, [
     { userId: uAdminA.id,  tenantId: tidA, roleKey: 'clinic_admin' },
     { userId: uStaffA.id,  tenantId: tidA, roleKey: 'clinic_staff' },
@@ -64,11 +76,10 @@ beforeAll(async () => {
     { userId: uAdminB.id,  tenantId: tidB, roleKey: 'clinic_admin' },
   ])
 
-  adminA     = await login(SUB_A, 'admin@a.test')
-  staffA     = await login(SUB_A, 'staff@a.test')
-  doctorA    = await login(SUB_A, 'doctor@a.test')
-  superToken = await login(SUB_A, 'super@a.test')
-  adminB     = await login(SUB_B, 'admin@b.test')
+  adminA  = await login(SUB_A, 'admin@a.test')
+  staffA  = await login(SUB_A, 'staff@a.test')
+  doctorA = await login(SUB_A, 'doctor@a.test')
+  adminB  = await login(SUB_B, 'admin@b.test')
 })
 
 afterAll(async () => {
@@ -77,6 +88,9 @@ afterAll(async () => {
   await prisma.tenantSettings.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.user.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.tenant.deleteMany({ where: { id: { in: [tidA, tidB] } } })
+  if (platformUserId) {
+    await prisma.platformUser.deleteMany({ where: { email: 'sysadmin@test.anemal' } })
+  }
   await prisma.$disconnect()
   server.closeAllConnections()
   await new Promise<void>(resolve => server.close(() => resolve()))
@@ -142,27 +156,32 @@ describe('TC-S003 — RBAC on clinic settings', () => {
   })
 })
 
-describe('TC-S004 — system settings restricted to clinic_admin (Phase 5-B)', () => {
-  it('clinic admin GET /admin/system-settings → 200 with seeded keys', async () => {
-    const res = await request(server).get('/admin/system-settings').set('Authorization', `Bearer ${adminA}`)
+describe('TC-S004 — system settings restricted to platform plane (T-5C-03)', () => {
+  it('platform token GET /admin/system-settings → 200 with seeded keys', async () => {
+    const res = await request(server).get('/admin/system-settings').set('Authorization', `Bearer ${platformToken}`)
     expect(res.status).toBe(200)
     const keys = (res.body.data as { key: string }[]).map(r => r.key)
     expect(keys).toContain('app_name')
   })
 
-  it('staff GET /admin/system-settings → 403', async () => {
+  it('clinic admin GET /admin/system-settings → 403 (wrong plane)', async () => {
+    const res = await request(server).get('/admin/system-settings').set('Authorization', `Bearer ${adminA}`)
+    expect(res.status).toBe(403)
+  })
+
+  it('staff GET /admin/system-settings → 403 (wrong plane)', async () => {
     const res = await request(server).get('/admin/system-settings').set('Authorization', `Bearer ${staffA}`)
     expect(res.status).toBe(403)
   })
 
-  it('doctor GET /admin/system-settings → 403', async () => {
+  it('doctor GET /admin/system-settings → 403 (wrong plane)', async () => {
     const res = await request(server).get('/admin/system-settings').set('Authorization', `Bearer ${doctorA}`)
     expect(res.status).toBe(403)
   })
 
-  it('superadmin GET /admin/system-settings → 403 (no clinic role; migrates in Phase 5-C)', async () => {
-    const res = await request(server).get('/admin/system-settings').set('Authorization', `Bearer ${superToken}`)
-    expect(res.status).toBe(403)
+  it('no token GET /admin/system-settings → 401', async () => {
+    const res = await request(server).get('/admin/system-settings')
+    expect(res.status).toBe(401)
   })
 })
 

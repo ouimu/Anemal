@@ -53,8 +53,7 @@ async function main() {
     { tenantId: tenantA.id, name: 'Admin A',  email: 'admin@dev-clinic.com',  role: LegacyRole.admin,  password: 'AdminPass1!' },
     { tenantId: tenantA.id, name: 'Doctor A', email: 'doctor@dev-clinic.com', role: LegacyRole.doctor, password: 'DoctorPass1!' },
     { tenantId: tenantA.id, name: 'Staff A',  email: 'staff@dev-clinic.com',  role: LegacyRole.staff,  password: 'StaffPass1!' },
-    // Platform superadmin (Phase 1.5-B) — system_settings access only; lives under dev-clinic
-    { tenantId: tenantA.id, name: 'Platform Super', email: 'super@anemal.co', role: LegacyRole.superadmin, password: 'SuperPass1!' },
+    // T-5C-03: superadmin removed from users — platform admin lives in platform_users (see T-5C-02)
     // Tenant B
     { tenantId: tenantB.id, name: 'Admin B',  email: 'admin@test-clinic.com',  role: LegacyRole.admin,  password: 'AdminPass2!' },
     { tenantId: tenantB.id, name: 'Doctor B', email: 'doctor@test-clinic.com', role: LegacyRole.doctor, password: 'DoctorPass2!' },
