@@ -55,8 +55,8 @@ beforeAll(async () => {
     prisma.user.findFirstOrThrow({ where: { tenantId: tidA, email: 'doctor@a.test' } }),
     prisma.user.findFirstOrThrow({ where: { tenantId: tidB, email: 'admin@b.test'  } }),
   ])
-  // Note: superadmin user is NOT seeded with a clinic role. In Phase 5-B, superadmin cannot access
-  // system-settings until they migrate to the platform plane in T-5C-03. See T-5B-02.
+  // Note: superadmin user is NOT seeded with a clinic role. During Phase 8 (T-5B-02), superadmin
+  // cannot access clinic system-settings until they migrate to the platform plane (T-5C-03).
   await seedUserRoles(prisma, [
     { userId: uAdminA.id,  tenantId: tidA, roleKey: 'clinic_admin' },
     { userId: uStaffA.id,  tenantId: tidA, roleKey: 'clinic_staff' },

@@ -19,8 +19,6 @@ Request.prototype.end = function patchedEnd (fn) {
 
 // Seed RBAC (permissions + system roles) for all tests
 // Phase 8 (T-5B) — ensure clinic_admin and other roles have all permissions for enforcement tests
-const seedRbac = require('./prisma/seed-rbac').seedRbac
-seedRbac().catch(err => {
-  console.error('[jest.setup] seedRbac failed:', err)
-  process.exit(1)
-})
+// Note: seedRbac is idempotent (uses upsert) and completes before any test suite runs.
+// Invocation happens via globalSetup (jest-global-setup.js), not here.
+// This setupFile only sets up the supertest agent patch above.

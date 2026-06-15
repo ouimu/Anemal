@@ -225,8 +225,10 @@ export async function seedRbac(): Promise<void> {
     }
 
     // Remove any stale permissions (e.g. if matrix changes narrowed grants)
+    // Guard: only clean system role permissions (role.isSystem = true)
     await prisma.rolePermission.deleteMany({
       where: {
+        role: { isSystem: true },  // Only system roles (never custom tenant roles)
         roleId: role.id,
         permissionCode: { notIn: roleDef.permissions },
       },

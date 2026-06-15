@@ -8,6 +8,8 @@ module.exports = {
   },
   // Ensure dotenv is loaded before tests
   setupFiles: ['dotenv/config', './jest.setup.js'],
+  // Seed RBAC once before any tests run (runs in separate process)
+  globalSetup: './jest-global-setup.js',
   // Map imports so ts-jest resolves them correctly
   moduleFileExtensions: ['ts', 'js', 'json'],
 }
