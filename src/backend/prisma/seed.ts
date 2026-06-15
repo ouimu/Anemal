@@ -6,6 +6,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') })
 
 import { PrismaClient, LegacyRole } from '@prisma/client'
 import bcrypt from 'bcrypt'
+import * as platformAuthRepo from '../models/platform-auth.repository'
 
 const prisma = new PrismaClient()
 const SALT_ROUNDS = 10
@@ -118,6 +119,14 @@ async function main() {
       create: { tenantId: tenantA.id, branchId: branchA.id, productId: item.id, stockQty: p.stockQty, minStockQty: p.minStockQty, expiryDate: p.expiryDate ?? null },
     })
   }
+
+  // T-5C-02 — Platform super admin (platform plane, not tenant-scoped)
+  const platformEmail    = process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.co'
+  const platformPassword = process.env.PLATFORM_ADMIN_PASSWORD || 'PlatformAdmin1!'
+  const platformName     = process.env.PLATFORM_ADMIN_NAME     || 'Platform Super Admin'
+  const platformHash     = await bcrypt.hash(platformPassword, SALT_ROUNDS)
+  await platformAuthRepo.upsertPlatformSuperAdmin(platformEmail, platformName, platformHash)
+  console.log(`  ✓ platform_super_admin — ${platformEmail}`)
 
   console.log(`  ✓ branches: ${branchA.name}, ${branchA2.name} (dev-clinic), ${branchB.name} (test-clinic)`)
   console.log('✅ Seed complete.')

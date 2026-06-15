@@ -11,11 +11,13 @@
 module.exports = async () => {
   console.log('[jest-global-setup] Starting RBAC seed...')
   try {
-    const { seedRbac } = require('./prisma/seed-rbac')
+    const { seedRbac, seedPlatformAdmin } = require('./prisma/seed-rbac')
     await seedRbac()
     console.log('[jest-global-setup] RBAC seed complete.')
+    await seedPlatformAdmin()
+    console.log('[jest-global-setup] Platform admin seed complete.')
   } catch (err) {
-    console.error('[jest-global-setup] seedRbac failed:', err)
+    console.error('[jest-global-setup] seedRbac/seedPlatformAdmin failed:', err)
     process.exit(1)
   }
 }

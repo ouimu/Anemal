@@ -3,6 +3,7 @@ import cors from 'cors'
 import helmet from 'helmet'
 
 import authRoutes from './routes/auth.routes'
+import platformAuthRoutes from './routes/platform-auth.routes'
 import userRoutes from './routes/user.routes'
 import adminRoutes from './routes/admin.routes'
 import clinicRoutes from './routes/clinic.routes'
@@ -46,6 +47,7 @@ app.get('/health', (_req, res) => res.json({ status: 'ok' }))
 app.use(auditMiddleware)
 
 // Routes
+app.use('/platform/auth',   platformAuthRoutes)
 app.use('/auth',            authRoutes)
 app.use('/users',           userRoutes)
 app.use('/admin/system-settings', systemSettingsRoutes) // superadmin only — before /admin

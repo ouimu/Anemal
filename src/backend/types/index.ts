@@ -1,16 +1,21 @@
 // Shared TypeScript types across the backend
 // @dev-agent — no `any` types; all API shapes defined here
 
-// JWT token payload
+// JWT token payload — shared by clinic and platform planes.
+//
+// Clinic plane  (plane === 'clinic'):   userId + tenantId carry real values.
+// Platform plane (plane === 'platform'): platformUserId is set; userId + tenantId are 0
+//   (sentinel — never used when plane === 'platform'; requirePlane blocks before they are read).
 export interface JwtPayload {
-  userId:         number
-  tenantId:       number
-  branchId?:      number    // active branch (Phase 4)
-  plane:          'clinic' | 'platform'
-  permSetVersion: number
-  role:           string    // transitional — kept until T-5B-02
-  iat?:           number
-  exp?:           number
+  userId:          number
+  tenantId:        number
+  branchId?:       number    // active branch (Phase 4)
+  plane:           'clinic' | 'platform'
+  permSetVersion:  number
+  role:            string    // transitional — kept until T-5B-02
+  platformUserId?: number    // T-5C-02: set only on platform-plane tokens
+  iat?:            number
+  exp?:            number
 }
 
 // Augment Express Request with authenticated context
@@ -19,6 +24,17 @@ declare global {
     interface Request {
       context?: JwtPayload
     }
+  }
+}
+
+// ─── Platform Auth (T-5C-02) ─────────────────────────────────────────────────
+export interface PlatformLoginResponse {
+  token: string
+  user: {
+    id:    number
+    name:  string
+    email: string
+    role:  string
   }
 }
 

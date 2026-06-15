@@ -240,6 +240,29 @@ export async function seedRbac(): Promise<void> {
   console.log('[seed-rbac] RBAC seed complete.')
 }
 
+/**
+ * Seed the initial platform super-admin from env vars (T-5C-02).
+ *
+ * Idempotent: upserts by email. The password is hashed on every run but
+ * `update: {}` keeps the existing hash so it is effectively a no-op when the
+ * record already exists.
+ */
+export async function seedPlatformAdmin(): Promise<void> {
+  // Import bcrypt lazily so seed-rbac stays usable without it if ever split
+  const bcrypt = await import('bcrypt')
+  const email    = process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.co'
+  const name     = process.env.PLATFORM_ADMIN_NAME     || 'Platform Super Admin'
+  const password = process.env.PLATFORM_ADMIN_PASSWORD || 'PlatformAdmin1!'
+  const hash     = await bcrypt.hash(password, 10)
+
+  await prisma.platformUser.upsert({
+    where:  { email },
+    update: {},
+    create: { email, name, passwordHash: hash, role: 'platform_super_admin', isActive: true },
+  })
+  console.log(`[seed-rbac] platform_super_admin seeded — ${email}`)
+}
+
 // Run directly when invoked as a script
 if (require.main === module) {
   seedRbac()
