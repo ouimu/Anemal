@@ -76,6 +76,29 @@ beforeAll(async () => {
     ],
   })
 
+  // Create UserRole join-table rows — required for resolvePermissions to return non-empty set
+  // after requirePermission() enforcement lands. Without these rows every request 403s.
+  const [adminRole, doctorRole, staffRole] = await Promise.all([
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } }),
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor',       tenantId: null } }),
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } }),
+  ])
+  const [uAdmin, uDoctor, uStaff, uAdmin2] = await Promise.all([
+    prisma.user.findFirstOrThrow({ where: { tenantId: tid,  email: 'admin@rg.test'  } }),
+    prisma.user.findFirstOrThrow({ where: { tenantId: tid,  email: 'doctor@rg.test' } }),
+    prisma.user.findFirstOrThrow({ where: { tenantId: tid,  email: 'staff@rg.test'  } }),
+    prisma.user.findFirstOrThrow({ where: { tenantId: tid2, email: 'admin@rg2.test' } }),
+  ])
+  await prisma.userRole.createMany({
+    data: [
+      { userId: uAdmin.id,  roleId: adminRole.id,  tenantId: tid  },
+      { userId: uDoctor.id, roleId: doctorRole.id, tenantId: tid  },
+      { userId: uStaff.id,  roleId: staffRole.id,  tenantId: tid  },
+      { userId: uAdmin2.id, roleId: adminRole.id,  tenantId: tid2 },
+    ],
+    skipDuplicates: true,
+  })
+
   adminToken  = await login(SUB,  'admin@rg.test')
   doctorToken = await login(SUB,  'doctor@rg.test')
   staffToken  = await login(SUB,  'staff@rg.test')
@@ -104,6 +127,7 @@ async function seedPet(token: string): Promise<number> {
 }
 
 afterAll(async () => {
+  await prisma.userRole.deleteMany({ where: { tenantId: { in: [tid, tid2] } } })
   await prisma.user.deleteMany({ where: { tenantId: { in: [tid, tid2] } } })
   await prisma.tenant.deleteMany({ where: { id: { in: [tid, tid2] } } })
   await prisma.$disconnect()
