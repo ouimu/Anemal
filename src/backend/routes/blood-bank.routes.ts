@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { authMiddleware } from '../middlewares/auth.middleware'
+import { requirePlane, requirePermission } from '../middlewares/permission.middleware'
 import { validate } from '../middlewares/validate.middleware'
 import * as ctrl from '../controllers/blood-bank.controller'
 import { donorSchema, collectionSchema, transfusionSchema } from '../services/blood-bank.service'
@@ -7,11 +8,11 @@ import { donorSchema, collectionSchema, transfusionSchema } from '../services/bl
 const router = Router()
 router.use(authMiddleware)
 
-router.get('/donors', ctrl.listDonors)
-router.post('/donors', validate(donorSchema), ctrl.registerDonor)
-router.get('/collections', ctrl.listBags)
-router.post('/collections', validate(collectionSchema), ctrl.recordCollection)
-router.get('/transfusions', ctrl.listTransfusions)
-router.post('/transfusions', validate(transfusionSchema), ctrl.recordTransfusion)
+router.get('/donors',        requirePlane('clinic'), requirePermission('bloodbank.view'),   ctrl.listDonors)
+router.post('/donors',       requirePlane('clinic'), requirePermission('bloodbank.manage'), validate(donorSchema),       ctrl.registerDonor)
+router.get('/collections',   requirePlane('clinic'), requirePermission('bloodbank.view'),   ctrl.listBags)
+router.post('/collections',  requirePlane('clinic'), requirePermission('bloodbank.manage'), validate(collectionSchema),  ctrl.recordCollection)
+router.get('/transfusions',  requirePlane('clinic'), requirePermission('bloodbank.view'),   ctrl.listTransfusions)
+router.post('/transfusions', requirePlane('clinic'), requirePermission('bloodbank.manage'), validate(transfusionSchema), ctrl.recordTransfusion)
 
 export default router
