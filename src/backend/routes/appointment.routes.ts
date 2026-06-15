@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { authMiddleware } from '../middlewares/auth.middleware'
+import { requirePlane, requirePermission } from '../middlewares/permission.middleware'
 import { validate } from '../middlewares/validate.middleware'
 import {
   handleListAppointments, handleGetAppointment,
@@ -10,10 +11,10 @@ import { createAppointmentSchema, walkInSchema, statusSchema } from '../services
 const router = Router()
 router.use(authMiddleware)
 
-router.get('/',           handleListAppointments)
-router.get('/:id',        handleGetAppointment)
-router.post('/',          validate(createAppointmentSchema), handleCreateAppointment)
-router.post('/walk-in',   validate(walkInSchema), handleWalkIn)
-router.put('/:id/status', validate(statusSchema), handleUpdateStatus)
+router.get('/',           requirePlane('clinic'), requirePermission('appointments.view'),   handleListAppointments)
+router.get('/:id',        requirePlane('clinic'), requirePermission('appointments.view'),   handleGetAppointment)
+router.post('/',          requirePlane('clinic'), requirePermission('appointments.create'), validate(createAppointmentSchema), handleCreateAppointment)
+router.post('/walk-in',   requirePlane('clinic'), requirePermission('appointments.create'), validate(walkInSchema), handleWalkIn)
+router.put('/:id/status', requirePlane('clinic'), requirePermission('appointments.edit'),   validate(statusSchema), handleUpdateStatus)
 
 export default router
