@@ -154,13 +154,14 @@ export function assignRoleToUser(userId: number, roleId: number, tenantId: numbe
 }
 
 /**
- * Remove a specific role from a user.
+ * Remove a specific role from a user within a tenant.
  *
- * @param userId  - Target user.
- * @param roleId  - Role to revoke.
+ * @param userId   - Target user.
+ * @param roleId   - Role to revoke.
+ * @param tenantId - Tenant scope (required for isolation).
  */
-export function removeRoleFromUser(userId: number, roleId: number) {
-  return prisma.userRole.deleteMany({ where: { userId, roleId } })
+export function removeRoleFromUser(userId: number, roleId: number, tenantId: number) {
+  return prisma.userRole.deleteMany({ where: { userId, roleId, tenantId } })
 }
 
 /**

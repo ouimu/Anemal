@@ -238,7 +238,7 @@ export async function removeRoleFromUser(
     throw new ConflictError('Cannot remove the last role from a user')
   }
 
-  await roleRepo.removeRoleFromUser(targetUserId, roleId)
+  await roleRepo.removeRoleFromUser(targetUserId, roleId, tenantId)
   invalidatePermCache(targetUserId, tenantId)
 }
 
