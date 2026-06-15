@@ -172,11 +172,11 @@ tr:hover td{background:#f8fafc}
       <div>Phase 1–4: <span class="status-complete">✓ Complete</span></div>
       <div style="margin-top:2px">Phase 5 (Settings, was 1.5): <span class="status-complete">✓ Complete</span></div>
       <div style="margin-top:2px">Phase 6 (enhancements A–E): <span class="status-complete">✓ Complete</span></div>
-      <div style="margin-top:2px">Phase 7 (UI redesign): <span style="color:#006c4a;font-weight:700">▶ Priority</span></div>
-      <div style="margin-top:2px">Phase 8 (RBAC/Platform, was 5): <span style="color:#006c4a;font-weight:700">▶ Priority</span></div>
+      <div style="margin-top:2px">Phase 7 (UI redesign): <span class="status-complete">✓ Complete</span></div>
+      <div style="margin-top:2px">Phase 8 (RBAC/Platform, was 5): <span style="color:#006c4a;font-weight:700">▶ In Progress — 5-A + T-5A-03/04/05 done · 261 tests</span></div>
       <div style="margin-top:2px">Phase 9 (i18n): <span style="color:#2563eb;font-weight:700">📋 Planned</span></div>
       <div style="margin-top:2px;opacity:0.7">Phase 10 Payment / 11 LINE-SMS: ⏸ Postponed</div>
-      <div style="margin-top:6px;color:#334155">Tests: 226 total (226 passing)</div>
+      <div style="margin-top:6px;color:#334155">Tests: 261 total (261 passing)</div>
     </div>
   </div>
 </nav>
@@ -192,7 +192,7 @@ tr:hover td{background:#f8fafc}
     <!-- ═══════════════════════════════════════════════════════════ -->
     <section id="overview">
     <h1>Anemal SaaS — Detailed Functional Specification</h1>
-    <p><strong>Version:</strong> 1.4 &nbsp;|&nbsp; <strong>Date:</strong> 2026-06-12 &nbsp;|&nbsp; <strong>Status:</strong> Phases 1–4 + 1.5 (A/B/C/D) + Sessions C, D, E Complete · 226 tests (226 passing)</p>
+    <p><strong>Version:</strong> 1.5 &nbsp;|&nbsp; <strong>Date:</strong> 2026-06-15 &nbsp;|&nbsp; <strong>Status:</strong> Phases 1–7 Complete + Phase 8 in progress (5-A DB + T-5B-00 + T-5A-03/04/05 done) · 261 tests (261 passing)</p>
 
     <div class="toc">
       <h3>Table of Contents</h3>
@@ -445,6 +445,7 @@ tr:hover td{background:#f8fafc}
       <p><strong>Brute-Force Message Safety:</strong> Login failure always returns <em>"Invalid credentials"</em> — never reveals whether the email exists in the system.</p>
       <p><strong>Token Storage:</strong> Access token stored in browser memory (not localStorage). Refresh token in <code>HttpOnly; SameSite=Strict</code> cookie — immune to XSS theft.</p>
       <p><strong>Inactive Admin Guard:</strong> If the last active admin in a tenant tries to deactivate their own account, the API returns <code>409 Conflict</code> to prevent tenant lockout.</p>
+      <p><strong>Phase 8 — Two-Plane Authorization (RBAC restructure, in progress):</strong> Evolving to a two-plane model. <em>Clinic plane</em> (<code>/clinic/*</code>, <code>/clinic-admin/*</code>): users carry <code>{ userId, tenantId, branchId, roleId }</code>; permissions resolved from <code>role_permissions</code> join table (union of all user roles, CR-01). <em>Platform plane</em> (<code>/platform/*</code>): <code>platform_users</code> (no <code>tenant_id</code>) for SaaS operations. Seven new DB models added (2026-06-14): <code>permissions</code>, <code>clinic_roles</code>, <code>role_permissions</code>, <code>user_roles</code>, <code>platform_users</code>, <code>plans</code>, <code>tenant_quotas</code>. 49 permission codes (<code>module.action</code> format) seeded; system roles <code>clinic_admin</code> / <code>doctor</code> / <code>clinic_staff</code> seeded. T-5A-03/04/05 complete (2026-06-15): <code>permission.service.ts</code> (resolvePermissions + in-memory cache), <code>permission.middleware.ts</code> (<code>requirePlane</code> + <code>requirePermission</code> factories), JWT extended with <code>plane</code> + <code>permSetVersion</code>. Next: T-5B-01 — apply <code>requirePermission()</code> to all clinic routes. Full spec: <code>.claude/specs/RBAC_Platform_Restructure_Spec.md</code>.</p>
       <h4 class="subsection">Testing Criteria</h4>
       <ul class="test-list">
         <li>Valid login returns access + refresh tokens</li>
@@ -1219,10 +1220,14 @@ tr:hover td{background:#f8fafc}
     <h3 class="section">Test Coverage Status</h3>
     <div class="tbl-wrap"><table>
       <tr><th>Phase</th><th>Scope</th><th>Tests</th><th>Status</th></tr>
-      <tr><td>Phase 1</td><td>Auth, Multi-tenancy, Base UI</td><td>45</td><td class="status-complete">✓ Passing</td></tr>
+      <tr><td>Phase 1</td><td>Auth, Multi-tenancy, Base UI</td><td>74</td><td class="status-complete">✓ Passing</td></tr>
       <tr><td>Phase 2</td><td>Pet/Owner, Appointments, EMR, Prescriptions</td><td>104</td><td class="status-complete">✓ Passing</td></tr>
       <tr><td>Phase 3</td><td>Inventory, Billing, Reports, SaaS</td><td>131</td><td class="status-complete">✓ Passing</td></tr>
-      <tr><td>Phase 4</td><td>Inpatient, Grooming, Blood Bank, Loyalty</td><td>Planned</td><td class="status-planned">⊙ Pending</td></tr>
+      <tr><td>Phase 4</td><td>Inpatient, Grooming, Blood Bank, Loyalty</td><td>155</td><td class="status-complete">✓ Passing</td></tr>
+      <tr><td>Phase 5</td><td>Settings &amp; Configuration (was 1.5)</td><td>206</td><td class="status-complete">✓ Passing</td></tr>
+      <tr><td>Phase 6</td><td>Production-readiness — PDF, QR, Barcode, S3</td><td>226</td><td class="status-complete">✓ Passing</td></tr>
+      <tr><td>Phase 7</td><td>UI Redesign sign-off — Appointments, Pets, EMR</td><td>226</td><td class="status-complete">✓ Passing (presentational only)</td></tr>
+      <tr><td>Phase 8 (in progress)</td><td>RBAC foundation — 7 DB models, 49 permissions, 3 system roles, user_roles backfill, T-5B-00 guard, permission service + JWT extension + middleware factories (T-5A-03/04/05)</td><td>261</td><td class="status-complete">✓ 5-A + T-5B-00 + T-5A-03/04/05 done · T-5B-01 next</td></tr>
     </table></div>
     </section>
 
@@ -1289,7 +1294,7 @@ app.use(async (req, res, next) => {
 });</pre>
 
     <div style="margin-top:40px;padding:20px;background:#f1f5f9;border-radius:8px;font-size:13px;color:var(--muted);text-align:center">
-      <strong>Anemal SaaS Functional Specification</strong> · Updated 2026-06-13 · Confidential
+      <strong>Anemal SaaS Functional Specification</strong> · Updated 2026-06-15 · Confidential
     </div>
     </section>
 
