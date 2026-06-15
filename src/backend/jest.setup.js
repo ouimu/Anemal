@@ -16,3 +16,11 @@ Request.prototype.end = function patchedEnd (fn) {
   }
   return _origEnd.call(this, fn)
 }
+
+// Seed RBAC (permissions + system roles) for all tests
+// Phase 8 (T-5B) — ensure clinic_admin and other roles have all permissions for enforcement tests
+const seedRbac = require('./prisma/seed-rbac').seedRbac
+seedRbac().catch(err => {
+  console.error('[jest.setup] seedRbac failed:', err)
+  process.exit(1)
+})

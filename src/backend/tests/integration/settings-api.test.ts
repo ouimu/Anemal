@@ -55,6 +55,8 @@ beforeAll(async () => {
     prisma.user.findFirstOrThrow({ where: { tenantId: tidA, email: 'doctor@a.test' } }),
     prisma.user.findFirstOrThrow({ where: { tenantId: tidB, email: 'admin@b.test'  } }),
   ])
+  // Note: superadmin user is NOT seeded with a clinic role. In Phase 5-B, superadmin cannot access
+  // system-settings until they migrate to the platform plane in T-5C-03. See T-5B-02.
   await seedUserRoles(prisma, [
     { userId: uAdminA.id,  tenantId: tidA, roleKey: 'clinic_admin' },
     { userId: uStaffA.id,  tenantId: tidA, roleKey: 'clinic_staff' },
@@ -140,21 +142,26 @@ describe('TC-S003 — RBAC on clinic settings', () => {
   })
 })
 
-describe('TC-S004 — system settings restricted to superadmin', () => {
-  it('superadmin GET /admin/system-settings → 200 with seeded keys', async () => {
-    const res = await request(server).get('/admin/system-settings').set('Authorization', `Bearer ${superToken}`)
+describe('TC-S004 — system settings restricted to clinic_admin (Phase 5-B)', () => {
+  it('clinic admin GET /admin/system-settings → 200 with seeded keys', async () => {
+    const res = await request(server).get('/admin/system-settings').set('Authorization', `Bearer ${adminA}`)
     expect(res.status).toBe(200)
     const keys = (res.body.data as { key: string }[]).map(r => r.key)
     expect(keys).toContain('app_name')
   })
 
-  it('clinic admin GET /admin/system-settings → 403', async () => {
-    const res = await request(server).get('/admin/system-settings').set('Authorization', `Bearer ${adminA}`)
+  it('staff GET /admin/system-settings → 403', async () => {
+    const res = await request(server).get('/admin/system-settings').set('Authorization', `Bearer ${staffA}`)
     expect(res.status).toBe(403)
   })
 
-  it('superadmin cannot access clinic-admin routes → 403', async () => {
-    const res = await request(server).get('/api/settings/clinic').set('Authorization', `Bearer ${superToken}`)
+  it('doctor GET /admin/system-settings → 403', async () => {
+    const res = await request(server).get('/admin/system-settings').set('Authorization', `Bearer ${doctorA}`)
+    expect(res.status).toBe(403)
+  })
+
+  it('superadmin GET /admin/system-settings → 403 (no clinic role; migrates in Phase 5-C)', async () => {
+    const res = await request(server).get('/admin/system-settings').set('Authorization', `Bearer ${superToken}`)
     expect(res.status).toBe(403)
   })
 })

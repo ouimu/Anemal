@@ -1,14 +1,16 @@
-// System-settings routes (Phase 1.5-B, minimal S2.2) — mounted at /admin/system-settings.
-// superadmin role required on every endpoint; clinic admin gets 403 (TC-S004).
+// System-settings routes — mounted at /admin/system-settings.
+// In Phase 5-C this will move to /platform/*; currently on clinic plane
+// guarded by clinic.settings.manage (superadmin users migrate in T-5C-03).
 import { Router } from 'express'
 import { authMiddleware } from '../middlewares/auth.middleware'
-import { rbacMiddleware } from '../middlewares/rbac.middleware'
+import { requirePlane, requirePermission } from '../middlewares/permission.middleware'
 import { validate } from '../middlewares/validate.middleware'
 import * as ctrl from '../controllers/system-settings.controller'
 
 const router = Router()
 router.use(authMiddleware)
-router.use(rbacMiddleware(['superadmin']))
+router.use(requirePlane('clinic'))
+router.use(requirePermission('clinic.settings.manage'))
 
 router.get('/', ctrl.getAllSettings)
 router.post('/smtp/test', ctrl.testSmtp)
