@@ -6,6 +6,8 @@ import bcrypt from 'bcrypt'
 import app from '../../app'
 import prisma from '../../config/db'
 import { decryptField } from '../../utils/encryption'
+import { testLab } from '../../services/connection-test.service'
+import { seedUserRoles, cleanupUserRoles } from '../helpers/seedUserRoles'
 
 const SUB_A = 'settings-api-a'
 const SUB_B = 'settings-api-b'
@@ -46,6 +48,20 @@ beforeAll(async () => {
     ],
   })
 
+  // Seed UserRole rows so requirePermission() resolves permissions for these users
+  const [uAdminA, uStaffA, uDoctorA, uAdminB] = await Promise.all([
+    prisma.user.findFirstOrThrow({ where: { tenantId: tidA, email: 'admin@a.test'  } }),
+    prisma.user.findFirstOrThrow({ where: { tenantId: tidA, email: 'staff@a.test'  } }),
+    prisma.user.findFirstOrThrow({ where: { tenantId: tidA, email: 'doctor@a.test' } }),
+    prisma.user.findFirstOrThrow({ where: { tenantId: tidB, email: 'admin@b.test'  } }),
+  ])
+  await seedUserRoles(prisma, [
+    { userId: uAdminA.id,  tenantId: tidA, roleKey: 'clinic_admin' },
+    { userId: uStaffA.id,  tenantId: tidA, roleKey: 'clinic_staff' },
+    { userId: uDoctorA.id, tenantId: tidA, roleKey: 'doctor'       },
+    { userId: uAdminB.id,  tenantId: tidB, roleKey: 'clinic_admin' },
+  ])
+
   adminA     = await login(SUB_A, 'admin@a.test')
   staffA     = await login(SUB_A, 'staff@a.test')
   doctorA    = await login(SUB_A, 'doctor@a.test')
@@ -54,6 +70,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
+  await cleanupUserRoles(prisma, [tidA, tidB])
   await prisma.settingsAuditLog.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.tenantSettings.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.user.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
@@ -61,7 +78,7 @@ afterAll(async () => {
   await prisma.$disconnect()
   server.closeAllConnections()
   await new Promise<void>(resolve => server.close(() => resolve()))
-})
+}, 30000)
 
 describe('TC-S001 — tenant isolation on GET /api/settings/clinic', () => {
   it('returns only own-tenant data for Clinic A admin', async () => {
@@ -221,7 +238,7 @@ describe('personal preferences (S2.3) — all roles', () => {
   it('staff GET /api/settings/personal returns defaults', async () => {
     const res = await request(server).get('/api/settings/personal').set('Authorization', `Bearer ${staffA}`)
     expect(res.status).toBe(200)
-    expect(res.body.data).toEqual({ language: 'th', defaultCalendarView: 'week' })
+    expect(res.body.data).toEqual({ language: 'th', defaultCalendarView: 'week', theme: 'light' })
   })
 
   it('staff PUT /api/settings/personal updates own preferences', async () => {
@@ -230,7 +247,7 @@ describe('personal preferences (S2.3) — all roles', () => {
       .set('Authorization', `Bearer ${staffA}`)
       .send({ language: 'en', defaultCalendarView: 'day' })
     expect(res.status).toBe(200)
-    expect(res.body.data).toEqual({ language: 'en', defaultCalendarView: 'day' })
+    expect(res.body.data).toEqual({ language: 'en', defaultCalendarView: 'day', theme: 'light' })
   })
 
   it('does not affect another user\'s preferences', async () => {
@@ -308,24 +325,31 @@ describe('stateless connection tests (S2.1) — fetch mocked', () => {
 })
 
 describe('TC-S010 — integrations test-connection timeout', () => {
+  let originalFetch: typeof global.fetch
+
+  beforeEach(() => { originalFetch = global.fetch })
+  afterEach(() => { global.fetch = originalFetch; jest.useRealTimers() })
+
   it('returns { success: false } within 10 s when target URL never responds', async () => {
     jest.useFakeTimers()
-    const originalFetch = global.fetch
-    global.fetch = jest.fn(() => new Promise(() => {})) as unknown as typeof fetch
+    // Unit-level: call testLab directly to avoid fake-timer/HTTP-I/O interference.
+    // Mock rejects with a plain Error (name='AbortError') so failureDetail() recognises it —
+    // DOMException is not instanceof Error in jest-environment-node.
+    global.fetch = jest.fn((_url: unknown, init?: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => {
+          const e = new Error('The operation was aborted.')
+          e.name = 'AbortError'
+          reject(e)
+        })
+      }),
+    ) as unknown as typeof fetch
 
-    const responsePromise = request(server)
-      .post('/api/settings/clinic/integrations/test')
-      .set('Authorization', `Bearer ${adminA}`)
-      .send({ labApiUrl: 'https://lab.example.com/api', labApiKey: 'lab-key-1' })
-
+    const resultPromise = testLab('https://lab.example.com/api', 'lab-key-1')
     await jest.advanceTimersByTimeAsync(10_001)
-    const response = await responsePromise
+    const result = await resultPromise
 
-    expect(response.status).toBe(200)
-    expect(response.body.data.success).toBe(false)
-    expect(response.body.data.detail).toMatch(/timed out/i)
-
-    global.fetch = originalFetch
-    jest.useRealTimers()
-  })
+    expect(result.success).toBe(false)
+    expect(result.detail).toMatch(/timed out/i)
+  }, 15000)
 })

@@ -13,6 +13,7 @@ import app from '../app'
 import prisma from '../config/db'
 import { signToken } from '../config/jwt'
 import bcrypt from 'bcrypt'
+import { seedUserRoles, cleanupUserRoles } from '../tests/helpers/seedUserRoles'
 
 // ── Fixture IDs ───────────────────────────────────────────────────────────────
 let server: Server
@@ -38,11 +39,17 @@ beforeAll(async () => {
     data: { tenantId: tidB, name: 'Admin B', email: `iso-admin-b-${ts}@test.local`, passwordHash: hash, role: 'admin' },
   })
   uidA = uA.id; uidB = uB.id
+
+  await seedUserRoles(prisma, [
+    { userId: uidA, tenantId: tidA, roleKey: 'clinic_admin' },
+    { userId: uidB, tenantId: tidB, roleKey: 'clinic_admin' },
+  ])
 })
 
 afterAll(async () => {
   server.closeAllConnections()
   await new Promise<void>(resolve => server.close(() => resolve()))
+  await cleanupUserRoles(prisma, [tidA, tidB])
   await prisma.user.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.tenant.deleteMany({ where: { id: { in: [tidA, tidB] } } })
 })

@@ -10,6 +10,7 @@ import app from '../app'
 import prisma from '../config/db'
 import { signToken } from '../config/jwt'
 import bcrypt from 'bcrypt'
+import { seedUserRoles, cleanupUserRoles } from '../tests/helpers/seedUserRoles'
 
 let server: Server
 let tidA: number, tidB: number
@@ -36,11 +37,17 @@ beforeAll(async () => {
   branchAId = bA.id
   tokenA = signToken({ userId: uA.id, tenantId: tidA, branchId: bA.id, plane: 'clinic', permSetVersion: 1, role: 'admin' })
   tokenB = signToken({ userId: uB.id, tenantId: tidB, branchId: bB.id, plane: 'clinic', permSetVersion: 1, role: 'admin' })
+
+  await seedUserRoles(prisma, [
+    { userId: uA.id, tenantId: tidA, roleKey: 'clinic_admin' },
+    { userId: uB.id, tenantId: tidB, roleKey: 'clinic_admin' },
+  ])
 })
 
 afterAll(async () => {
   server.closeAllConnections()
   await new Promise<void>((resolve) => server.close(() => resolve()))
+  await cleanupUserRoles(prisma, [tidA, tidB])
   await prisma.stockMovement.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.branchInventory.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.inventoryItem.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })

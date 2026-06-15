@@ -19,6 +19,7 @@ import bcrypt from 'bcrypt'
 import { signToken } from '../config/jwt'
 import { config } from '../config/env'
 import jwt from 'jsonwebtoken'
+import { seedUserRoles, cleanupUserRoles } from '../tests/helpers/seedUserRoles'
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 let server: Server
@@ -50,11 +51,18 @@ beforeAll(async () => {
     prisma.user.create({ data: { tenantId: tidA, name: 'Staff',  email: `staff-${ts}@rbac.local`,  passwordHash: hash, role: 'staff' } }),
   ])
   adminId = admin.id; doctorId = doctor.id; staffId = staff.id
+
+  await seedUserRoles(prisma, [
+    { userId: adminId,  tenantId: tidA, roleKey: 'clinic_admin' },
+    { userId: doctorId, tenantId: tidA, roleKey: 'doctor'       },
+    { userId: staffId,  tenantId: tidA, roleKey: 'clinic_staff' },
+  ])
 })
 
 afterAll(async () => {
   server.closeAllConnections()
   await new Promise<void>(resolve => server.close(() => resolve()))
+  await cleanupUserRoles(prisma, [tidA])
   await prisma.user.deleteMany({ where: { tenantId: tidA } })
   await prisma.tenant.deleteMany({ where: { id: tidA } })
 })
@@ -87,18 +95,18 @@ describe('rbac-1.3 — /admin/* endpoint matrix', () => {
       .expect(401)
   })
 
-  // ── Doctor role on admin routes → 403 ─────────────────────────────────────
-  test('rbac-06: Doctor on GET /admin/settings → 403', async () => {
+  // ── Doctor role on read-only admin routes → 200 (clinic.profile.view granted to all) ──────
+  test('rbac-06: Doctor on GET /admin/settings → 200 (clinic.profile.view is view-all)', async () => {
     await request(server)
       .get('/admin/settings')
       .set('Authorization', tok(doctorId, tidA, 'doctor'))
-      .expect(403)
+      .expect(200)
   })
-  test('rbac-07: Doctor on GET /admin/usage → 403', async () => {
+  test('rbac-07: Doctor on GET /admin/usage → 200 (clinic.profile.view is view-all)', async () => {
     await request(server)
       .get('/admin/usage')
       .set('Authorization', tok(doctorId, tidA, 'doctor'))
-      .expect(403)
+      .expect(200)
   })
   test('rbac-08: Doctor on GET /users → 403', async () => {
     await request(server)
@@ -114,12 +122,12 @@ describe('rbac-1.3 — /admin/* endpoint matrix', () => {
       .expect(403)
   })
 
-  // ── Staff role on admin routes → 403 ─────────────────────────────────────
-  test('rbac-10: Staff on GET /admin/settings → 403', async () => {
+  // ── Staff role on read-only admin routes → 200 (clinic.profile.view granted to all) ────────
+  test('rbac-10: Staff on GET /admin/settings → 200 (clinic.profile.view is view-all)', async () => {
     await request(server)
       .get('/admin/settings')
       .set('Authorization', tok(staffId, tidA, 'staff'))
-      .expect(403)
+      .expect(200)
   })
   test('rbac-11: Staff on PUT /admin/settings → 403', async () => {
     await request(server)

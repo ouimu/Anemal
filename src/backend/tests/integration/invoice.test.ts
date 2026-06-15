@@ -5,6 +5,7 @@ import { Server } from 'http'
 import bcrypt from 'bcrypt'
 import app from '../../app'
 import prisma from '../../config/db'
+import { seedUserRoles, cleanupUserRoles } from '../helpers/seedUserRoles'
 
 const SUB_A = 'invoice-qr-a'
 const SUB_B = 'invoice-qr-b'
@@ -68,6 +69,16 @@ beforeAll(async () => {
     ],
   })
 
+  // Seed UserRole rows before login so requirePermission() resolves permissions
+  const [uAdminA, uAdminB] = await Promise.all([
+    prisma.user.findFirstOrThrow({ where: { tenantId: tidA, email: 'admin@qr-a.test' } }),
+    prisma.user.findFirstOrThrow({ where: { tenantId: tidB, email: 'admin@qr-b.test' } }),
+  ])
+  await seedUserRoles(prisma, [
+    { userId: uAdminA.id, tenantId: tidA, roleKey: 'clinic_admin' },
+    { userId: uAdminB.id, tenantId: tidB, roleKey: 'clinic_admin' },
+  ])
+
   adminA = await login(SUB_A, 'admin@qr-a.test')
   adminB = await login(SUB_B, 'admin@qr-b.test')
 
@@ -93,6 +104,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
+  await cleanupUserRoles(prisma, [tidA, tidB])
   await prisma.invoiceItem.deleteMany({ where: { invoice: { tenantId: { in: [tidA, tidB] } } } })
   await prisma.invoice.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.tenantSettings.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })

@@ -10,6 +10,7 @@ import app from '../app'
 import prisma from '../config/db'
 import { signToken } from '../config/jwt'
 import bcrypt from 'bcrypt'
+import { seedUserRoles, cleanupUserRoles } from '../tests/helpers/seedUserRoles'
 
 let server: Server
 let tid: number
@@ -27,11 +28,17 @@ beforeAll(async () => {
   const staff = await prisma.user.create({ data: { tenantId: tid, name: 'Staff', email: `sub-staff-${ts}@t.local`, passwordHash: hash, role: 'staff' } })
   adminToken = signToken({ userId: admin.id, tenantId: tid, plane: 'clinic', permSetVersion: 1, role: 'admin' })
   staffToken = signToken({ userId: staff.id, tenantId: tid, plane: 'clinic', permSetVersion: 1, role: 'staff' })
+
+  await seedUserRoles(prisma, [
+    { userId: admin.id, tenantId: tid, roleKey: 'clinic_admin' },
+    { userId: staff.id, tenantId: tid, roleKey: 'clinic_staff' },
+  ])
 })
 
 afterAll(async () => {
   server.closeAllConnections()
   await new Promise<void>((resolve) => server.close(() => resolve()))
+  await cleanupUserRoles(prisma, [tid])
   await prisma.user.deleteMany({ where: { tenantId: tid } })
   await prisma.tenant.deleteMany({ where: { id: tid } })
 })
@@ -46,8 +53,8 @@ describe('sub-3.4 — Subscription status & limits', () => {
     expect(res.body.data.usage.users).toBe(2)
   })
 
-  test('sub-02: non-admin cannot read subscription status → 403', async () => {
-    await request(server).get('/api/subscription/status').set(auth(staffToken)).expect(403)
+  test('sub-02: staff can read subscription status → 200 (clinic.profile.view is view-all)', async () => {
+    await request(server).get('/api/subscription/status').set(auth(staffToken)).expect(200)
   })
 
   test('sub-03: user creation blocked once the plan limit is reached → 402', async () => {

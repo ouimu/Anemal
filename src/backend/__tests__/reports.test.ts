@@ -10,6 +10,7 @@ import app from '../app'
 import prisma from '../config/db'
 import { signToken } from '../config/jwt'
 import bcrypt from 'bcrypt'
+import { seedUserRoles, cleanupUserRoles } from '../tests/helpers/seedUserRoles'
 
 let server: Server
 let tidA: number, tidB: number
@@ -32,6 +33,11 @@ beforeAll(async () => {
   tokenA = signToken({ userId: uA.id, tenantId: tidA, branchId: bA.id, plane: 'clinic', permSetVersion: 1, role: 'admin' })
   tokenB = signToken({ userId: uB.id, tenantId: tidB, branchId: bB.id, plane: 'clinic', permSetVersion: 1, role: 'admin' })
 
+  await seedUserRoles(prisma, [
+    { userId: uA.id, tenantId: tidA, roleKey: 'clinic_admin' },
+    { userId: uB.id, tenantId: tidB, roleKey: 'clinic_admin' },
+  ])
+
   // Tenant A: one PAID invoice of 500 today. Tenant B: nothing.
   await prisma.invoice.create({
     data: { tenantId: tidA, invoiceNo: `INV-TEST-${ts}`, subtotal: 500, taxAmount: 0, totalAmount: 500, paymentStatus: 'paid',
@@ -42,6 +48,7 @@ beforeAll(async () => {
 afterAll(async () => {
   server.closeAllConnections()
   await new Promise<void>((resolve) => server.close(() => resolve()))
+  await cleanupUserRoles(prisma, [tidA, tidB])
   await prisma.invoiceItem.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.invoice.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.branch.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })

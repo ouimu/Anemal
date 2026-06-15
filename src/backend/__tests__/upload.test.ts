@@ -11,6 +11,7 @@ import app from '../app'
 import prisma from '../config/db'
 import { signToken } from '../config/jwt'
 import bcrypt from 'bcrypt'
+import { seedUserRoles, cleanupUserRoles } from '../tests/helpers/seedUserRoles'
 
 // ── AWS SDK mocks ─────────────────────────────────────────────────────────────
 // MOCK_SIGNED_URL must be a literal here — jest.mock() is hoisted before const declarations.
@@ -59,6 +60,10 @@ beforeAll(async () => {
     data: { tenantId, name: 'Upload Admin', email: `upload-${Date.now()}@test.local`, passwordHash: hash, role: 'admin' },
   })
   adminToken = signToken({ userId: user.id, tenantId, branchId: branch.id, plane: 'clinic', permSetVersion: 1, role: 'admin' })
+
+  await seedUserRoles(prisma, [
+    { userId: user.id, tenantId, roleKey: 'clinic_admin' },
+  ])
 })
 
 beforeEach(() => {
@@ -79,6 +84,7 @@ afterEach(() => {
 afterAll(async () => {
   server.closeAllConnections()
   await new Promise<void>((resolve) => server.close(() => resolve()))
+  await cleanupUserRoles(prisma, [tenantId])
   await prisma.user.deleteMany({ where: { tenantId } })
   await prisma.branch.deleteMany({ where: { tenantId } })
   await prisma.tenant.deleteMany({ where: { id: tenantId } })

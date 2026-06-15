@@ -61,9 +61,9 @@ describe('Phase 4 — Branch Management (admin-only)', () => {
     expect(res.body.data.id).toBeDefined()
   })
 
-  it('❌ staff cannot access admin-only branch routes → 403', async () => {
+  it('✅ staff can view branches → 200 (clinic.branch.view granted to all roles)', async () => {
     const res = await request(server).get('/api/branches').set('Authorization', `Bearer ${staffA}`)
-    expect(res.status).toBe(403)
+    expect(res.status).toBe(200)
   })
 
   it('❌ Tenant B cannot read a Tenant A branch by id → 404', async () => {

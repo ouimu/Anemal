@@ -60,15 +60,38 @@ async function main() {
     { tenantId: tenantB.id, name: 'Staff B',  email: 'staff@test-clinic.com',  role: LegacyRole.staff,  password: 'StaffPass2!' },
   ]
 
+  // Phase 8 (5-A) — resolve system ClinicRole IDs for UserRole seeding
+  const [adminClinicRole, doctorClinicRole, staffClinicRole] = await Promise.all([
+    prisma.clinicRole.findFirst({ where: { key: 'clinic_admin', tenantId: null } }),
+    prisma.clinicRole.findFirst({ where: { key: 'doctor',       tenantId: null } }),
+    prisma.clinicRole.findFirst({ where: { key: 'clinic_staff', tenantId: null } }),
+  ])
+
+  const legacyRoleToClinicRole: Partial<Record<LegacyRole, typeof adminClinicRole>> = {
+    [LegacyRole.admin]:  adminClinicRole,
+    [LegacyRole.doctor]: doctorClinicRole,
+    [LegacyRole.staff]:  staffClinicRole,
+  }
+
   for (const u of usersToSeed) {
     const passwordHash = await bcrypt.hash(u.password, SALT_ROUNDS)
     const branchId = mainBranch[u.tenantId]
-    await prisma.user.upsert({
+    const seededUser = await prisma.user.upsert({
       where: { tenantId_email: { tenantId: u.tenantId, email: u.email } },
       update: { branchId },
       create: { tenantId: u.tenantId, branchId, name: u.name, email: u.email, passwordHash, role: u.role },
     })
     console.log(`  ✓ ${u.role} — ${u.email}`)
+
+    // Phase 8 (5-B) — seed UserRole join-table row so requirePermission() resolves permissions
+    const clinicRole = legacyRoleToClinicRole[u.role]
+    if (clinicRole) {
+      await prisma.userRole.upsert({
+        where: { userId_roleId: { userId: seededUser.id, roleId: clinicRole.id } },
+        update: {},
+        create: { userId: seededUser.id, roleId: clinicRole.id, tenantId: u.tenantId },
+      })
+    }
   }
 
   // Phase 3/4 — sample catalog + per-branch stock for Tenant A Main Branch (idempotent by name).
