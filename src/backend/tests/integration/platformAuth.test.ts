@@ -66,6 +66,40 @@ describe('POST /platform/auth/login', () => {
       .send({ email: 'admin@anemal.co' })
     expect(res.status).toBe(400)
   })
+
+  it('returns 401 for inactive platform user with correct password', async () => {
+    // Seed an inactive platform user directly via the repo/DB, then attempt login.
+    // We use a known-inactive fixture email that must NOT exist as an active user.
+    // The response must be 401 with the same generic message (no enumeration leak).
+    const { PrismaClient } = await import('@prisma/client')
+    const prisma = new PrismaClient()
+    const bcryptLib = await import('bcrypt')
+    const hashedPw = await bcryptLib.default.hash('CorrectPass1!', 10)
+    let createdId: number | undefined
+    try {
+      const created = await prisma.platformUser.create({
+        data: {
+          email:        'inactive-fixture@anemal.co',
+          passwordHash: hashedPw,
+          name:         'Inactive Fixture',
+          role:         'platform_support',
+          isActive:     false,
+        },
+      })
+      createdId = created.id
+      const res = await request(server)
+        .post('/platform/auth/login')
+        .send({ email: 'inactive-fixture@anemal.co', password: 'CorrectPass1!' })
+      expect(res.status).toBe(401)
+      expect(res.body.success).toBe(false)
+      expect(res.body.error).toBe('Invalid credentials')
+    } finally {
+      if (createdId !== undefined) {
+        await prisma.platformUser.delete({ where: { id: createdId } })
+      }
+      await prisma.$disconnect()
+    }
+  })
 })
 
 // ─── Plane isolation ──────────────────────────────────────────────────────────

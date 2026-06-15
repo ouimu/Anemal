@@ -26,6 +26,13 @@ export class PlatformAuthError extends AppError {
 const INVALID_CREDENTIALS = 'Invalid credentials'
 
 /**
+ * Sentinel hash: always run bcrypt.compare even when user not found or inactive,
+ * so response time is constant regardless of whether the email exists or is active.
+ * This prevents timing-based user enumeration attacks.
+ */
+const DUMMY_HASH = '$2b$10$invalid.hash.to.prevent.timing.based.user.enumeration.x'
+
+/**
  * Authenticate a platform user by email + password.
  *
  * @param email    - Platform user email.
@@ -39,12 +46,10 @@ export async function platformLogin(
 ): Promise<PlatformLoginResponse> {
   const user = await platformAuthRepo.findPlatformUserByEmail(email)
 
-  if (!user || !user.isActive) {
-    throw new PlatformAuthError(INVALID_CREDENTIALS, 401)
-  }
+  const hashToCompare = user?.passwordHash ?? DUMMY_HASH
+  const passwordMatch = await bcrypt.compare(password, hashToCompare)
 
-  const passwordMatch = await bcrypt.compare(password, user.passwordHash)
-  if (!passwordMatch) {
+  if (!user || !user.isActive || !passwordMatch) {
     throw new PlatformAuthError(INVALID_CREDENTIALS, 401)
   }
 
