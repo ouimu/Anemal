@@ -320,13 +320,13 @@
   <!-- ── Build Status ── -->
   <div class="callout ok" style="margin-top:16px">
     <span class="callout-icon">🎉</span>
-    <span><strong>✅ Production Core Complete:</strong> Phases 1–7 done (Foundation → Settings → enhancements → UI redesign). <strong>261 backend tests passing</strong> · tsc clean. <strong style="color:#16a34a">Active (Phase 8):</strong> RBAC + Platform Console — 5-A DB foundation + T-5A-03/04/05 (permission service, JWT extension, middleware factories) done. Next: T-5B-01 (apply requirePermission() to all clinic routes). <strong>Postponed (credential-gated):</strong> Phase 10 Payment Gateway · Phase 11 LINE/SMS. <em>Phases re-sequenced 2026-06-13 — see <a onclick="show('roadmap-upcoming')" href="#">Upcoming Work</a>.</em></span>
+    <span><strong>✅ Production Core Complete:</strong> Phases 1–7 done (Foundation → Settings → enhancements → UI redesign). <strong>313 backend tests passing</strong> · tsc clean. <strong style="color:#16a34a">Active (Phase 8):</strong> RBAC + Platform Console — 5-A DB foundation + T-5A-03/04/05 + T-5B-01/02/03 + T-5C-01/02/03 + <strong>T-5D-02/03/04</strong> (customer mgmt API, plan CRUD, quota enforcement) done. Next: T-5D-05, then T-5E/F/G. <strong>Postponed (credential-gated):</strong> Phase 10 Payment Gateway · Phase 11 LINE/SMS. <em>Phases re-sequenced 2026-06-13 — see <a onclick="show('roadmap-upcoming')" href="#">Upcoming Work</a>.</em></span>
   </div>
 
   <!-- ── Stats ── -->
   <div class="stat-row">
     <div class="stat"><div class="n" style="color:#16a34a">6/10</div><div class="l">Phases Done</div></div>
-    <div class="stat"><div class="n" style="color:#16a34a">261</div><div class="l">Tests Passing</div></div>
+    <div class="stat"><div class="n" style="color:#16a34a">313</div><div class="l">Tests Passing</div></div>
     <div class="stat"><div class="n">28</div><div class="l">DB Tables</div></div>
     <div class="stat"><div class="n">13</div><div class="l">API Modules</div></div>
     <div class="stat"><div class="n">8</div><div class="l">Screen Prototypes</div></div>
@@ -345,7 +345,7 @@
       <tr><td><strong>Phase 5</strong> <span style="font-size:11px;color:#6b7280">(was 1.5)</span></td><td>Settings &amp; Configuration — DB + encryption, Settings API (<code>superadmin</code>), frontend pages + System Settings UI (1.5-A/B/C/D)</td><td>226</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
       <tr><td><strong>Phase 6</strong> <span style="font-size:11px;color:#6b7280">(was Sessions A–E)</span></td><td>Production-readiness enhancements — screen specs, PDF receipts, PromptPay QR UI, barcode scan, S3 photo upload</td><td>226</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
       <tr><td><strong>Phase 7</strong> <span style="font-size:11px;color:#6b7280">(redesign)</span></td><td>UI Redesign completion &amp; sign-off — Compassionate Care closeout/verification of Appointments, Pets, EMR (presentational only)</td><td>226</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
-      <tr style="background:#f0fdf8"><td><strong>Phase 8</strong> <span style="font-size:11px;color:#6b7280">(was Phase 5)</span></td><td>RBAC, Platform Console &amp; Restructure — two-plane authz, configurable roles, plan quotas, IA cleanup. <strong>5-A DB + T-5A-03/04/05 done</strong> (permission service, JWT extension, middleware factories). Next: T-5B-01 (route enforcement)</td><td>261</td><td><span style="color:#006c4a;font-weight:700">▶️ In Progress</span></td></tr>
+      <tr style="background:#f0fdf8"><td><strong>Phase 8</strong> <span style="font-size:11px;color:#6b7280">(was Phase 5)</span></td><td>RBAC, Platform Console &amp; Restructure — two-plane authz, configurable roles, plan quotas, IA cleanup. <strong>5-A/B/C done · T-5D-02/03/04 done</strong> (customer mgmt API, plan CRUD + quota enforcement, <code>assertCanAdd*</code> + <code>platform_audit_logs</code>). Next: T-5D-05 → T-5E/F/G</td><td>313</td><td><span style="color:#006c4a;font-weight:700">▶️ In Progress</span></td></tr>
       <tr><td><strong>Phase 9</strong> <span style="font-size:11px;color:#6b7280">(new)</span></td><td>i18n Rollout — full clinic-screen Thai (EN/TH); extends existing i18n foundation to all clinic screens</td><td>—</td><td><span style="color:#2563eb;font-weight:700">📋 Planned</span></td></tr>
       <tr style="opacity:0.7"><td><strong>Phase 10</strong> <span style="font-size:11px;color:#6b7280">(was Session F)</span></td><td>Payment Gateway &amp; Subscription Billing — Omise/Stripe, webhooks, SaaS billing + cron</td><td>—</td><td><span style="color:#6b7280;font-weight:700">⏸ Postponed (Omise + SMTP)</span></td></tr>
       <tr style="opacity:0.7"><td><strong>Phase 11</strong> <span style="font-size:11px;color:#6b7280">(was Session G)</span></td><td>LINE/SMS Real Dispatch — wire reminder worker to LINE + Twilio</td><td>—</td><td><span style="color:#6b7280;font-weight:700">⏸ Postponed (LINE + Twilio)</span></td></tr>
@@ -808,7 +808,7 @@ CREATE INDEX idx_pet_reminders_pet          ON pet_reminders(tenant_id, pet_id);
       <tr style="opacity:0.55"><td><strong>✅ Phase 5</strong> <span style="font-size:11px;color:#6b7280">(was 1.5)</span></td><td><s>Settings &amp; Configuration — DB + encryption, API (superadmin), frontend pages + System Settings UI</s> — Done · 226 tests</td><td>~50%</td></tr>
       <tr style="opacity:0.55"><td><strong>✅ Phase 6</strong> <span style="font-size:11px;color:#6b7280">(was A–E)</span></td><td><s>PDF receipts, PromptPay QR UI, barcode scan, S3 photo upload</s> — Done 2026-06-12 · 226 tests</td><td>~40%</td></tr>
       <tr style="opacity:0.55"><td><strong>✅ Phase 7</strong></td><td><s>UI Redesign completion &amp; sign-off — verify Appointments/Pets/EMR against Compassionate Care specs + 44px audit</s> — Done 2026-06-14 · 226 tests</td><td>~20%</td></tr>
-      <tr style="background:#f0fdf8"><td><strong>▶️ Phase 8</strong> <span style="font-size:11px;color:#6b7280">(was Phase 5)</span></td><td>RBAC, Platform Console &amp; Restructure — <strong>5-A DB ✅ · T-5B-00 ✅ · T-5A-03/04/05 ✅ · 261 tests</strong>. Next: T-5B-01 (route enforcement) → 5-C…5-G</td><td>multi-session</td></tr>
+      <tr style="background:#f0fdf8"><td><strong>▶️ Phase 8</strong> <span style="font-size:11px;color:#6b7280">(was Phase 5)</span></td><td>RBAC, Platform Console &amp; Restructure — <strong>5-A ✅ · 5-B ✅ · 5-C ✅ · T-5D-02/03/04 ✅ · 313 tests</strong>. Next: T-5D-05 → T-5E/F/G</td><td>multi-session</td></tr>
       <tr><td><strong>📋 Phase 9</strong> <span style="font-size:11px;color:#6b7280">(new)</span></td><td>i18n Rollout — full clinic-screen Thai (EN/TH); extends existing i18n foundation to all clinic screens</td><td>~20%</td></tr>
       <tr style="opacity:0.7"><td><strong>⏸ Phase 10</strong> <span style="font-size:11px;color:#6b7280">(was F)</span></td><td>Payment gateway (Omise/Stripe, webhooks, subscription billing) — postponed</td><td>~55% + credentials</td></tr>
       <tr style="opacity:0.7"><td><strong>⏸ Phase 11</strong> <span style="font-size:11px;color:#6b7280">(was G)</span></td><td>LINE/SMS real dispatch — postponed</td><td>~35% + credentials</td></tr>
@@ -1040,6 +1040,7 @@ Type: happy_path | edge_case | security | transaction</code></pre>
   <div class="callout ok"><span class="callout-icon">✅</span><span><strong>2026-06-14 — Phase 8 kickoff · 5-A DB foundation + T-5B-00 regression guard committed.</strong> 7 new Prisma models added (<code>permissions</code>, <code>clinic_roles</code>, <code>role_permissions</code>, <code>user_roles</code>, <code>platform_users</code>, <code>plans</code>, <code>tenant_quotas</code>). 49-permission catalogue + 3 system roles seeded. All non-superadmin users backfilled with <code>roleId</code> (T-5A-06/07). T-5B-00 regression guard (16 tests) + 3 new tenant isolation tests committed. Total: <strong>245 tests passing</strong>.</span></div>
   <div class="callout info"><span class="callout-icon">📋</span><span><strong>2026-06-15 — Phase 8 docs refresh.</strong> Dashboard, How to Run, and Upcoming Work updated to reflect 245 tests and Phase 8 in-progress state. RBAC seed step added to setup guide. Next tasks: T-5A-03 (permission cache) → T-5A-04 (<code>requirePermission()</code> middleware) → T-5A-05 (JWT plane extension) → T-5B-01+ (route enforcement).</span></div>
   <div class="callout ok"><span class="callout-icon">✅</span><span><strong>2026-06-15 — T-5A-03/04/05 complete · permission service + JWT extension + middleware factories.</strong> <code>permission.service.ts</code> — resolvePermissions + in-memory cache (c5c7970). <code>permission.middleware.ts</code> — requirePlane + requirePermission factories (d638af1). JWT extended with <code>plane: 'clinic'|'platform'</code> + <code>permSetVersion</code> (2651019). 8 permission service + 8 permission middleware unit tests (13e7be9). tsc --noEmit: 0 errors. Total: <strong>261 tests passing</strong>. Next: <strong>T-5B-01</strong> — apply requirePermission() to all clinic routes.</span></div>
+  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>2026-06-15 — T-5D-02/03/04 complete · platform customer mgmt API, plan CRUD, quota enforcement.</strong> T-5D-02: <code>GET/POST /platform/customers</code>, <code>GET/PUT /platform/customers/:id</code>, suspend/reactivate endpoints. T-5D-03: <code>GET/POST/PUT/DELETE /platform/plans</code> + per-tenant quota override endpoints; effective quota = override ?? plan default. T-5D-04: <code>assertCanAddUser/Branch/Owner(tenantId)</code> backed by real DB — returns <code>409 QUOTA_EXCEEDED</code>; suspended tenant login returns <code>401 TENANT_SUSPENDED</code>. New migration: <code>platform_audit_logs</code> table for platform-operator audit trail. 28 new integration tests in <code>platformConsole.test.ts</code>. Total: <strong>313 tests passing</strong>. QA notes: quota override=0 blocked by Zod <code>.positive()</code> (recommend <code>.min(0)</code>); <code>requirePermission</code> deferred to T-5G. Next: <strong>T-5D-05</strong> → T-5E/F/G.</span></div>
 
   <h2>Phase 1 — Foundation &amp; Security</h2>
   <div class="tbl-wrap"><table>
@@ -1140,7 +1141,7 @@ Type: happy_path | edge_case | security | transaction</code></pre>
 <!-- ══════════════════ ROADMAP UPCOMING ══════════════════ -->
 <div class="page" id="page-roadmap-upcoming">
   <h1>🚀 Upcoming Work</h1>
-  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>Phases 1–7 complete · 261 tests passing.</strong> Phase 8 (RBAC + Platform Console) is in progress — 5-A DB foundation + T-5B-00 + T-5A-03/04/05 (permission service, JWT extension, middleware factories) done. Next: <strong>T-5B-01</strong> — apply requirePermission() to all clinic routes. Phase 9 (i18n) planned. Phases 10 &amp; 11 postponed (credential-gated).</span></div>
+  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>Phases 1–7 complete · 313 tests passing.</strong> Phase 8 (RBAC + Platform Console) is in progress — 5-A/B/C done + <strong>T-5D-02/03/04 done</strong> (customer mgmt API, plan CRUD, quota enforcement + <code>platform_audit_logs</code>). Next: <strong>T-5D-05</strong>, then T-5E (frontend shells), T-5F (role editor + platform console UI), T-5G (QA matrix). Phase 9 (i18n) planned. Phases 10 &amp; 11 postponed (credential-gated).</span></div>
 
   <!-- ── Phase 8 — ACTIVE PRIORITY ── -->
   <div style="border-left:4px solid #006c4a;background:#fff;border-radius:8px;padding:16px;margin-bottom:20px">
@@ -1167,10 +1168,11 @@ Type: happy_path | edge_case | security | transaction</code></pre>
       <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px">
         <div style="font-weight:700;color:#2563eb;margin-bottom:8px">5-C / 5-D — Platform Plane + Console</div>
         <ul style="margin:0;padding-left:18px;color:#374151;line-height:1.7">
-          <li><code>platform_users</code> (no tenant) + plane-scoped JWT</li>
-          <li>Customer/tenant CRUD · plan/package management</li>
-          <li>Per-customer quotas (branches/staff/owners) → <code>409</code> on breach</li>
-          <li>Per-tenant provisioning (S3, LINE, SMTP)</li>
+          <li>✅ T-5C-01/02/03 — platform plane (<code>platform_users</code> + plane JWT + login) — done</li>
+          <li>✅ T-5D-02 — customer (tenant) management API — done</li>
+          <li>✅ T-5D-03 — plan CRUD + quota override endpoints — done</li>
+          <li>✅ T-5D-04 — quota enforcement (<code>assertCanAdd*</code>) + <code>TENANT_SUSPENDED</code> + <code>platform_audit_logs</code> — done</li>
+          <li><strong>Next: T-5D-05</strong> — per-tenant integration provisioning (S3, LINE, SMTP)</li>
         </ul>
       </div>
       <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px">
@@ -1183,7 +1185,7 @@ Type: happy_path | edge_case | security | transaction</code></pre>
         </ul>
       </div>
     </div>
-    <div style="font-size:11px;color:#6b7280">Designed 2026-06-13 by @ba-agent · <strong style="color:#006c4a">5-A DB + T-5B-00 + T-5A-03/04/05 complete 2026-06-15</strong> · 261 tests green · Next: T-5B-01 (route enforcement) → T-5B-02/03/04 → 5-C…5-G</div>
+    <div style="font-size:11px;color:#6b7280">Designed 2026-06-13 by @ba-agent · <strong style="color:#006c4a">5-A/B/C + T-5D-02/03/04 complete 2026-06-15</strong> · 313 tests green · Next: T-5D-05 → T-5E (shells) → T-5F (role editor + console UI) → T-5G (matrix QA)</div>
   </div>
 
   <!-- ── Phase 9 — Planned ── -->
@@ -1221,7 +1223,7 @@ Type: happy_path | edge_case | security | transaction</code></pre>
     <thead><tr><th>Phase</th><th>Scope</th><th>Status</th><th>Gate / Blocker</th></tr></thead>
     <tbody>
       <tr style="opacity:0.5"><td><strong>1–7</strong></td><td>Foundation → UI redesign</td><td>✅ Complete (226 tests)</td><td>—</td></tr>
-      <tr style="background:#f0fdf8"><td><strong>8</strong></td><td>RBAC + Platform Console + IA restructure</td><td><strong>▶️ In Progress (261 tests)</strong></td><td>T-5B-01 next → T-5B-02/03/04 → 5-C…5-G</td></tr>
+      <tr style="background:#f0fdf8"><td><strong>8</strong></td><td>RBAC + Platform Console + IA restructure</td><td><strong>▶️ In Progress (313 tests)</strong></td><td>T-5D-05 next → T-5E/F/G</td></tr>
       <tr><td><strong>9</strong></td><td>i18n full rollout (EN/TH)</td><td>📋 Planned</td><td>After Phase 8</td></tr>
       <tr style="opacity:0.7"><td><strong>10</strong></td><td>Payment Gateway (Omise/Stripe + SaaS billing)</td><td>⏸ Postponed</td><td>Omise + SMTP keys</td></tr>
       <tr style="opacity:0.7"><td><strong>11</strong></td><td>LINE / SMS real dispatch</td><td>⏸ Postponed</td><td>LINE token + Twilio SID</td></tr>
@@ -1229,7 +1231,7 @@ Type: happy_path | edge_case | security | transaction</code></pre>
   </table></div>
 
   <h2>How to Start Phase 8 ▶️</h2>
-  <div class="callout ok" style="margin-bottom:12px"><span class="callout-icon">▶️</span><span><strong>5-A DB + T-5B-00 + T-5A-03/04/05 done · 261 tests green.</strong> T-5A-03 (permission cache), T-5A-04 (<code>requirePermission()</code> middleware), T-5A-05 (JWT plane extension) all committed 2026-06-15. Next: <strong>T-5B-01</strong> — apply requirePermission() to all clinic routes → T-5B-02 remove legacy rbacMiddleware → T-5B-03/04 role APIs.</span></div>
+  <div class="callout ok" style="margin-bottom:12px"><span class="callout-icon">▶️</span><span><strong>5-A/B/C + T-5D-02/03/04 done · 313 tests green.</strong> T-5D-02 (customer mgmt API), T-5D-03 (plan CRUD + quota overrides), T-5D-04 (quota enforcement + <code>TENANT_SUSPENDED</code> + <code>platform_audit_logs</code> migration) all committed 2026-06-15. Next: <strong>T-5D-05</strong> — per-tenant integration provisioning (S3, LINE, SMTP) → T-5E (frontend shells) → T-5F (role editor + platform console UI) → T-5G (permission-matrix + plane-isolation QA).</span></div>
 
   <h3>Delegate to Agents (copy/paste into Claude Code)</h3>
   <pre><code># Phase 8 — sub-task 5-A: RBAC schema + migration
@@ -1263,7 +1265,7 @@ Deliver: test file at src/backend/src/tests/integration/rbac-regression.test.ts
       <tr style="opacity:0.5"><td><strong>5</strong> (done)</td><td><code>npm test -- --testNamePattern="settings-api|encryption"</code></td><td>206</td><td>TC-S001–S009 encryption + API isolation</td></tr>
       <tr style="opacity:0.5"><td><strong>6</strong> (done)</td><td><code>npm test</code> (full suite)</td><td>226</td><td>QR endpoint tenant scoping · S3 key prefix scoped to <code>tenant/{id}</code></td></tr>
       <tr style="opacity:0.5"><td><strong>7</strong> (done)</td><td>Frontend-only — no new backend tests</td><td>226</td><td>Touch targets 44×44px verified manually</td></tr>
-      <tr style="background:#f0fdf8"><td><strong>8</strong> (in progress)</td><td><code>npm test -- --testNamePattern="permissions|RBAC|roles"</code></td><td>261 now → 280+ at completion</td><td>Permission matrix · plane isolation (clinic vs platform) · T-5B-00 ✅ · T-5A-03/04/05 ✅ done</td></tr>
+      <tr style="background:#f0fdf8"><td><strong>8</strong> (in progress)</td><td><code>npm test -- --testNamePattern="permissions|RBAC|roles|platform"</code></td><td>313 now → 340+ at completion</td><td>Permission matrix · plane isolation · quota enforcement · T-5A/B/C/D-02/03/04 ✅ done · <code>platformConsole.test.ts</code> (28 new)</td></tr>
       <tr style="opacity:0.7"><td><strong>10</strong> (postponed)</td><td><code>npm test -- --testNamePattern="reminders|LINE|Twilio"</code></td><td>235+ (10+ new)</td><td>Reminder dispatch · <code>owner.line_user_id</code> scoped per tenant</td></tr>
     </tbody>
   </table></div>

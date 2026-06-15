@@ -1,0 +1,161 @@
+/**
+ * Platform-plans service — business logic for plan management and
+ * per-tenant quota overrides on the platform plane.
+ *
+ * Quota model: effective value = override (tenant_quotas) ?? plan default.
+ * A null plan value means unlimited; a null override field means "inherit from plan".
+ *
+ * @module platform-plans.service
+ */
+
+import { AppError } from '../utils/errors'
+import * as plansRepo from '../models/platform-plans.repository'
+import * as customersRepo from '../models/platform-customers.repository'
+import type {
+  CreatePlanData,
+  UpdatePlanData,
+  QuotaOverrideData,
+} from '../models/platform-plans.repository'
+import { CustomerNotFoundError } from './platform-customers.service'
+
+/** Thrown when a requested plan does not exist. */
+export class PlanNotFoundError extends AppError {
+  constructor() {
+    super(404, 'Plan not found', 'PLAN_NOT_FOUND')
+  }
+}
+
+/** Thrown when retiring a plan that still has active tenants. */
+export class PlanInUseError extends AppError {
+  constructor(count: number) {
+    super(
+      409,
+      `Cannot retire plan: ${count} tenant(s) are currently assigned to it`,
+      'PLAN_IN_USE',
+    )
+  }
+}
+
+/** Effective quota shape returned to callers. */
+export interface EffectiveQuota {
+  plan: {
+    maxBranches: number
+    maxUsers: number
+    maxOwners: number | null
+  } | null
+  override: {
+    maxBranches: number | null
+    maxUsers: number | null
+    maxOwners: number | null
+  } | null
+  effective: {
+    maxBranches: number | null
+    maxUsers: number | null
+    maxOwners: number | null
+  }
+}
+
+/**
+ * Return all plans.
+ */
+export function listPlans() {
+  return plansRepo.listPlans()
+}
+
+/**
+ * Return a single plan by id.
+ * Throws PlanNotFoundError when missing.
+ *
+ * @param id - Plan primary key.
+ */
+export async function getPlan(id: number) {
+  const plan = await plansRepo.getPlanById(id)
+  if (!plan) throw new PlanNotFoundError()
+  return plan
+}
+
+/**
+ * Create a new subscription plan.
+ *
+ * @param data - Plan definition.
+ */
+export function createPlan(data: Omit<CreatePlanData, 'features'> & { features?: Record<string, unknown> }) {
+  return plansRepo.createPlan(data as CreatePlanData)
+}
+
+/**
+ * Update an existing plan's fields.
+ *
+ * @param id   - Plan primary key.
+ * @param data - Fields to update.
+ */
+export async function updatePlan(id: number, data: Omit<UpdatePlanData, 'features'> & { features?: Record<string, unknown> }) {
+  await getPlan(id)
+  return plansRepo.updatePlan(id, data as UpdatePlanData)
+}
+
+/**
+ * Retire a plan (soft-delete via isActive = false).
+ * Rejects with PlanInUseError when any tenant is still assigned to the plan.
+ *
+ * @param id - Plan primary key.
+ */
+export async function retirePlan(id: number) {
+  await getPlan(id)
+  const count = await plansRepo.countTenantsOnPlan(id)
+  if (count > 0) throw new PlanInUseError(count)
+  return plansRepo.retirePlan(id)
+}
+
+/**
+ * Compute the effective quota for a tenant.
+ *
+ * Resolution order:
+ *   1. tenant_quotas override (if field is non-null)
+ *   2. plan default
+ *   3. null (unlimited) if neither is set
+ *
+ * @param tenantId - Tenant primary key.
+ */
+export async function getEffectiveQuota(tenantId: number): Promise<EffectiveQuota> {
+  const tenant = await customersRepo.getTenantWithPlanAndQuota(tenantId)
+  if (!tenant) throw new CustomerNotFoundError()
+
+  const plan = tenant.plan
+  const override = tenant.quota ?? null
+
+  const effective = {
+    maxBranches: override?.maxBranches ?? plan?.maxBranches ?? null,
+    maxUsers:    override?.maxUsers    ?? plan?.maxUsers    ?? null,
+    maxOwners:   override?.maxOwners   ?? plan?.maxOwners   ?? null,
+  }
+
+  return {
+    plan: plan
+      ? { maxBranches: plan.maxBranches, maxUsers: plan.maxUsers, maxOwners: plan.maxOwners }
+      : null,
+    override: override
+      ? { maxBranches: override.maxBranches, maxUsers: override.maxUsers, maxOwners: override.maxOwners }
+      : null,
+    effective,
+  }
+}
+
+/**
+ * Set (or clear) quota override fields for a tenant.
+ * Writes an audit log entry after the update.
+ *
+ * @param tenantId       - Tenant primary key.
+ * @param data           - Override values (null to clear a field back to plan default).
+ * @param performedById  - Platform user making the change.
+ */
+export async function setQuotaOverride(
+  tenantId: number,
+  data: QuotaOverrideData,
+  performedById: number,
+) {
+  const tenant = await customersRepo.getTenantById(tenantId)
+  if (!tenant) throw new CustomerNotFoundError()
+
+  return plansRepo.upsertTenantQuota(tenantId, data, performedById)
+}

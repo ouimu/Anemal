@@ -51,6 +51,8 @@ model Tenant {
   quota     TenantQuota?
   roles     ClinicRole[]
   userRoles UserRole[]
+  // Phase 8 (5-D): platform audit back-relation
+  platformAuditLogs PlatformAuditLog[]
 
   @@map("tenants")
 }
@@ -798,6 +800,9 @@ model PlatformUser {
   lastLoginAt  DateTime?
   createdAt    DateTime     @default(now())
 
+  // Phase 8 (5-D): platform audit back-relation
+  platformAuditLogs PlatformAuditLog[]
+
   @@map("platform_users")
 }
 
@@ -838,4 +843,25 @@ model TenantQuota {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("tenant_quotas")
+}
+
+// Platform-plane audit trail — NOT tenant-scoped (no tenantId NOT NULL constraint)
+// targetTenantId is nullable so platform-level actions (e.g. plan changes) can be logged
+// without a specific tenant target.
+model PlatformAuditLog {
+  id                       Int       @id @default(autoincrement())
+  action                   String    @db.VarChar(255)
+  targetTenantId           Int?
+  performedByPlatformUserId Int
+  plane                    String    @default("platform") @db.VarChar(20)
+  details                  Json?
+  ipAddress                String?   @db.VarChar(50)
+  createdAt                DateTime  @default(now())
+
+  targetTenant   Tenant?       @relation(fields: [targetTenantId], references: [id], onDelete: SetNull)
+  performedBy    PlatformUser  @relation(fields: [performedByPlatformUserId], references: [id])
+
+  @@index([performedByPlatformUserId, createdAt(sort: Desc)])
+  @@index([targetTenantId, createdAt(sort: Desc)])
+  @@map("platform_audit_logs")
 }

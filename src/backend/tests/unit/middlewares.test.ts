@@ -36,12 +36,13 @@ describe('authMiddleware', () => {
     expect(next).not.toHaveBeenCalled()
   })
 
-  it('attaches context and calls next on valid token', () => {
-    ;(jwtConfig.verifyToken as jest.Mock).mockReturnValue(validPayload)
+  it('attaches context and calls next on valid token (platform plane — no DB check)', async () => {
+    const platformPayload = { ...validPayload, plane: 'platform' as const, tenantId: 0, platformUserId: 42 }
+    ;(jwtConfig.verifyToken as jest.Mock).mockReturnValue(platformPayload)
     const req = { headers: { authorization: 'Bearer valid.token' } } as unknown as Request
     const res = mockRes(); const next = mockNext()
-    authMiddleware(req, res, next)
-    expect((req as any).context).toEqual(validPayload)
+    await authMiddleware(req, res, next)
+    expect((req as any).context).toEqual(platformPayload)
     expect(next).toHaveBeenCalled()
   })
 })

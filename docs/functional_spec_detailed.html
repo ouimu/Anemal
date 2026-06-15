@@ -161,6 +161,10 @@ tr:hover td{background:#f8fafc}
     <a class="nav-item" href="#fr12"><span class="ico">🔒</span>FR-12: Security & Audit</a>
   </div>
   <div class="nav-group">
+    <div class="nav-label">Phase 8 — Platform</div>
+    <a class="nav-item" href="#platform-console-api"><span class="ico">🏢</span>Platform Console API</a>
+  </div>
+  <div class="nav-group">
     <div class="nav-label">Reference</div>
     <a class="nav-item" href="#integrations"><span class="ico">🔌</span>Integrations</a>
     <a class="nav-item" href="#testing"><span class="ico">🧪</span>Testing Strategy</a>
@@ -173,10 +177,10 @@ tr:hover td{background:#f8fafc}
       <div style="margin-top:2px">Phase 5 (Settings, was 1.5): <span class="status-complete">✓ Complete</span></div>
       <div style="margin-top:2px">Phase 6 (enhancements A–E): <span class="status-complete">✓ Complete</span></div>
       <div style="margin-top:2px">Phase 7 (UI redesign): <span class="status-complete">✓ Complete</span></div>
-      <div style="margin-top:2px">Phase 8 (RBAC/Platform, was 5): <span style="color:#006c4a;font-weight:700">▶ In Progress — 5-A + T-5A-03/04/05 done · 261 tests</span></div>
+      <div style="margin-top:2px">Phase 8 (RBAC/Platform, was 5): <span style="color:#006c4a;font-weight:700">▶ In Progress — 5-A/B/C + T-5D-02/03/04 done · 313 tests</span></div>
       <div style="margin-top:2px">Phase 9 (i18n): <span style="color:#2563eb;font-weight:700">📋 Planned</span></div>
       <div style="margin-top:2px;opacity:0.7">Phase 10 Payment / 11 LINE-SMS: ⏸ Postponed</div>
-      <div style="margin-top:6px;color:#334155">Tests: 261 total (261 passing)</div>
+      <div style="margin-top:6px;color:#334155">Tests: 313 total (313 passing)</div>
     </div>
   </div>
 </nav>
@@ -192,7 +196,7 @@ tr:hover td{background:#f8fafc}
     <!-- ═══════════════════════════════════════════════════════════ -->
     <section id="overview">
     <h1>Anemal SaaS — Detailed Functional Specification</h1>
-    <p><strong>Version:</strong> 1.5 &nbsp;|&nbsp; <strong>Date:</strong> 2026-06-15 &nbsp;|&nbsp; <strong>Status:</strong> Phases 1–7 Complete + Phase 8 in progress (5-A DB + T-5B-00 + T-5A-03/04/05 done) · 261 tests (261 passing)</p>
+    <p><strong>Version:</strong> 1.5 &nbsp;|&nbsp; <strong>Date:</strong> 2026-06-15 &nbsp;|&nbsp; <strong>Status:</strong> Phases 1–7 Complete + Phase 8 in progress (5-A/B/C + T-5D-02/03/04 done) · 313 tests (313 passing)</p>
 
     <div class="toc">
       <h3>Table of Contents</h3>
@@ -213,6 +217,7 @@ tr:hover td{background:#f8fafc}
       <div class="toc-section"><a href="#fr11">15. FR-11: Loyalty &amp; Membership</a></div>
       <div class="toc-section"><a href="#fr12">16. FR-12: Security &amp; Audit</a></div>
       <div class="toc-section"><a href="#fr13">17. FR-13: Reports &amp; Analytics</a></div>
+      <div class="toc-section"><a href="#platform-console-api">17b. Platform Console API (Phase 8 — T-5D-02/03/04)</a></div>
       <div class="toc-section"><a href="#integrations">18. Integration Requirements</a></div>
       <div class="toc-section"><a href="#testing">19. Testing Strategy</a></div>
       <div class="toc-section"><a href="#nfr">20. Non-Functional Requirements</a></div>
@@ -368,13 +373,14 @@ tr:hover td{background:#f8fafc}
 
     <h3 class="section">Super Admin Control Plane</h3>
     <ul>
-      <li>View all tenants — plan, trial status, last activity</li>
-      <li>Suspend / reactivate a tenant</li>
-      <li>Override subscription plan manually</li>
+      <li>View all tenants — plan, trial status, last activity (<code>GET /platform/customers</code>)</li>
+      <li>Suspend / reactivate a tenant (<code>POST /platform/customers/:id/suspend|reactivate</code>)</li>
+      <li>Override subscription plan or individual quotas (<code>PUT /platform/customers/:id/quota</code>)</li>
+      <li>Create / manage subscription plans with default quotas (<code>/platform/plans</code>)</li>
       <li>Platform-wide metrics (active tenants, API call volume, error rates)</li>
       <li>Access application logs for support escalation</li>
     </ul>
-    <div class="warning-box"><strong>Security:</strong> Super Admin uses a separate auth flow with mandatory 2FA (TOTP). All Super Admin actions are recorded in a separate immutable audit log.</div>
+    <div class="warning-box"><strong>Security:</strong> Platform operators use a separate auth flow (<code>POST /platform/auth/login</code> → platform-plane JWT). All operator actions are recorded in the immutable <code>platform_audit_logs</code> table. See <a href="#platform-console-api">Platform Console API</a> for full endpoint reference.</div>
     </section>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
@@ -445,7 +451,7 @@ tr:hover td{background:#f8fafc}
       <p><strong>Brute-Force Message Safety:</strong> Login failure always returns <em>"Invalid credentials"</em> — never reveals whether the email exists in the system.</p>
       <p><strong>Token Storage:</strong> Access token stored in browser memory (not localStorage). Refresh token in <code>HttpOnly; SameSite=Strict</code> cookie — immune to XSS theft.</p>
       <p><strong>Inactive Admin Guard:</strong> If the last active admin in a tenant tries to deactivate their own account, the API returns <code>409 Conflict</code> to prevent tenant lockout.</p>
-      <p><strong>Phase 8 — Two-Plane Authorization (RBAC restructure, in progress):</strong> Evolving to a two-plane model. <em>Clinic plane</em> (<code>/clinic/*</code>, <code>/clinic-admin/*</code>): users carry <code>{ userId, tenantId, branchId, roleId }</code>; permissions resolved from <code>role_permissions</code> join table (union of all user roles, CR-01). <em>Platform plane</em> (<code>/platform/*</code>): <code>platform_users</code> (no <code>tenant_id</code>) for SaaS operations. Seven new DB models added (2026-06-14): <code>permissions</code>, <code>clinic_roles</code>, <code>role_permissions</code>, <code>user_roles</code>, <code>platform_users</code>, <code>plans</code>, <code>tenant_quotas</code>. 49 permission codes (<code>module.action</code> format) seeded; system roles <code>clinic_admin</code> / <code>doctor</code> / <code>clinic_staff</code> seeded. T-5A-03/04/05 complete (2026-06-15): <code>permission.service.ts</code> (resolvePermissions + in-memory cache), <code>permission.middleware.ts</code> (<code>requirePlane</code> + <code>requirePermission</code> factories), JWT extended with <code>plane</code> + <code>permSetVersion</code>. Next: T-5B-01 — apply <code>requirePermission()</code> to all clinic routes. Full spec: <code>.claude/specs/RBAC_Platform_Restructure_Spec.md</code>.</p>
+      <p><strong>Phase 8 — Two-Plane Authorization (RBAC restructure, in progress):</strong> Evolving to a two-plane model. <em>Clinic plane</em> (<code>/clinic/*</code>, <code>/clinic-admin/*</code>): users carry <code>{ userId, tenantId, branchId, roleId }</code>; permissions resolved from <code>role_permissions</code> join table. <em>Platform plane</em> (<code>/platform/*</code>): <code>platform_users</code> (no <code>tenant_id</code>) for SaaS operations. Seven new DB models (2026-06-14): <code>permissions</code>, <code>clinic_roles</code>, <code>role_permissions</code>, <code>user_roles</code>, <code>platform_users</code>, <code>plans</code>, <code>tenant_quotas</code>. 49 permission codes seeded; system roles <code>clinic_admin</code> / <code>doctor</code> / <code>clinic_staff</code> seeded. T-5A-03/04/05 complete: <code>permission.service.ts</code> (resolvePermissions + in-memory cache), <code>permission.middleware.ts</code> (<code>requirePlane</code> + <code>requirePermission</code> factories), JWT extended with <code>plane</code> + <code>permSetVersion</code>. 5-B (route enforcement), 5-C (platform login/JWT) complete. <strong>T-5D-02/03/04 complete (2026-06-15):</strong> platform customer management API, plan CRUD + quota override endpoints, quota enforcement via <code>assertCanAddUser/Branch/Owner(tenantId)</code> — returns <code>409 QUOTA_EXCEEDED</code>; suspended tenants return <code>401 TENANT_SUSPENDED</code> at clinic login; <code>platform_audit_logs</code> migration added. See <a href="#platform-console-api">Platform Console API</a> section below. Full spec: <code>.claude/specs/RBAC_Platform_Restructure_Spec.md</code>.</p>
       <h4 class="subsection">Testing Criteria</h4>
       <ul class="test-list">
         <li>Valid login returns access + refresh tokens</li>
@@ -1179,6 +1185,80 @@ tr:hover td{background:#f8fafc}
     </div>
     </section>
 
+    <!-- Platform Console API -->
+    <section id="platform-console-api">
+    <h2 class="chapter">17b. Platform Console API (Phase 8 — T-5D-02/03/04)</h2>
+    <div class="module">
+      <div class="module-header">
+        <span class="module-id">PLAT</span>
+        <span class="module-title">Platform Console API</span>
+        <span class="module-phase ph-planned">Phase 8 — In Progress</span>
+      </div>
+
+      <div class="success-box">T-5D-02/03/04 complete 2026-06-15 — 28 new integration tests in <code>platformConsole.test.ts</code>. All routes require <code>requirePlane('platform')</code>. <code>requirePermission</code> deferred to T-5G.</div>
+
+      <h4 class="subsection">Authentication Guard</h4>
+      <p>All <code>/platform/*</code> routes require a platform-plane JWT issued by <code>POST /platform/auth/login</code>. The JWT carries <code>{ platformUserId, plane: 'platform', role }</code> — no <code>tenantId</code> field. Clinic-plane JWTs are rejected with <code>403 WRONG_PLANE</code>.</p>
+
+      <h4 class="subsection">Customer (Tenant) Management — T-5D-02</h4>
+      <div class="tbl-wrap"><table>
+        <tr><th>Method</th><th>Path</th><th>Description</th></tr>
+        <tr><td><code>GET</code></td><td><code>/platform/customers</code></td><td>List all tenants with plan, status, trial dates, quota summary</td></tr>
+        <tr><td><code>POST</code></td><td><code>/platform/customers</code></td><td>Provision a new tenant (create <code>tenants</code> row + assign plan)</td></tr>
+        <tr><td><code>GET</code></td><td><code>/platform/customers/:id</code></td><td>Fetch a single tenant's details including current quota usage</td></tr>
+        <tr><td><code>PUT</code></td><td><code>/platform/customers/:id</code></td><td>Update tenant metadata (name, subdomain, plan assignment)</td></tr>
+        <tr><td><code>POST</code></td><td><code>/platform/customers/:id/suspend</code></td><td>Suspend tenant — sets <code>is_active = false</code>; clinic login returns <code>401 TENANT_SUSPENDED</code></td></tr>
+        <tr><td><code>POST</code></td><td><code>/platform/customers/:id/reactivate</code></td><td>Reactivate a suspended tenant — sets <code>is_active = true</code></td></tr>
+        <tr><td><code>GET</code></td><td><code>/platform/customers/:id/quota</code></td><td>Read effective quota (override ?? plan default) and current usage</td></tr>
+        <tr><td><code>PUT</code></td><td><code>/platform/customers/:id/quota</code></td><td>Set per-tenant quota override for <code>maxUsers</code>, <code>maxBranches</code>, <code>maxOwners</code></td></tr>
+      </table></div>
+
+      <h4 class="subsection">Plan Management — T-5D-03</h4>
+      <div class="tbl-wrap"><table>
+        <tr><th>Method</th><th>Path</th><th>Description</th></tr>
+        <tr><td><code>GET</code></td><td><code>/platform/plans</code></td><td>List all subscription plans with default quotas</td></tr>
+        <tr><td><code>POST</code></td><td><code>/platform/plans</code></td><td>Create a new plan with <code>maxUsers</code>, <code>maxBranches</code>, <code>maxOwners</code> defaults</td></tr>
+        <tr><td><code>PUT</code></td><td><code>/platform/plans/:id</code></td><td>Update plan name or default quota values</td></tr>
+        <tr><td><code>DELETE</code></td><td><code>/platform/plans/:id</code></td><td>Soft-delete plan (cannot delete if tenants are currently on it)</td></tr>
+      </table></div>
+
+      <h4 class="subsection">Quota Enforcement Rule</h4>
+      <div class="info-box">
+        <strong>Effective Quota Formula:</strong> <code>effectiveQuota = tenantOverride ?? planDefault</code>. A <code>null</code> value on either means <strong>unlimited</strong>. Override of <code>0</code> is currently blocked by API validation (Zod <code>.positive()</code> — recommend changing to <code>.min(0)</code> in a future task). Override takes priority at all times regardless of plan.
+      </div>
+
+      <h4 class="subsection">Quota Enforcement Functions — T-5D-04</h4>
+      <p>Three guard functions are called at resource-creation time by clinic-plane services:</p>
+      <div class="tbl-wrap"><table>
+        <tr><th>Function</th><th>When called</th><th>On breach</th></tr>
+        <tr><td><code>assertCanAddUser(tenantId)</code></td><td>Before creating a new user</td><td>Throws <code>409 QUOTA_EXCEEDED</code> with resource=<code>users</code></td></tr>
+        <tr><td><code>assertCanAddBranch(tenantId)</code></td><td>Before creating a new branch</td><td>Throws <code>409 QUOTA_EXCEEDED</code> with resource=<code>branches</code></td></tr>
+        <tr><td><code>assertCanAddOwner(tenantId)</code></td><td>Before creating a new pet owner</td><td>Throws <code>409 QUOTA_EXCEEDED</code> with resource=<code>owners</code></td></tr>
+      </table></div>
+
+      <h4 class="subsection">Error Contracts</h4>
+      <div class="tbl-wrap"><table>
+        <tr><th>Error</th><th>HTTP</th><th>Body</th><th>Trigger</th></tr>
+        <tr><td><code>QUOTA_EXCEEDED</code></td><td>409</td><td><code>{ code: "QUOTA_EXCEEDED", resource: "users"|"branches"|"owners", limit: number, current: number }</code></td><td>Clinic-plane resource creation beyond effective quota</td></tr>
+        <tr><td><code>TENANT_SUSPENDED</code></td><td>401</td><td><code>{ code: "TENANT_SUSPENDED" }</code></td><td>Clinic user attempts login while tenant <code>is_active = false</code></td></tr>
+        <tr><td><code>WRONG_PLANE</code></td><td>403</td><td><code>{ code: "WRONG_PLANE" }</code></td><td>Clinic JWT used on <code>/platform/*</code> route or vice-versa</td></tr>
+      </table></div>
+
+      <h4 class="subsection">Platform Audit Log Table</h4>
+      <p>New migration: <code>platform_audit_logs</code> — records all platform-operator actions with the following fields:</p>
+      <div class="tbl-wrap"><table>
+        <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+        <tr><td><code>id</code></td><td>UUID PK</td><td>Primary key</td></tr>
+        <tr><td><code>action</code></td><td>VARCHAR</td><td>e.g. <code>suspend_tenant</code>, <code>reactivate_tenant</code>, <code>assign_plan</code>, <code>override_quota</code></td></tr>
+        <tr><td><code>target_tenant_id</code></td><td>UUID</td><td>FK → <code>tenants.id</code> — the clinic affected</td></tr>
+        <tr><td><code>performed_by_platform_user_id</code></td><td>UUID</td><td>FK → <code>platform_users.id</code> — the operator who performed the action</td></tr>
+        <tr><td><code>details</code></td><td>JSONB</td><td>Before/after snapshot or action parameters</td></tr>
+        <tr><td><code>created_at</code></td><td>TIMESTAMPTZ</td><td>Immutable — no UPDATE/DELETE permitted on this table</td></tr>
+      </table></div>
+      <div class="warning-box"><strong>Note:</strong> Platform routes currently have <code>requirePlane('platform')</code> guard but not <code>requirePermission()</code> — permission enforcement on platform routes is deferred to T-5G (Phase 8 QA + cleanup sub-task).</div>
+    </div>
+    </section>
+
     <!-- Integrations -->
     <section id="integrations">
     <h2 class="chapter">18. Integration Requirements</h2>
@@ -1227,7 +1307,7 @@ tr:hover td{background:#f8fafc}
       <tr><td>Phase 5</td><td>Settings &amp; Configuration (was 1.5)</td><td>206</td><td class="status-complete">✓ Passing</td></tr>
       <tr><td>Phase 6</td><td>Production-readiness — PDF, QR, Barcode, S3</td><td>226</td><td class="status-complete">✓ Passing</td></tr>
       <tr><td>Phase 7</td><td>UI Redesign sign-off — Appointments, Pets, EMR</td><td>226</td><td class="status-complete">✓ Passing (presentational only)</td></tr>
-      <tr><td>Phase 8 (in progress)</td><td>RBAC foundation — 7 DB models, 49 permissions, 3 system roles, user_roles backfill, T-5B-00 guard, permission service + JWT extension + middleware factories (T-5A-03/04/05)</td><td>261</td><td class="status-complete">✓ 5-A + T-5B-00 + T-5A-03/04/05 done · T-5B-01 next</td></tr>
+      <tr><td>Phase 8 (in progress)</td><td>RBAC foundation + enforcement (5-A/B) + platform plane (5-C) + platform customer API, plan CRUD, quota enforcement, platform_audit_logs (T-5D-02/03/04)</td><td>313</td><td class="status-inprogress">▶ 5-A/B/C + T-5D-02/03/04 done · 28 new in platformConsole.test.ts · T-5D-05 next</td></tr>
     </table></div>
     </section>
 
@@ -1294,7 +1374,7 @@ app.use(async (req, res, next) => {
 });</pre>
 
     <div style="margin-top:40px;padding:20px;background:#f1f5f9;border-radius:8px;font-size:13px;color:var(--muted);text-align:center">
-      <strong>Anemal SaaS Functional Specification</strong> · Updated 2026-06-15 · Confidential
+      <strong>Anemal SaaS Functional Specification</strong> · Updated 2026-06-15 (T-5D-02/03/04) · Confidential
     </div>
     </section>
 

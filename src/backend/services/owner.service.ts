@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { AppError } from '../utils/errors'
 import * as ownerRepo from '../models/owner.repository'
+import { assertCanAddOwner } from './subscription.service'
 
 export const createOwnerSchema = z.object({
   firstName: z.string().min(1).max(100),
@@ -38,6 +39,7 @@ export async function getOwner(tenantId: number, id: number) {
 }
 
 export async function createOwner(tenantId: number, data: CreateOwnerInput) {
+  await assertCanAddOwner(tenantId)
   const existing = await ownerRepo.findOwnerByPhone(tenantId, data.phone)
   if (existing) throw new OwnerError('Phone number already registered in this clinic', 409)
   return ownerRepo.createOwner(tenantId, data)

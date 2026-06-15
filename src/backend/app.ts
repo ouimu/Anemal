@@ -4,6 +4,8 @@ import helmet from 'helmet'
 
 import authRoutes from './routes/auth.routes'
 import platformAuthRoutes from './routes/platform-auth.routes'
+import platformCustomersRoutes from './routes/platform-customers.routes'
+import platformPlansRoutes from './routes/platform-plans.routes'
 import userRoutes from './routes/user.routes'
 import adminRoutes from './routes/admin.routes'
 import clinicRoutes from './routes/clinic.routes'
@@ -47,7 +49,9 @@ app.get('/health', (_req, res) => res.json({ status: 'ok' }))
 app.use(auditMiddleware)
 
 // Routes
-app.use('/platform/auth',   platformAuthRoutes)
+app.use('/platform/auth',      platformAuthRoutes)
+app.use('/platform/customers', platformCustomersRoutes)
+app.use('/platform/plans',     platformPlansRoutes)
 app.use('/auth',            authRoutes)
 app.use('/users',           userRoutes)
 app.use('/admin/system-settings', systemSettingsRoutes) // superadmin only — before /admin

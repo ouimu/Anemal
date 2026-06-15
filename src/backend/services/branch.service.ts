@@ -2,6 +2,7 @@
 import { z } from 'zod'
 import { AppError } from '../utils/errors'
 import * as branchRepo from '../models/branch.repository'
+import { assertCanAddBranch } from './subscription.service'
 
 const HHMM = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Expected HH:MM')
 
@@ -43,7 +44,8 @@ export async function getBranch(tenantId: number, id: number) {
   return branch
 }
 
-export function createBranch(tenantId: number, data: CreateBranchInput) {
+export async function createBranch(tenantId: number, data: CreateBranchInput) {
+  await assertCanAddBranch(tenantId)
   return branchRepo.createBranch(tenantId, data)
 }
 
