@@ -1,19 +1,18 @@
-// Admin-only routes — authMiddleware + rbacMiddleware(['admin']) applied
+// Admin routes — authMiddleware + permission enforcement
 import { Router } from 'express'
 import { authMiddleware } from '../middlewares/auth.middleware'
-import { rbacMiddleware } from '../middlewares/rbac.middleware'
+import { requirePlane, requirePermission } from '../middlewares/permission.middleware'
 import { validate } from '../middlewares/validate.middleware'
 import { getSettings, updateSettings, updateSettingsSchema } from '../controllers/tenant-settings.controller'
 import { getClinicUsage } from '../services/usage.service'
 
 const router = Router()
 router.use(authMiddleware)
-router.use(rbacMiddleware(['admin']))
 
-router.get('/settings', getSettings)
-router.put('/settings', validate(updateSettingsSchema), updateSettings)
+router.get('/settings', requirePlane('clinic'), requirePermission('clinic.profile.view'), getSettings)
+router.put('/settings', requirePlane('clinic'), requirePermission('clinic.profile.edit'), validate(updateSettingsSchema), updateSettings)
 
-router.get('/usage', async (req, res, next) => {
+router.get('/usage', requirePlane('clinic'), requirePermission('clinic.profile.view'), async (req, res, next) => {
   try {
     const data = await getClinicUsage(req.context!.tenantId)
     res.json({ success: true, data })
