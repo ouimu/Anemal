@@ -143,12 +143,11 @@ describe('plane isolation', () => {
     expect([200, 403]).toContain(res.status)   // 403 = permission denied (ok — not plane denied)
   })
 
-  it('clinic token cannot access a platform-plane protected endpoint', async () => {
-    // Until Task 5 ships a protected platform endpoint we assert the plane claim.
-    // We decode the clinic token manually to confirm plane === 'clinic'.
-    const [, payloadB64] = clinicToken.split('.')
-    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'))
-    expect(payload.plane).toBe('clinic')
+  it('clinic token is rejected on a platform-plane protected endpoint (GET /platform/auth/me → 403)', async () => {
+    const res = await request(server)
+      .get('/platform/auth/me')
+      .set('Authorization', `Bearer ${clinicToken}`)
+    expect(res.status).toBe(403)
   })
 
   it('platform token has plane === "platform", platformUserId set, no tenantId/userId', async () => {
@@ -159,5 +158,40 @@ describe('plane isolation', () => {
     // signPlatformToken only signs { platformUserId, plane, role } — clinic fields absent
     expect(payload.tenantId).toBeUndefined()
     expect(payload.userId).toBeUndefined()
+  })
+})
+
+// ─── GET /platform/auth/me ────────────────────────────────────────────────────
+describe('GET /platform/auth/me', () => {
+  let platformToken: string
+
+  beforeAll(async () => {
+    const res = await request(server)
+      .post('/platform/auth/login')
+      .send({
+        email:    process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.co',
+        password: process.env.PLATFORM_ADMIN_PASSWORD || 'PlatformAdmin1!',
+      })
+    platformToken = res.body.data?.token
+  })
+
+  it('returns current platform identity with a permissions stub', async () => {
+    const res = await request(server)
+      .get('/platform/auth/me')
+      .set('Authorization', `Bearer ${platformToken}`)
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(true)
+    expect(typeof res.body.data.platformUserId).toBe('number')
+    expect(res.body.data.email).toBe(process.env.PLATFORM_ADMIN_EMAIL || 'admin@anemal.co')
+    expect(res.body.data.role).toBeDefined()
+    // permissions is a known stub until platform RBAC lands
+    expect(res.body.data.permissions).toEqual([])
+    // Never leak the password hash
+    expect(res.body.data.passwordHash).toBeUndefined()
+  })
+
+  it('returns 401 without a token', async () => {
+    const res = await request(server).get('/platform/auth/me')
+    expect(res.status).toBe(401)
   })
 })

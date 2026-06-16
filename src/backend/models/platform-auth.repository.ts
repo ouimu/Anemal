@@ -20,6 +20,16 @@ export function findPlatformUserByEmail(email: string) {
 }
 
 /**
+ * Find a platform user by primary key.
+ * Returns null when no matching user exists.
+ *
+ * @param id - The platform user's primary key.
+ */
+export function findPlatformUserById(id: number) {
+  return prisma.platformUser.findUnique({ where: { id } })
+}
+
+/**
  * Record the last-login timestamp for a platform user.
  *
  * @param id - The platform user's primary key.

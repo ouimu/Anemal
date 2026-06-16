@@ -65,3 +65,29 @@ describe('POST /auth/login', () => {
     expect(res.status).toBe(400)
   })
 })
+
+describe('GET /auth/me', () => {
+  let token: string
+
+  beforeAll(async () => {
+    const res = await request(server).post('/auth/login').send(TENANT_A)
+    token = res.body.data.token
+  })
+
+  it('✅ returns current clinic identity with roleIds + permissions', async () => {
+    const res = await request(server).get('/auth/me').set('Authorization', `Bearer ${token}`)
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(true)
+    expect(res.body.data.email).toBe(TENANT_A.email)
+    expect(res.body.data.tenantId).toBeDefined()
+    expect(Array.isArray(res.body.data.roleIds)).toBe(true)
+    expect(Array.isArray(res.body.data.permissions)).toBe(true)
+    // Never leak the password hash
+    expect(res.body.data.passwordHash).toBeUndefined()
+  })
+
+  it('❌ returns 401 without a token', async () => {
+    const res = await request(server).get('/auth/me')
+    expect(res.status).toBe(401)
+  })
+})
