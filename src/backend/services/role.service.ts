@@ -22,12 +22,14 @@ import {
 
 /** Shape returned for a single role in list/get responses. */
 export interface RoleDto {
-  id:          number
-  name:        string
-  isSystem:    boolean
-  tenantId:    number | null
-  permVersion: number
-  permissions: string[]
+  id:                 number
+  name:               string
+  isSystem:           boolean
+  tenantId:           number | null
+  permVersion:        number
+  permissions:        string[]
+  /** Number of users currently assigned this role. Only present on list responses. */
+  assignedUserCount?: number
 }
 
 /** Convert a Prisma ClinicRole row (with permissions included) into a RoleDto. */
@@ -50,13 +52,17 @@ function toDto(role: {
 }
 
 /**
- * List system roles and the caller's tenant custom roles, each with permissions[].
+ * List system roles and the caller's tenant custom roles, each with permissions[]
+ * and assignedUserCount (number of users currently holding the role).
  *
  * @param tenantId - The calling user's tenant ID.
  */
 export async function listRoles(tenantId: number): Promise<RoleDto[]> {
   const roles = await roleRepo.listRoles(tenantId)
-  return roles.map(toDto)
+  return roles.map(role => ({
+    ...toDto(role),
+    assignedUserCount: role._count.userRoles,
+  }))
 }
 
 /**

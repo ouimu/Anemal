@@ -26,6 +26,7 @@ import {
   handleSetQuotaOverride,
   handleGetProvisioning,
   handleUpdateProvisioning,
+  handleGetCustomerUsage,
 } from '../controllers/platform-customers.controller'
 
 const router = Router()
@@ -46,6 +47,9 @@ router.post('/:id/reactivate', handleReactivateCustomer)
 // Quota
 router.get('/:id/quota', handleGetEffectiveQuota)
 router.put('/:id/quota', validate(setQuotaSchema), handleSetQuotaOverride)
+
+// Usage
+router.get('/:id/usage', handleGetCustomerUsage)
 
 // Provisioning
 router.get('/:id/provisioning', handleGetProvisioning)

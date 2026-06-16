@@ -83,3 +83,40 @@ export function requirePermission(permissionCode: string): RequestHandler {
     }
   }
 }
+
+/**
+ * Guard that passes when the caller holds ANY of the listed permission codes.
+ *
+ * Resolves the caller's full permission set via `resolvePermissions` and
+ * rejects only if none of the supplied codes are present. Use this for
+ * read-only routes that should be accessible to both a narrower view
+ * permission and a broader manage permission.
+ *
+ * Must run after `authMiddleware` (which sets `req.context`).
+ *
+ * @param permissionCodes - One or more permission codes; access is granted if
+ *   the caller holds at least one of them.
+ * @returns Async Express RequestHandler that enforces the OR permission check.
+ */
+export function requireAnyPermission(permissionCodes: string[]): RequestHandler {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.context) {
+      res.status(401).json({ success: false, error: 'Authentication required' })
+      return
+    }
+    try {
+      const perms = await resolvePermissions(req.context.userId, req.context.tenantId)
+      const hasAny = permissionCodes.some(code => perms.has(code))
+      if (!hasAny) {
+        res.status(403).json({
+          success: false,
+          error: `Access denied: requires one of [${permissionCodes.join(', ')}]`,
+        })
+        return
+      }
+      next()
+    } catch (err) {
+      next(err)
+    }
+  }
+}

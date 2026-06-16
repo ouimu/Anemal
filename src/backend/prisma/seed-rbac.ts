@@ -263,6 +263,38 @@ export async function seedPlatformAdmin(): Promise<void> {
   console.log(`[seed-rbac] platform_super_admin seeded — ${email}`)
 }
 
+// ---------------------------------------------------------------------------
+// 4. Plan seed
+// ---------------------------------------------------------------------------
+
+/** Default plan keys. */
+const PLAN_STARTER      = 'starter'
+const PLAN_PROFESSIONAL = 'professional'
+const PLAN_CLINIC_PLUS  = 'clinic_plus'
+
+/**
+ * Seed 3 default SaaS plans.
+ *
+ * Idempotent: upserts by `key`. Safe to re-run.
+ * priceMonth is 0 as a placeholder; update when commercial confirms pricing.
+ */
+// ponytail: priceMonth=0 placeholder; update when commercial confirms pricing
+export async function seedPlans(): Promise<void> {
+  const plans = [
+    { key: PLAN_STARTER,      name: 'Starter',      priceMonth: 0, maxBranches: 1,  maxUsers: 5,   maxOwners: 500,  features: {} },
+    { key: PLAN_PROFESSIONAL, name: 'Professional', priceMonth: 0, maxBranches: 3,  maxUsers: 20,  maxOwners: 5000, features: {} },
+    { key: PLAN_CLINIC_PLUS,  name: 'Clinic Plus',  priceMonth: 0, maxBranches: 10, maxUsers: 100, maxOwners: null, features: {} },
+  ]
+  for (const plan of plans) {
+    await prisma.plan.upsert({
+      where:  { key: plan.key },
+      update: { name: plan.name, maxBranches: plan.maxBranches, maxUsers: plan.maxUsers, maxOwners: plan.maxOwners },
+      create: plan,
+    })
+    console.log(`[seed-plans] upserted: ${plan.key}`)
+  }
+}
+
 // Run directly when invoked as a script
 if (require.main === module) {
   seedRbac()

@@ -40,7 +40,8 @@ export const assignUserRoleSchema = z.object({
 
 /**
  * GET /clinic/roles
- * Returns system roles + caller's tenant custom roles, each with permissions[].
+ * Returns system roles + caller's tenant custom roles, each with permissions[]
+ * and assignedUserCount (number of users currently holding the role).
  */
 export async function listRoles(
   req: Request,

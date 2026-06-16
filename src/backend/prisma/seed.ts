@@ -7,6 +7,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') })
 import { PrismaClient, LegacyRole } from '@prisma/client'
 import bcrypt from 'bcrypt'
 import * as platformAuthRepo from '../models/platform-auth.repository'
+import { seedPlans } from './seed-rbac'
 
 const prisma = new PrismaClient()
 const SALT_ROUNDS = 10
@@ -126,6 +127,8 @@ async function main() {
   const platformHash     = await bcrypt.hash(platformPassword, SALT_ROUNDS)
   await platformAuthRepo.upsertPlatformSuperAdmin(platformEmail, platformName, platformHash)
   console.log(`  ✓ platform_super_admin — ${platformEmail}`)
+
+  await seedPlans()
 
   console.log(`  ✓ branches: ${branchA.name}, ${branchA2.name} (dev-clinic), ${branchB.name} (test-clinic)`)
   console.log('✅ Seed complete.')

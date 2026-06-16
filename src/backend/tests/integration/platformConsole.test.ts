@@ -506,10 +506,17 @@ describe('T-5D-05 Provisioning endpoints', () => {
   let tenantId: number
 
   beforeAll(async () => {
+    const planRes = await request(server)
+      .post('/platform/plans')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ key: `plan_prov_${SFX}`, name: 'QA Prov Plan', maxBranches: 1, maxUsers: 5 })
+    const planId = planRes.body.data.id
+    createdPlanIds.push(planId)
+
     const tRes = await request(server)
       .post('/platform/customers')
       .set('Authorization', `Bearer ${platformToken}`)
-      .send({ name: 'QA Provisioning Tenant', subdomain: `qa-prov-${SFX}` })
+      .send({ name: 'QA Provisioning Tenant', subdomain: `qa-prov-${SFX}`, planId })
     tenantId = tRes.body.data.id
     createdTenantIds.push(tenantId)
   })
@@ -629,12 +636,22 @@ describe('T-5D-05 Settings route rename', () => {
 describe('PRE-6 Audit log coverage', () => {
   let auditCustomerId: number
   let auditPlanId: number
+  let auditSetupPlanId: number
+
+  beforeAll(async () => {
+    const planRes = await request(server)
+      .post('/platform/plans')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ key: `plan_auditsetup_${SFX}`, name: 'QA Audit Setup Plan', maxBranches: 1, maxUsers: 5 })
+    auditSetupPlanId = planRes.body.data.id
+    createdPlanIds.push(auditSetupPlanId)
+  })
 
   it('✅ audit log written on customer create (action=customer.create)', async () => {
     const res = await request(server)
       .post('/platform/customers')
       .set('Authorization', `Bearer ${platformToken}`)
-      .send({ name: 'QA Audit Customer', subdomain: `qa-audit-${SFX}` })
+      .send({ name: 'QA Audit Customer', subdomain: `qa-audit-${SFX}`, planId: auditSetupPlanId })
     expect(res.status).toBe(201)
     auditCustomerId = res.body.data.id
     createdTenantIds.push(auditCustomerId)

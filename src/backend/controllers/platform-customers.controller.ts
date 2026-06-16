@@ -13,12 +13,13 @@ import { z } from 'zod'
 import * as customersService from '../services/platform-customers.service'
 import * as plansService from '../services/platform-plans.service'
 import * as provisioningService from '../services/platform-provisioning.service'
+import * as usageService from '../services/usage.service'
 
 /** Zod schema for POST /platform/customers */
 export const createCustomerSchema = z.object({
   name:      z.string().trim().min(1).max(255),
   subdomain: z.string().trim().min(1).max(100).regex(/^[a-z0-9-]+$/, 'Only lowercase letters, digits, and hyphens'),
-  planId:    z.number().int().positive().optional().nullable(),
+  planId:    z.number().int().positive(),
 }).strict()
 
 /** Zod schema for PUT /platform/customers/:id */
@@ -186,6 +187,32 @@ export async function handleSetQuotaOverride(
     const body = req.body as z.infer<typeof setQuotaSchema>
     const performedById = req.context!.platformUserId!
     const data = await plansService.setQuotaOverride(id, body, performedById)
+    res.status(200).json({ success: true, data })
+  } catch (err) {
+    next(err)
+  }
+}
+
+/**
+ * GET /platform/customers/:id/usage
+ *
+ * Returns live usage counts (branches, users, owners) and plan caps for a
+ * tenant, plus an `overPlan` flag when any count exceeds its cap.
+ * A null cap means unlimited — that dimension never triggers overPlan.
+ */
+export async function handleGetCustomerUsage(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const id = Number(req.params.id)
+    if (isNaN(id)) {
+      res.status(400).json({ success: false, error: 'Invalid customer id' })
+      return
+    }
+    const quota = await plansService.getEffectiveQuota(id)
+    const data  = await usageService.getPlatformCustomerUsage(id, quota.effective)
     res.status(200).json({ success: true, data })
   } catch (err) {
     next(err)

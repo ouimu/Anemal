@@ -3,6 +3,10 @@
 
 import prisma from '../config/db'
 
+export function countBranches(tenantId: number) {
+  return prisma.branch.count({ where: { tenantId, isActive: true } })
+}
+
 export function countActivePets(tenantId: number) {
   return prisma.pet.count({ where: { tenantId, isActive: true } })
 }

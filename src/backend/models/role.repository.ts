@@ -29,6 +29,7 @@ export function listRoles(tenantId: number) {
     },
     include: {
       permissions: { select: { permissionCode: true } },
+      _count: { select: { userRoles: true } },
     },
     orderBy: [{ isSystem: 'desc' }, { name: 'asc' }],
   })
