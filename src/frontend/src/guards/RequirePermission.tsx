@@ -38,11 +38,20 @@ export function RequirePermission({
   any: anyList,
   children,
 }: RequirePermissionProps): React.ReactElement {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated())
-  const hasPermission   = useAuthStore((s) => s.hasPermission)
+  const isAuthenticated  = useAuthStore((s) => s.isAuthenticated())
+  const hasPermission    = useAuthStore((s) => s.hasPermission)
+  const permissionsLoaded = useAuthStore((s) => s.permissionsLoaded)
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
+  }
+
+  if (!permissionsLoaded) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <span className="material-symbols-outlined animate-spin">progress_activity</span>
+      </div>
+    )
   }
 
   const codes   = anyList !== undefined ? anyList : [perm]

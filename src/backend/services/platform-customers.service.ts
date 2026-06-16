@@ -67,9 +67,10 @@ export async function getCustomer(id: number) {
  * Create a new tenant (customer) record.
  * Validates subdomain uniqueness before inserting.
  *
- * @param data - Name, subdomain, and optional plan.
+ * @param data           - Name, subdomain, and optional plan.
+ * @param performedById  - Platform user creating the customer.
  */
-export async function createCustomer(data: CreateCustomerInput) {
+export async function createCustomer(data: CreateCustomerInput, performedById: number) {
   const existing = await prisma.tenant.findUnique({
     where: { subdomain: data.subdomain },
     select: { id: true },
@@ -81,17 +82,29 @@ export async function createCustomer(data: CreateCustomerInput) {
     subdomain: data.subdomain,
     planId: data.planId ?? null,
   }
-  return customersRepo.createTenant(createData)
+  const tenant = await customersRepo.createTenant(createData)
+
+  await prisma.platformAuditLog.create({
+    data: {
+      action: 'customer.create',
+      targetTenantId: tenant.id,
+      performedByPlatformUserId: performedById,
+      details: { name: tenant.name, subdomain: tenant.subdomain, planId: tenant.planId },
+    },
+  })
+
+  return tenant
 }
 
 /**
  * Update an existing tenant's metadata.
  * Validates subdomain uniqueness when it changes.
  *
- * @param id   - Tenant primary key.
- * @param data - Fields to update.
+ * @param id             - Tenant primary key.
+ * @param data           - Fields to update.
+ * @param performedById  - Platform user making the change.
  */
-export async function updateCustomer(id: number, data: UpdateCustomerInput) {
+export async function updateCustomer(id: number, data: UpdateCustomerInput, performedById: number) {
   const tenant = await customersRepo.getTenantById(id)
   if (!tenant) throw new CustomerNotFoundError()
 
@@ -108,7 +121,21 @@ export async function updateCustomer(id: number, data: UpdateCustomerInput) {
     subdomain: data.subdomain,
     planId: data.planId,
   }
-  return customersRepo.updateTenant(id, updateData)
+  const updated = await customersRepo.updateTenant(id, updateData)
+
+  await prisma.platformAuditLog.create({
+    data: {
+      action: 'customer.update',
+      targetTenantId: id,
+      performedByPlatformUserId: performedById,
+      details: {
+        before: { name: tenant.name, subdomain: tenant.subdomain, planId: tenant.planId },
+        after: { name: data.name, subdomain: data.subdomain, planId: data.planId },
+      },
+    },
+  })
+
+  return updated
 }
 
 /**

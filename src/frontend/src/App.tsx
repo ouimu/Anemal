@@ -2,7 +2,7 @@ import { Suspense, lazy, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useUiStore } from './store/uiStore'
 import { usePreferenceHydration } from './hooks/usePersonalPreferences'
-import { RequireAuth, RequirePlane } from './guards'
+import { RequireAuth, RequirePlane, RequirePermission } from './guards'
 import LoginView from './views/LoginView'
 import AdminLayout from './layouts/AdminLayout'
 import ClinicLayout from './layouts/ClinicLayout'
@@ -81,15 +81,15 @@ export default function App() {
         {/* ── Clinic-admin section (/clinic-admin/*) ── plane=clinic, role=clinic_admin */}
         <Route path="/clinic-admin" element={<RequireAuth><RequirePlane plane="clinic"><AdminLayout/></RequirePlane></RequireAuth>}>
           <Route index element={<Navigate to="/clinic-admin/dashboard" replace/>}/>
-          <Route path="dashboard"    element={<AdminDashboard/>}/>
-          <Route path="users"        element={<AdminUsers/>}/>
-          <Route path="profile"      element={<AdminProfile/>}/>
-          <Route path="usage"        element={<AdminUsage/>}/>
-          <Route path="settings"     element={<AdminSettings/>}/>
-          <Route path="subscription" element={<AdminSubscription/>}/>
-          <Route path="branches"     element={<AdminBranches/>}/>
-          <Route path="blood-bank"   element={<AdminBloodBank/>}/>
-          <Route path="audit"        element={<AdminAudit/>}/>
+          <Route path="dashboard"    element={<RequirePermission perm="clinic.profile.view"><AdminDashboard/></RequirePermission>}/>
+          <Route path="users"        element={<RequirePermission perm="staff.view"><AdminUsers/></RequirePermission>}/>
+          <Route path="profile"      element={<RequirePermission perm="clinic.profile.view"><AdminProfile/></RequirePermission>}/>
+          <Route path="usage"        element={<RequirePermission perm="clinic.profile.view"><AdminUsage/></RequirePermission>}/>
+          <Route path="settings"     element={<RequirePermission perm="clinic.profile.view"><AdminSettings/></RequirePermission>}/>
+          <Route path="subscription" element={<RequirePermission perm="clinic.profile.view"><AdminSubscription/></RequirePermission>}/>
+          <Route path="branches"     element={<RequirePermission perm="clinic.branch.view"><AdminBranches/></RequirePermission>}/>
+          <Route path="blood-bank"   element={<RequirePermission perm="bloodbank.view"><AdminBloodBank/></RequirePermission>}/>
+          <Route path="audit"        element={<RequirePermission perm="audit.view"><AdminAudit/></RequirePermission>}/>
         </Route>
 
         {/* ── Legacy /admin/* redirects → /clinic-admin/* ── */}
@@ -113,25 +113,28 @@ export default function App() {
         {/* ── Clinic section (/clinic/*) ── plane=clinic, role=doctor|staff */}
         <Route path="/clinic" element={<RequireAuth><RequirePlane plane="clinic"><ClinicLayout/></RequirePlane></RequireAuth>}>
           <Route index element={<Navigate to="/clinic/dashboard" replace/>}/>
-          <Route path="dashboard"    element={<ClinicDashboard/>}/>
-          <Route path="appointments" element={<ClinicAppointments/>}/>
-          <Route path="pets"         element={<ClinicPets/>}/>
-          <Route path="emr"          element={<ClinicEMR/>}/>
-          <Route path="inventory"    element={<ClinicInventory/>}/>
-          <Route path="billing"      element={<ClinicBilling/>}/>
-          <Route path="inpatient"    element={<ClinicInpatient/>}/>
-          <Route path="grooming"     element={<ClinicGrooming/>}/>
+          <Route path="dashboard"    element={<RequirePermission perm="dashboard.view"><ClinicDashboard/></RequirePermission>}/>
+          <Route path="appointments" element={<RequirePermission perm="appointments.view"><ClinicAppointments/></RequirePermission>}/>
+          <Route path="pets"         element={<RequirePermission perm="crm.view"><ClinicPets/></RequirePermission>}/>
+          <Route path="emr"          element={<RequirePermission perm="emr.view"><ClinicEMR/></RequirePermission>}/>
+          <Route path="inventory"    element={<RequirePermission perm="inventory.view"><ClinicInventory/></RequirePermission>}/>
+          {/* Doctor has no billing/POS access — gate on billing.create which doctor role lacks */}
+          <Route path="billing"      element={<RequirePermission perm="billing.create"><ClinicBilling/></RequirePermission>}/>
+          <Route path="inpatient"    element={<RequirePermission perm="inpatient.view"><ClinicInpatient/></RequirePermission>}/>
+          {/* Doctor has no grooming access — gate on grooming.view which doctor role lacks */}
+          <Route path="grooming"     element={<RequirePermission perm="grooming.view"><ClinicGrooming/></RequirePermission>}/>
         </Route>
 
         {/* ── Settings section (/settings/*) ── auth-only, role filtered in layout */}
         <Route path="/settings" element={<RequireAuth><SettingsLayout/></RequireAuth>}>
           <Route index element={<Navigate to="/settings/clinic-profile" replace/>}/>
-          <Route path="clinic-profile" element={<ClinicProfilePage/>}/>
-          <Route path="hours"         element={<OperatingHoursPage/>}/>
-          <Route path="notifications" element={<NotificationsPage/>}/>
-          <Route path="payment"       element={<PaymentPage/>}/>
-          <Route path="integrations"  element={<IntegrationsPage/>}/>
+          <Route path="clinic-profile" element={<RequirePermission perm="clinic.profile.view"><ClinicProfilePage/></RequirePermission>}/>
+          <Route path="hours"         element={<RequirePermission perm="clinic.hours.edit"><OperatingHoursPage/></RequirePermission>}/>
+          <Route path="notifications" element={<RequirePermission perm="clinic.integrations.edit"><NotificationsPage/></RequirePermission>}/>
+          <Route path="payment"       element={<RequirePermission perm="clinic.payment.edit"><PaymentPage/></RequirePermission>}/>
+          <Route path="integrations"  element={<RequirePermission perm="clinic.integrations.edit"><IntegrationsPage/></RequirePermission>}/>
           <Route path="preferences"   element={<PreferencesPage/>}/>
+          {/* platform-plane screen mis-located here; backend enforces requirePlane('platform') — no frontend permission guard needed */}
           <Route path="system"        element={<SystemSettingsPage/>}/>
         </Route>
 

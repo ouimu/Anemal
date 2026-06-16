@@ -140,6 +140,10 @@ export async function updateRolePermissions(
   }
 
   const updated = await roleRepo.updateRolePermissions(roleId, add, remove)
+
+  const affectedUserIds = await roleRepo.findUserIdsByRole(roleId, tenantId)
+  await Promise.all(affectedUserIds.map(uid => invalidatePermCache(uid, tenantId)))
+
   return toDto(updated)
 }
 

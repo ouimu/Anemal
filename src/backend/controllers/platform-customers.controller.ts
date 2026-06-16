@@ -76,7 +76,8 @@ export async function handleCreateCustomer(
 ): Promise<void> {
   try {
     const body = req.body as z.infer<typeof createCustomerSchema>
-    const data = await customersService.createCustomer(body)
+    const performedById = req.context!.platformUserId!
+    const data = await customersService.createCustomer(body, performedById)
     res.status(201).json({ success: true, data })
   } catch (err) {
     next(err)
@@ -111,7 +112,8 @@ export async function handleUpdateCustomer(
   try {
     const id = Number(req.params.id)
     const body = req.body as z.infer<typeof updateCustomerSchema>
-    const data = await customersService.updateCustomer(id, body)
+    const performedById = req.context!.platformUserId!
+    const data = await customersService.updateCustomer(id, body, performedById)
     res.status(200).json({ success: true, data })
   } catch (err) {
     next(err)

@@ -14,6 +14,7 @@ import { Request, Response, NextFunction } from 'express'
 import { z } from 'zod'
 import { resolvePermissions } from '../services/permission.service'
 import * as roleService from '../services/role.service'
+import prisma from '../config/db'
 
 // ---------------------------------------------------------------------------
 // Zod validation schemas
@@ -143,6 +144,27 @@ export async function assignRoleToUser(
       callerPerms,
     )
     res.status(201).json({ success: true, data: { message: 'Role assigned' } })
+  } catch (err) { next(err) }
+}
+
+/**
+ * GET /clinic/permissions
+ * Returns all permission codes grouped by module. Used by the role editor UI
+ * to populate the permission toggle list.
+ */
+export async function listPermissions(
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const perms = await prisma.permission.findMany({ orderBy: { code: 'asc' } })
+    const grouped: Record<string, string[]> = {}
+    for (const p of perms) {
+      if (!grouped[p.module]) grouped[p.module] = []
+      grouped[p.module].push(p.code)
+    }
+    res.json({ success: true, data: grouped })
   } catch (err) { next(err) }
 }
 

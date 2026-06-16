@@ -70,6 +70,13 @@ export function useLogin() {
 
       setAuth(authData, variables.remember)
 
+      // Populate permissionsLoaded before navigating so RequirePermission does
+      // not flash to /403 on the first render. Fail open on network error —
+      // the server is the enforcement boundary.
+      try {
+        await useAuthStore.getState().refreshPermissions()
+      } catch { /* network error — proceed; server enforces permissions */ }
+
       navigate(
         login.role === 'admin'      ? '/admin/dashboard' :
         login.role === 'superadmin' ? '/settings/system' :

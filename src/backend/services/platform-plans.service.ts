@@ -17,6 +17,7 @@ import type {
   QuotaOverrideData,
 } from '../models/platform-plans.repository'
 import { CustomerNotFoundError } from './platform-customers.service'
+import prisma from '../config/db'
 
 /** Thrown when a requested plan does not exist. */
 export class PlanNotFoundError extends AppError {
@@ -77,34 +78,70 @@ export async function getPlan(id: number) {
 /**
  * Create a new subscription plan.
  *
- * @param data - Plan definition.
+ * @param data           - Plan definition.
+ * @param performedById  - Platform user creating the plan.
  */
-export function createPlan(data: Omit<CreatePlanData, 'features'> & { features?: Record<string, unknown> }) {
-  return plansRepo.createPlan(data as CreatePlanData)
+export async function createPlan(data: Omit<CreatePlanData, 'features'> & { features?: Record<string, unknown> }, performedById: number) {
+  const plan = await plansRepo.createPlan(data as CreatePlanData)
+
+  await prisma.platformAuditLog.create({
+    data: {
+      action: 'plan.create',
+      targetTenantId: null,
+      performedByPlatformUserId: performedById,
+      details: { planId: plan.id, key: plan.key, name: plan.name },
+    },
+  })
+
+  return plan
 }
 
 /**
  * Update an existing plan's fields.
  *
- * @param id   - Plan primary key.
- * @param data - Fields to update.
+ * @param id             - Plan primary key.
+ * @param data           - Fields to update.
+ * @param performedById  - Platform user making the change.
  */
-export async function updatePlan(id: number, data: Omit<UpdatePlanData, 'features'> & { features?: Record<string, unknown> }) {
+export async function updatePlan(id: number, data: Omit<UpdatePlanData, 'features'> & { features?: Record<string, unknown> }, performedById: number) {
   await getPlan(id)
-  return plansRepo.updatePlan(id, data as UpdatePlanData)
+  const updated = await plansRepo.updatePlan(id, data as UpdatePlanData)
+
+  await prisma.platformAuditLog.create({
+    data: {
+      action: 'plan.update',
+      targetTenantId: null,
+      performedByPlatformUserId: performedById,
+      details: { planId: id, changes: JSON.parse(JSON.stringify(data)) },
+    },
+  })
+
+  return updated
 }
 
 /**
  * Retire a plan (soft-delete via isActive = false).
  * Rejects with PlanInUseError when any tenant is still assigned to the plan.
  *
- * @param id - Plan primary key.
+ * @param id             - Plan primary key.
+ * @param performedById  - Platform user retiring the plan.
  */
-export async function retirePlan(id: number) {
-  await getPlan(id)
+export async function retirePlan(id: number, performedById: number) {
+  const plan = await getPlan(id)
   const count = await plansRepo.countTenantsOnPlan(id)
   if (count > 0) throw new PlanInUseError(count)
-  return plansRepo.retirePlan(id)
+  const retired = await plansRepo.retirePlan(id)
+
+  await prisma.platformAuditLog.create({
+    data: {
+      action: 'plan.delete',
+      targetTenantId: null,
+      performedByPlatformUserId: performedById,
+      details: { planId: id, key: plan.key, name: plan.name },
+    },
+  })
+
+  return retired
 }
 
 /**

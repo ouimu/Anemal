@@ -14,6 +14,7 @@ interface MockStoreState {
   plane: 'clinic' | 'platform'
   hasPermission: (code: string) => boolean
   permissions: string[]
+  permissionsLoaded: boolean
 }
 
 // ── Hoist the mock ref so it is defined before vi.mock factories run ───────
@@ -22,6 +23,7 @@ const mockStoreState: MockStoreState = vi.hoisted(() => ({
   plane: 'clinic' as 'clinic' | 'platform',
   hasPermission: (_code: string): boolean => false,
   permissions: [] as string[],
+  permissionsLoaded: true,
 }))
 
 // ── Mock react-router-dom ──────────────────────────────────────────────────
@@ -44,10 +46,11 @@ import { usePermissions }    from './usePermissions'
 
 /** Resets and applies overrides to the shared mock state. */
 function setStore(overrides: Partial<MockStoreState>): void {
-  mockStoreState.isAuthenticated = (): boolean => false
-  mockStoreState.plane           = 'clinic'
-  mockStoreState.hasPermission   = (_code: string): boolean => false
-  mockStoreState.permissions     = []
+  mockStoreState.isAuthenticated  = (): boolean => false
+  mockStoreState.plane            = 'clinic'
+  mockStoreState.hasPermission    = (_code: string): boolean => false
+  mockStoreState.permissions      = []
+  mockStoreState.permissionsLoaded = true
   Object.assign(mockStoreState, overrides)
 }
 
@@ -126,6 +129,16 @@ describe('RequirePermission', () => {
     setStore({ isAuthenticated: (): boolean => false })
     render(<RequirePermission perm="billing.view" />)
     expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/login')
+  })
+
+  it('shows spinner when authenticated but permissions not yet loaded', () => {
+    setStore({
+      isAuthenticated: (): boolean => true,
+      permissionsLoaded: false,
+    })
+    render(<RequirePermission perm="billing.view" />)
+    expect(screen.queryByTestId('navigate')).toBeNull()
+    expect(document.querySelector('.material-symbols-outlined')).not.toBeNull()
   })
 
   it('redirects to /403 when authenticated but permission missing', () => {

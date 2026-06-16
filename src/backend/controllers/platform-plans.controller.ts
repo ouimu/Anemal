@@ -60,7 +60,8 @@ export async function handleCreatePlan(
 ): Promise<void> {
   try {
     const body = req.body as z.infer<typeof createPlanSchema>
-    const data = await plansService.createPlan(body)
+    const performedById = req.context!.platformUserId!
+    const data = await plansService.createPlan(body, performedById)
     res.status(201).json({ success: true, data })
   } catch (err) {
     next(err)
@@ -95,7 +96,8 @@ export async function handleUpdatePlan(
   try {
     const id = Number(req.params.id)
     const body = req.body as z.infer<typeof updatePlanSchema>
-    const data = await plansService.updatePlan(id, body)
+    const performedById = req.context!.platformUserId!
+    const data = await plansService.updatePlan(id, body, performedById)
     res.status(200).json({ success: true, data })
   } catch (err) {
     next(err)
@@ -112,7 +114,8 @@ export async function handleRetirePlan(
 ): Promise<void> {
   try {
     const id = Number(req.params.id)
-    const data = await plansService.retirePlan(id)
+    const performedById = req.context!.platformUserId!
+    const data = await plansService.retirePlan(id, performedById)
     res.status(200).json({ success: true, data })
   } catch (err) {
     next(err)

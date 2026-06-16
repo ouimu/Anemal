@@ -22,6 +22,8 @@ export interface AuthData {
 }
 
 interface AuthState extends AuthData {
+  /** True once refreshPermissions() has written permissions from /auth/me into the store. */
+  permissionsLoaded:  boolean
   setAuth:            (data: AuthData, remember: boolean) => void
   clearAuth:          () => void
   isAuthenticated:    () => boolean
@@ -73,7 +75,7 @@ function normalise(raw: Partial<AuthData>): AuthData {
 
 // Synchronously read persisted auth at module load — sessionStorage first (current
 // tab), then localStorage (remembered).  Sync read means isAuthenticated() is already
-// true on the first render after F5, so ProtectedRoute does not bounce to /login.
+// true on the first render after F5, so RequireAuth does not bounce to /login.
 function loadPersisted(): AuthData | null {
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(STORAGE_KEY)
@@ -84,9 +86,12 @@ function loadPersisted(): AuthData | null {
   }
 }
 
+const persisted = loadPersisted()
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   ...EMPTY,
-  ...(loadPersisted() ?? {}),
+  ...(persisted ?? {}),
+  permissionsLoaded: persisted !== null && persisted.permissions.length > 0,
 
   setAuth: (data, remember) => {
     try {
@@ -95,6 +100,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       target.setItem(STORAGE_KEY, JSON.stringify(data))
       other.removeItem(STORAGE_KEY) // avoid a stale duplicate in the other storage
     } catch { /* storage unavailable (private mode) — keep in-memory only */ }
+    // permissionsLoaded stays false — permissions come from /auth/me, not the login response
     set(data)
   },
 
@@ -103,7 +109,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.removeItem(STORAGE_KEY)
       sessionStorage.removeItem(STORAGE_KEY)
     } catch { /* ignore */ }
-    set(EMPTY)
+    set({ ...EMPTY, permissionsLoaded: false })
   },
 
   isAuthenticated: () => get().token !== '',
@@ -118,6 +124,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const res = await fetch(endpoint, {
       headers: { Authorization: `Bearer ${token}` },
     })
+
+    if (res.status === 401) {
+      get().clearAuth()
+      window.location.href = '/login'
+      return
+    }
+
     if (!res.ok) return
 
     const body = await res.json() as {
@@ -142,6 +155,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       stored.setItem(STORAGE_KEY, JSON.stringify(next))
     } catch { /* ignore */ }
 
-    set(patch)
+    set({ ...patch, permissionsLoaded: true })
   },
 }))

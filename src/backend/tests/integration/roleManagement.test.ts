@@ -112,6 +112,41 @@ afterAll(async () => {
 }, 30_000)
 
 // ---------------------------------------------------------------------------
+// 0. GET /clinic/permissions
+// ---------------------------------------------------------------------------
+
+describe('GET /clinic/permissions', () => {
+  it('admin: returns permissions grouped by module', async () => {
+    const res = await request(server)
+      .get('/clinic/permissions')
+      .set('Authorization', `Bearer ${adminToken}`)
+
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(true)
+    const data: Record<string, string[]> = res.body.data
+    expect(typeof data).toBe('object')
+    expect(Object.keys(data).length).toBeGreaterThan(0)
+    for (const codes of Object.values(data)) {
+      expect(Array.isArray(codes)).toBe(true)
+      expect(codes.every((c: unknown) => typeof c === 'string')).toBe(true)
+    }
+  })
+
+  it('doctor: receives 403 (lacks roles.manage)', async () => {
+    const res = await request(server)
+      .get('/clinic/permissions')
+      .set('Authorization', `Bearer ${doctorToken}`)
+
+    expect(res.status).toBe(403)
+  })
+
+  it('unauthenticated: receives 401', async () => {
+    const res = await request(server).get('/clinic/permissions')
+    expect(res.status).toBe(401)
+  })
+})
+
+// ---------------------------------------------------------------------------
 // 1. GET /clinic/roles
 // ---------------------------------------------------------------------------
 
@@ -366,6 +401,83 @@ describe('POST /clinic/roles/users/:userId/roles', () => {
       .send({})
 
     expect(res.status).toBe(400)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// 6. DELETE /clinic/roles/users/:userId/roles/:roleId
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// 7. Cache invalidation — permission revocation takes effect immediately
+// ---------------------------------------------------------------------------
+
+describe('updateRolePermissions cache invalidation', () => {
+  let targetUserId = 0
+  let targetToken  = ''
+  let customRoleId = 0
+
+  beforeAll(async () => {
+    // Create a custom role that has appointments.view
+    const cloneRes = await request(server)
+      .post('/clinic/roles/clone')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ sourceRoleName: 'Doctor', newName: 'Cache Test Role' })
+    expect(cloneRes.status).toBe(201)
+    customRoleId = cloneRes.body.data.id
+
+    // Confirm the cloned role has appointments.view
+    expect(cloneRes.body.data.permissions).toContain('appointments.view')
+
+    const passwordHash = await (await import('bcrypt')).hash(PASSWORD, 4)
+    const branch = await prisma.branch.findFirstOrThrow({ where: { tenantId: tid } })
+    const user = await prisma.user.create({
+      data: {
+        tenantId:     tid,
+        branchId:     branch.id,
+        name:         'Cache Test User',
+        email:        'cachetest@rm.test',
+        passwordHash,
+        role:         'doctor',
+        roleId:       customRoleId,
+      },
+    })
+    targetUserId = user.id
+
+    await prisma.userRole.create({
+      data: { userId: targetUserId, roleId: customRoleId, tenantId: tid },
+    })
+
+    targetToken = await login('cachetest@rm.test')
+  })
+
+  afterAll(async () => {
+    await prisma.userRole.deleteMany({ where: { userId: targetUserId } })
+    await prisma.user.deleteMany({ where: { id: targetUserId } })
+    await prisma.rolePermission.deleteMany({ where: { roleId: customRoleId } })
+    await prisma.clinicRole.deleteMany({ where: { id: customRoleId } }).catch(() => undefined)
+  })
+
+  it('revokes permission and blocks access immediately — no cache TTL delay', async () => {
+    // Verify access is granted before revocation
+    const beforeRes = await request(server)
+      .get('/api/appointments')
+      .set('Authorization', `Bearer ${targetToken}`)
+    expect(beforeRes.status).toBe(200)
+
+    // Revoke appointments.view from the role
+    const revokeRes = await request(server)
+      .put(`/clinic/roles/${customRoleId}/permissions`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ add: [], remove: ['appointments.view'] })
+    expect(revokeRes.status).toBe(200)
+    expect(revokeRes.body.data.permissions).not.toContain('appointments.view')
+
+    // Same token — access must now be denied immediately (cache invalidated)
+    const afterRes = await request(server)
+      .get('/api/appointments')
+      .set('Authorization', `Bearer ${targetToken}`)
+    expect(afterRes.status).toBe(403)
   })
 })
 

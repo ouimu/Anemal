@@ -622,3 +622,81 @@ describe('T-5D-05 Settings route rename', () => {
     expect(res.status).toBe(404)
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRE-6: Audit log coverage — customer create/update and plan CRUD
+// ─────────────────────────────────────────────────────────────────────────────
+describe('PRE-6 Audit log coverage', () => {
+  let auditCustomerId: number
+  let auditPlanId: number
+
+  it('✅ audit log written on customer create (action=customer.create)', async () => {
+    const res = await request(server)
+      .post('/platform/customers')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ name: 'QA Audit Customer', subdomain: `qa-audit-${SFX}` })
+    expect(res.status).toBe(201)
+    auditCustomerId = res.body.data.id
+    createdTenantIds.push(auditCustomerId)
+
+    const log = await prisma.platformAuditLog.findFirst({
+      where: { targetTenantId: auditCustomerId, action: 'customer.create' },
+    })
+    expect(log).toBeTruthy()
+  })
+
+  it('✅ audit log written on customer update (action=customer.update)', async () => {
+    const res = await request(server)
+      .put(`/platform/customers/${auditCustomerId}`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ name: 'QA Audit Customer (updated)' })
+    expect(res.status).toBe(200)
+
+    const log = await prisma.platformAuditLog.findFirst({
+      where: { targetTenantId: auditCustomerId, action: 'customer.update' },
+    })
+    expect(log).toBeTruthy()
+  })
+
+  it('✅ audit log written on plan create (action=plan.create)', async () => {
+    const res = await request(server)
+      .post('/platform/plans')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ key: `plan_audit_${SFX}`, name: 'QA Audit Plan', maxBranches: 1, maxUsers: 1 })
+    expect(res.status).toBe(201)
+    auditPlanId = res.body.data.id
+    createdPlanIds.push(auditPlanId)
+
+    const log = await prisma.platformAuditLog.findFirst({
+      where: { action: 'plan.create', details: { path: ['planId'], equals: auditPlanId } },
+    })
+    expect(log).toBeTruthy()
+  })
+
+  it('✅ audit log written on plan update (action=plan.update)', async () => {
+    const res = await request(server)
+      .put(`/platform/plans/${auditPlanId}`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ name: 'QA Audit Plan (updated)' })
+    expect(res.status).toBe(200)
+
+    const log = await prisma.platformAuditLog.findFirst({
+      where: { action: 'plan.update', details: { path: ['planId'], equals: auditPlanId } },
+    })
+    expect(log).toBeTruthy()
+  })
+
+  it('✅ audit log written on plan retire (action=plan.delete)', async () => {
+    const res = await request(server)
+      .delete(`/platform/plans/${auditPlanId}`)
+      .set('Authorization', `Bearer ${platformToken}`)
+    expect(res.status).toBe(200)
+
+    const log = await prisma.platformAuditLog.findFirst({
+      where: { action: 'plan.delete', details: { path: ['planId'], equals: auditPlanId } },
+    })
+    expect(log).toBeTruthy()
+    // Remove from cleanup since it's already retired (isActive=false, still exists as a row).
+    // The afterAll plan cleanup targets the plan row itself which still exists.
+  })
+})

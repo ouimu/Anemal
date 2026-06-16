@@ -176,6 +176,22 @@ export function countUserRoles(userId: number, tenantId: number) {
 }
 
 /**
+ * Return the IDs of every user currently assigned a given role within a tenant.
+ * Used to enumerate who must have their permission cache invalidated when the
+ * role's permission set changes.
+ *
+ * @param roleId   - The role whose members are needed.
+ * @param tenantId - Tenant scope (required for isolation).
+ */
+export async function findUserIdsByRole(roleId: number, tenantId: number): Promise<number[]> {
+  const rows = await prisma.userRole.findMany({
+    where:  { roleId, tenantId },
+    select: { userId: true },
+  })
+  return rows.map(r => r.userId)
+}
+
+/**
  * Return the IDs of every role assigned to a user within a tenant, read from
  * the user_roles join table (not the legacy users.role FK).
  *
