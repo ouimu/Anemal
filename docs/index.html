@@ -177,9 +177,6 @@
     <a class="nav-item" onclick="show('howto')" href="#">
       <span class="icon">🚀</span>How to Run
     </a>
-    <a class="nav-item" onclick="show('changelog')" href="#">
-      <span class="icon">📋</span>Changelog
-    </a>
     <a class="nav-item" onclick="show('mcp')" href="#">
       <span class="icon">🔌</span>MCP Servers
     </a>
@@ -320,13 +317,13 @@
   <!-- ── Build Status ── -->
   <div class="callout ok" style="margin-top:16px">
     <span class="callout-icon">🎉</span>
-    <span><strong>✅ Production Core Complete:</strong> Phases 1–7 done (Foundation → Settings → enhancements → UI redesign). <strong>323 backend tests passing</strong> · tsc clean. <strong style="color:#16a34a">Active (Phase 8):</strong> RBAC + Platform Console — 5-A DB foundation + T-5A-03/04/05 + T-5B-01/02/03 + T-5C-01/02/03 + T-5D-02/03/04 + <strong>T-5D-05</strong> (per-tenant provisioning, route rename /platform/settings) done. Next: T-5E/F/G. <strong>Postponed (credential-gated):</strong> Phase 10 Payment Gateway · Phase 11 LINE/SMS. <em>Phases re-sequenced 2026-06-13 — see <a onclick="show('roadmap-upcoming')" href="#">Upcoming Work</a>.</em></span>
+    <span><strong>✅ Production Core Complete:</strong> Phases 1–7 done (Foundation → Settings → enhancements → UI redesign). <strong>344 backend + frontend tests passing</strong> · tsc clean. <strong style="color:#16a34a">Active (Phase 8):</strong> RBAC + Platform Console — 5-A/B/C + T-5D-02/03/04/05 + <strong>T-5E done</strong> (authStore dual-plane, RequireAuth/RequirePlane/RequirePermission/Can guards, route reorg /admin→/clinic-admin, /403 ForbiddenView, 23 vitest guard tests). Next: T-5F (role editor + platform console UI) → T-5G (QA matrix). <strong>Postponed (credential-gated):</strong> Phase 10 Payment Gateway · Phase 11 LINE/SMS. <em>Phases re-sequenced 2026-06-13 — see <a onclick="show('roadmap-upcoming')" href="#">Upcoming Work</a>.</em></span>
   </div>
 
   <!-- ── Stats ── -->
   <div class="stat-row">
     <div class="stat"><div class="n" style="color:#16a34a">6/10</div><div class="l">Phases Done</div></div>
-    <div class="stat"><div class="n" style="color:#16a34a">323</div><div class="l">Tests Passing</div></div>
+    <div class="stat"><div class="n" style="color:#16a34a">344</div><div class="l">Tests Passing</div></div>
     <div class="stat"><div class="n">28</div><div class="l">DB Tables</div></div>
     <div class="stat"><div class="n">13</div><div class="l">API Modules</div></div>
     <div class="stat"><div class="n">8</div><div class="l">Screen Prototypes</div></div>
@@ -345,7 +342,7 @@
       <tr><td><strong>Phase 5</strong> <span style="font-size:11px;color:#6b7280">(was 1.5)</span></td><td>Settings &amp; Configuration — DB + encryption, Settings API (<code>superadmin</code>), frontend pages + System Settings UI (1.5-A/B/C/D)</td><td>226</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
       <tr><td><strong>Phase 6</strong> <span style="font-size:11px;color:#6b7280">(was Sessions A–E)</span></td><td>Production-readiness enhancements — screen specs, PDF receipts, PromptPay QR UI, barcode scan, S3 photo upload</td><td>226</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
       <tr><td><strong>Phase 7</strong> <span style="font-size:11px;color:#6b7280">(redesign)</span></td><td>UI Redesign completion &amp; sign-off — Compassionate Care closeout/verification of Appointments, Pets, EMR (presentational only)</td><td>226</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
-      <tr style="background:#f0fdf8"><td><strong>Phase 8</strong> <span style="font-size:11px;color:#6b7280">(was Phase 5)</span></td><td>RBAC, Platform Console &amp; Restructure — two-plane authz, configurable roles, plan quotas, IA cleanup. <strong>5-A/B/C done · T-5D-02/03/04/05 done</strong> (customer mgmt API, plan CRUD + quota enforcement, per-tenant provisioning, route rename <code>/platform/settings</code>). Next: T-5E/F/G</td><td>323</td><td><span style="color:#006c4a;font-weight:700">▶️ In Progress</span></td></tr>
+      <tr style="background:#f0fdf8"><td><strong>Phase 8</strong> <span style="font-size:11px;color:#6b7280">(was Phase 5)</span></td><td>RBAC, Platform Console &amp; Restructure — two-plane authz, configurable roles, plan quotas, IA cleanup. <strong>5-A/B/C ✅ · T-5D-02/03/04/05 ✅ · T-5E ✅</strong> (authStore dual-plane, RequireAuth/RequirePlane/RequirePermission/Can guards, /admin→/clinic-admin reorg, /403 ForbiddenView, 23 vitest guard tests). Next: T-5F (role editor + platform console UI) → T-5G (matrix QA)</td><td>344</td><td><span style="color:#006c4a;font-weight:700">▶️ In Progress</span></td></tr>
       <tr><td><strong>Phase 9</strong> <span style="font-size:11px;color:#6b7280">(new)</span></td><td>i18n Rollout — full clinic-screen Thai (EN/TH); extends existing i18n foundation to all clinic screens</td><td>—</td><td><span style="color:#2563eb;font-weight:700">📋 Planned</span></td></tr>
       <tr style="opacity:0.7"><td><strong>Phase 10</strong> <span style="font-size:11px;color:#6b7280">(was Session F)</span></td><td>Payment Gateway &amp; Subscription Billing — Omise/Stripe, webhooks, SaaS billing + cron</td><td>—</td><td><span style="color:#6b7280;font-weight:700">⏸ Postponed (Omise + SMTP)</span></td></tr>
       <tr style="opacity:0.7"><td><strong>Phase 11</strong> <span style="font-size:11px;color:#6b7280">(was Session G)</span></td><td>LINE/SMS Real Dispatch — wire reminder worker to LINE + Twilio</td><td>—</td><td><span style="color:#6b7280;font-weight:700">⏸ Postponed (LINE + Twilio)</span></td></tr>
@@ -800,7 +797,7 @@ CREATE INDEX idx_pet_reminders_pet          ON pet_reminders(tenant_id, pet_id);
   </ul>
 
   <h2>Current Backlog Owner</h2>
-  <div class="callout ok" style="margin-bottom:8px"><span class="callout-icon">✅</span><span><strong>Phases 1–7 complete (226 tests).</strong> Phase 7 UI redesign sign-off done 2026-06-14 (EMR doctorId fixed, Pets tab aligned). <strong>Phase 8 in progress (323 tests) — 5-A/B/C + T-5D-02/03/04/05 done.</strong> Next: T-5E (frontend shells) → T-5F (role editor + platform console UI) → T-5G (QA matrix). Phase 10/11 postponed (credential-gated). Map + QA: <code>PHASE-RESEQUENCE.md</code>. See <a onclick="show('roadmap-upcoming')" href="#">Upcoming Work →</a></span></div>
+  <div class="callout ok" style="margin-bottom:8px"><span class="callout-icon">✅</span><span><strong>Phases 1–7 complete (226 tests).</strong> Phase 7 UI redesign sign-off done 2026-06-14 (EMR doctorId fixed, Pets tab aligned). <strong>Phase 8 in progress (344 tests) — 5-A/B/C + T-5D-02/03/04/05 + T-5E done.</strong> T-5E: authStore dual-plane, RequireAuth/RequirePlane/RequirePermission/Can guards, /admin→/clinic-admin route reorg, /403 ForbiddenView, 23 vitest guard tests (321 backend + 23 frontend = 344 total). Next: T-5F (role editor + platform console UI) → T-5G (matrix QA). Phase 10/11 postponed (credential-gated). See <a onclick="show('roadmap-upcoming')" href="#">Upcoming Work →</a></span></div>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Phase</th><th>Scope</th><th>Est. Token Cost</th></tr></thead>
     <tbody>
@@ -808,7 +805,7 @@ CREATE INDEX idx_pet_reminders_pet          ON pet_reminders(tenant_id, pet_id);
       <tr style="opacity:0.55"><td><strong>✅ Phase 5</strong> <span style="font-size:11px;color:#6b7280">(was 1.5)</span></td><td><s>Settings &amp; Configuration — DB + encryption, API (superadmin), frontend pages + System Settings UI</s> — Done · 226 tests</td><td>~50%</td></tr>
       <tr style="opacity:0.55"><td><strong>✅ Phase 6</strong> <span style="font-size:11px;color:#6b7280">(was A–E)</span></td><td><s>PDF receipts, PromptPay QR UI, barcode scan, S3 photo upload</s> — Done 2026-06-12 · 226 tests</td><td>~40%</td></tr>
       <tr style="opacity:0.55"><td><strong>✅ Phase 7</strong></td><td><s>UI Redesign completion &amp; sign-off — verify Appointments/Pets/EMR against Compassionate Care specs + 44px audit</s> — Done 2026-06-14 · 226 tests</td><td>~20%</td></tr>
-      <tr style="background:#f0fdf8"><td><strong>▶️ Phase 8</strong> <span style="font-size:11px;color:#6b7280">(was Phase 5)</span></td><td>RBAC, Platform Console &amp; Restructure — <strong>5-A ✅ · 5-B ✅ · 5-C ✅ · T-5D-02/03/04/05 ✅ · 323 tests</strong>. Next: T-5E (frontend shells) → T-5F (role editor + console UI) → T-5G (matrix QA)</td><td>multi-session</td></tr>
+      <tr style="background:#f0fdf8"><td><strong>▶️ Phase 8</strong> <span style="font-size:11px;color:#6b7280">(was Phase 5)</span></td><td>RBAC, Platform Console &amp; Restructure — <strong>5-A ✅ · 5-B ✅ · 5-C ✅ · T-5D-02/03/04/05 ✅ · T-5E ✅ · 344 tests</strong> (321 backend + 23 frontend vitest). T-5E: authStore dual-plane, RequireAuth/RequirePlane/RequirePermission/Can guards, /admin→/clinic-admin reorg, /403 ForbiddenView. Next: T-5F (role editor + console UI) → T-5G (matrix QA)</td><td>multi-session</td></tr>
       <tr><td><strong>📋 Phase 9</strong> <span style="font-size:11px;color:#6b7280">(new)</span></td><td>i18n Rollout — full clinic-screen Thai (EN/TH); extends existing i18n foundation to all clinic screens</td><td>~20%</td></tr>
       <tr style="opacity:0.7"><td><strong>⏸ Phase 10</strong> <span style="font-size:11px;color:#6b7280">(was F)</span></td><td>Payment gateway (Omise/Stripe, webhooks, subscription billing) — postponed</td><td>~55% + credentials</td></tr>
       <tr style="opacity:0.7"><td><strong>⏸ Phase 11</strong> <span style="font-size:11px;color:#6b7280">(was G)</span></td><td>LINE/SMS real dispatch — postponed</td><td>~35% + credentials</td></tr>
@@ -937,18 +934,21 @@ Dependencies: &lt;task IDs or sessions&gt;</code></pre>
     <thead><tr><th>Route</th><th>Component</th><th>Role</th></tr></thead>
     <tbody>
       <tr><td>/login</td><td>LoginView.tsx</td><td>Public</td></tr>
-      <tr><td>/admin/dashboard</td><td>AdminDashboard.tsx</td><td>admin</td></tr>
-      <tr><td>/admin/users</td><td>AdminUsers.tsx</td><td>admin</td></tr>
-      <tr><td>/admin/branches</td><td>AdminBranches.tsx</td><td>admin</td></tr>
-      <tr><td>/admin/blood-bank</td><td>AdminBloodBank.tsx</td><td>admin</td></tr>
-      <tr><td>/admin/audit</td><td>AdminAudit.tsx</td><td>admin</td></tr>
-      <tr><td>/clinic/dashboard</td><td>ClinicDashboard.tsx</td><td>doctor, staff</td></tr>
-      <tr><td>/clinic/appointments</td><td>ClinicAppointments.tsx</td><td>doctor, staff</td></tr>
-      <tr><td>/clinic/pets</td><td>ClinicPets.tsx</td><td>doctor, staff</td></tr>
-      <tr><td>/clinic/pets/:id</td><td>PetProfile.tsx</td><td>doctor, staff</td></tr>
-      <tr><td>/clinic/emr/:id</td><td>ClinicEMR.tsx</td><td>doctor</td></tr>
-      <tr><td>/clinic/inventory</td><td>ClinicInventory.tsx</td><td>doctor, staff</td></tr>
-      <tr><td>/clinic/billing</td><td>ClinicBilling.tsx</td><td>doctor, staff</td></tr>
+      <tr><td>/403</td><td>ForbiddenView.tsx</td><td>Public (shown on permission denial)</td></tr>
+      <tr><td>/clinic-admin/dashboard</td><td>AdminDashboard.tsx</td><td>clinic_admin · RequirePlane clinic</td></tr>
+      <tr><td>/clinic-admin/users</td><td>AdminUsers.tsx</td><td>clinic_admin · RequirePlane clinic</td></tr>
+      <tr><td>/clinic-admin/branches</td><td>AdminBranches.tsx</td><td>clinic_admin · RequirePlane clinic</td></tr>
+      <tr><td>/clinic-admin/blood-bank</td><td>AdminBloodBank.tsx</td><td>clinic_admin · RequirePlane clinic</td></tr>
+      <tr><td>/clinic-admin/audit</td><td>AdminAudit.tsx</td><td>clinic_admin · RequirePlane clinic</td></tr>
+      <tr><td>/admin/*</td><td>→ /clinic-admin/* (redirect)</td><td>Legacy compat — 10 shim redirects</td></tr>
+      <tr><td>/clinic/dashboard</td><td>ClinicDashboard.tsx</td><td>doctor, clinic_staff · RequirePlane clinic</td></tr>
+      <tr><td>/clinic/appointments</td><td>ClinicAppointments.tsx</td><td>doctor, clinic_staff · RequirePlane clinic</td></tr>
+      <tr><td>/clinic/pets</td><td>ClinicPets.tsx</td><td>doctor, clinic_staff · RequirePlane clinic</td></tr>
+      <tr><td>/clinic/pets/:id</td><td>PetProfile.tsx</td><td>doctor, clinic_staff · RequirePlane clinic</td></tr>
+      <tr><td>/clinic/emr/:id</td><td>ClinicEMR.tsx</td><td>doctor · RequirePlane clinic</td></tr>
+      <tr><td>/clinic/inventory</td><td>ClinicInventory.tsx</td><td>doctor, clinic_staff · RequirePlane clinic</td></tr>
+      <tr><td>/clinic/billing</td><td>ClinicBilling.tsx</td><td>doctor, clinic_staff · RequirePlane clinic</td></tr>
+      <tr><td>/platform/*</td><td>Platform shell (stub)</td><td>RequirePlane platform — T-5D APIs ready; UI T-5F</td></tr>
     </tbody>
   </table></div>
 </div>
@@ -1034,14 +1034,15 @@ Type: happy_path | edge_case | security | transaction</code></pre>
 <!-- ══════════════════ ROADMAP HISTORY ══════════════════ -->
 <div class="page" id="page-roadmap-history">
   <h1>📜 Roadmap History — Completed Phases (1–7)</h1>
-  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>Phases 1–7 complete. 261 backend tests passing.</strong> Production-ready core platform with full UI redesign sign-off.</span></div>
+  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>Phases 1–7 complete. Phase 8 T-5E done. 344 tests passing</strong> (321 backend + 23 frontend vitest). Production-ready core with dual-plane RBAC guards, route reorg, and /403 view.</span></div>
   <div class="callout info"><span class="callout-icon">🔄</span><span><strong>2026-06-13 — Full clean re-sequence.</strong> Backlog flattened to linear Phase 1–10+. <code>1.5→5</code> · Sessions <code>A–E→6</code> · Redesign closeout <code>→7</code> · RBAC/Platform <code>Phase 5→8</code> · Payment Gateway <code>→9</code> (postponed) · LINE/SMS <code>→10</code> (postponed). Stable IDs kept: <code>SPEC-RBAC-PLATFORM-01</code>, <code>phase5-rbac-platform-tasks.md</code>, sub-tasks <code>5-A…5-G</code>. Full map: <code>PHASE-RESEQUENCE.md</code>.</span></div>
   <div class="callout info"><span class="callout-icon">🔄</span><span><strong>2026-06-14 — Phase reorder (i18n promotion).</strong> i18n Rollout promoted from Phase 11 → <strong>Phase 9</strong> (no credential dependency, can follow Phase 8 immediately). Payment Gateway shifted <code>9→10</code>; LINE/SMS shifted <code>10→11</code>. Stable IDs unchanged.</span></div>
   <div class="callout ok"><span class="callout-icon">✅</span><span><strong>2026-06-14 — Phase 8 kickoff · 5-A DB foundation + T-5B-00 regression guard committed.</strong> 7 new Prisma models added (<code>permissions</code>, <code>clinic_roles</code>, <code>role_permissions</code>, <code>user_roles</code>, <code>platform_users</code>, <code>plans</code>, <code>tenant_quotas</code>). 49-permission catalogue + 3 system roles seeded. All non-superadmin users backfilled with <code>roleId</code> (T-5A-06/07). T-5B-00 regression guard (16 tests) + 3 new tenant isolation tests committed. Total: <strong>245 tests passing</strong>.</span></div>
   <div class="callout info"><span class="callout-icon">📋</span><span><strong>2026-06-15 — Phase 8 docs refresh.</strong> Dashboard, How to Run, and Upcoming Work updated to reflect 245 tests and Phase 8 in-progress state. RBAC seed step added to setup guide. Next tasks: T-5A-03 (permission cache) → T-5A-04 (<code>requirePermission()</code> middleware) → T-5A-05 (JWT plane extension) → T-5B-01+ (route enforcement).</span></div>
   <div class="callout ok"><span class="callout-icon">✅</span><span><strong>2026-06-15 — T-5A-03/04/05 complete · permission service + JWT extension + middleware factories.</strong> <code>permission.service.ts</code> — resolvePermissions + in-memory cache (c5c7970). <code>permission.middleware.ts</code> — requirePlane + requirePermission factories (d638af1). JWT extended with <code>plane: 'clinic'|'platform'</code> + <code>permSetVersion</code> (2651019). 8 permission service + 8 permission middleware unit tests (13e7be9). tsc --noEmit: 0 errors. Total: <strong>261 tests passing</strong>. Next: <strong>T-5B-01</strong> — apply requirePermission() to all clinic routes.</span></div>
   <div class="callout ok"><span class="callout-icon">✅</span><span><strong>2026-06-15 — T-5D-02/03/04 complete · platform customer mgmt API, plan CRUD, quota enforcement.</strong> T-5D-02: <code>GET/POST /platform/customers</code>, <code>GET/PUT /platform/customers/:id</code>, suspend/reactivate endpoints. T-5D-03: <code>GET/POST/PUT/DELETE /platform/plans</code> + per-tenant quota override endpoints; effective quota = override ?? plan default. T-5D-04: <code>assertCanAddUser/Branch/Owner(tenantId)</code> backed by real DB — returns <code>409 QUOTA_EXCEEDED</code>; suspended tenant login returns <code>401 TENANT_SUSPENDED</code>. New migration: <code>platform_audit_logs</code> table for platform-operator audit trail. 28 new integration tests in <code>platformConsole.test.ts</code>. Total: <strong>313 tests passing</strong>. QA notes: quota override=0 blocked by Zod <code>.positive()</code> (recommend <code>.min(0)</code>); <code>requirePermission</code> deferred to T-5G. Next: <strong>T-5D-05</strong> → T-5E/F/G.</span></div>
-  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>2026-06-16 — T-5D-05 complete · per-tenant provisioning + platform settings route rename.</strong> DB: <code>tenant_provisioning</code> table added (Prisma migration <code>add_tenant_provisioning</code>), 1-to-1 with tenants, AES-256-GCM encrypted fields (<code>baseSmsApiKey</code>, <code>smtpPassword</code>, <code>lineChannelSecret</code>). Route: <code>/admin/system-settings</code> renamed to <code>/platform/settings</code> in <code>app.ts</code>. API: <code>GET /platform/customers/:id/provisioning</code> — returns config with secrets masked; <code>PUT /platform/customers/:id/provisioning</code> — upserts config, encrypts secrets, writes audit log. 11 new integration tests in <code>platformConsole.test.ts</code> (provisioning CRUD, plane isolation, audit log, route rename). PII audit: 0 matches. Total: <strong>323 tests passing</strong>. Next: <strong>T-5E</strong> (frontend shells) → T-5F (role editor + console UI) → T-5G (matrix QA).</span></div>
+  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>2026-06-16 — T-5D-05 complete · per-tenant provisioning + platform settings route rename.</strong> DB: <code>tenant_provisioning</code> table added (Prisma migration <code>add_tenant_provisioning</code>), 1-to-1 with tenants, AES-256-GCM encrypted fields (<code>baseSmsApiKey</code>, <code>smtpPassword</code>, <code>lineChannelSecret</code>). Route: <code>/admin/system-settings</code> renamed to <code>/platform/settings</code> in <code>app.ts</code>. API: <code>GET /platform/customers/:id/provisioning</code> — returns config with secrets masked; <code>PUT /platform/customers/:id/provisioning</code> — upserts config, encrypts secrets, writes audit log. 11 new integration tests in <code>platformConsole.test.ts</code> (provisioning CRUD, plane isolation, audit log, route rename). PII audit: 0 matches. Total: <strong>323 backend tests passing</strong>. Next: <strong>T-5E</strong> (frontend shells) → T-5F (role editor + console UI) → T-5G (matrix QA).</span></div>
+  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>2026-06-16 — T-5E complete · frontend dual-plane RBAC guards + route reorg.</strong> <strong>T-5E-00</strong>: Backend <code>GET /auth/me</code> (clinic) and <code>GET /platform/auth/me</code> (platform) — returns roleIds from <code>user_roles</code> join + permissions from resolvePermissions(); plane mismatch → 403; 32 integration tests passing. <strong>T-5E-01</strong>: authStore upgraded — <code>plane</code>, <code>branchId</code>, <code>roleIds[]</code>, <code>permissions[]</code>, <code>permSetVersion</code> fields added; <code>hasPermission(code)</code> deny-by-default; <code>refreshPermissions()</code> calls /me by plane; <code>normalise()</code> handles old persisted data. <strong>T-5E-02</strong>: New <code>src/frontend/src/guards/</code> barrel — <code>RequireAuth</code> (replaces deleted <code>ProtectedRoute</code>), <code>RequirePlane</code> (wrong-plane → plane-appropriate home), <code>RequirePermission</code> (deny → /403, OR-list via <code>any=[]</code>), <code>Can</code> (renders null when permission missing; tablet a11y safe), <code>usePermissions</code> hook. <strong>T-5E-03</strong>: Route reorg in <code>App.tsx</code> — <code>/admin/*</code> → <code>/clinic-admin/*</code>, 10 legacy redirect shims, RequirePlane guards on <code>/clinic/*</code> and <code>/platform/*</code> shells, <code>/403</code> → <code>ForbiddenView</code> (design-system tokens, Material Symbols). Vitest + @testing-library/react configured. Frontend guard tests: <strong>23/23 passing</strong>. Backend: 321/324 (3 pre-existing clinicUsage failures unrelated to 5-E). <strong>Total: 344 tests</strong> (321 backend + 23 frontend). Deferred to T-5F/G: per-route RequirePermission on <code>/clinic-admin/*</code> children, <code>/settings/*</code> plane guard (needs screen separation), Platform Console UI screens (stub only), backend <code>/clinic/admin/*</code> legacy rbacMiddleware migration.</span></div>
 
   <h2>Phase 1 — Foundation &amp; Security</h2>
   <div class="tbl-wrap"><table>
@@ -1142,7 +1143,7 @@ Type: happy_path | edge_case | security | transaction</code></pre>
 <!-- ══════════════════ ROADMAP UPCOMING ══════════════════ -->
 <div class="page" id="page-roadmap-upcoming">
   <h1>🚀 Upcoming Work</h1>
-  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>Phases 1–7 complete · 323 tests passing.</strong> Phase 8 (RBAC + Platform Console) is in progress — 5-A/B/C done + <strong>T-5D-02/03/04/05 done</strong> (customer mgmt API, plan CRUD, quota enforcement, per-tenant provisioning, route rename <code>/platform/settings</code>). Next: <strong>T-5E</strong> (frontend shells), T-5F (role editor + platform console UI), T-5G (QA matrix). Phase 9 (i18n) planned. Phases 10 &amp; 11 postponed (credential-gated).</span></div>
+  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>Phases 1–7 complete · 344 tests passing (321 backend + 23 frontend vitest).</strong> Phase 8 (RBAC + Platform Console) is in progress — 5-A/B/C + T-5D-02/03/04/05 + <strong>T-5E done</strong> (authStore dual-plane, RequireAuth/RequirePlane/RequirePermission/Can guards, /admin→/clinic-admin route reorg, /403 ForbiddenView). Next: <strong>T-5F</strong> (role editor + platform console UI), T-5G (QA matrix). Phase 9 (i18n) planned. Phases 10 &amp; 11 postponed (credential-gated).</span></div>
 
   <!-- ── Phase 8 — ACTIVE PRIORITY ── -->
   <div style="border-left:4px solid #006c4a;background:#fff;border-radius:8px;padding:16px;margin-bottom:20px">
@@ -1177,17 +1178,25 @@ Type: happy_path | edge_case | security | transaction</code></pre>
           <li><strong>Next: T-5E</strong> — frontend shells (<code>/clinic</code> · <code>/clinic-admin</code> · <code>/platform</code>)</li>
         </ul>
       </div>
-      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px">
-        <div style="font-weight:700;color:#2563eb;margin-bottom:8px">5-E / 5-F / 5-G — Frontend + QA</div>
+      <div style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:12px">
+        <div style="font-weight:700;color:#166534;margin-bottom:8px">5-E — Frontend Guards + Route Reorg ✅</div>
         <ul style="margin:0;padding-left:18px;color:#374151;line-height:1.7">
-          <li>Three shells: <code>/clinic</code> · <code>/clinic-admin</code> · <code>/platform</code></li>
-          <li>Guards: <code>RequirePlane</code> / <code>RequirePermission</code> / <code>&lt;Can&gt;</code></li>
-          <li>Clinic role editor + Platform Console screens</li>
-          <li>Permission-matrix + plane-isolation test suites · cleanup</li>
+          <li>✅ <code>GET /auth/me</code> + <code>GET /platform/auth/me</code> — identity + permissions endpoints (32 tests)</li>
+          <li>✅ authStore dual-plane — <code>plane</code>, <code>roleIds[]</code>, <code>permissions[]</code>, <code>hasPermission()</code>, <code>refreshPermissions()</code></li>
+          <li>✅ Guards barrel: <code>RequireAuth</code> / <code>RequirePlane</code> / <code>RequirePermission</code> / <code>Can</code> / <code>usePermissions</code> (23 vitest tests)</li>
+          <li>✅ Route reorg: <code>/admin/*</code> → <code>/clinic-admin/*</code>, 10 legacy redirects, <code>/403</code> ForbiddenView</li>
+          <li><strong>Deferred to T-5F/G:</strong> per-route permission on /clinic-admin/* children · /settings/* plane guard · Platform Console UI · backend rbacMiddleware migration</li>
+        </ul>
+      </div>
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px">
+        <div style="font-weight:700;color:#2563eb;margin-bottom:8px">5-F / 5-G — Role Editor + Console UI + QA (Next)</div>
+        <ul style="margin:0;padding-left:18px;color:#374151;line-height:1.7">
+          <li><strong>Next: T-5F</strong> — Clinic role editor UI + Platform Console screens (BA sign-off needed for per-route permission codes)</li>
+          <li>T-5G — Permission-matrix + plane-isolation test suites · legacy rbacMiddleware removal · /settings/* plane guard</li>
         </ul>
       </div>
     </div>
-    <div style="font-size:11px;color:#6b7280">Designed 2026-06-13 by @ba-agent · <strong style="color:#006c4a">5-A/B/C + T-5D-02/03/04/05 complete 2026-06-16</strong> · 323 tests green · Next: T-5E (shells) → T-5F (role editor + console UI) → T-5G (matrix QA)</div>
+    <div style="font-size:11px;color:#6b7280">Designed 2026-06-13 by @ba-agent · <strong style="color:#006c4a">5-A/B/C + T-5D-02/03/04/05 + T-5E complete 2026-06-16</strong> · 344 tests green (321 backend + 23 frontend) · Next: T-5F (role editor + console UI) → T-5G (matrix QA)</div>
   </div>
 
   <!-- ── Phase 9 — Planned ── -->
@@ -1225,7 +1234,7 @@ Type: happy_path | edge_case | security | transaction</code></pre>
     <thead><tr><th>Phase</th><th>Scope</th><th>Status</th><th>Gate / Blocker</th></tr></thead>
     <tbody>
       <tr style="opacity:0.5"><td><strong>1–7</strong></td><td>Foundation → UI redesign</td><td>✅ Complete (226 tests)</td><td>—</td></tr>
-      <tr style="background:#f0fdf8"><td><strong>8</strong></td><td>RBAC + Platform Console + IA restructure</td><td><strong>▶️ In Progress (323 tests)</strong></td><td>T-5E (shells) → T-5F (role editor + console UI) → T-5G (matrix QA)</td></tr>
+      <tr style="background:#f0fdf8"><td><strong>8</strong></td><td>RBAC + Platform Console + IA restructure</td><td><strong>▶️ In Progress (344 tests)</strong></td><td>T-5F (role editor + console UI) → T-5G (matrix QA + rbacMiddleware removal)</td></tr>
       <tr><td><strong>9</strong></td><td>i18n full rollout (EN/TH)</td><td>📋 Planned</td><td>After Phase 8</td></tr>
       <tr style="opacity:0.7"><td><strong>10</strong></td><td>Payment Gateway (Omise/Stripe + SaaS billing)</td><td>⏸ Postponed</td><td>Omise + SMTP keys</td></tr>
       <tr style="opacity:0.7"><td><strong>11</strong></td><td>LINE / SMS real dispatch</td><td>⏸ Postponed</td><td>LINE token + Twilio SID</td></tr>
@@ -1233,7 +1242,7 @@ Type: happy_path | edge_case | security | transaction</code></pre>
   </table></div>
 
   <h2>How to Start Phase 8 ▶️</h2>
-  <div class="callout ok" style="margin-bottom:12px"><span class="callout-icon">▶️</span><span><strong>5-A/B/C + T-5D-02/03/04/05 done · 323 tests green.</strong> T-5D-05 (per-tenant provisioning <code>GET/PUT /platform/customers/:id/provisioning</code>, <code>tenant_provisioning</code> table, route rename <code>/admin/system-settings</code> → <code>/platform/settings</code>) committed 2026-06-16. Next: <strong>T-5E</strong> — frontend shells (<code>/clinic</code> · <code>/clinic-admin</code> · <code>/platform</code>) → T-5F (role editor + platform console UI) → T-5G (permission-matrix + plane-isolation QA).</span></div>
+  <div class="callout ok" style="margin-bottom:12px"><span class="callout-icon">▶️</span><span><strong>5-A/B/C + T-5D-02/03/04/05 + T-5E done · 344 tests green.</strong> T-5E (authStore dual-plane, RequireAuth/RequirePlane/RequirePermission/Can guards, /admin→/clinic-admin reorg, /403 ForbiddenView, 23 vitest guard tests) committed 2026-06-16. Next: <strong>T-5F</strong> — clinic role editor UI + platform console screens (needs BA sign-off on per-route permission codes for /clinic-admin/* children) → T-5G (permission-matrix + plane-isolation QA, legacy rbacMiddleware removal, /settings/* plane guard).</span></div>
 
   <h3>Delegate to Agents (copy/paste into Claude Code)</h3>
   <pre><code># Phase 8 — sub-task 5-A: RBAC schema + migration
@@ -1267,7 +1276,7 @@ Deliver: test file at src/backend/src/tests/integration/rbac-regression.test.ts
       <tr style="opacity:0.5"><td><strong>5</strong> (done)</td><td><code>npm test -- --testNamePattern="settings-api|encryption"</code></td><td>206</td><td>TC-S001–S009 encryption + API isolation</td></tr>
       <tr style="opacity:0.5"><td><strong>6</strong> (done)</td><td><code>npm test</code> (full suite)</td><td>226</td><td>QR endpoint tenant scoping · S3 key prefix scoped to <code>tenant/{id}</code></td></tr>
       <tr style="opacity:0.5"><td><strong>7</strong> (done)</td><td>Frontend-only — no new backend tests</td><td>226</td><td>Touch targets 44×44px verified manually</td></tr>
-      <tr style="background:#f0fdf8"><td><strong>8</strong> (in progress)</td><td><code>npm test -- --testNamePattern="permissions|RBAC|roles|platform"</code></td><td>323 now → 340+ at completion</td><td>Permission matrix · plane isolation · quota enforcement · provisioning isolation · T-5A/B/C + T-5D-02/03/04/05 ✅ done · <code>platformConsole.test.ts</code> (39 new)</td></tr>
+      <tr style="background:#f0fdf8"><td><strong>8</strong> (in progress)</td><td><code>npm test -- --testNamePattern="permissions|RBAC|roles|platform"</code> (backend) + <code>cd src/frontend &amp;&amp; npx vitest run</code> (guards)</td><td>344 now (321 backend + 23 frontend vitest) → 360+ at completion</td><td>Permission matrix · plane isolation · quota enforcement · provisioning isolation · T-5A/B/C + T-5D-02/03/04/05 + T-5E ✅ done · <code>platformConsole.test.ts</code> (39 backend) · <code>guards/*.test.tsx</code> (23 frontend)</td></tr>
       <tr style="opacity:0.7"><td><strong>10</strong> (postponed)</td><td><code>npm test -- --testNamePattern="reminders|LINE|Twilio"</code></td><td>235+ (10+ new)</td><td>Reminder dispatch · <code>owner.line_user_id</code> scoped per tenant</td></tr>
     </tbody>
   </table></div>
@@ -1558,7 +1567,7 @@ npm run test:coverage</code></pre>
 <div class="page" id="page-howto">
   <h1>🚀 How to Run Locally (Windows)</h1>
 
-  <div class="callout ok"><span class="callout-icon">✅</span><span>Phases 1–7 complete + Phase 8 in progress (323 tests). This guide covers running the <strong>current production build</strong> AND invoking agents for next development phases.</span></div>
+  <div class="callout ok"><span class="callout-icon">✅</span><span>Phases 1–7 complete + Phase 8 T-5E done (344 tests — 321 backend + 23 frontend vitest). This guide covers running the <strong>current production build</strong> AND invoking agents for next development phases.</span></div>
 
   <!-- ── Prerequisites ── -->
   <h2>Prerequisites</h2>
@@ -2482,234 +2491,6 @@ claude mcp list</code></pre>
     <li>Grooming queue is separate from clinical appointment queue</li>
   </ul>
 </div>
-
-<!-- ══════════════════ CHANGELOG ══════════════════ -->
-<div class="page" id="page-changelog">
-  <h1>📋 Changelog</h1>
-  <p style="color:var(--muted);font-size:13px;margin-bottom:20px">All changes recorded in reverse-chronological order.</p>
-
-  <h2>2026-06-05 — Phase 3 Commercial Complete</h2>
-  <div class="cl-entry new">
-    <div class="cl-date">2026-06-05</div>
-    <p><strong>Phase 3 implemented.</strong> 131 tests passing (104 prior + 27 new). Clinic can now manage inventory → auto-deduct on dispense → build invoices → take payment → print receipt → view revenue, plus MVP SaaS plan limits.</p>
-  </div>
-  <h3>📁 New Backend (vertical slices)</h3>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>Module</th><th>Endpoints</th></tr></thead>
-    <tbody>
-      <tr><td><code>product.*</code> (+ <code>StockMovement</code> ledger)</td><td><code>/api/products</code> CRUD · <code>/:id/stock-in</code> · <code>/alerts</code> · <code>/:id/movements</code></td></tr>
-      <tr><td><code>invoice.*</code></td><td><code>POST/GET /api/invoices</code> (auto-pull visit + retail stock deduction, <code>INV-YYYY-MM-NNNN</code>, VAT 7%) · <code>PUT /:id/payment</code></td></tr>
-      <tr><td><code>report.*</code></td><td><code>/api/reports/{revenue,top-services,inventory-usage,snapshot}</code></td></tr>
-      <tr><td><code>subscription.*</code></td><td><code>GET /api/subscription/status</code> + 402 plan user-limit on user creation</td></tr>
-    </tbody>
-  </table></div>
-  <h3>✏️ Frontend</h3>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>File</th><th>Change</th></tr></thead>
-    <tbody>
-      <tr><td><code>views/clinic/ClinicInventory.tsx</code></td><td>Replaced — search/filter, KPI alerts, add/edit/stock-in modals</td></tr>
-      <tr><td><code>views/clinic/ClinicBilling.tsx</code></td><td>Replaced — POS cart, cash change, payment methods, success modal, browser-print receipt</td></tr>
-      <tr><td><code>views/clinic/ClinicDashboard.tsx</code></td><td>Modified — recharts revenue chart + inventory alerts + revenue KPIs</td></tr>
-      <tr><td><code>views/admin/SubscriptionTab.tsx</code></td><td>Modified — plan usage vs limit</td></tr>
-    </tbody>
-  </table></div>
-  <h3>🐛 Notable fix</h3>
-  <div class="cl-entry fix">
-    <div class="cl-date">2026-06-05</div>
-    <ul>
-      <li>Prisma maps table names but not columns → DB columns are camelCase; pre-existing Phase 2 raw SQL (prescription deduct, appointment double-booking) used snake_case and silently failed. All raw SQL now double-quotes camelCase columns and is test-covered.</li>
-    </ul>
-  </div>
-  <div class="callout info"><span class="callout-icon">➡️</span><span>Phase 4 implemented — see entry below.</span></div>
-
-  <h2>2026-06-09 — Phase 4 Advanced Operations Complete</h2>
-  <div class="cl-entry new">
-    <div class="cl-date">2026-06-09</div>
-    <p><strong>Phase 4 implemented.</strong> 155 tests passing (131 prior + 24 new). Multi-branch management, inter-branch inventory transfers, hospitalization (cage board), grooming scheduler, blood bank registry + transfusion guard, loyalty/points (earn on POS, redeem ≤20%), write-once audit logs, proactive reminder worker, admin pages for Branches / Blood Bank / Audit.</p>
-  </div>
-  <h3>📁 New Backend</h3>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>Module</th><th>Highlights</th></tr></thead>
-    <tbody>
-      <tr><td>Branch + Doctor Shifts</td><td><code>/api/branches</code> CRUD · shift scheduling · <code>branchId</code> in JWT</td></tr>
-      <tr><td>Transfers</td><td>Inter-branch stock transfer with dual <code>StockMovement</code> ledger</td></tr>
-      <tr><td>Hospitalization</td><td>Admit → care (4 time-slots/day) → discharge with auto-billing aggregation</td></tr>
-      <tr><td>Blood Bank</td><td>Donor registry + collection bags + transfusion compatibility guard (409 INCOMPATIBLE_BLOOD)</td></tr>
-      <tr><td>Grooming</td><td>Booking + day-timeline + status cycle (booked→in-progress→done)</td></tr>
-      <tr><td>Loyalty</td><td>Earn on POS payment, tiered, redeem capped at 20% of invoice</td></tr>
-      <tr><td>Audit</td><td>Write-once interceptor wired globally via <code>auditMiddleware</code></td></tr>
-      <tr><td>Reminders</td><td>Hourly background worker — LINE/SMS dispatch deferred (currently marks <code>sent</code>)</td></tr>
-      <tr><td>Reports</td><td><code>/api/reports/branch-revenue</code></td></tr>
-    </tbody>
-  </table></div>
-  <h3>✏️ Frontend</h3>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>View</th><th>Change</th></tr></thead>
-    <tbody>
-      <tr><td><code>views/clinic/ClinicInpatient.tsx</code></td><td>New — cage board + 3-step care modal + discharge</td></tr>
-      <tr><td><code>views/clinic/ClinicGrooming.tsx</code></td><td>New — day timeline + booking modal + status cycle</td></tr>
-      <tr><td><code>views/admin/AdminBranches.tsx</code></td><td>New — Branch CRUD + doctor shift scheduling</td></tr>
-      <tr><td><code>views/admin/AdminBloodBank.tsx</code></td><td>New — 3 tabs (donors/bags/transfusions) + compatibility guard</td></tr>
-      <tr><td><code>views/admin/AdminAudit.tsx</code></td><td>New — read-only audit table + filters + JSON-diff expand</td></tr>
-      <tr><td><code>views/admin/AdminDashboard.tsx</code></td><td>Updated — inpatient/grooming KPIs + branch revenue chart</td></tr>
-      <tr><td><code>views/clinic/ClinicBilling.tsx</code></td><td>Updated — loyalty balance/tier display, redeem at checkout, earned toast</td></tr>
-    </tbody>
-  </table></div>
-  <div class="callout info"><span class="callout-icon">⚠️</span><span><strong>Deferred:</strong> Real LINE/SMS dispatch, PDF receipts (pdfkit), PromptPay QR gateway (Omise/Stripe), barcode scanning (ZXing), S3 photo upload, SaaS subscription billing cron.</span></div>
-
-  <h2>2026-06-04 — Phase 2 Core Clinic Operations Complete</h2>
-  <div class="cl-entry new">
-    <div class="cl-date">2026-06-04</div>
-    <p><strong>Phase 2 fully implemented.</strong> 104 tests passing. Clinic can now receive a patient → record EMR → dispense medication in a complete workflow.</p>
-  </div>
-  <h3>📁 New Backend Files</h3>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>File</th><th>Description</th></tr></thead>
-    <tbody>
-      <tr><td><code>src/backend/src/services/ownerService.ts</code></td><td>Owner CRUD with duplicate-phone 409 detection</td></tr>
-      <tr><td><code>src/backend/src/services/petService.ts</code></td><td>Pet CRUD with soft-delete and owner validation</td></tr>
-      <tr><td><code>src/backend/src/services/searchService.ts</code></td><td>Quick search across pet name, owner, phone, microchipId (ILIKE)</td></tr>
-      <tr><td><code>src/backend/src/services/appointmentService.ts</code></td><td>Appointment CRUD, raw SQL double-booking overlap check, walk-in</td></tr>
-      <tr><td><code>src/backend/src/services/medicalRecordService.ts</code></td><td>SOAP + vitals + attachments; blocks edit on billed invoices</td></tr>
-      <tr><td><code>src/backend/src/services/prescriptionService.ts</code></td><td>Stock deduction in serializable transaction (TOCTOU-safe)</td></tr>
-      <tr><td><code>src/backend/src/services/vaccinationService.ts</code></td><td>Vaccination CRUD + due-soon query</td></tr>
-      <tr><td><code>src/backend/src/controllers/</code> (×7)</td><td>Thin controllers for owner, pet, search, appointment, EMR, prescription, vaccination</td></tr>
-      <tr><td><code>src/backend/src/routes/</code> (×7)</td><td>Route files registered under /api/*</td></tr>
-    </tbody>
-  </table></div>
-  <h3>✏️ Frontend Views Updated</h3>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>File</th><th>Change</th></tr></thead>
-    <tbody>
-      <tr><td><code>src/frontend/src/views/clinic/ClinicPets.tsx</code></td><td>Replaced — full split-panel UI with owner/pet list, detail tabs, add/edit modals</td></tr>
-      <tr><td><code>src/frontend/src/views/clinic/ClinicAppointments.tsx</code></td><td>Replaced — calendar grid (day/week), booking form, appointment status modal</td></tr>
-      <tr><td><code>src/frontend/src/views/clinic/ClinicEMR.tsx</code></td><td>Replaced — SOAP editor, vital steppers, HTML5 anatomy canvas, prescription panel</td></tr>
-      <tr><td><code>src/frontend/src/views/clinic/ClinicDashboard.tsx</code></td><td>Modified — added "Vaccinations Due Soon" bento card</td></tr>
-    </tbody>
-  </table></div>
-  <h3>🐛 Bugs Fixed</h3>
-  <div class="cl-entry fix">
-    <div class="cl-date">2026-06-04</div>
-    <ul>
-      <li>Prescription TOCTOU stock race fixed — conditional <code>UPDATE ... WHERE stock_quantity &gt;= qty</code></li>
-      <li>Double-booking — raw SQL overlap query replaces incorrect Prisma logic</li>
-      <li>Medical record billed-guard — added <code>invoices</code> include to <code>getMedicalRecord</code></li>
-      <li>All UPDATE clauses now include <code>tenantId</code> for defence-in-depth</li>
-    </ul>
-  </div>
-  <h3>⚠️ Deferred Items</h3>
-  <ul>
-    <li>LINE/SMS reminder cron job (requires external service credentials)</li>
-    <li>Real S3 photo upload (photoUrl stored as string)</li>
-    <li>Konva.js canvas (replaced with lightweight HTML5 Canvas)</li>
-  </ul>
-
-  <hr/>
-
-  <h2>2026-06-04 — Design System Alignment</h2>
-  <div class="cl-entry new">
-    <div class="cl-date">2026-06-04</div>
-    <p><strong>Compassionate Care System</strong> integrated as the official design standard. All UI work must follow the Stitch HTML prototypes in <code>stitch_vet_clinic_design_system/</code>.</p>
-  </div>
-  <h3>📁 New Files Created</h3>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>File</th><th>Description</th></tr></thead>
-    <tbody>
-      <tr><td><code>design-alignment-plan.md</code></td><td>31-file change plan: gap analysis, token delta, per-screen specs, implementation order across all phases</td></tr>
-    </tbody>
-  </table></div>
-  <h3>✏️ Files Updated</h3>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>File</th><th>Change</th></tr></thead>
-    <tbody>
-      <tr><td><code>CLAUDE.md</code></td><td>Added: Design System section with full token quick-reference, sidebar rules, icon system, screen-to-component mapping table, updated project structure, updated phase table with UI order</td></tr>
-      <tr><td><code>docs/index.html</code></td><td>Added: Design System nav group (4 pages), Design System Overview, Design Tokens cheat-sheet, Screen Specs summary, Alignment Plan with phase-by-phase file tables</td></tr>
-    </tbody>
-  </table></div>
-
-  <h2>2026-06-03 — Phase 1 Foundation Setup</h2>
-
-  <h3>🔧 Fixes Applied</h3>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>File</th><th>Agent</th><th>Fix</th></tr></thead>
-    <tbody>
-      <tr><td><code>src/backend/jest.config.js</code></td><td><span class="badge agent-qa">@qa-agent</span></td><td>Removed invalid <code>setupFilesAfterFramework</code>; added <code>setupFiles: ['dotenv/config']</code></td></tr>
-      <tr><td><code>src/backend/tsconfig.json</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>Added <code>tests/**/*</code> to include; removed tests from exclude</td></tr>
-      <tr><td><code>src/backend/src/config/env.ts</code></td><td><span class="badge agent-db">@db-agent</span></td><td>Fixed dotenv path to resolve .env from project root</td></tr>
-      <tr><td><code>src/backend/prisma/seed.ts</code></td><td><span class="badge agent-db">@db-agent</span></td><td>Added dotenv with explicit path; seed now loads DATABASE_URL reliably</td></tr>
-      <tr><td><code>src/backend/config/env.ts</code> (stub)</td><td><span class="badge agent-dev">@dev-agent</span></td><td>Converted to re-export from <code>../src/config/env</code></td></tr>
-      <tr><td><code>src/backend/config/db.ts</code> (stub)</td><td><span class="badge agent-dev">@dev-agent</span></td><td>Converted to re-export from <code>../src/config/db</code></td></tr>
-      <tr><td><code>src/backend/config/jwt.ts</code> (stub)</td><td><span class="badge agent-dev">@dev-agent</span></td><td>Converted to re-export from <code>../src/config/jwt</code></td></tr>
-      <tr><td><code>src/backend/middlewares/authMiddleware.ts</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>Converted to re-export from <code>../src/middlewares/authMiddleware</code></td></tr>
-      <tr><td><code>src/backend/middlewares/rbacMiddleware.ts</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>Converted to re-export from <code>../src/middlewares/rbacMiddleware</code></td></tr>
-    </tbody>
-  </table></div>
-
-  <h3>📁 New Files Created</h3>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>File</th><th>Agent</th><th>Description</th></tr></thead>
-    <tbody>
-      <tr><td><code>CLAUDE.md</code></td><td><span class="badge agent-pm">@pm-agent</span></td><td>Project architecture, agent roles, tech stack, multi-tenancy rules</td></tr>
-      <tr><td><code>README.md</code></td><td><span class="badge agent-pm">@pm-agent</span></td><td>Quick-start guide</td></tr>
-      <tr><td><code>.env.example</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>Environment variable template</td></tr>
-      <tr><td><code>HOW-TO-RUN.md</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>Windows local run guide with troubleshooting</td></tr>
-      <tr><td><code>CHANGELOG.md</code></td><td><span class="badge agent-pm">@pm-agent</span></td><td>This changelog (Markdown version)</td></tr>
-      <tr><td><code>.claude/agents/pm-agent.md</code></td><td><span class="badge agent-pm">@pm-agent</span></td><td>PM role definition</td></tr>
-      <tr><td><code>.claude/agents/uiux-agent.md</code></td><td><span class="badge agent-ui">@uiux-agent</span></td><td>UI/UX role definition</td></tr>
-      <tr><td><code>.claude/agents/db-agent.md</code></td><td><span class="badge agent-db">@db-agent</span></td><td>DB role definition with Iron Rule</td></tr>
-      <tr><td><code>.claude/agents/dev-agent.md</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>Dev role definition</td></tr>
-      <tr><td><code>.claude/agents/qa-agent.md</code></td><td><span class="badge agent-qa">@qa-agent</span></td><td>QA role definition</td></tr>
-      <tr><td><code>.claude/specs/functional-reqs.md</code></td><td><span class="badge agent-pm">@pm-agent</span></td><td>All 5 modules with feature specs</td></tr>
-      <tr><td><code>.claude/specs/database-schema.sql</code></td><td><span class="badge agent-db">@db-agent</span></td><td>Full PostgreSQL DDL for 10 tables</td></tr>
-      <tr><td><code>.claude/roadmap/phase1-tasks.md</code></td><td><span class="badge agent-pm">@pm-agent</span></td><td>6 Phase 1 tasks with acceptance criteria</td></tr>
-      <tr><td><code>.claude/roadmap/phase2-tasks.md</code></td><td><span class="badge agent-pm">@pm-agent</span></td><td>10 Phase 2 tasks</td></tr>
-      <tr><td><code>.claude/roadmap/phase3-tasks.md</code></td><td><span class="badge agent-pm">@pm-agent</span></td><td>9 Phase 3 tasks</td></tr>
-      <tr><td><code>.claude/roadmap/qa-protocols.md</code></td><td><span class="badge agent-qa">@qa-agent</span></td><td>7-section QA checklist</td></tr>
-      <tr><td><code>.claude/roadmap/phase1-implementation-plan.md</code></td><td><span class="badge agent-pm">@pm-agent</span></td><td>Week-by-week schedule with agent assignments</td></tr>
-      <tr><td><code>.claude/roadmap/phase1-claude-code-guide.md</code></td><td><span class="badge agent-pm">@pm-agent</span></td><td>Step-by-step Claude Code prompts</td></tr>
-      <tr><td><code>src/backend/prisma/schema.prisma</code></td><td><span class="badge agent-db">@db-agent</span></td><td>Full Prisma schema — 10 models, tenant_id enforced</td></tr>
-      <tr><td><code>src/backend/prisma/seed.ts</code></td><td><span class="badge agent-db">@db-agent</span></td><td>Seeds dev-clinic + test-clinic (6 users)</td></tr>
-      <tr><td><code>src/backend/src/types/index.ts</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>JwtPayload, LoginRequest/Response, UserResponse, ApiResponse</td></tr>
-      <tr><td><code>src/backend/src/config/env.ts</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>dotenv loader, fails fast on missing vars</td></tr>
-      <tr><td><code>src/backend/src/config/db.ts</code></td><td><span class="badge agent-db">@db-agent</span></td><td>Prisma singleton client</td></tr>
-      <tr><td><code>src/backend/src/config/jwt.ts</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>signToken() and verifyToken() helpers</td></tr>
-      <tr><td><code>src/backend/src/middlewares/authMiddleware.ts</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>JWT verify → attach tenantId to req.context</td></tr>
-      <tr><td><code>src/backend/src/middlewares/rbacMiddleware.ts</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>Role gate factory → 403 for disallowed roles</td></tr>
-      <tr><td><code>src/backend/src/services/authService.ts</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>Login: tenant lookup → bcrypt compare → JWT sign</td></tr>
-      <tr><td><code>src/backend/src/services/userService.ts</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>User CRUD — all queries pass tenantId</td></tr>
-      <tr><td><code>src/backend/src/controllers/authController.ts</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>Thin handler with Zod validation</td></tr>
-      <tr><td><code>src/backend/src/controllers/userController.ts</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>Thin handler with Zod validation</td></tr>
-      <tr><td><code>src/backend/src/routes/authRoutes.ts</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>POST /auth/login — public</td></tr>
-      <tr><td><code>src/backend/src/routes/userRoutes.ts</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>CRUD /users — admin only</td></tr>
-      <tr><td><code>src/backend/src/app.ts</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>Express app: helmet, cors, routes</td></tr>
-      <tr><td><code>src/backend/src/server.ts</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>HTTP server entry point</td></tr>
-      <tr><td><code>src/backend/tests/unit/authService.test.ts</code></td><td><span class="badge agent-qa">@qa-agent</span></td><td>5 unit tests: login scenarios</td></tr>
-      <tr><td><code>src/backend/tests/unit/middlewares.test.ts</code></td><td><span class="badge agent-qa">@qa-agent</span></td><td>8 unit tests: full RBAC matrix</td></tr>
-      <tr><td><code>src/backend/tests/integration/auth.test.ts</code></td><td><span class="badge agent-qa">@qa-agent</span></td><td>6 integration tests: login endpoint</td></tr>
-      <tr><td><code>src/backend/tests/integration/tenantIsolation.test.ts</code></td><td><span class="badge agent-qa">@qa-agent</span></td><td>6 critical cross-tenant isolation tests</td></tr>
-      <tr><td><code>src/frontend/src/store/authStore.ts</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>JWT in memory (not localStorage)</td></tr>
-      <tr><td><code>src/frontend/src/store/uiStore.ts</code></td><td><span class="badge agent-ui">@uiux-agent</span></td><td>Sidebar state + hand-mode persisted</td></tr>
-      <tr><td><code>src/frontend/src/components/Sidebar.tsx</code></td><td><span class="badge agent-ui">@uiux-agent</span></td><td>Collapsible sidebar, 44px tap targets</td></tr>
-      <tr><td><code>src/frontend/src/components/TopNav.tsx</code></td><td><span class="badge agent-ui">@uiux-agent</span></td><td>Clinic name, hand-mode toggle, logout</td></tr>
-      <tr><td><code>src/frontend/src/components/ProtectedRoute.tsx</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>Redirects unauthenticated users to /login</td></tr>
-      <tr><td><code>src/frontend/src/views/AppShell.tsx</code></td><td><span class="badge agent-ui">@uiux-agent</span></td><td>Flex layout, hand-mode aware</td></tr>
-      <tr><td><code>src/frontend/src/views/LoginView.tsx</code></td><td><span class="badge agent-ui">@uiux-agent</span></td><td>Login form: 44px inputs, inline errors</td></tr>
-      <tr><td><code>src/frontend/src/views/DashboardView.tsx</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>Stub dashboard with KPI placeholders</td></tr>
-      <tr><td><code>docs/index.html</code></td><td><span class="badge agent-dev">@dev-agent</span></td><td>This HTML documentation portal</td></tr>
-    </tbody>
-  </table></div>
-
-  <h2>Summary Statistics</h2>
-  <div class="stat-row">
-    <div class="stat"><div class="n">47</div><div class="l">New Files</div></div>
-    <div class="stat"><div class="n">9</div><div class="l">Files Fixed</div></div>
-    <div class="stat"><div class="n">19</div><div class="l">Test Cases</div></div>
-    <div class="stat"><div class="n">25</div><div class="l">DB Tables</div></div>
-    <div class="stat"><div class="n">6</div><div class="l">API Endpoints</div></div>
-    <div class="stat"><div class="n">42</div><div class="l">Tasks Planned</div></div>
-  </div>
-</div>
-
 
 <!-- ══════════════════ DESIGN SYSTEM OVERVIEW ══════════════════ -->
 <div class="page" id="page-design-system">
