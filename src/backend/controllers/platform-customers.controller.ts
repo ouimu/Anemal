@@ -12,6 +12,7 @@ import { Request, Response, NextFunction } from 'express'
 import { z } from 'zod'
 import * as customersService from '../services/platform-customers.service'
 import * as plansService from '../services/platform-plans.service'
+import * as provisioningService from '../services/platform-provisioning.service'
 
 /** Zod schema for POST /platform/customers */
 export const createCustomerSchema = z.object({
@@ -25,6 +26,21 @@ export const updateCustomerSchema = z.object({
   name:      z.string().trim().min(1).max(255).optional(),
   subdomain: z.string().trim().min(1).max(100).regex(/^[a-z0-9-]+$/, 'Only lowercase letters, digits, and hyphens').optional(),
   planId:    z.number().int().positive().optional().nullable(),
+}).strict()
+
+/** Zod schema for PUT /platform/customers/:id/provisioning */
+export const updateProvisioningSchema = z.object({
+  s3Bucket:         z.string().trim().max(255).optional().nullable(),
+  s3Prefix:         z.string().trim().max(255).optional().nullable(),
+  s3Region:         z.string().trim().max(50).optional().nullable(),
+  baseSmsProvider:  z.string().trim().max(50).optional().nullable(),
+  baseSmsApiKey:    z.string().trim().optional().nullable(),
+  smtpHost:         z.string().trim().max(255).optional().nullable(),
+  smtpPort:         z.number().int().min(1).max(65535).optional().nullable(),
+  smtpUser:         z.string().trim().max(255).optional().nullable(),
+  smtpPassword:     z.string().trim().optional().nullable(),
+  lineChannelId:    z.string().trim().max(100).optional().nullable(),
+  lineChannelSecret: z.string().trim().optional().nullable(),
 }).strict()
 
 /** Zod schema for PUT /platform/customers/:id/quota */
@@ -168,6 +184,53 @@ export async function handleSetQuotaOverride(
     const body = req.body as z.infer<typeof setQuotaSchema>
     const performedById = req.context!.platformUserId!
     const data = await plansService.setQuotaOverride(id, body, performedById)
+    res.status(200).json({ success: true, data })
+  } catch (err) {
+    next(err)
+  }
+}
+
+/**
+ * GET /platform/customers/:id/provisioning
+ *
+ * Returns the provisioning configuration for a tenant with secrets masked.
+ * Returns 404 when no provisioning row exists yet for this tenant.
+ */
+export async function handleGetProvisioning(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const id = Number(req.params.id)
+    const data = await provisioningService.getProvisioning(id)
+    if (!data) {
+      res.status(404).json({ success: false, error: 'Provisioning not configured for this tenant' })
+      return
+    }
+    res.status(200).json({ success: true, data })
+  } catch (err) {
+    next(err)
+  }
+}
+
+/**
+ * PUT /platform/customers/:id/provisioning
+ *
+ * Create or update the provisioning configuration for a tenant.
+ * Partial updates are supported — only provided fields are written.
+ * Secret fields are encrypted before storage; the response has them masked.
+ */
+export async function handleUpdateProvisioning(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const id = Number(req.params.id)
+    const body = req.body as z.infer<typeof updateProvisioningSchema>
+    const performedById = req.context!.platformUserId!
+    const data = await provisioningService.updateProvisioning(id, body, performedById)
     res.status(200).json({ success: true, data })
   } catch (err) {
     next(err)

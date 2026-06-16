@@ -54,7 +54,7 @@ app.use('/platform/customers', platformCustomersRoutes)
 app.use('/platform/plans',     platformPlansRoutes)
 app.use('/auth',            authRoutes)
 app.use('/users',           userRoutes)
-app.use('/admin/system-settings', systemSettingsRoutes) // superadmin only — before /admin
+app.use('/platform/settings', systemSettingsRoutes) // platform-plane only — before /admin
 app.use('/admin',           adminRoutes)
 app.use('/clinic',          clinicRoutes)
 app.use('/api/owners',      ownerRoutes)

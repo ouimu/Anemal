@@ -53,6 +53,8 @@ model Tenant {
   userRoles UserRole[]
   // Phase 8 (5-D): platform audit back-relation
   platformAuditLogs PlatformAuditLog[]
+  // Phase 8 (5-D): per-tenant integration provisioning
+  provisioning      TenantProvisioning?
 
   @@map("tenants")
 }
@@ -802,6 +804,8 @@ model PlatformUser {
 
   // Phase 8 (5-D): platform audit back-relation
   platformAuditLogs PlatformAuditLog[]
+  // Phase 8 (5-D): provisioning records updated by this platform user
+  provisioningUpdates TenantProvisioning[] @relation("ProvisioningUpdatedBy")
 
   @@map("platform_users")
 }
@@ -864,4 +868,34 @@ model PlatformAuditLog {
   @@index([performedByPlatformUserId, createdAt(sort: Desc)])
   @@index([targetTenantId, createdAt(sort: Desc)])
   @@map("platform_audit_logs")
+}
+
+// ─── Phase 8 (5-D): Per-tenant integration provisioning ──────────────────────
+// Platform-plane only — credentials supplied by platform operators, not clinic staff.
+// No tenant_id column: PK is tenantId (1-to-1 with Tenant). Isolation via PK lookup.
+model TenantProvisioning {
+  tenantId                Int      @id
+  // S3
+  s3Bucket                String?  @db.VarChar(255)
+  s3Prefix                String?  @db.VarChar(255)
+  s3Region                String?  @db.VarChar(50)
+  // Base SMS provider (platform-supplied credentials, not clinic's own)
+  baseSmsProvider         String?  @db.VarChar(50)
+  baseSmsApiKey           String?
+  // Base SMTP override per tenant
+  smtpHost                String?  @db.VarChar(255)
+  smtpPort                Int?
+  smtpUser                String?  @db.VarChar(255)
+  smtpPassword            String?
+  // LINE base channel (platform-provisioned)
+  lineChannelId           String?  @db.VarChar(100)
+  lineChannelSecret       String?
+  // Audit
+  updatedByPlatformUserId Int?
+  updatedAt               DateTime @updatedAt
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  updatedByUser PlatformUser? @relation("ProvisioningUpdatedBy", fields: [updatedByPlatformUserId], references: [id], onDelete: SetNull)
+
+  @@map("tenant_provisioning")
 }

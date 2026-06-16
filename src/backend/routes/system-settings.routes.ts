@@ -1,4 +1,4 @@
-// System-settings routes — mounted at /admin/system-settings.
+// System-settings routes — mounted at /platform/settings.
 // T-5C-03: guarded by platform plane only (superadmin migrated to platform_users).
 import { Router } from 'express'
 import { authMiddleware } from '../middlewares/auth.middleware'

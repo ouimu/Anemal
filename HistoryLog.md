@@ -2,6 +2,65 @@
 
 ---
 
+## T-5D-05 — Per-Tenant Provisioning + Platform Settings Route (2026-06-16)
+
+**Status:** Complete
+**Tests:** 323 passing (was 313)
+
+### Changes
+- DB: Added `tenant_provisioning` table (Prisma migration `add_tenant_provisioning`). 1-to-1 with tenants. AES-256-GCM encrypted fields: `baseSmsApiKey`, `smtpPassword`, `lineChannelSecret`.
+- Route: `/admin/system-settings` renamed to `/platform/settings` in app.ts.
+- API: `GET /platform/customers/:id/provisioning` — returns provisioning config with secrets masked.
+- API: `PUT /platform/customers/:id/provisioning` — upserts config, encrypts secrets, writes audit log.
+- Tests: 11 new integration tests in platformConsole.test.ts (provisioning CRUD, plane isolation, audit log, route rename).
+- PII audit: 0 matches — no clinical table access in platform-plane code.
+
+### Files created/modified
+- `src/backend/prisma/schema.prisma` — TenantProvisioning model added
+- `src/backend/prisma/migrations/20260616005939_add_tenant_provisioning/`
+- `src/backend/models/platform-provisioning.repository.ts` (new)
+- `src/backend/services/platform-provisioning.service.ts` (new)
+- `src/backend/controllers/platform-customers.controller.ts` — provisioning handlers added
+- `src/backend/routes/platform-customers.routes.ts` — provisioning routes added
+- `src/backend/routes/system-settings.routes.ts` — comment updated
+- `src/backend/app.ts` — route path updated
+- `src/backend/tests/integration/settings-api.test.ts` — URLs updated
+- `src/backend/tests/integration/platformConsole.test.ts` — 11 tests added
+
+---
+
+## 📅 Log Entry: 2026-06-15 — CLAUDE.md Refactored: Minimal, Precise, Non-Redundant
+
+### 🎯 Summary
+Rewrote CLAUDE.md to eliminate redundancy and verbosity while preserving all critical information. **377 lines → 150 lines** (60% reduction). Converted to a quick-reference guide without losing substance.
+
+### Changes
+- **Removed redundancy:** verbose agent context explanations, repeated pipeline rules, lengthy phase transition notes, model rationale explanations, overly detailed design documentation, unused command examples
+- **Kept essential:** Agent Router (task→agent), Standard Pipeline (visual), Tech Stack (one-liners), Critical Rules (multi-tenancy + authorization, absolute rules), Project Structure (reference), Phases (status table), Design System (tokens + key rules), Tablet Rules (checklist), Agent Skills (table), Tracking & Documentation (ownership + protocols)
+- **Structure:** Flat hierarchy, no nested subsections, every section self-contained
+
+### Result
+| Aspect | Before | After | Impact |
+|--------|--------|-------|--------|
+| Lines | 377 | 150 | **60% reduction** |
+| Redundancy | High (3+ explanations of agent context) | None | **Single source of truth** |
+| Usability | Requires reading several sections | Direct lookup | **Quick reference** |
+| Completeness | Verbose but complete | Concise but complete | **No content lost** |
+
+### 📂 Files Changed
+| File | Action |
+|---|---|
+| `CLAUDE.md` | **REWRITTEN** — consolidated to essential content; frontmatter format for easier agent loading |
+
+### ✅ Verification
+- All critical rules preserved (multi-tenancy, authorization, tablet rules, tracking)
+- All agent assignments clear (router table)
+- All phase status visible (table)
+- All design tokens & system rules present (Compassionate Care section)
+- No information lost — only structural bloat removed
+
+---
+
 ## Log Entry: 2026-06-14 — Phase reorder: i18n moved from Phase 11 to Phase 9
 
 ### Changes

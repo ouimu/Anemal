@@ -157,30 +157,30 @@ describe('TC-S003 — RBAC on clinic settings', () => {
 })
 
 describe('TC-S004 — system settings restricted to platform plane (T-5C-03)', () => {
-  it('platform token GET /admin/system-settings → 200 with seeded keys', async () => {
-    const res = await request(server).get('/admin/system-settings').set('Authorization', `Bearer ${platformToken}`)
+  it('platform token GET /platform/settings → 200 with seeded keys', async () => {
+    const res = await request(server).get('/platform/settings').set('Authorization', `Bearer ${platformToken}`)
     expect(res.status).toBe(200)
     const keys = (res.body.data as { key: string }[]).map(r => r.key)
     expect(keys).toContain('app_name')
   })
 
-  it('clinic admin GET /admin/system-settings → 403 (wrong plane)', async () => {
-    const res = await request(server).get('/admin/system-settings').set('Authorization', `Bearer ${adminA}`)
+  it('clinic admin GET /platform/settings → 403 (wrong plane)', async () => {
+    const res = await request(server).get('/platform/settings').set('Authorization', `Bearer ${adminA}`)
     expect(res.status).toBe(403)
   })
 
-  it('staff GET /admin/system-settings → 403 (wrong plane)', async () => {
-    const res = await request(server).get('/admin/system-settings').set('Authorization', `Bearer ${staffA}`)
+  it('staff GET /platform/settings → 403 (wrong plane)', async () => {
+    const res = await request(server).get('/platform/settings').set('Authorization', `Bearer ${staffA}`)
     expect(res.status).toBe(403)
   })
 
-  it('doctor GET /admin/system-settings → 403 (wrong plane)', async () => {
-    const res = await request(server).get('/admin/system-settings').set('Authorization', `Bearer ${doctorA}`)
+  it('doctor GET /platform/settings → 403 (wrong plane)', async () => {
+    const res = await request(server).get('/platform/settings').set('Authorization', `Bearer ${doctorA}`)
     expect(res.status).toBe(403)
   })
 
-  it('no token GET /admin/system-settings → 401', async () => {
-    const res = await request(server).get('/admin/system-settings')
+  it('no token GET /platform/settings → 401', async () => {
+    const res = await request(server).get('/platform/settings')
     expect(res.status).toBe(401)
   })
 })

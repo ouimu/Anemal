@@ -1213,6 +1213,38 @@ tr:hover td{background:#f8fafc}
         <tr><td><code>PUT</code></td><td><code>/platform/customers/:id/quota</code></td><td>Set per-tenant quota override for <code>maxUsers</code>, <code>maxBranches</code>, <code>maxOwners</code></td></tr>
       </table></div>
 
+      <h4 class="subsection">Per-Tenant Provisioning — T-5D-05</h4>
+      <p>Operator-supplied infrastructure configuration stored in the <code>tenant_provisioning</code> table — <strong>platform-plane only, never clinic-accessible</strong>. One row per tenant (1-to-1). Secret fields are encrypted at rest with AES-256-GCM and returned masked as <code>&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&lt;last4&gt;</code>.</p>
+      <div class="tbl-wrap"><table>
+        <tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr>
+        <tr><td><code>GET</code></td><td><code>/platform/customers/:id/provisioning</code></td><td>platform JWT</td><td>Get operator-provisioned infra config. Secret fields returned as <code>&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&lt;last4&gt;</code> (masked). Returns <code>404</code> if no provisioning row exists.</td></tr>
+        <tr><td><code>PUT</code></td><td><code>/platform/customers/:id/provisioning</code></td><td>platform JWT</td><td>Upsert provisioning config. Encrypted fields: <code>baseSmsApiKey</code>, <code>smtpPassword</code>, <code>lineChannelSecret</code>. Non-secret: <code>s3Bucket</code>, <code>s3Prefix</code>, <code>s3Region</code>, <code>smtpHost</code>, <code>smtpPort</code>, <code>smtpUser</code>, <code>baseSmsProvider</code>, <code>lineChannelId</code>. Writes audit log entry <code>action: provisioning.update</code>.</td></tr>
+      </table></div>
+
+      <h5 class="subsection"><code>tenant_provisioning</code> Schema</h5>
+      <div class="tbl-wrap"><table>
+        <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+        <tr><td><code>tenantId</code></td><td>Int PK</td><td>1-to-1 with <code>tenants</code></td></tr>
+        <tr><td><code>s3Bucket</code></td><td>String?</td><td></td></tr>
+        <tr><td><code>s3Prefix</code></td><td>String?</td><td></td></tr>
+        <tr><td><code>s3Region</code></td><td>String?</td><td></td></tr>
+        <tr><td><code>baseSmsProvider</code></td><td>String?</td><td></td></tr>
+        <tr><td><code>baseSmsApiKey</code></td><td>String?</td><td>AES-256-GCM encrypted</td></tr>
+        <tr><td><code>smtpHost</code></td><td>String?</td><td></td></tr>
+        <tr><td><code>smtpPort</code></td><td>Int?</td><td></td></tr>
+        <tr><td><code>smtpUser</code></td><td>String?</td><td></td></tr>
+        <tr><td><code>smtpPassword</code></td><td>String?</td><td>AES-256-GCM encrypted</td></tr>
+        <tr><td><code>lineChannelId</code></td><td>String?</td><td></td></tr>
+        <tr><td><code>lineChannelSecret</code></td><td>String?</td><td>AES-256-GCM encrypted</td></tr>
+        <tr><td><code>updatedByPlatformUserId</code></td><td>Int?</td><td>FK &rarr; <code>platform_users</code></td></tr>
+        <tr><td><code>updatedAt</code></td><td>DateTime</td><td>auto</td></tr>
+      </table></div>
+      <div class="warning-box"><strong>Security:</strong> Platform provisioning data is strictly operator-supplied. Clinic-plane tokens return <code>403</code> on all provisioning routes. Secret fields are never returned in plaintext.</div>
+
+      <h4 class="subsection">Platform Settings</h4>
+      <p>Platform-wide application configuration (app name, base URL, maintenance mode, trial days, SMTP, feature flags) is served at <code>/platform/settings</code>.</p>
+      <div class="info-box"><strong>Route rename:</strong> Previously mounted at <code>/admin/system-settings</code> (deprecated). The endpoint now requires the platform plane and is reachable at <code>/platform/settings</code>.</div>
+
       <h4 class="subsection">Plan Management — T-5D-03</h4>
       <div class="tbl-wrap"><table>
         <tr><th>Method</th><th>Path</th><th>Description</th></tr>

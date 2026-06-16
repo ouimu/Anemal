@@ -15,6 +15,7 @@ import {
   createCustomerSchema,
   updateCustomerSchema,
   setQuotaSchema,
+  updateProvisioningSchema,
   handleListCustomers,
   handleCreateCustomer,
   handleGetCustomer,
@@ -23,6 +24,8 @@ import {
   handleReactivateCustomer,
   handleGetEffectiveQuota,
   handleSetQuotaOverride,
+  handleGetProvisioning,
+  handleUpdateProvisioning,
 } from '../controllers/platform-customers.controller'
 
 const router = Router()
@@ -43,5 +46,9 @@ router.post('/:id/reactivate', handleReactivateCustomer)
 // Quota
 router.get('/:id/quota', handleGetEffectiveQuota)
 router.put('/:id/quota', validate(setQuotaSchema), handleSetQuotaOverride)
+
+// Provisioning
+router.get('/:id/provisioning', handleGetProvisioning)
+router.put('/:id/provisioning', validate(updateProvisioningSchema), handleUpdateProvisioning)
 
 export default router

@@ -61,9 +61,11 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  // Clean up quota overrides, tenants, and plans created by this suite.
+  // Clean up quota overrides, provisioning rows, tenants, and plans created by this suite.
   if (createdTenantIds.length) {
     await prisma.tenantQuota.deleteMany({ where: { tenantId: { in: createdTenantIds } } })
+    await prisma.tenantProvisioning.deleteMany({ where: { tenantId: { in: createdTenantIds } } })
+    await prisma.platformAuditLog.deleteMany({ where: { targetTenantId: { in: createdTenantIds } } })
     await prisma.tenant.deleteMany({ where: { id: { in: createdTenantIds } } })
   }
   if (createdPlanIds.length) {
@@ -484,5 +486,139 @@ describe('T-5D-04 Quota enforcement', () => {
       .send({ maxUsers: 0 })
     expect(res.status).toBe(400)
     expect(res.body.code).toBe('VALIDATION_ERROR')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// T-5D-05 Per-tenant provisioning (S3/SMTP/SMS/LINE) — secret masking, plane
+// isolation, settings route rename. PII MUST NOT leak: secrets are masked on
+// every response; plaintext is never returned.
+//
+// Verified service behavior (against the code under test):
+//   - GET /:id/provisioning on a tenant with NO row → 404 (controller returns
+//     {success:false} when service yields null; service does NOT auto-create).
+//   - maskSecret() does NOT return the literal '••••' for non-trivial secrets;
+//     it returns '••••••••' + last4. So 'test-key-123' → '••••••••-123'.
+//     Tests therefore assert (a) plaintext NEVER returned and (b) a mask prefix
+//     is present — not an exact-equals on '••••'.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('T-5D-05 Provisioning endpoints', () => {
+  let tenantId: number
+
+  beforeAll(async () => {
+    const tRes = await request(server)
+      .post('/platform/customers')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ name: 'QA Provisioning Tenant', subdomain: `qa-prov-${SFX}` })
+    tenantId = tRes.body.data.id
+    createdTenantIds.push(tenantId)
+  })
+
+  it('✅ GET /:id/provisioning on a fresh tenant (no row) → 404', async () => {
+    const res = await request(server)
+      .get(`/platform/customers/${tenantId}/provisioning`)
+      .set('Authorization', `Bearer ${platformToken}`)
+    expect(res.status).toBe(404)
+    expect(res.body.success).toBe(false)
+  })
+
+  it('✅ PUT /:id/provisioning with S3 fields → 200, non-secret fields returned as-is', async () => {
+    const res = await request(server)
+      .put(`/platform/customers/${tenantId}/provisioning`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ s3Bucket: 'qa-bucket', s3Prefix: 'qa/prefix', s3Region: 'ap-southeast-1' })
+    expect(res.status).toBe(200)
+    expect(res.body.data.s3Bucket).toBe('qa-bucket')
+    expect(res.body.data.s3Prefix).toBe('qa/prefix')
+    expect(res.body.data.s3Region).toBe('ap-southeast-1')
+  })
+
+  it('✅ PUT with secret baseSmsApiKey → 200, response is MASKED (plaintext never returned)', async () => {
+    const plaintext = 'test-key-123'
+    const res = await request(server)
+      .put(`/platform/customers/${tenantId}/provisioning`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ baseSmsApiKey: plaintext })
+    expect(res.status).toBe(200)
+    // Plaintext MUST NOT appear in the response.
+    expect(res.body.data.baseSmsApiKey).not.toBe(plaintext)
+    // A mask prefix is present (maskSecret → '••••••••'+last4).
+    expect(res.body.data.baseSmsApiKey).toMatch(/^•+/)
+    // And it is not the encrypted ciphertext either (ciphertext has no mask char).
+    expect(res.body.data.baseSmsApiKey).toContain('••••')
+  })
+
+  it('✅ GET after PUT with secret → still masked, confirming plaintext never returned', async () => {
+    const res = await request(server)
+      .get(`/platform/customers/${tenantId}/provisioning`)
+      .set('Authorization', `Bearer ${platformToken}`)
+    expect(res.status).toBe(200)
+    expect(res.body.data.baseSmsApiKey).not.toBe('test-key-123')
+    expect(res.body.data.baseSmsApiKey).toMatch(/^•+/)
+  })
+
+  it('✅ PUT then GET → non-secret fields (s3*) roundtrip correctly', async () => {
+    await request(server)
+      .put(`/platform/customers/${tenantId}/provisioning`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ s3Bucket: 'roundtrip-bucket', smtpHost: 'smtp.example.test', smtpPort: 587, smtpUser: 'mailer' })
+    const res = await request(server)
+      .get(`/platform/customers/${tenantId}/provisioning`)
+      .set('Authorization', `Bearer ${platformToken}`)
+    expect(res.status).toBe(200)
+    expect(res.body.data.s3Bucket).toBe('roundtrip-bucket')
+    expect(res.body.data.smtpHost).toBe('smtp.example.test')
+    expect(res.body.data.smtpPort).toBe(587)
+    expect(res.body.data.smtpUser).toBe('mailer')
+    // Earlier-written S3 fields are not clobbered by the partial update above.
+    expect(res.body.data.s3Region).toBe('ap-southeast-1')
+  })
+
+  it('❌ clinic-plane token → GET /:id/provisioning → 403 (plane isolation)', async () => {
+    const res = await request(server)
+      .get(`/platform/customers/${tenantId}/provisioning`)
+      .set('Authorization', `Bearer ${clinicToken}`)
+    expect(res.status).toBe(403)
+  })
+
+  it('❌ clinic-plane token → PUT /:id/provisioning → 403 (plane isolation, write path)', async () => {
+    const res = await request(server)
+      .put(`/platform/customers/${tenantId}/provisioning`)
+      .set('Authorization', `Bearer ${clinicToken}`)
+      .send({ s3Bucket: 'evil' })
+    expect(res.status).toBe(403)
+  })
+
+  it('✅ audit log: PUT writes a platform_audit_logs row action=provisioning.update', async () => {
+    // Trigger a fresh update to guarantee at least one row for this tenant.
+    await request(server)
+      .put(`/platform/customers/${tenantId}/provisioning`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ baseSmsProvider: 'twilio' })
+    const log = await prisma.platformAuditLog.findFirst({
+      where: { targetTenantId: tenantId, action: 'provisioning.update' },
+    })
+    expect(log).toBeTruthy()
+    expect(log?.action).toBe('provisioning.update')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// T-5D-05 Settings route rename: /admin/system-settings → /platform/settings
+// ─────────────────────────────────────────────────────────────────────────────
+describe('T-5D-05 Settings route rename', () => {
+  it('✅ GET /platform/settings with platform token → 200 (renamed route mounted)', async () => {
+    const res = await request(server)
+      .get('/platform/settings')
+      .set('Authorization', `Bearer ${platformToken}`)
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(true)
+  })
+
+  it('❌ GET /admin/system-settings with platform token → 404 (old mount removed)', async () => {
+    const res = await request(server)
+      .get('/admin/system-settings')
+      .set('Authorization', `Bearer ${platformToken}`)
+    expect(res.status).toBe(404)
   })
 })
