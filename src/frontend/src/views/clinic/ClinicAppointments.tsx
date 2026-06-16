@@ -93,8 +93,8 @@ function BookingForm({ selectedDate, selectedHour, doctors, onClose, onSaved }: 
         reason:      reason || null,
       })
       onSaved()
-    } catch (err: any) {
-      setError(err.response?.data?.error ?? 'Failed to book')
+    } catch (err) {
+      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to book')
     } finally { setSaving(false) }
   }
 

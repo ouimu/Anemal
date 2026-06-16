@@ -24,7 +24,11 @@ export default function LoginView() {
   const login = useLogin()
 
   if (isAuthenticated) {
-    return <Navigate to={role === 'admin' ? '/admin/dashboard' : '/clinic/dashboard'} replace />
+    return <Navigate to={
+      role === 'admin'      ? '/admin/dashboard' :
+      role === 'superadmin' ? '/settings/system' :
+      '/clinic/dashboard'
+    } replace />
   }
 
   const set = (field: string) =>
@@ -36,7 +40,7 @@ export default function LoginView() {
   }
 
   const errorMsg = login.error
-    ? ((login.error as any)?.response?.data?.error ?? 'Invalid credentials. Please try again.')
+    ? ((login.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Invalid credentials. Please try again.')
     : null
 
   return (

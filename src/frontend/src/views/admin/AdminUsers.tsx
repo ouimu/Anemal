@@ -27,7 +27,7 @@ function UserModal({ user, onClose }: { user: Partial<User> & { isNew?: boolean 
       ? api.post('/users', { name: form.name, email: form.email, role: form.role, password: form.password })
       : api.put(`/users/${user.id}`, { name: form.name, role: form.role, isActive: form.isActive }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'users'] }); onClose() },
-    onError: (e: any) => setErr(e?.response?.data?.error ?? 'Failed to save'),
+    onError: (e: { response?: { data?: { error?: string } } }) => setErr(e?.response?.data?.error ?? 'Failed to save'),
   })
 
   return (

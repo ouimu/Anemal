@@ -80,7 +80,7 @@ function BranchForm({ branch, onClose }: { branch: Branch | null; onClose: () =>
             <label className="text-label-lg text-on-surface-variant">Address</label>
             <textarea className={`${inputCls} min-h-[72px] resize-none`} value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} rows={2} />
           </div>
-          {mut.isError && <p className="text-body-sm text-error">{(mut.error as any)?.response?.data?.error ?? 'Could not save branch.'}</p>}
+          {mut.isError && <p className="text-body-sm text-error">{(mut.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Could not save branch.'}</p>}
         </div>
         <div className="flex gap-sm px-xl pb-xl">
           <button onClick={onClose} className="flex-1 min-h-[44px] rounded-xl border border-outline-variant bg-surface text-on-surface hover:bg-surface-container text-body-md font-medium transition-colors">Cancel</button>
@@ -183,7 +183,7 @@ function ShiftsPanel({ branch, doctors }: { branch: Branch; doctors: UserLite[] 
           <MaterialIcon name="add" size={16} /> Add
         </button>
       </div>
-      {addShift.isError && <p className="text-body-sm text-error mt-2">{(addShift.error as any)?.response?.data?.error ?? 'Could not add shift.'}</p>}
+      {addShift.isError && <p className="text-body-sm text-error mt-2">{(addShift.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Could not add shift.'}</p>}
     </div>
   )
 }

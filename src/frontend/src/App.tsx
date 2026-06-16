@@ -2,7 +2,7 @@ import { Suspense, lazy, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useUiStore } from './store/uiStore'
 import { usePreferenceHydration } from './hooks/usePersonalPreferences'
-import { RequireAuth } from './guards'
+import { RequireAuth, RequirePlane } from './guards'
 import LoginView from './views/LoginView'
 import AdminLayout from './layouts/AdminLayout'
 import ClinicLayout from './layouts/ClinicLayout'
@@ -78,9 +78,9 @@ export default function App() {
         {/* Public */}
         <Route path="/login" element={<LoginView/>}/>
 
-        {/* ── Admin section (/admin/*) ── role=admin only */}
-        <Route path="/admin" element={<RequireAuth><AdminLayout/></RequireAuth>}>
-          <Route index element={<Navigate to="/admin/dashboard" replace/>}/>
+        {/* ── Clinic-admin section (/clinic-admin/*) ── plane=clinic, role=clinic_admin */}
+        <Route path="/clinic-admin" element={<RequireAuth><RequirePlane plane="clinic"><AdminLayout/></RequirePlane></RequireAuth>}>
+          <Route index element={<Navigate to="/clinic-admin/dashboard" replace/>}/>
           <Route path="dashboard"    element={<AdminDashboard/>}/>
           <Route path="users"        element={<AdminUsers/>}/>
           <Route path="profile"      element={<AdminProfile/>}/>
@@ -92,8 +92,26 @@ export default function App() {
           <Route path="audit"        element={<AdminAudit/>}/>
         </Route>
 
-        {/* ── Clinic section (/clinic/*) ── role=doctor|staff only */}
-        <Route path="/clinic" element={<RequireAuth><ClinicLayout/></RequireAuth>}>
+        {/* ── Legacy /admin/* redirects → /clinic-admin/* ── */}
+        <Route path="/admin"              element={<Navigate to="/clinic-admin/dashboard" replace/>}/>
+        <Route path="/admin/dashboard"    element={<Navigate to="/clinic-admin/dashboard" replace/>}/>
+        <Route path="/admin/users"        element={<Navigate to="/clinic-admin/users" replace/>}/>
+        <Route path="/admin/profile"      element={<Navigate to="/clinic-admin/profile" replace/>}/>
+        <Route path="/admin/usage"        element={<Navigate to="/clinic-admin/usage" replace/>}/>
+        <Route path="/admin/settings"     element={<Navigate to="/clinic-admin/settings" replace/>}/>
+        <Route path="/admin/subscription" element={<Navigate to="/clinic-admin/subscription" replace/>}/>
+        <Route path="/admin/branches"     element={<Navigate to="/clinic-admin/branches" replace/>}/>
+        <Route path="/admin/blood-bank"   element={<Navigate to="/clinic-admin/blood-bank" replace/>}/>
+        <Route path="/admin/audit"        element={<Navigate to="/clinic-admin/audit" replace/>}/>
+
+        {/* ── Platform section (/platform/*) ── plane=platform, screens TBD */}
+        <Route path="/platform" element={<RequireAuth><RequirePlane plane="platform"><div>Platform Console — coming soon</div></RequirePlane></RequireAuth>}>
+          <Route index element={<Navigate to="/platform/dashboard" replace/>}/>
+          <Route path="dashboard" element={<div className="p-8 font-headline text-2xl">Platform Console</div>}/>
+        </Route>
+
+        {/* ── Clinic section (/clinic/*) ── plane=clinic, role=doctor|staff */}
+        <Route path="/clinic" element={<RequireAuth><RequirePlane plane="clinic"><ClinicLayout/></RequirePlane></RequireAuth>}>
           <Route index element={<Navigate to="/clinic/dashboard" replace/>}/>
           <Route path="dashboard"    element={<ClinicDashboard/>}/>
           <Route path="appointments" element={<ClinicAppointments/>}/>

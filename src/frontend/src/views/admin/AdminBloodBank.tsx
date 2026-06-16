@@ -97,7 +97,7 @@ function DonorModal({ onClose }: { onClose: () => void }) {
       <div className="flex flex-col gap-xs"><label className="text-label-lg text-on-surface-variant">Notes</label>
         <textarea className={`${inputCls} min-h-[64px] resize-none`} value={notes} onChange={e => setNotes(e.target.value)} rows={2} />
       </div>
-      {mut.isError && <p className="text-body-sm text-error">{(mut.error as any)?.response?.data?.error ?? 'Could not register donor.'}</p>}
+      {mut.isError && <p className="text-body-sm text-error">{(mut.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Could not register donor.'}</p>}
     </Modal>
   )
 }
@@ -132,7 +132,7 @@ function CollectionModal({ donors, onClose }: { donors: Donor[]; onClose: () => 
       <div className="flex flex-col gap-xs"><label className="text-label-lg text-on-surface-variant">Expiry date *</label>
         <input type="date" className={inputCls} value={expiry} onChange={e => setExpiry(e.target.value)} />
       </div>
-      {mut.isError && <p className="text-body-sm text-error">{(mut.error as any)?.response?.data?.error ?? 'Could not record collection.'}</p>}
+      {mut.isError && <p className="text-body-sm text-error">{(mut.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Could not record collection.'}</p>}
     </Modal>
   )
 }
@@ -201,7 +201,7 @@ function TransfusionModal({ bags, onClose }: { bags: Bag[]; onClose: () => void 
           </label>
         </div>
       )}
-      {mut.isError && <p className="text-body-sm text-error">{(mut.error as any)?.response?.data?.error ?? 'Could not record transfusion.'}</p>}
+      {mut.isError && <p className="text-body-sm text-error">{(mut.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Could not record transfusion.'}</p>}
     </Modal>
   )
 }
