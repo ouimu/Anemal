@@ -174,3 +174,18 @@ export function removeRoleFromUser(userId: number, roleId: number, tenantId: num
 export function countUserRoles(userId: number, tenantId: number) {
   return prisma.userRole.count({ where: { userId, tenantId } })
 }
+
+/**
+ * Return the IDs of every role assigned to a user within a tenant, read from
+ * the user_roles join table (not the legacy users.role FK).
+ *
+ * @param userId   - Target user.
+ * @param tenantId - Tenant scope (required for isolation).
+ */
+export async function findUserRoleIds(userId: number, tenantId: number): Promise<number[]> {
+  const rows = await prisma.userRole.findMany({
+    where:  { userId, tenantId },
+    select: { roleId: true },
+  })
+  return rows.map(r => r.roleId)
+}

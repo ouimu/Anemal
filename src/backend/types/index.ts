@@ -54,6 +54,28 @@ export interface LoginResponse {
   name:     string
 }
 
+// Current clinic-plane identity, returned by GET /auth/me.
+// roleIds come from the user_roles join table — not the legacy users.role FK.
+export interface MeResponse {
+  userId:      number
+  tenantId:    number
+  branchId:    number | null
+  name:        string
+  email:       string
+  roleIds:     number[]
+  permissions: string[]
+}
+
+// Current platform-plane identity, returned by GET /platform/auth/me.
+// permissions is a stub ([]) until the platform RBAC model lands.
+export interface PlatformMeResponse {
+  platformUserId: number
+  name:           string
+  email:          string
+  role:           string
+  permissions:    string[]
+}
+
 // ─── Users ───────────────────────────────────────────────────────────────────
 export interface CreateUserRequest {
   name:     string

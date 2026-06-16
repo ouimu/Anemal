@@ -10,11 +10,16 @@
 
 import { Router } from 'express'
 import { validate } from '../middlewares/validate.middleware'
-import { handlePlatformLogin, platformLoginSchema } from '../controllers/platform-auth.controller'
+import { authMiddleware } from '../middlewares/auth.middleware'
+import { requirePlane } from '../middlewares/permission.middleware'
+import { handlePlatformLogin, platformLoginSchema, handlePlatformMe } from '../controllers/platform-auth.controller'
 
 const router = Router()
 
 // POST /platform/auth/login — public; no auth middleware
 router.post('/login', validate(platformLoginSchema), handlePlatformLogin)
+
+// GET /platform/auth/me — current platform identity + permissions stub
+router.get('/me', authMiddleware, requirePlane('platform'), handlePlatformMe)
 
 export default router

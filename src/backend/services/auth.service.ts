@@ -4,8 +4,9 @@ import bcrypt from 'bcrypt'
 import { AppError } from '../utils/errors'
 import { signToken } from '../config/jwt'
 import * as authRepo from '../models/auth.repository'
-import { computePermSetVersion } from './permission.service'
-import type { JwtPayload, LoginRequest, LoginResponse } from '../types'
+import { findUserRoleIds } from '../models/role.repository'
+import { computePermSetVersion, resolvePermissions } from './permission.service'
+import type { JwtPayload, LoginRequest, LoginResponse, MeResponse } from '../types'
 
 export class AuthError extends AppError {
   constructor(message: string, statusCode: number) {
@@ -80,4 +81,27 @@ export async function switchBranch(
   const permSetVersion = await computePermSetVersion(userId, tenantId)
   const token = signToken({ userId, tenantId, branchId: targetBranchId, plane: 'clinic', permSetVersion, role })
   return { token, userId, tenantId, branchId: targetBranchId, role, name: user.name }
+}
+
+// Resolve the current clinic user's identity from their JWT context.
+// roleIds come from the user_roles join table; permissions are resolved through
+// the user_roles → roles → role_permissions chain.
+export async function getMe(tenantId: number, userId: number, branchId: number | undefined): Promise<MeResponse> {
+  const user = await authRepo.findUserById(tenantId, userId)
+  if (!user || !user.isActive) throw new AuthError('User not found', 404)
+
+  const [roleIds, perms] = await Promise.all([
+    findUserRoleIds(userId, tenantId),
+    resolvePermissions(userId, tenantId),
+  ])
+
+  return {
+    userId:      user.id,
+    tenantId,
+    branchId:    branchId ?? user.branchId,
+    name:        user.name,
+    email:       user.email,
+    roleIds,
+    permissions: [...perms],
+  }
 }
