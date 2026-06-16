@@ -5,34 +5,80 @@ import { create } from 'zustand'
 
 const STORAGE_KEY = 'vc_auth'
 
-interface AuthData {
-  token:    string
-  userId:   number
-  tenantId: number
-  role:     string
-  name:     string
+/** Shape written to web storage and held in memory. */
+export interface AuthData {
+  token:          string
+  plane:          'clinic' | 'platform'
+  userId:         number       // 0 for platform plane
+  tenantId:       number       // 0 for platform plane
+  branchId:       number | null
+  roleIds:        number[]
+  /** Transitional — keep until T-5B-02 removes role-string references. */
+  role:           string
+  /** Populated from /auth/me (or /platform/auth/me), never from JWT payload. */
+  permissions:    string[]
+  permSetVersion: number
+  name:           string
 }
 
-interface AuthState {
-  token:    string | null
-  userId:   number | null
-  tenantId: number | null
-  role:     string | null
-  name:     string | null
-  setAuth:  (data: AuthData, remember: boolean) => void
-  clearAuth: () => void
-  isAuthenticated: () => boolean
+interface AuthState extends AuthData {
+  setAuth:            (data: AuthData, remember: boolean) => void
+  clearAuth:          () => void
+  isAuthenticated:    () => boolean
+  /**
+   * Returns true when `code` is present in the current permissions array.
+   * Deny-by-default: returns false when the permissions array is empty.
+   */
+  hasPermission:      (code: string) => boolean
+  /**
+   * Re-fetches /auth/me (clinic plane) or /platform/auth/me (platform plane)
+   * using the stored token, then writes updated permissions and roleIds back to
+   * the store AND to persisted storage.  The caller decides when to invoke this.
+   */
+  refreshPermissions: () => Promise<void>
 }
 
-const EMPTY = { token: null, userId: null, tenantId: null, role: null, name: null }
+/** Sentinel value used for the logged-out / pre-login state. */
+const EMPTY: AuthData = {
+  token:          '',
+  plane:          'clinic',
+  userId:         0,
+  tenantId:       0,
+  branchId:       null,
+  roleIds:        [],
+  role:           '',
+  permissions:    [],
+  permSetVersion: 0,
+  name:           '',
+}
+
+/**
+ * Normalises a raw persisted object so that any missing fields introduced
+ * after the first release default gracefully rather than blowing up.
+ */
+function normalise(raw: Partial<AuthData>): AuthData {
+  return {
+    token:          raw.token          ?? '',
+    plane:          raw.plane          ?? 'clinic',
+    userId:         raw.userId         ?? 0,
+    tenantId:       raw.tenantId       ?? 0,
+    branchId:       raw.branchId       ?? null,
+    roleIds:        Array.isArray(raw.roleIds) ? raw.roleIds : [],
+    role:           raw.role           ?? '',
+    permissions:    Array.isArray(raw.permissions) ? raw.permissions : [],
+    permSetVersion: raw.permSetVersion ?? 0,
+    name:           raw.name           ?? '',
+  }
+}
 
 // Synchronously read persisted auth at module load — sessionStorage first (current
-// tab), then localStorage (remembered). Sync read means isAuthenticated() is already
+// tab), then localStorage (remembered).  Sync read means isAuthenticated() is already
 // true on the first render after F5, so ProtectedRoute does not bounce to /login.
 function loadPersisted(): AuthData | null {
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as AuthData) : null
+    if (!raw) return null
+    return normalise(JSON.parse(raw) as Partial<AuthData>)
   } catch {
     return null
   }
@@ -41,6 +87,7 @@ function loadPersisted(): AuthData | null {
 export const useAuthStore = create<AuthState>((set, get) => ({
   ...EMPTY,
   ...(loadPersisted() ?? {}),
+
   setAuth: (data, remember) => {
     try {
       const target = remember ? localStorage : sessionStorage
@@ -50,6 +97,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch { /* storage unavailable (private mode) — keep in-memory only */ }
     set(data)
   },
+
   clearAuth: () => {
     try {
       localStorage.removeItem(STORAGE_KEY)
@@ -57,5 +105,43 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch { /* ignore */ }
     set(EMPTY)
   },
-  isAuthenticated: () => !!get().token,
+
+  isAuthenticated: () => get().token !== '',
+
+  hasPermission: (code) => get().permissions.includes(code),
+
+  refreshPermissions: async () => {
+    const { token, plane } = get()
+    if (!token) return
+
+    const endpoint = plane === 'platform' ? '/platform/auth/me' : '/auth/me'
+    const res = await fetch(endpoint, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) return
+
+    const body = await res.json() as {
+      permissions: string[]
+      roleIds?: number[]
+      permSetVersion?: number
+    }
+
+    const patch: Partial<AuthData> = {
+      permissions:    Array.isArray(body.permissions) ? body.permissions : [],
+      roleIds:        Array.isArray(body.roleIds)     ? body.roleIds     : get().roleIds,
+      permSetVersion: body.permSetVersion             ?? get().permSetVersion,
+    }
+
+    // Persist the updated data so the next page load reflects the new permissions.
+    const next: AuthData = { ...get(), ...patch }
+    try {
+      const stored =
+        localStorage.getItem(STORAGE_KEY) !== null
+          ? localStorage
+          : sessionStorage
+      stored.setItem(STORAGE_KEY, JSON.stringify(next))
+    } catch { /* ignore */ }
+
+    set(patch)
+  },
 }))
