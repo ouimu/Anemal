@@ -7,6 +7,7 @@ import LoginView from './views/LoginView'
 import AdminLayout from './layouts/AdminLayout'
 import ClinicLayout from './layouts/ClinicLayout'
 import SettingsLayout from './layouts/SettingsLayout'
+import PlatformLayout from './layouts/PlatformLayout'
 
 // ── Admin pages ──────────────────────────────────────────────────────────────
 const AdminDashboard    = lazy(() => import('./views/admin/AdminDashboard'))
@@ -25,6 +26,17 @@ const ClinicInventory    = lazy(() => import('./views/clinic/ClinicInventory'))
 const ClinicBilling      = lazy(() => import('./views/clinic/ClinicBilling'))
 const ClinicInpatient    = lazy(() => import('./views/clinic/ClinicInpatient'))
 const ClinicGrooming     = lazy(() => import('./views/clinic/ClinicGrooming'))
+
+// ── T-5F-01: Clinic Role Editor ──────────────────────────────────────────────
+const RoleEditorView = lazy(() => import('./views/clinic/RoleEditorView'))
+
+// ── T-5F-02: Platform Console ────────────────────────────────────────────────
+const PlatformLoginView    = lazy(() => import('./views/platform/PlatformLoginView'))
+const CustomerListView     = lazy(() => import('./views/platform/CustomerListView'))
+const CustomerDetailView   = lazy(() => import('./views/platform/CustomerDetailView'))
+const PlatformPlansView    = lazy(() => import('./views/platform/PlatformPlansView'))
+const PlatformSettingsView = lazy(() => import('./views/platform/PlatformSettingsView'))
+const PlatformAuditView    = lazy(() => import('./views/platform/PlatformAuditView'))
 
 // ── Phase 4 admin pages (Session B stubs) ────────────────────────────────────
 const AdminBranches  = lazy(() => import('./views/admin/AdminBranches'))
@@ -90,6 +102,7 @@ export default function App() {
           <Route path="branches"     element={<RequirePermission perm="clinic.branch.view"><AdminBranches/></RequirePermission>}/>
           <Route path="blood-bank"   element={<RequirePermission perm="bloodbank.view"><AdminBloodBank/></RequirePermission>}/>
           <Route path="audit"        element={<RequirePermission perm="audit.view"><AdminAudit/></RequirePermission>}/>
+          <Route path="roles"        element={<RequirePermission perm="roles.view"><RoleEditorView/></RequirePermission>}/>
         </Route>
 
         {/* ── Legacy /admin/* redirects → /clinic-admin/* ── */}
@@ -104,10 +117,15 @@ export default function App() {
         <Route path="/admin/blood-bank"   element={<Navigate to="/clinic-admin/blood-bank" replace/>}/>
         <Route path="/admin/audit"        element={<Navigate to="/clinic-admin/audit" replace/>}/>
 
-        {/* ── Platform section (/platform/*) ── plane=platform, screens TBD */}
-        <Route path="/platform" element={<RequireAuth><RequirePlane plane="platform"><div>Platform Console — coming soon</div></RequirePlane></RequireAuth>}>
-          <Route index element={<Navigate to="/platform/dashboard" replace/>}/>
-          <Route path="dashboard" element={<div className="p-8 font-headline text-2xl">Platform Console</div>}/>
+        {/* ── Platform Console (/platform/*) ── platform-plane JWT only, no permission codes */}
+        <Route path="/platform/login" element={<PlatformLoginView/>}/>
+        <Route path="/platform" element={<RequireAuth><RequirePlane plane="platform"><PlatformLayout/></RequirePlane></RequireAuth>}>
+          <Route index element={<Navigate to="/platform/customers" replace/>}/>
+          <Route path="customers"     element={<CustomerListView/>}/>
+          <Route path="customers/:id" element={<CustomerDetailView/>}/>
+          <Route path="plans"         element={<PlatformPlansView/>}/>
+          <Route path="settings"      element={<PlatformSettingsView/>}/>
+          <Route path="audit"         element={<PlatformAuditView/>}/>
         </Route>
 
         {/* ── Clinic section (/clinic/*) ── plane=clinic, role=doctor|staff */}

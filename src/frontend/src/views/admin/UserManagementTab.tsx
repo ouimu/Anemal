@@ -3,6 +3,9 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import { useAuthStore } from '../../store/authStore'
+import Can from '../../components/Can'
+import RolePicker from '../../components/roles/RolePicker'
+import { useUserRolesQuery } from '../../hooks/useUserRoles'
 
 interface User { id: number; name: string; email: string; role: string; isActive: boolean; createdAt: string }
 
@@ -20,6 +23,9 @@ const AVATAR_BG: Record<string, string> = {
 function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; onClose: () => void }) {
   const qc = useQueryClient()
   const isNew = !!user.isNew
+  const editUserId = user.id ?? 0
+  const { data: userRolesData, refetch: refetchUserRoles } = useUserRolesQuery(isNew ? 0 : editUserId)
+  const userRoles = userRolesData ?? []
   const [form, setForm] = useState({ name: user.name ?? '', email: user.email ?? '', role: user.role ?? 'staff', password: '', isActive: user.isActive ?? true })
 
   const save = useMutation({
@@ -67,6 +73,18 @@ function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; o
               <input type="checkbox" checked={form.isActive} onChange={e => setForm(p => ({ ...p, isActive: e.target.checked }))} className="w-4 h-4"/>
               <span className="text-sm text-on-surface">Active account</span>
             </label>
+          )}
+          {!isNew && (
+            <>
+              <hr className="border-outline-variant my-4" />
+              <Can perm="staff.assign_role">
+                <RolePicker
+                  userId={editUserId}
+                  currentRoles={userRoles}
+                  onRolesChanged={() => { void refetchUserRoles() }}
+                />
+              </Can>
+            </>
           )}
         </div>
         {save.isError && <p className="text-xs text-error-on-container mt-2">Save failed — check all fields.</p>}

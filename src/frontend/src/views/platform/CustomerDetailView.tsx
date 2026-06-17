@@ -1,0 +1,326 @@
+/**
+ * CustomerDetailView — /platform/customers/:id
+ * Four-tab detail page: Overview | Plan & Quota | Provisioning | Usage
+ */
+import { useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import {
+  usePlatformCustomer,
+  usePlatformCustomerUsage,
+  useSuspendCustomer,
+  useReactivateCustomer,
+  useUpdatePlatformCustomer,
+} from '../../hooks/usePlatformCustomers'
+import { usePlatformPlans } from '../../hooks/usePlatformPlans'
+import StatusBadge from '../../components/platform/StatusBadge'
+import QuotaBar from '../../components/platform/QuotaBar'
+import MaterialIcon from '../../components/MaterialIcon'
+
+// ── Tab type ─────────────────────────────────────────────────────────────────
+
+type Tab = 'overview' | 'quota' | 'provisioning' | 'usage'
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'overview',     label: 'Overview' },
+  { id: 'quota',        label: 'Plan & Quota' },
+  { id: 'provisioning', label: 'Provisioning' },
+  { id: 'usage',        label: 'Usage' },
+]
+
+// ── Overview tab ─────────────────────────────────────────────────────────────
+
+function OverviewTab({ id }: { id: number }) {
+  const { data: customer, isLoading } = usePlatformCustomer(id)
+  const suspend    = useSuspendCustomer(id)
+  const reactivate = useReactivateCustomer(id)
+
+  if (isLoading || !customer) {
+    return <div className="p-lg text-on-surface-variant text-body-sm">Loading…</div>
+  }
+
+  const isSuspended = customer.status === 'suspended'
+
+  return (
+    <div className="space-y-lg">
+      <div className="bg-surface rounded-lg shadow-lvl1 p-lg">
+        <h3 className="text-headline-xs font-headline font-bold text-on-surface mb-md">Clinic Info</h3>
+        <dl className="grid grid-cols-2 gap-md text-body-sm">
+          <div>
+            <dt className="text-on-surface-variant">Name</dt>
+            <dd className="text-on-surface font-medium mt-xs">{customer.name}</dd>
+          </div>
+          <div>
+            <dt className="text-on-surface-variant">Subdomain</dt>
+            <dd className="text-on-surface font-code mt-xs">{customer.subdomain}</dd>
+          </div>
+          <div>
+            <dt className="text-on-surface-variant">Status</dt>
+            <dd className="mt-xs"><StatusBadge status={customer.status} /></dd>
+          </div>
+          <div>
+            <dt className="text-on-surface-variant">Plan</dt>
+            <dd className="text-on-surface mt-xs">{customer.planName}</dd>
+          </div>
+          {customer.trialEndsAt && (
+            <div>
+              <dt className="text-on-surface-variant">Trial Ends</dt>
+              <dd className="text-on-surface mt-xs">
+                {new Date(customer.trialEndsAt).toLocaleDateString()}
+              </dd>
+            </div>
+          )}
+          <div>
+            <dt className="text-on-surface-variant">Users</dt>
+            <dd className="text-on-surface mt-xs">{customer.userCount}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div className="bg-surface rounded-lg shadow-lvl1 p-lg">
+        <h3 className="text-headline-xs font-headline font-bold text-on-surface mb-md">Actions</h3>
+        {isSuspended ? (
+          <button
+            onClick={() => reactivate.mutate()}
+            disabled={reactivate.isPending}
+            className="flex items-center gap-sm min-h-[44px] px-md bg-secondary text-on-secondary rounded text-body-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+          >
+            {reactivate.isPending && (
+              <span className="w-4 h-4 border-2 border-on-secondary border-t-transparent rounded-full animate-spin" />
+            )}
+            <MaterialIcon name="play_circle" size={18} />
+            Reactivate Tenant
+          </button>
+        ) : (
+          <button
+            onClick={() => suspend.mutate()}
+            disabled={suspend.isPending}
+            className="flex items-center gap-sm min-h-[44px] px-md bg-error text-on-error rounded text-body-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+          >
+            {suspend.isPending && (
+              <span className="w-4 h-4 border-2 border-on-error border-t-transparent rounded-full animate-spin" />
+            )}
+            <MaterialIcon name="block" size={18} />
+            Suspend Tenant
+          </button>
+        )}
+        <p className="text-label-md text-on-surface-variant mt-sm">
+          {isSuspended
+            ? 'Reactivating will immediately restore clinic access.'
+            : 'Suspending blocks all clinic logins immediately.'}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ── Plan & Quota tab ──────────────────────────────────────────────────────────
+
+function QuotaTab({ id }: { id: number }) {
+  const { data: customer, isLoading } = usePlatformCustomer(id)
+  const { data: plans }               = usePlatformPlans()
+  const update                        = useUpdatePlatformCustomer(id)
+
+  const [planId,      setPlanId]      = useState<number | null>(null)
+  const [maxBranches, setMaxBranches] = useState<string>('')
+  const [maxUsers,    setMaxUsers]    = useState<string>('')
+  const [maxOwners,   setMaxOwners]   = useState<string>('')
+
+  // Initialise form values from loaded data (only once)
+  const [initialized, setInitialized] = useState(false)
+  if (customer && !initialized) {
+    setPlanId(customer.planId)
+    setMaxBranches(customer.maxBranches !== null ? String(customer.maxBranches) : '')
+    setMaxUsers(customer.maxUsers !== null ? String(customer.maxUsers) : '')
+    setMaxOwners(customer.maxOwners !== null ? String(customer.maxOwners) : '')
+    setInitialized(true)
+  }
+
+  if (isLoading || !customer) {
+    return <div className="p-lg text-on-surface-variant text-body-sm">Loading…</div>
+  }
+
+  const activePlans = (plans ?? []).filter((p) => !p.isRetired)
+
+  const handleSave = () => {
+    update.mutate({
+      planId:      planId ?? undefined,
+      maxBranches: maxBranches !== '' ? Number(maxBranches) : null,
+      maxUsers:    maxUsers    !== '' ? Number(maxUsers)    : null,
+      maxOwners:   maxOwners   !== '' ? Number(maxOwners)   : null,
+    })
+  }
+
+  return (
+    <div className="space-y-lg">
+      <div className="bg-surface rounded-lg shadow-lvl1 p-lg space-y-md">
+        <h3 className="text-headline-xs font-headline font-bold text-on-surface">Plan</h3>
+        <select
+          value={planId ?? ''}
+          onChange={(e) => setPlanId(Number(e.target.value))}
+          className="w-full min-h-[44px] px-md border border-outline-variant rounded text-body-md text-on-surface bg-surface focus:outline-none focus:border-secondary"
+        >
+          {activePlans.map((p) => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="bg-surface rounded-lg shadow-lvl1 p-lg space-y-md">
+        <h3 className="text-headline-xs font-headline font-bold text-on-surface">
+          Quota Overrides
+          <span className="ml-sm text-label-md font-normal text-on-surface-variant">
+            (blank = use plan default)
+          </span>
+        </h3>
+
+        {([
+          { id: 'maxBranches', label: 'Max Branches', value: maxBranches, set: setMaxBranches },
+          { id: 'maxUsers',    label: 'Max Users',    value: maxUsers,    set: setMaxUsers },
+          { id: 'maxOwners',   label: 'Max Owners',   value: maxOwners,   set: setMaxOwners },
+        ] as const).map((field) => (
+          <div key={field.id}>
+            <label className="block text-label-md text-on-surface-variant mb-xs" htmlFor={field.id}>
+              {field.label}
+            </label>
+            <input
+              id={field.id}
+              type="number"
+              min={0}
+              value={field.value}
+              onChange={(e) => field.set(e.target.value)}
+              placeholder="Inherit from plan"
+              className="w-full min-h-[44px] px-md border border-outline-variant rounded text-body-md text-on-surface bg-surface focus:outline-none focus:border-secondary"
+            />
+          </div>
+        ))}
+
+        {update.error && (
+          <p className="text-label-md text-error">Save failed. Please try again.</p>
+        )}
+
+        <button
+          onClick={handleSave}
+          disabled={update.isPending}
+          className="flex items-center gap-sm min-h-[44px] px-md bg-primary text-on-primary rounded text-body-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+        >
+          {update.isPending && (
+            <span className="w-4 h-4 border-2 border-on-primary border-t-transparent rounded-full animate-spin" />
+          )}
+          <MaterialIcon name="save" size={18} />
+          Save Changes
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Provisioning tab ──────────────────────────────────────────────────────────
+
+function ProvisioningTab() {
+  return (
+    <div className="bg-surface rounded-lg shadow-lvl1 p-lg">
+      <div className="flex items-center gap-sm text-on-surface-variant">
+        <MaterialIcon name="construction" size={20} />
+        <p className="text-body-sm">
+          Provisioning settings (S3, SMTP, base providers) are managed via Platform Settings
+          and will be per-tenant in a future release.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ── Usage tab ─────────────────────────────────────────────────────────────────
+
+function UsageTab({ id }: { id: number }) {
+  const { data: usage, isLoading, isError } = usePlatformCustomerUsage(id)
+
+  if (isLoading) {
+    return <div className="p-lg text-on-surface-variant text-body-sm">Loading usage…</div>
+  }
+
+  if (isError || !usage) {
+    return (
+      <div className="p-lg text-error text-body-sm flex items-center gap-sm">
+        <MaterialIcon name="error_outline" size={18} />
+        Failed to load usage data.
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-surface rounded-lg shadow-lvl1 p-lg space-y-lg">
+      <h3 className="text-headline-xs font-headline font-bold text-on-surface">Live Usage</h3>
+      <QuotaBar label="Branches"  current={usage.branches.current} limit={usage.branches.limit} />
+      <QuotaBar label="Staff"     current={usage.staff.current}    limit={usage.staff.limit} />
+      <QuotaBar label="Customers" current={usage.owners.current}   limit={usage.owners.limit} />
+    </div>
+  )
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
+export default function CustomerDetailView() {
+  const { id }          = useParams<{ id: string }>()
+  const customerId      = Number(id)
+  const navigate        = useNavigate()
+  const [activeTab, setActiveTab] = useState<Tab>('overview')
+  const { data: customer }        = usePlatformCustomer(customerId)
+
+  const tabClass = (tab: Tab) =>
+    tab === activeTab
+      ? 'min-h-[44px] px-md border-b-2 border-primary text-primary text-body-sm font-medium'
+      : 'min-h-[44px] px-md border-b-2 border-transparent text-on-surface-variant text-body-sm hover:text-on-surface transition-colors'
+
+  return (
+    <div className="p-lg space-y-lg">
+      {/* ── Back + title ──────────────────────────────────────────────── */}
+      <div className="flex items-center gap-md">
+        <button
+          onClick={() => navigate('/platform/customers')}
+          className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-surface-container text-on-surface-variant transition-colors"
+          aria-label="Back to customers"
+        >
+          <MaterialIcon name="arrow_back" size={20} />
+        </button>
+        <div>
+          <h1 className="text-headline-md font-headline font-bold text-on-surface">
+            {customer?.name ?? 'Customer Detail'}
+          </h1>
+          {customer && (
+            <p className="text-body-sm text-on-surface-variant mt-xs">
+              {customer.subdomain}.anemal.app
+            </p>
+          )}
+        </div>
+        {customer && (
+          <div className="ml-auto">
+            <StatusBadge status={customer.status} />
+          </div>
+        )}
+      </div>
+
+      {/* ── Tab bar ───────────────────────────────────────────────────── */}
+      <div className="bg-surface rounded-lg shadow-lvl1 overflow-hidden">
+        <div className="flex border-b border-outline-variant overflow-x-auto">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id)}
+              className={tabClass(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="p-lg">
+          {activeTab === 'overview'     && <OverviewTab     id={customerId} />}
+          {activeTab === 'quota'        && <QuotaTab        id={customerId} />}
+          {activeTab === 'provisioning' && <ProvisioningTab />}
+          {activeTab === 'usage'        && <UsageTab        id={customerId} />}
+        </div>
+      </div>
+    </div>
+  )
+}
