@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useT } from '../../i18n'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
@@ -21,6 +22,7 @@ interface CartItem { key: number; description: string; itemType: string; qty: nu
 let keySeq = 1
 
 export default function ClinicBilling() {
+  const t = useT()
   const [petQuery, setPetQuery] = useState('')
   const [pet, setPet] = useState<PetResult | null>(null)
   const [recordId, setRecordId] = useState<number | null>(null)
@@ -172,7 +174,7 @@ export default function ClinicBilling() {
     <div className="p-lg">
       <div className="flex items-start justify-between mb-lg">
         <div>
-          <h2 className="text-headline-lg font-headline font-bold text-primary">Billing &amp; POS</h2>
+          <h2 className="text-headline-lg font-headline font-bold text-primary">{t('clinic.billing.createInvoice')}</h2>
           <p className="text-body-md text-on-surface-variant mt-xs">Build an invoice from a visit or sell retail items</p>
         </div>
         {(pet || cart.length > 0) && (
@@ -437,6 +439,7 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 function SuccessModal({ invoice, pet, method, earnedMsg, onClose }: { invoice: Invoice; pet: { petName: string; ownerName: string } | null; method: string; earnedMsg?: string; onClose: () => void }) {
+  const t = useT()
   async function downloadPdf() {
     const res = await api.get(`/api/invoices/${invoice.id}/pdf`, { responseType: 'blob' })
     const url = URL.createObjectURL(new Blob([res.data as BlobPart], { type: 'application/pdf' }))
@@ -486,7 +489,7 @@ function SuccessModal({ invoice, pet, method, earnedMsg, onClose }: { invoice: I
         )}
         <div className="flex gap-sm">
           <button onClick={print} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-on-surface-variant font-medium hover:bg-surface-container-low transition-colors flex items-center justify-center gap-xs text-body-sm">
-            <MaterialIcon name="print" size={16} /> Print
+            <MaterialIcon name="print" size={16} /> {t('clinic.billing.print')}
           </button>
           <button onClick={downloadPdf} className="flex-1 min-h-[44px] rounded-lg border border-secondary text-secondary font-medium hover:bg-surface-container-low transition-colors flex items-center justify-center gap-xs text-body-sm">
             <MaterialIcon name="download" size={16} /> PDF

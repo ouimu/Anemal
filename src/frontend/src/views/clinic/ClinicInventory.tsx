@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { useT } from '../../i18n'
 import MaterialIcon from '../../components/MaterialIcon'
 import BarcodeScanner from '../../components/BarcodeScanner'
 import {
@@ -23,6 +24,7 @@ const inputCls =
 const labelCls = 'text-label-md text-on-surface-variant uppercase tracking-wider mb-sm block'
 
 export default function ClinicInventory() {
+  const t = useT()
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('')
   const [adding, setAdding] = useState(false)
@@ -53,7 +55,7 @@ export default function ClinicInventory() {
           onClick={() => setAdding(true)}
           className="flex items-center gap-sm bg-primary text-primary-on rounded-lg px-lg min-h-[44px] font-semibold text-body-sm hover:bg-primary/90 transition-colors"
         >
-          <MaterialIcon name="add_circle" size={18} /> Add Product
+          <MaterialIcon name="add_circle" size={18} /> {t('clinic.inventory.addItem')}
         </button>
       </div>
 
@@ -99,7 +101,7 @@ export default function ClinicInventory() {
           <table className="w-full text-body-sm">
             <thead className="bg-surface-container-low">
               <tr>
-                {['Product', 'Category', 'Stock', 'Min', 'Expiry', 'Status', ''].map((h) => (
+                {[t('clinic.inventory.productName'), 'Category', t('clinic.inventory.quantity'), t('clinic.inventory.minStock'), t('clinic.inventory.expiry'), 'Status', ''].map((h) => (
                   <th key={h} className="text-left px-md py-sm text-label-md text-on-surface-variant uppercase tracking-wider font-medium">{h}</th>
                 ))}
               </tr>

@@ -181,6 +181,49 @@ const en: Dict = {
   'clinic.emr.temperature': 'Temperature (°C)',
   'clinic.emr.saveRecord': 'Save Record',
 
+  // Clinic inventory
+  'clinic.inventory.productName': 'Product name',
+  'clinic.inventory.quantity': 'Quantity',
+  'clinic.inventory.unit': 'Unit',
+  'clinic.inventory.costPrice': 'Cost price',
+  'clinic.inventory.sellPrice': 'Sell price',
+  'clinic.inventory.minStock': 'Min stock level',
+  'clinic.inventory.expiry': 'Expiry date',
+  'clinic.inventory.addItem': 'Add Item',
+  'clinic.inventory.lowStockAlert': 'Low Stock Alert',
+
+  // Clinic billing
+  'clinic.billing.invoiceNo': 'Invoice No.',
+  'clinic.billing.patient': 'Patient',
+  'clinic.billing.total': 'Total',
+  'clinic.billing.status': 'Status',
+  'clinic.billing.paid': 'Paid',
+  'clinic.billing.unpaid': 'Unpaid',
+  'clinic.billing.createInvoice': 'Create Invoice',
+  'clinic.billing.payNow': 'Pay Now',
+  'clinic.billing.print': 'Print',
+
+  // Admin users
+  'admin.users.title': 'Users & Roles',
+  'admin.users.addUser': 'Add User',
+  'admin.users.fullName': 'Full name',
+  'admin.users.password': 'Password (min 8 chars)',
+  'admin.users.role': 'Role',
+  'admin.users.activeAccount': 'Active account',
+  'admin.users.noMatch': 'No users match the selected filters.',
+  'admin.users.doctor': 'Doctor',
+  'admin.users.staff': 'Staff',
+  'admin.users.admin': 'Admin',
+
+  // Admin profile
+  'admin.profile.title': 'Clinic Profile',
+  'admin.profile.clinicName': 'Clinic name',
+  'admin.profile.subdomain': 'Subdomain',
+  'admin.profile.address': 'Address',
+  'admin.profile.taxId': 'Tax ID',
+  'admin.profile.uploadLogo': 'Upload logo',
+  'admin.profile.uploading': 'Uploading…',
+
   // Admin dashboard
   'admin.dashboard.welcome': 'Welcome back, {name}',
   'admin.dashboard.subtitle': 'Clinic overview · Admin panel',
@@ -188,6 +231,31 @@ const en: Dict = {
   'admin.dashboard.currentTier': 'Current subscription tier',
   'admin.dashboard.quickActions': 'Quick actions',
   'admin.dashboard.revenueByBranch': 'Revenue by Branch',
+
+  // Role editor (T-5F)
+  'roles.editorTitle': 'Role Editor',
+  'roles.editorSubtitle': 'Manage clinic roles and permissions',
+  'roles.systemBadge': 'SYSTEM',
+  'roles.assignedCount': '{n} user(s)',
+  'roles.cloneToEdit': 'Clone to edit',
+  'roles.cloneRole': 'Clone Role',
+  'roles.cloneNewName': 'New role name',
+  'roles.deleteRole': 'Delete Role',
+  'roles.deleteBlocked': 'Reassign {n} staff before deleting this role',
+  'roles.permissionsSection': 'Permissions',
+  'roles.savePermissions': 'Save Permissions',
+  'roles.noPermission': 'You do not hold this permission',
+  'roles.assignStaff': 'Assign to Staff',
+  'roles.cannotRemoveLast': 'Cannot remove last role',
+  'roles.lastRoleDesc': 'A user must keep at least one role. Assign another role before removing this one.',
+  'roles.cannotGrant': 'You cannot grant this role. Contact your admin.',
+  'roles.selfDemotionTitle': 'Remove your own admin role?',
+  'roles.selfDemotionDesc': 'Removing this role will reduce your own access level.',
+  'roles.keepRole': 'Keep role',
+  'roles.removeAnyway': 'Remove anyway',
+  'roles.addRole': 'Add role',
+  'roles.noRoles': 'This user has no roles. Assign at least one role.',
+  'roles.loadError': 'Cannot load roles. Contact your admin.',
 }
 
 const th: Dict = {
@@ -353,6 +421,49 @@ const th: Dict = {
   'clinic.emr.temperature': 'อุณหภูมิ (°C)',
   'clinic.emr.saveRecord': 'บันทึกข้อมูล',
 
+  // Clinic inventory
+  'clinic.inventory.productName': 'ชื่อสินค้า',
+  'clinic.inventory.quantity': 'จำนวนคงเหลือ',
+  'clinic.inventory.unit': 'หน่วย',
+  'clinic.inventory.costPrice': 'ราคาทุน',
+  'clinic.inventory.sellPrice': 'ราคาขาย',
+  'clinic.inventory.minStock': 'จำนวนขั้นต่ำ',
+  'clinic.inventory.expiry': 'วันหมดอายุ',
+  'clinic.inventory.addItem': 'เพิ่มสินค้า',
+  'clinic.inventory.lowStockAlert': 'แจ้งเตือนสินค้าใกล้หมด',
+
+  // Clinic billing
+  'clinic.billing.invoiceNo': 'เลขที่ใบแจ้งหนี้',
+  'clinic.billing.patient': 'ผู้ป่วย',
+  'clinic.billing.total': 'ยอดรวม',
+  'clinic.billing.status': 'สถานะ',
+  'clinic.billing.paid': 'ชำระแล้ว',
+  'clinic.billing.unpaid': 'ยังไม่ชำระ',
+  'clinic.billing.createInvoice': 'สร้างใบแจ้งหนี้',
+  'clinic.billing.payNow': 'ชำระเงิน',
+  'clinic.billing.print': 'พิมพ์',
+
+  // Admin users
+  'admin.users.title': 'ผู้ใช้และบทบาท',
+  'admin.users.addUser': 'เพิ่มผู้ใช้',
+  'admin.users.fullName': 'ชื่อเต็ม',
+  'admin.users.password': 'รหัสผ่าน (ขั้นต่ำ 8 ตัวอักษร)',
+  'admin.users.role': 'บทบาท',
+  'admin.users.activeAccount': 'บัญชีที่ใช้งานอยู่',
+  'admin.users.noMatch': 'ไม่พบผู้ใช้ที่ตรงกับตัวกรองที่เลือก',
+  'admin.users.doctor': 'สัตวแพทย์',
+  'admin.users.staff': 'เจ้าหน้าที่',
+  'admin.users.admin': 'ผู้ดูแลระบบ',
+
+  // Admin profile
+  'admin.profile.title': 'โปรไฟล์คลินิก',
+  'admin.profile.clinicName': 'ชื่อคลินิก',
+  'admin.profile.subdomain': 'ชื่อย่อ',
+  'admin.profile.address': 'ที่อยู่',
+  'admin.profile.taxId': 'หมายเลขประจำตัวผู้เสียภาษี',
+  'admin.profile.uploadLogo': 'อัปโหลดโลโก้',
+  'admin.profile.uploading': 'กำลังอัปโหลด…',
+
   // Admin dashboard
   'admin.dashboard.welcome': 'ยินดีต้อนรับกลับ, {name}',
   'admin.dashboard.subtitle': 'ภาพรวมคลินิก · แผงผู้ดูแล',
@@ -360,6 +471,31 @@ const th: Dict = {
   'admin.dashboard.currentTier': 'ระดับการสมัครสมาชิกปัจจุบัน',
   'admin.dashboard.quickActions': 'การดำเนินการด่วน',
   'admin.dashboard.revenueByBranch': 'รายได้ตามสาขา',
+
+  // Role editor (T-5F)
+  'roles.editorTitle': 'ตัวแก้ไขบทบาท',
+  'roles.editorSubtitle': 'จัดการบทบาทและสิทธิ์ของคลินิก',
+  'roles.systemBadge': 'ระบบ',
+  'roles.assignedCount': '{n} ผู้ใช้',
+  'roles.cloneToEdit': 'คัดลอกเพื่อแก้ไข',
+  'roles.cloneRole': 'คัดลอกบทบาท',
+  'roles.cloneNewName': 'ชื่อบทบาทใหม่',
+  'roles.deleteRole': 'ลบบทบาท',
+  'roles.deleteBlocked': 'โยกย้าย {n} พนักงานก่อนลบบทบาทนี้',
+  'roles.permissionsSection': 'สิทธิ์การใช้งาน',
+  'roles.savePermissions': 'บันทึกสิทธิ์',
+  'roles.noPermission': 'คุณไม่มีสิทธิ์นี้',
+  'roles.assignStaff': 'มอบหมายให้เจ้าหน้าที่',
+  'roles.cannotRemoveLast': 'ไม่สามารถลบบทบาทสุดท้ายได้',
+  'roles.lastRoleDesc': 'ผู้ใช้ต้องมีบทบาทอย่างน้อยหนึ่งบทบาท กรุณามอบบทบาทอื่นก่อนลบ',
+  'roles.cannotGrant': 'คุณไม่สามารถมอบบทบาทนี้ได้ กรุณาติดต่อผู้ดูแลระบบ',
+  'roles.selfDemotionTitle': 'ลบบทบาทผู้ดูแลของคุณเอง?',
+  'roles.selfDemotionDesc': 'การลบบทบาทนี้จะลดระดับสิทธิ์การเข้าถึงของคุณเอง',
+  'roles.keepRole': 'เก็บบทบาทไว้',
+  'roles.removeAnyway': 'ลบออกอยู่ดี',
+  'roles.addRole': 'เพิ่มบทบาท',
+  'roles.noRoles': 'ผู้ใช้นี้ยังไม่มีบทบาท กรุณามอบหมายอย่างน้อยหนึ่งบทบาท',
+  'roles.loadError': 'ไม่สามารถโหลดบทบาทได้ กรุณาติดต่อผู้ดูแลระบบ',
 }
 
 const DICTS: Record<Language, Dict> = { en, th }
