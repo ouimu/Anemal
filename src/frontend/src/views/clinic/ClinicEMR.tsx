@@ -446,7 +446,7 @@ export default function ClinicEMR() {
             {soapTab === 'Subjective' && (
               <textarea
                 className="w-full bg-surface-container-low rounded-xl px-lg py-md text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary min-h-[200px] resize-none"
-                placeholder="Chief complaint, history, owner-reported symptoms…"
+                placeholder={t('clinic.emr.notes')}
                 value={subjective}
                 onChange={e => setSubjective(e.target.value)}
               />
@@ -458,8 +458,8 @@ export default function ClinicEMR() {
                 <div>
                   <p className="text-body-sm font-semibold text-on-surface-variant mb-md">Vital Signs</p>
                   <div className="flex flex-wrap gap-md">
-                    <VitalStepper label="Weight" unit="kg" value={weightKg} onChange={setWeightKg} step={0.1} />
-                    <VitalStepper label="Temp" unit="°C" value={tempC} onChange={setTempC} step={0.1} />
+                    <VitalStepper label={t('clinic.emr.weight')} unit="kg" value={weightKg} onChange={setWeightKg} step={0.1} />
+                    <VitalStepper label={t('clinic.emr.temperature')} unit="°C" value={tempC} onChange={setTempC} step={0.1} />
                     <VitalStepper label="Heart Rate" unit="bpm" value={heartRate} onChange={setHeartRate} step={1} min={1} />
                     <VitalStepper label="Resp Rate" unit="rpm" value={respRate} onChange={setRespRate} step={1} min={1} />
                   </div>
@@ -487,7 +487,7 @@ export default function ClinicEMR() {
             {soapTab === 'Assessment' && (
               <textarea
                 className="w-full bg-surface-container-low rounded-xl px-lg py-md text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary min-h-[200px] resize-none"
-                placeholder="Diagnosis, differential diagnosis…"
+                placeholder={t('clinic.emr.diagnosis')}
                 value={assessment}
                 onChange={e => setAssessment(e.target.value)}
               />
@@ -496,7 +496,7 @@ export default function ClinicEMR() {
             {soapTab === 'Plan' && (
               <textarea
                 className="w-full bg-surface-container-low rounded-xl px-lg py-md text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary min-h-[200px] resize-none"
-                placeholder="Treatment plan, follow-up, referrals…"
+                placeholder={t('clinic.emr.treatment')}
                 value={plan}
                 onChange={e => setPlan(e.target.value)}
               />
