@@ -503,6 +503,8 @@ const th: Dict = {
 const DICTS: Record<Language, Dict> = { en, th }
 
 /** Translate a key for an explicit language (non-hook contexts). */
+export { en, th }
+
 export function translate(lang: Language, key: string): string {
   return DICTS[lang]?.[key] ?? en[key] ?? key
 }

@@ -128,8 +128,8 @@ describe('AC-1 role list rendering', () => {
     expect(screen.getByText('Senior Receptionist')).toBeInTheDocument()
     expect(screen.getByText('SYSTEM')).toBeInTheDocument()
     // assignedUserCount chips
-    expect(screen.getByText('3 staff')).toBeInTheDocument()
-    expect(screen.getByText('2 staff')).toBeInTheDocument()
+    expect(screen.getByText('3 user(s)')).toBeInTheDocument()
+    expect(screen.getByText('2 user(s)')).toBeInTheDocument()
   })
 
   it('does not render a SYSTEM badge on a custom role', () => {
@@ -167,14 +167,14 @@ describe('AC-3 custom role toggle fires', () => {
 
 // ── AC-4 ────────────────────────────────────────────────────────────────────
 describe('AC-4 save sends a delta', () => {
-  it('Save changes calls update mutation with { add, remove } delta only', () => {
+  it('Save Permissions calls update mutation with { add, remove } delta only', () => {
     renderList([customRole])
     fireEvent.click(screen.getByText('Senior Receptionist'))
 
     // add crm.create (held, currently off)
     fireEvent.click(toggleByCode('crm.create'))
 
-    fireEvent.click(screen.getByText('Save changes'))
+    fireEvent.click(screen.getByText('Save Permissions'))
 
     expect(h.updateMutate).toHaveBeenCalledTimes(1)
     const payload = h.updateMutate.mock.calls[0][0]
@@ -187,7 +187,7 @@ describe('AC-4 save sends a delta', () => {
   it('Save is disabled until a change is made', () => {
     renderList([customRole])
     fireEvent.click(screen.getByText('Senior Receptionist'))
-    expect(screen.getByText('Save changes').closest('button')).toBeDisabled()
+    expect(screen.getByText('Save Permissions').closest('button')).toBeDisabled()
   })
 })
 
@@ -263,7 +263,7 @@ describe('AC-8 saving own role refreshes permissions', () => {
     renderList([customRole])
     fireEvent.click(screen.getByText('Senior Receptionist'))
     fireEvent.click(toggleByCode('crm.create'))
-    fireEvent.click(screen.getByText('Save changes'))
+    fireEvent.click(screen.getByText('Save Permissions'))
 
     // allow the async onSuccess microtask to settle
     await Promise.resolve()
@@ -279,7 +279,7 @@ describe('AC-8 saving own role refreshes permissions', () => {
     renderList([customRole])
     fireEvent.click(screen.getByText('Senior Receptionist'))
     fireEvent.click(toggleByCode('crm.create'))
-    fireEvent.click(screen.getByText('Save changes'))
+    fireEvent.click(screen.getByText('Save Permissions'))
 
     await Promise.resolve()
     expect(refresh).not.toHaveBeenCalled()
