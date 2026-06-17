@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useLogin } from '../hooks/useAuth'
 import { useAuthStore } from '../store/authStore'
 import { Navigate } from 'react-router-dom'
+import { useT } from '../i18n'
 
 export default function LoginView() {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated())
@@ -17,6 +18,8 @@ export default function LoginView() {
     if (host === 'localhost' || host === '127.0.0.1') return 'dev-clinic'
     return ''
   })()
+
+  const t = useT()
 
   const [form, setForm]       = useState({ subdomain: detectedSubdomain, email: '', password: '' })
   const [showPass, setShowPass] = useState(false)
@@ -40,7 +43,7 @@ export default function LoginView() {
   }
 
   const errorMsg = login.error
-    ? ((login.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Invalid credentials. Please try again.')
+    ? ((login.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? t('login.invalidCredentials'))
     : null
 
   return (
@@ -90,9 +93,9 @@ export default function LoginView() {
                 </div>
                 <span className="text-headline-sm font-headline font-bold text-primary">Anemal</span>
               </div>
-              <h1 className="text-headline-lg font-headline font-bold text-on-surface mb-xs">Welcome back</h1>
+              <h1 className="text-headline-lg font-headline font-bold text-on-surface mb-xs">{t('login.title')}</h1>
               <p className="text-on-surface-variant text-body-md">
-                Please enter your credentials to access the clinic management system.
+                {t('login.subtitle')}
               </p>
             </div>
 
@@ -124,7 +127,7 @@ export default function LoginView() {
               {/* Email */}
               <div className="space-y-xs">
                 <label htmlFor="email" className="block text-label-md text-on-surface-variant font-medium">
-                  Email Address
+                  {t('login.email')}
                 </label>
                 <div className="relative">
                   <span className="absolute left-md top-1/2 -translate-y-1/2 material-symbols-outlined text-outline" style={{ fontSize: '20px' }}>
@@ -143,7 +146,7 @@ export default function LoginView() {
               {/* Password */}
               <div className="space-y-xs">
                 <label htmlFor="password" className="block text-label-md text-on-surface-variant font-medium">
-                  Password
+                  {t('login.password')}
                 </label>
                 <div className="relative">
                   <span className="absolute left-md top-1/2 -translate-y-1/2 material-symbols-outlined text-outline" style={{ fontSize: '20px' }}>
@@ -205,11 +208,11 @@ export default function LoginView() {
                 {login.isPending ? (
                   <>
                     <span className="w-4 h-4 border-2 border-surface/40 border-t-surface rounded-full animate-spin" />
-                    Signing in…
+                    {t('login.signingIn')}
                   </>
                 ) : (
                   <>
-                    Sign In
+                    {t('login.signIn')}
                     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>login</span>
                   </>
                 )}
@@ -220,7 +223,7 @@ export default function LoginView() {
             <div className="mt-2xl text-center">
               <p className="text-body-md text-on-surface-variant">
                 Need technical assistance?{' '}
-                <a href="#" className="text-secondary font-bold hover:underline">Contact System Support</a>
+                <a href="#" className="text-secondary font-bold hover:underline">{t('login.contactSupport')}</a>
               </p>
             </div>
           </div>
@@ -234,8 +237,8 @@ export default function LoginView() {
           <p className="text-label-md text-on-surface-variant">© 2024 Anemal. All rights reserved.</p>
         </div>
         <div className="flex flex-wrap justify-center gap-lg">
-          <a href="#" className="text-label-md text-on-surface-variant hover:text-secondary transition-colors">Privacy Policy</a>
-          <a href="#" className="text-label-md text-on-surface-variant hover:text-secondary transition-colors">Terms of Service</a>
+          <a href="#" className="text-label-md text-on-surface-variant hover:text-secondary transition-colors">{t('login.privacy')}</a>
+          <a href="#" className="text-label-md text-on-surface-variant hover:text-secondary transition-colors">{t('login.terms')}</a>
           <a href="#" className="text-label-md text-on-surface-variant hover:text-secondary transition-colors">Clinic Support</a>
           <div className="flex items-center gap-xs">
             <div className="w-2 h-2 rounded-full bg-success" />
