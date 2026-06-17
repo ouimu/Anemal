@@ -5,6 +5,7 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianG
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
 import { useRevenue, useReportSnapshot } from '../../hooks/useReports'
+import { useT } from '../../i18n'
 
 interface Usage {
   appointmentsToday: number
@@ -19,15 +20,16 @@ const CHART = { secondary: '#006c4a', grid: '#e0e3e5', axis: '#45464d' }
 
 const baht = (n: number) => '฿' + n.toLocaleString('en-US', { maximumFractionDigits: 0 })
 
-const QUICK_ACTIONS = [
-  { icon: 'add_circle', label: 'New Appointment', to: '/clinic/appointments', color: 'text-secondary' },
-  { icon: 'pets',       label: 'Register Pet',    to: '/clinic/pets',         color: 'text-primary' },
-  { icon: 'description',label: 'New EMR Record',  to: '/clinic/emr',          color: 'text-primary' },
-  { icon: 'receipt',    label: 'Create Invoice',  to: '/clinic/billing',      color: 'text-secondary' },
-]
-
 export default function ClinicDashboard() {
+  const t = useT()
   const [period, setPeriod] = useState<'daily' | 'monthly'>('daily')
+
+  const QUICK_ACTIONS = [
+    { icon: 'add_circle', label: t('clinic.dashboard.newAppointment'), to: '/clinic/appointments', color: 'text-secondary' },
+    { icon: 'pets',       label: t('clinic.dashboard.registerPet'),    to: '/clinic/pets',         color: 'text-primary' },
+    { icon: 'description',label: t('clinic.dashboard.newEMR'),         to: '/clinic/emr',          color: 'text-primary' },
+    { icon: 'receipt',    label: t('clinic.dashboard.createInvoice'),  to: '/clinic/billing',      color: 'text-secondary' },
+  ]
 
   const { data, isLoading } = useQuery<Usage>({
     queryKey: ['clinic', 'usage'],
@@ -46,7 +48,7 @@ export default function ClinicDashboard() {
       {/* Page header */}
       <div className="flex items-start justify-between mb-lg">
         <div>
-          <h2 className="text-headline-lg font-headline font-bold text-primary">Clinic Overview</h2>
+          <h2 className="text-headline-lg font-headline font-bold text-primary">{t('clinic.dashboard.title')}</h2>
           <p className="text-body-md text-on-surface-variant mt-xs">{dateStr}</p>
         </div>
         <Link
@@ -54,32 +56,32 @@ export default function ClinicDashboard() {
           className="flex items-center gap-sm bg-primary text-primary-on rounded-lg px-lg py-sm min-h-[44px] font-semibold text-body-sm hover:bg-primary/90 transition-colors"
         >
           <MaterialIcon name="add" size={18} />
-          New Appointment
+          {t('clinic.dashboard.newAppointment')}
         </Link>
       </div>
 
       <div className="bento-grid">
         {/* KPI cards */}
         <StatCard border="border-secondary" chip="Today" chipCls="bg-secondary-container text-secondary-on-container"
-                  icon="trending_up" iconCls="text-success" value={val(data?.appointmentsToday)} label="Appointments today" />
+                  icon="trending_up" iconCls="text-success" value={val(data?.appointmentsToday)} label={t('clinic.dashboard.appointmentsToday')} />
         <StatCard border="border-info" chip="This month" chipCls="bg-surface-container text-on-surface-variant"
-                  icon="calendar_month" iconCls="text-info" value={val(data?.appointmentsThisMonth)} label="Total appointments" />
+                  icon="calendar_month" iconCls="text-info" value={val(data?.appointmentsThisMonth)} label={t('clinic.dashboard.totalAppointments')} />
         <StatCard border="border-secondary" chip="Today" chipCls="bg-secondary-container text-secondary-on-container"
-                  icon="payments" iconCls="text-secondary" value={snapshot ? baht(snapshot.revenueToday) : '…'} label="Revenue today" />
+                  icon="payments" iconCls="text-secondary" value={snapshot ? baht(snapshot.revenueToday) : '…'} label={t('clinic.dashboard.revenueToday')} />
         <Link to="/clinic/pets" className="col-span-6 md:col-span-3 glass-card rounded-xl shadow-lvl1 border-l-4 border-warning p-md hover:shadow-lvl2 transition-shadow">
           <div className="flex items-center justify-between mb-sm">
             <span className="bg-warning/10 text-warning rounded-full px-sm py-xs text-label-md font-medium">Next 7 days</span>
             <MaterialIcon name="vaccines" size={18} className="text-warning" />
           </div>
           <p className="text-headline-md font-headline font-bold text-primary">{val(data?.vaccinationsDueSoon)}</p>
-          <p className="text-body-sm text-on-surface-variant mt-xs">Vaccinations due soon</p>
+          <p className="text-body-sm text-on-surface-variant mt-xs">{t('clinic.dashboard.vaccinationsDue')}</p>
         </Link>
 
         {/* Revenue chart */}
         <div className="col-span-12 lg:col-span-8 glass-card rounded-xl shadow-lvl1 p-md">
           <div className="flex items-center justify-between mb-md">
             <div>
-              <h3 className="text-headline-xs font-headline font-semibold text-on-surface">Revenue</h3>
+              <h3 className="text-headline-xs font-headline font-semibold text-on-surface">{t('clinic.dashboard.revenue')}</h3>
               <p className="text-label-md text-on-surface-variant">
                 {period === 'daily' ? 'Last 14 days' : 'Last 6 months'} · paid invoices
                 {revenue ? ` · ${baht(revenue.total)} total` : ''}
@@ -126,14 +128,14 @@ export default function ClinicDashboard() {
               <MaterialIcon name="inventory_2" fill={1} size={18} className="text-error" />
             </div>
             <div>
-              <h3 className="text-headline-xs font-headline font-semibold text-on-surface">Inventory Alerts</h3>
+              <h3 className="text-headline-xs font-headline font-semibold text-on-surface">{t('clinic.dashboard.inventoryAlerts')}</h3>
               <p className="text-label-md text-on-surface-variant">Stock requiring attention</p>
             </div>
           </div>
           <div className="space-y-sm flex-1">
-            <AlertRow icon="warning" tone="text-error" label="Critical / low stock" value={snapshot?.lowStockCount ?? 0} />
-            <AlertRow icon="schedule" tone="text-warning" label="Expiring soon" value={snapshot?.expiringSoonCount ?? 0} />
-            <AlertRow icon="pending_actions" tone="text-info" label="Unpaid invoices" value={snapshot?.pendingInvoices ?? 0} />
+            <AlertRow icon="warning" tone="text-error" label={t('clinic.dashboard.lowStock')} value={snapshot?.lowStockCount ?? 0} />
+            <AlertRow icon="schedule" tone="text-warning" label={t('clinic.dashboard.expiringSoon')} value={snapshot?.expiringSoonCount ?? 0} />
+            <AlertRow icon="pending_actions" tone="text-info" label={t('clinic.dashboard.unpaidInvoices')} value={snapshot?.pendingInvoices ?? 0} />
           </div>
           <div className="mt-md border-t border-outline-variant pt-sm flex items-center justify-between text-label-md text-on-surface-variant">
             <span>Manage inventory</span><MaterialIcon name="chevron_right" size={16} />

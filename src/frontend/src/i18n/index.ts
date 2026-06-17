@@ -120,6 +120,32 @@ const en: Dict = {
   'login.contactSupport': 'Contact System Support',
   'login.privacy': 'Privacy Policy',
   'login.terms': 'Terms of Service',
+
+  // Clinic dashboard
+  'clinic.dashboard.title': 'Clinic Overview',
+  'clinic.dashboard.newAppointment': 'New Appointment',
+  'clinic.dashboard.registerPet': 'Register Pet',
+  'clinic.dashboard.newEMR': 'New EMR Record',
+  'clinic.dashboard.createInvoice': 'Create Invoice',
+  'clinic.dashboard.appointmentsToday': 'Appointments today',
+  'clinic.dashboard.totalAppointments': 'Total appointments',
+  'clinic.dashboard.revenueToday': 'Revenue today',
+  'clinic.dashboard.lowStock': 'Critical / low stock',
+  'clinic.dashboard.expiringSoon': 'Expiring soon',
+  'clinic.dashboard.unpaidInvoices': 'Unpaid invoices',
+  'clinic.dashboard.vaccinationsDue': 'Vaccinations due soon',
+  'clinic.dashboard.revenue': 'Revenue',
+  'clinic.dashboard.inventoryAlerts': 'Inventory Alerts',
+  'clinic.dashboard.inpatientsNow': 'Inpatients now',
+  'clinic.dashboard.groomingToday': 'Grooming today',
+
+  // Admin dashboard
+  'admin.dashboard.welcome': 'Welcome back, {name}',
+  'admin.dashboard.subtitle': 'Clinic overview · Admin panel',
+  'admin.dashboard.plan': 'Plan',
+  'admin.dashboard.currentTier': 'Current subscription tier',
+  'admin.dashboard.quickActions': 'Quick actions',
+  'admin.dashboard.revenueByBranch': 'Revenue by Branch',
 }
 
 const th: Dict = {
@@ -224,6 +250,32 @@ const th: Dict = {
   'login.contactSupport': 'ติดต่อฝ่ายสนับสนุนระบบ',
   'login.privacy': 'นโยบายความเป็นส่วนตัว',
   'login.terms': 'ข้อกำหนดการใช้บริการ',
+
+  // Clinic dashboard
+  'clinic.dashboard.title': 'ภาพรวมคลินิก',
+  'clinic.dashboard.newAppointment': 'นัดหมายใหม่',
+  'clinic.dashboard.registerPet': 'ลงทะเบียนสัตว์เลี้ยง',
+  'clinic.dashboard.newEMR': 'บันทึกการรักษาใหม่',
+  'clinic.dashboard.createInvoice': 'สร้างใบแจ้งหนี้',
+  'clinic.dashboard.appointmentsToday': 'นัดหมายวันนี้',
+  'clinic.dashboard.totalAppointments': 'นัดหมายทั้งหมด',
+  'clinic.dashboard.revenueToday': 'รายได้วันนี้',
+  'clinic.dashboard.lowStock': 'สินค้าวิกฤต / ใกล้หมด',
+  'clinic.dashboard.expiringSoon': 'ใกล้หมดอายุ',
+  'clinic.dashboard.unpaidInvoices': 'ใบแจ้งหนี้ค้างชำระ',
+  'clinic.dashboard.vaccinationsDue': 'วัคซีนที่ถึงกำหนด',
+  'clinic.dashboard.revenue': 'รายได้',
+  'clinic.dashboard.inventoryAlerts': 'แจ้งเตือนสินค้าคงคลัง',
+  'clinic.dashboard.inpatientsNow': 'ผู้ป่วยในขณะนี้',
+  'clinic.dashboard.groomingToday': 'บริการอาบน้ำวันนี้',
+
+  // Admin dashboard
+  'admin.dashboard.welcome': 'ยินดีต้อนรับกลับ, {name}',
+  'admin.dashboard.subtitle': 'ภาพรวมคลินิก · แผงผู้ดูแล',
+  'admin.dashboard.plan': 'แพลน',
+  'admin.dashboard.currentTier': 'ระดับการสมัครสมาชิกปัจจุบัน',
+  'admin.dashboard.quickActions': 'การดำเนินการด่วน',
+  'admin.dashboard.revenueByBranch': 'รายได้ตามสาขา',
 }
 
 const DICTS: Record<Language, Dict> = { en, th }

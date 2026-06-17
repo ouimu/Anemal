@@ -5,6 +5,7 @@ import api from '../../utils/api'
 import { Link } from 'react-router-dom'
 import MaterialIcon from '../../components/MaterialIcon'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { useT } from '../../i18n'
 
 interface Usage {
   totalPets: number; totalOwners: number; totalUsers: number; activeUsers: number
@@ -30,6 +31,7 @@ function formatTHB(n: number) {
 }
 
 export default function AdminDashboard() {
+  const t = useT()
   const name = useAuthStore(s => s.name)
   const today = new Date()
   const todayStr = dateStr(today)
@@ -60,8 +62,8 @@ export default function AdminDashboard() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">
-        <h2 className="text-headline-sm font-headline font-bold text-primary">Welcome back, {name}</h2>
-        <p className="text-body-sm text-on-surface-variant mt-1">Clinic overview · Admin panel</p>
+        <h2 className="text-headline-sm font-headline font-bold text-primary">{t('admin.dashboard.welcome').replace('{name}', name ?? '')}</h2>
+        <p className="text-body-sm text-on-surface-variant mt-1">{t('admin.dashboard.subtitle')}</p>
       </div>
 
       {/* Core KPI grid */}
@@ -84,12 +86,12 @@ export default function AdminDashboard() {
           <div className="border rounded-xl p-4 bg-surface-container-low border-outline-variant">
             <MaterialIcon name="local_hospital" size={20} className="text-error mb-1" />
             <p className="text-headline-md font-headline font-bold text-on-surface">{inpatients.length}</p>
-            <p className="text-label-md text-on-surface-variant mt-1">Inpatients now</p>
+            <p className="text-label-md text-on-surface-variant mt-1">{t('clinic.dashboard.inpatientsNow')}</p>
           </div>
           <div className="border rounded-xl p-4 bg-surface-container-low border-outline-variant">
             <MaterialIcon name="content_cut" size={20} className="text-secondary mb-1" />
             <p className="text-headline-md font-headline font-bold text-on-surface">{groomingToday.length}</p>
-            <p className="text-label-md text-on-surface-variant mt-1">Grooming today</p>
+            <p className="text-label-md text-on-surface-variant mt-1">{t('clinic.dashboard.groomingToday')}</p>
           </div>
         </div>
       ) : null}
@@ -97,7 +99,7 @@ export default function AdminDashboard() {
       {/* Branch Revenue chart */}
       <div className="bg-surface border border-outline-variant rounded-xl p-5 mb-6">
         <div className="flex items-center justify-between flex-wrap gap-sm mb-4">
-          <h3 className="font-semibold text-on-surface text-body-md">Revenue by Branch</h3>
+          <h3 className="font-semibold text-on-surface text-body-md">{t('admin.dashboard.revenueByBranch')}</h3>
           <div className="flex items-center gap-sm">
             <label className="text-label-md text-on-surface-variant">From</label>
             <input
@@ -139,7 +141,7 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-surface border border-outline-variant rounded-xl p-5">
-          <h3 className="font-semibold text-on-surface mb-3 text-body-sm">Quick actions</h3>
+          <h3 className="font-semibold text-on-surface mb-3 text-body-sm">{t('admin.dashboard.quickActions')}</h3>
           {[
             { href: '/admin/users',    icon: 'group',      label: 'Manage users & roles' },
             { href: '/admin/profile',  icon: 'business',   label: 'Edit clinic profile' },
@@ -155,11 +157,11 @@ export default function AdminDashboard() {
         </div>
 
         <div className="bg-surface border border-outline-variant rounded-xl p-5">
-          <h3 className="font-semibold text-on-surface mb-3 text-body-sm">Plan</h3>
+          <h3 className="font-semibold text-on-surface mb-3 text-body-sm">{t('admin.dashboard.plan')}</h3>
           <p className="text-headline-md font-headline font-bold text-on-surface capitalize mb-1">
             {data?.planTier ?? '—'}
           </p>
-          <p className="text-label-md text-on-surface-variant mb-4">Current subscription tier</p>
+          <p className="text-label-md text-on-surface-variant mb-4">{t('admin.dashboard.currentTier')}</p>
           <Link to="/admin/subscription"
             className="inline-flex items-center min-h-[44px] px-4 py-2 border border-primary text-primary text-body-sm rounded-lg hover:bg-surface-container-low transition-colors">
             Manage subscription
