@@ -7,6 +7,7 @@ import { useT } from '../i18n'
 export default function LoginView() {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated())
   const role = useAuthStore(s => s.role)
+  const t = useT()
 
   const detectedSubdomain = (() => {
     const host = window.location.hostname
@@ -18,8 +19,6 @@ export default function LoginView() {
     if (host === 'localhost' || host === '127.0.0.1') return 'dev-clinic'
     return ''
   })()
-
-  const t = useT()
 
   const [form, setForm]       = useState({ subdomain: detectedSubdomain, email: '', password: '' })
   const [showPass, setShowPass] = useState(false)
@@ -105,7 +104,7 @@ export default function LoginView() {
               {/* Clinic ID (multi-tenant requirement) */}
               <div className="space-y-xs">
                 <label htmlFor="subdomain" className="block text-label-md text-on-surface-variant font-medium">
-                  Clinic ID
+                  {t('login.subdomain')}
                 </label>
                 <div className="relative">
                   <span className="absolute left-md top-1/2 -translate-y-1/2 material-symbols-outlined text-outline" style={{ fontSize: '20px' }}>
