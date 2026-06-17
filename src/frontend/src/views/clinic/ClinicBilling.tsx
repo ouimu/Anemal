@@ -494,7 +494,7 @@ function SuccessModal({ invoice, pet, method, earnedMsg, onClose }: { invoice: I
           <button onClick={downloadPdf} className="flex-1 min-h-[44px] rounded-lg border border-secondary text-secondary font-medium hover:bg-surface-container-low transition-colors flex items-center justify-center gap-xs text-body-sm">
             <MaterialIcon name="download" size={16} /> PDF
           </button>
-          <button onClick={onClose} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on font-semibold hover:bg-primary/90 transition-colors text-body-sm">Done</button>
+          <button onClick={onClose} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on font-semibold hover:bg-primary/90 transition-colors text-body-sm">{t('common.done')}</button>
         </div>
       </div>
     </div>
