@@ -153,6 +153,7 @@ const en: Dict = {
   'clinic.appointments.selectPet': 'Please select a pet',
   'clinic.appointments.selectDoctor': 'Please select a doctor',
   'clinic.appointments.failedToBook': 'Failed to book. Please try again.',
+  'clinic.appointments.confirmBook': 'Book Appointment',
 
   // Admin dashboard
   'admin.dashboard.welcome': 'Welcome back, {name}',
@@ -298,6 +299,7 @@ const th: Dict = {
   'clinic.appointments.selectPet': 'กรุณาเลือกสัตว์เลี้ยง',
   'clinic.appointments.selectDoctor': 'กรุณาเลือกสัตวแพทย์',
   'clinic.appointments.failedToBook': 'การนัดหมายล้มเหลว กรุณาลองอีกครั้ง',
+  'clinic.appointments.confirmBook': 'นัดหมาย',
 
   // Admin dashboard
   'admin.dashboard.welcome': 'ยินดีต้อนรับกลับ, {name}',

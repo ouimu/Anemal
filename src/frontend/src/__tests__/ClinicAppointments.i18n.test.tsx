@@ -1,6 +1,7 @@
 // src/frontend/src/__tests__/ClinicAppointments.i18n.test.tsx
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 
 vi.mock('../store/uiStore', () => ({
   useUiStore: (s: (s: { language: string }) => unknown) => s({ language: 'th' }),
@@ -18,8 +19,10 @@ describe('ClinicAppointments — Thai i18n', () => {
     render(<ClinicAppointments />)
     expect(screen.getByRole('button', { name: /นัดหมายใหม่/i })).toBeInTheDocument()
   })
-  it('renders Thai patient label', () => {
+  it('renders Thai patient label', async () => {
+    const user = userEvent.setup()
     render(<ClinicAppointments />)
+    await user.click(screen.getByRole('button', { name: /นัดหมายใหม่/i }))
     expect(screen.getByText(/ผู้ป่วย/i)).toBeInTheDocument()
   })
 })

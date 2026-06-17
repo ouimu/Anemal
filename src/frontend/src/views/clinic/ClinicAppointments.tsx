@@ -178,7 +178,7 @@ function BookingForm({ selectedDate, selectedHour, doctors, onClose, onSaved }: 
           <textarea className="w-full bg-surface-container-low rounded-lg px-md py-sm text-body-sm border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary min-h-[80px] resize-none" placeholder={t('clinic.appointments.chiefComplaint')} value={reason} onChange={e => setReason(e.target.value)} />
         </div>
 
-        <button type="submit" disabled={saving} className="w-full min-h-[44px] bg-primary text-primary-on rounded-lg text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? t('clinic.appointments.booking') : t('common.confirm')}</button>
+        <button type="submit" disabled={saving} className="w-full min-h-[44px] bg-primary text-primary-on rounded-lg text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? t('clinic.appointments.booking') : t('clinic.appointments.confirmBook')}</button>
       </form>
     </div>
   )
@@ -223,7 +223,7 @@ export default function ClinicAppointments() {
   const [viewMode, setViewMode]         = useState<'day' | 'week'>('day')
   const [currentDate, setCurrentDate]   = useState(new Date())
   const [filterDoctorId, setFilterDoc]  = useState<number | null>(null)
-  const [showForm, setShowForm]         = useState(true)
+  const [showForm, setShowForm]         = useState(false)
   const [selectedHour, setSelectedHour] = useState<number | undefined>()
   const [detailAppt, setDetailAppt]     = useState<Appointment | null>(null)
 
