@@ -433,12 +433,6 @@ export default function ClinicPets() {
           </button>
         </div>
 
-        {/* List column headers */}
-        <div className="flex items-center justify-between px-md py-xs border-b border-outline-variant bg-surface-container">
-          <span className="text-label-md text-on-surface-variant font-medium">{t('clinic.pets.petName')}</span>
-          <span className="text-label-md text-on-surface-variant">{t('clinic.pets.phone')}</span>
-        </div>
-
         {/* Pet list */}
         <div className="flex-1 overflow-y-auto">
           {isLoading && <div className="p-lg text-body-sm text-on-surface-variant">Loading…</div>}
