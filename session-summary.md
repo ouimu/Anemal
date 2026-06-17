@@ -1,8 +1,41 @@
 # Session Summary — Anemal
-> Last updated: 2026-06-10 (Phase 1.5-B Settings API) | อ่านไฟล์นี้ก่อนเริ่ม session ใหม่ทุกครั้ง
+> Last updated: 2026-06-17 (T-5F complete — Phase 8 DONE) | อ่านไฟล์นี้ก่อนเริ่ม session ใหม่ทุกครั้ง
 >
-> **Status:** Phase 1–4 ✅ · Phase 1.5-A (DB+Encryption) ✅ · **Phase 1.5-B (Settings API) ✅ — 206 tests** · Next: **Phase 1.5-D Settings UI**
+> **Status:** Phases 1–8 ✅ (~394 tests). **Phase 8 COMPLETE** — T-5F delivered Role Editor, Platform Console UI, and Multi-Role Assignment. **Next:** Phase 9 i18n Rollout (Thai clinic screens). **Postponed:** Phase 10 Payment Gateway, Phase 11 LINE/SMS (credential-gated).
+> _Note: sections below predate the 2026-06-13 resequence; "Phase 1.5"/"Session X" labels map per PHASE-RESEQUENCE.md._
 > Dev DB: Docker `vetclinic-pg` (postgres:16) — **must run with `-p 5432:5432`**. `cd src/backend && npm run db:migrate / db:seed / npm test`.
+
+---
+
+## ✅ Phase 8 — T-5F Frontend Completion (2026-06-17)
+
+**Branch:** `refactor/coding-rules-alignment`  
+**Commits:** 2 (feat(t5f) 28 files 4,294 lines + test(t5f) 6 files 1,757 lines)  
+**Test count:** 344 → ~394 (adds ~50 new tests)
+
+### T-5F-01 — Clinic Role Editor (`/clinic-admin/roles`)
+- `RoleEditorView.tsx`, `RoleList.tsx`, `RolePermissionEditor.tsx`, `CloneRoleModal.tsx`
+- `useRoles.ts` hook (list, catalogue, clone, delta-edit, delete)
+- Guarded by `<RequirePermission perm="roles.view">`
+- AC-1..10 implemented: list, expand, clone, delta-save, no-escalation, delete guards, self-refresh
+- Backend test: `roleEditor-t5f01.test.ts` · Frontend test: `RoleEditorView.test.tsx` (28 tests)
+
+### T-5F-02 — Platform Console (`/platform/*`)
+- `CustomerListView.tsx`, `CustomerDetailView.tsx` (4 tabs: Overview, Plan & Quota, Provisioning, Usage)
+- `PlatformPlansView.tsx`, `PlatformSettingsView.tsx`, `PlatformAuditView.tsx`, `PlatformLoginView.tsx`
+- `PlatformLayout.tsx`, `platformAuthStore.ts`, `platformApi.ts`
+- Hooks: `usePlatformCustomers`, `usePlatformPlans`, `usePlatformAudit`, `usePlatformSettings`
+- Plane-only access (no `<RequirePermission>` — AC-P8 compliant)
+- Backend test: `platform-console-t5f02.test.ts` · Frontend test: `PlatformConsole.test.tsx`
+
+### T-5F-03 — Multi-Role Assignment UI
+- `RolePicker.tsx` embedded in `UserManagementTab.tsx`
+- `Can.tsx` permission-gate component
+- `useUserRoles.ts` hook (assign, remove, last-role 409 guard, self-demotion warning)
+- Backend test: `user-roles-t5f03.test.ts` · Frontend test: `RolePicker.test.tsx`
+
+### Phase 8 Overall Summary
+All sub-phases complete: 5-A (RBAC DB) · 5-B (enforcement) · 5-C (platform plane) · T-5D-02/03/04/05 (Platform Console APIs) · T-5E (frontend guards + route reorg) · PRE-1..6 (backend prerequisites) · **T-5F (frontend UI)**. T-5G (matrix QA hardening) deferred to Phase 9 prep if needed.
 
 ---
 

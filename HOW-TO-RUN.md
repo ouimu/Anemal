@@ -10,11 +10,11 @@
 
 **Option A — Docker (easiest):**
 ```powershell
-docker run --name vetclinic-pg -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=vetclinic_dev -p 5432:5432 -d postgres:16
+docker run --name anemal-pg -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=anemal_dev -p 5432:5432 -d postgres:16
 ```
 
 **Option B — Local PostgreSQL:**
-Create a database named `vetclinic_dev` and note your username/password.
+Create a database named `anemal_dev` and note your username/password.
 
 ---
 
@@ -22,8 +22,8 @@ Create a database named `vetclinic_dev` and note your username/password.
 
 The `.env` file is already at the project root. Open it and update if needed:
 ```
-DATABASE_URL=postgresql://postgres:dev@localhost:5432/vetclinic_dev
-JWT_SECRET=vetclinic-dev-jwt-secret-change-in-prod-32chars
+DATABASE_URL=postgresql://postgres:dev@localhost:5432/anemal_dev
+JWT_SECRET=anemal-dev-jwt-secret-change-in-prod-32chars
 ```
 
 If your PostgreSQL uses a different user/password, update `DATABASE_URL` accordingly.
@@ -75,6 +75,8 @@ npm test
 
 Expected: **8 tests pass** (5 auth unit tests + 3 RBAC unit tests).  
 Integration tests require the seeded DB and will be skipped if DB is unavailable.
+
+> **Phase 8 note:** After seeding you also have a platform super-admin user seeded for the Platform Console. Login at `/platform/login` with the platform credentials from the seed output.
 
 ---
 
@@ -145,7 +147,27 @@ Frontend running at: `http://localhost:5173`
 npm test
 ```
 
-All 13 tests should pass including cross-tenant isolation tests.
+All tests should pass including cross-tenant isolation tests, RBAC permission matrix, and platform plane isolation. As of Phase 8 completion the full suite runs approximately 394 tests (backend + frontend vitest).
+
+Run frontend tests separately:
+```powershell
+cd src\frontend
+npx vitest run
+```
+
+---
+
+## New Routes (Phase 8 — T-5F)
+
+| Route | Description | Access |
+|-------|-------------|--------|
+| `/clinic-admin/roles` | Clinic Role Editor — list, clone, edit permissions, delete roles | `clinic_admin` · requires `roles.view` permission |
+| `/platform/login` | Platform Console login (separate from clinic login) | Platform users only |
+| `/platform/customers` | Customer (tenant) list and management | Platform plane |
+| `/platform/customers/:id` | Customer detail — Overview, Plan & Quota, Provisioning, Usage | Platform plane |
+| `/platform/plans` | Plan management | Platform plane |
+| `/platform/settings` | Platform-level settings | Platform plane |
+| `/platform/audit` | Cross-tenant audit log | Platform plane |
 
 ---
 
@@ -155,7 +177,7 @@ All 13 tests should pass including cross-tenant isolation tests.
 |---------|-----|
 | `Error: Missing required env var: DATABASE_URL` | Check `.env` is at project root; run from `src\backend\` |
 | `Can't reach database server` | Make sure PostgreSQL / Docker container is running |
-| `P1003: Database does not exist` | Create `vetclinic_dev` DB or check `DATABASE_URL` |
+| `P1003: Database does not exist` | Create `anemal_dev` DB or check `DATABASE_URL` |
 | `Port 4000 in use` | Change `PORT=4001` in `.env` |
 | `Port 5173 in use` | Vite will auto-increment to 5174 |
 | Prisma errors after schema change | `npm run db:generate` then restart dev server |

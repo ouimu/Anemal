@@ -90,3 +90,30 @@ Plans:
 - Phase 3 (Integrations) unblocks Lab integration work
 - Phase 3 (System Settings) unblocks superadmin platform management via UI
 - All phases depend on the existing API from Phase 1.5-A/B — no backend changes expected
+
+---
+
+## Phase 5 — RBAC, Platform Console & Restructure (designed 2026-06-13)
+
+New milestone beyond the 1.5 settings work. Two-plane authorization, configurable roles, plan
+quotas, and IA cleanup. Spec: `.claude/specs/RBAC_Platform_Restructure_Spec.md`. Tasks:
+`.claude/roadmap/phase5-rbac-platform-tasks.md`. GSD phase folder:
+`.planning/phases/05-rbac-platform-restructure/`.
+
+| Sub-phase | Title | Layer |
+|---|---|---|
+| 5-A | RBAC foundation | DB + backend |
+| 5-B | Enforce permissions on clinic APIs | backend + QA |
+| 5-C | Platform plane split | DB + backend |
+| 5-D | Platform Console domain APIs + quotas | backend |
+| 5-E | Frontend restructure + guards | frontend |
+| 5-F | Role editor + Platform Console UI | frontend | ✅ Complete 2026-06-17 |
+| 5-G | QA hardening + cleanup + docs | QA | (T-5G deferred — matrix QA pending) |
+
+**Phase 8 status as of 2026-06-17:** T-5F COMPLETE. All frontend deliverables shipped:
+- T-5F-01: Clinic Role Editor (`/clinic-admin/roles`) — `RoleEditorView`, `RoleList`, `RolePermissionEditor`, `CloneRoleModal`, `useRoles` hook. Guarded by `roles.view`.
+- T-5F-02: Platform Console (`/platform/*`) — `CustomerListView`, `CustomerDetailView` (4 tabs), `PlatformPlansView`, `PlatformSettingsView`, `PlatformAuditView`, `PlatformLoginView`, `PlatformLayout`, `platformAuthStore`, `platformApi`.
+- T-5F-03: Multi-Role Assignment — `RolePicker` in `UserManagementTab`, `Can.tsx` gate, `useUserRoles` hook.
+- Test commits: `roleEditor-t5f01.test.ts`, `platform-console-t5f02.test.ts`, `user-roles-t5f03.test.ts`, `RoleEditorView.test.tsx` (28), `PlatformConsole.test.tsx`, `RolePicker.test.tsx`. ~394 total tests.
+
+**Phase 8 is COMPLETE. Next: Phase 9 — i18n Rollout.**
