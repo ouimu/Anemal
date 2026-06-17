@@ -8,6 +8,7 @@
 import { useState } from 'react'
 import MaterialIcon from '../MaterialIcon'
 import { type PermissionCatalogue } from '../../hooks/useRoles'
+import { useT } from '../../i18n'
 
 // ── Module icon mapping (best-effort; fallback to 'lock') ────────────────────
 const MODULE_ICONS: Record<string, string> = {
@@ -92,6 +93,7 @@ export default function RolePermissionEditor({
   onSave,
   isSaving,
 }: Props) {
+  const t = useT()
   // Local permission state (starts from currentPermissions)
   const [active, setActive] = useState<Set<string>>(() => new Set(currentPermissions))
 
@@ -143,7 +145,7 @@ export default function RolePermissionEditor({
                        flex items-center gap-xs flex-shrink-0"
           >
             <MaterialIcon name="content_copy" size={16} />
-            Clone to edit
+            {t('roles.cloneToEdit')}
           </button>
         </div>
       )}
@@ -199,7 +201,7 @@ export default function RolePermissionEditor({
             ) : (
               <MaterialIcon name="save" size={16} />
             )}
-            Save changes
+            {t('roles.savePermissions')}
           </button>
         </div>
       )}
@@ -219,6 +221,7 @@ interface ToggleProps {
 
 /** Individual permission toggle with disabled states and AC-5 tooltip. */
 function PermToggle({ code, isOn, isSystemRole, userHasPerm, onChange }: ToggleProps) {
+  const t = useT()
   // Editable only when: not a system role AND current user holds the permission
   const isEditable = !isSystemRole && userHasPerm
   const isDisabled = isSystemRole || !userHasPerm
@@ -274,7 +277,7 @@ function PermToggle({ code, isOn, isSystemRole, userHasPerm, onChange }: ToggleP
                         text-label-md rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100
                         pointer-events-none transition-opacity z-50"
           >
-            You don&apos;t have this permission
+            {t('roles.noPermission')}
           </div>
         )}
       </div>

@@ -14,6 +14,7 @@ import {
   usePermissionCatalogueQuery,
 } from '../../hooks/useRoles'
 import { useAuthStore } from '../../store/authStore'
+import { useT } from '../../i18n'
 
 /** Role permission code required to edit/clone/delete roles */
 const MANAGE_PERM = 'roles.manage'
@@ -23,6 +24,7 @@ const MANAGE_PERM = 'roles.manage'
  * Fetches roles and permission catalogue in parallel on mount.
  */
 export default function RoleEditorView() {
+  const t            = useT()
   const rolesQuery   = useRolesQuery()
   const catalogQuery = usePermissionCatalogueQuery()
   const permissions  = useAuthStore((s) => s.permissions)
@@ -49,10 +51,10 @@ export default function RoleEditorView() {
       <div className="flex flex-col gap-md sm:flex-row sm:justify-between sm:items-end">
         <div>
           <h2 className="text-headline-lg font-headline font-bold text-primary">
-            Roles &amp; Permissions
+            {t('roles.editorTitle')}
           </h2>
           <p className="text-body-md text-on-surface-variant mt-xs">
-            Manage access levels for your clinic staff.
+            {t('roles.editorSubtitle')}
           </p>
         </div>
 

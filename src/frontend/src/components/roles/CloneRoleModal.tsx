@@ -5,6 +5,7 @@
 import React, { useState } from 'react'
 import MaterialIcon from '../MaterialIcon'
 import { useCloneRoleMutation } from '../../hooks/useRoles'
+import { useT } from '../../i18n'
 
 interface Props {
   /** Source role to clone from */
@@ -18,6 +19,7 @@ interface Props {
  * Modal dialog that captures a new role name and submits the clone request.
  */
 export default function CloneRoleModal({ sourceRoleName, onClose, onCloned }: Props) {
+  const t = useT()
   const [newName, setNewName] = useState('')
   const cloneMutation = useCloneRoleMutation()
 
@@ -49,7 +51,7 @@ export default function CloneRoleModal({ sourceRoleName, onClose, onCloned }: Pr
         {/* Header */}
         <div className="flex items-center justify-between">
           <h3 id="clone-modal-title" className="text-headline-sm font-headline font-semibold text-primary">
-            Clone Role
+            {t('roles.cloneRole')}
           </h3>
           <button
             type="button"
@@ -72,7 +74,7 @@ export default function CloneRoleModal({ sourceRoleName, onClose, onCloned }: Pr
         <form onSubmit={handleSubmit} className="space-y-lg">
           <div className="space-y-xs">
             <label htmlFor="clone-role-name" className="block text-label-md text-primary font-bold">
-              New role name
+              {t('roles.cloneNewName')}
             </label>
             <input
               id="clone-role-name"
@@ -109,7 +111,7 @@ export default function CloneRoleModal({ sourceRoleName, onClose, onCloned }: Pr
                          font-bold hover:bg-surface-container min-h-[44px] transition-colors
                          disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"

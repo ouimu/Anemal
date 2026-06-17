@@ -21,6 +21,7 @@ import {
   useDeleteRoleMutation,
 } from '../../hooks/useRoles'
 import { useAuthStore } from '../../store/authStore'
+import { useT } from '../../i18n'
 
 // ── Toast helper (inline, no external lib needed) ────────────────────────────
 
@@ -40,6 +41,7 @@ interface DeleteDialogProps {
 }
 
 function DeleteDialog({ roleName, assignedCount, onConfirm, onClose, isDeleting }: DeleteDialogProps) {
+  const t = useT()
   const hasUsers = assignedCount !== null && assignedCount > 0
 
   return (
@@ -61,7 +63,7 @@ function DeleteDialog({ roleName, assignedCount, onConfirm, onClose, isDeleting 
             <div className="p-md bg-error-container rounded-lg flex items-center gap-md">
               <MaterialIcon name="info" size={18} className="text-error-on-container flex-shrink-0" />
               <p className="text-body-sm text-error-on-container font-bold">
-                Reassign {assignedCount} staff before deleting this role.
+                {t('roles.deleteBlocked').replace('{n}', String(assignedCount))}
               </p>
             </div>
             <div className="flex justify-end">
@@ -78,7 +80,7 @@ function DeleteDialog({ roleName, assignedCount, onConfirm, onClose, isDeleting 
         ) : (
           /* AC-7: 200 path */
           <>
-            <h3 className="text-headline-sm font-headline font-semibold text-error">Delete Role</h3>
+            <h3 className="text-headline-sm font-headline font-semibold text-error">{t('roles.deleteRole')}</h3>
             <p className="text-body-sm text-on-surface-variant">
               Are you sure you want to delete <strong className="text-on-surface">{roleName}</strong>?
               This action cannot be undone.
@@ -139,6 +141,7 @@ export default function RoleList({
   onAssignStaff,
   onCloned,
 }: Props) {
+  const t = useT()
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [cloneSource, setCloneSource] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Role | null>(null)
@@ -257,7 +260,7 @@ export default function RoleList({
                 {role.isSystem && (
                   <span className="px-md py-xs bg-surface-container-high rounded-full
                                    text-label-md text-on-surface-variant font-bold flex-shrink-0">
-                    SYSTEM
+                    {t('roles.systemBadge')}
                   </span>
                 )}
               </div>
@@ -272,7 +275,7 @@ export default function RoleList({
                 {role.assignedUserCount > 0 && (
                   <span className="flex items-center gap-xs text-label-md text-on-surface-variant flex-shrink-0">
                     <MaterialIcon name="group" size={16} />
-                    {role.assignedUserCount} staff
+                    {t('roles.assignedCount').replace('{n}', String(role.assignedUserCount))}
                   </span>
                 )}
 
@@ -287,7 +290,7 @@ export default function RoleList({
                   title="Assign staff to this role"
                 >
                   <MaterialIcon name="person_add" size={16} />
-                  <span className="hidden sm:inline">Assign staff</span>
+                  <span className="hidden sm:inline">{t('roles.assignStaff')}</span>
                 </button>
 
                 {/* Clone — system roles only, requires manage */}

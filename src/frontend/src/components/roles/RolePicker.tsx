@@ -13,6 +13,7 @@
 import { useState, useRef, useEffect } from 'react'
 import type { AxiosError } from 'axios'
 import { useAuthStore } from '../../store/authStore'
+import { useT } from '../../i18n'
 import {
   useClinicRolesQuery,
   useAssignRoleMutation,
@@ -102,13 +103,14 @@ function RoleChip({ role, onRemove, isRemoving }: RoleChipProps) {
 }
 
 function EmptyRolesState() {
+  const t = useT()
   return (
     <div className="flex items-center gap-sm px-md py-sm bg-error-container rounded-lg w-full">
       <span className="material-symbols-outlined text-on-error-container text-[20px]">
         warning
       </span>
       <p className="text-body-sm text-on-error-container">
-        This user has no roles. Assign at least one role.
+        {t('roles.noRoles')}
       </p>
     </div>
   )
@@ -119,6 +121,7 @@ interface LastRoleErrorBannerProps {
 }
 
 function LastRoleErrorBanner({ onDismiss }: LastRoleErrorBannerProps) {
+  const t = useT()
   return (
     <div
       role="alert"
@@ -134,10 +137,10 @@ function LastRoleErrorBanner({ onDismiss }: LastRoleErrorBannerProps) {
       </span>
       <div className="flex-1">
         <p className="text-body-sm text-on-error-container font-bold">
-          Cannot remove last role
+          {t('roles.cannotRemoveLast')}
         </p>
         <p className="text-body-sm text-on-error-container">
-          A user must keep at least one role. Assign another role before removing this one.
+          {t('roles.lastRoleDesc')}
         </p>
       </div>
       <button
@@ -158,6 +161,7 @@ interface SelfDemotionDialogProps {
 }
 
 function SelfDemotionDialog({ onCancel, onConfirm }: SelfDemotionDialogProps) {
+  const t = useT()
   return (
     <div
       role="dialog"
@@ -181,11 +185,10 @@ function SelfDemotionDialog({ onCancel, onConfirm }: SelfDemotionDialogProps) {
           id="self-demote-title"
           className="text-headline-xs text-on-surface text-center"
         >
-          Remove your own admin role?
+          {t('roles.selfDemotionTitle')}
         </h2>
         <p className="text-body-sm text-on-surface-variant text-center">
-          You may lose access to this screen and other admin functions after this change.
-          Your remaining roles will still be active.
+          {t('roles.selfDemotionDesc')}
         </p>
         <div className="flex gap-md pt-sm">
           <button
@@ -198,7 +201,7 @@ function SelfDemotionDialog({ onCancel, onConfirm }: SelfDemotionDialogProps) {
               'hover:bg-surface-container transition-colors',
             ].join(' ')}
           >
-            Keep role
+            {t('roles.keepRole')}
           </button>
           <button
             type="button"
@@ -210,7 +213,7 @@ function SelfDemotionDialog({ onCancel, onConfirm }: SelfDemotionDialogProps) {
               'hover:opacity-90 transition-opacity',
             ].join(' ')}
           >
-            Remove anyway
+            {t('roles.removeAnyway')}
           </button>
         </div>
       </div>
@@ -294,6 +297,7 @@ export interface RolePickerProps {
  * Gate with `<Can perm="staff.assign_role">` before rendering.
  */
 export default function RolePicker({ userId, currentRoles, onRolesChanged }: RolePickerProps) {
+  const t                  = useT()
   const authUserId         = useAuthStore((s) => s.userId)
   const authPermissions    = useAuthStore((s) => s.permissions)
   const refreshPermissions = useAuthStore((s) => s.refreshPermissions)
@@ -459,7 +463,7 @@ export default function RolePicker({ userId, currentRoles, onRolesChanged }: Rol
               error
             </span>
             <p className="text-body-sm text-on-error-container">
-              You cannot grant this role. Contact your admin if you believe this is incorrect.
+              {t('roles.cannotGrant')}
             </p>
           </div>
         )}
@@ -474,7 +478,7 @@ export default function RolePicker({ userId, currentRoles, onRolesChanged }: Rol
               warning
             </span>
             <p className="text-body-sm text-on-error-container">
-              Cannot load roles. Contact your admin.
+              {t('roles.loadError')}
             </p>
           </div>
         )}
@@ -499,7 +503,7 @@ export default function RolePicker({ userId, currentRoles, onRolesChanged }: Rol
               ].join(' ')}
             >
               <span className="material-symbols-outlined text-[20px]">add</span>
-              Add role
+              {t('roles.addRole')}
             </button>
 
             {/* Picker dropdown */}
