@@ -16,7 +16,7 @@
  *  AC-8 After saving own role → refreshPermissions() is called.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import type { Role, PermissionCatalogue } from '../hooks/useRoles'
 
 /**
@@ -227,8 +227,10 @@ describe('AC-6 delete with assigned users', () => {
     renderList([customRole])
     // open delete dialog via the row Delete button
     fireEvent.click(screen.getByTitle('Delete this role'))
-    // confirm delete
-    fireEvent.click(screen.getByText('Delete'))
+    // confirm delete — scope to the dialog so we hit the modal's confirm button,
+    // not the row's "Delete" action button (both render the text "Delete").
+    const dialog = screen.getByRole('dialog')
+    fireEvent.click(within(dialog).getByText('Delete'))
 
     expect(screen.getByText(/Reassign 4 staff before deleting/i)).toBeInTheDocument()
   })

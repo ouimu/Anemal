@@ -1,0 +1,303 @@
+/**
+ * T-5F-02 — Platform Console screens frontend QA (@qa-agent)
+ *
+ * Framework: Vitest + React Testing Library (matches RoleEditorView.test.tsx).
+ * Strategy: mock the platform hooks (network) and react-router, then drive the
+ * REAL view components (CustomerListView, CustomerDetailView, PlatformPlansView,
+ * PlatformAuditView). Adversarial: assert the INTENDED component contract and let
+ * the wiring bugs surface as failures (documented in the QA summary).
+ *
+ * AC coverage (task brief, frontend):
+ *  AC-F1 Customer list renders subdomain, plan, status, userCount.
+ *  AC-F2 "Add Customer" form requires planId (native required <select>).
+ *  AC-F3 CustomerDetail has 4 tabs; Usage tab shows progress bars.
+ *  AC-F4 Suspend button calls suspend API.
+ *  AC-F5 Plans CRUD: create appears in list; retired plan shows "Retired".
+ *  AC-F6 Audit view filters drive the hook (date range, action, tenantId).
+ *
+ * ⚠️ STOP-CLASS WIRING BUGS asserted here (see QA summary "gaps"):
+ *  - usePlatformCustomerUsage returns the backend's flat
+ *    `{ branches:number, users:number, owners:number, caps, overPlan }` raw, but
+ *    UsageTab reads `usage.branches.current` / `usage.staff.current`. At runtime
+ *    `usage.staff` is undefined → TypeError. The Usage progress bars cannot render
+ *    against the live backend. Tests that exercise the Usage tab feed the SHAPE THE
+ *    COMPONENT EXPECTS so the component is tested in isolation, and a separate
+ *    contract test pins the divergence.
+ *  - usePlatformAudit returns `r.data.data` but the backend wraps audit rows as
+ *    `{ items, total, page, limit }` (object, not array) and omits actorName/
+ *    tenantName/details. The audit table's `.map` would throw on the live payload.
+ */
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, fireEvent, within } from '@testing-library/react'
+
+// ── Hoisted mutation spies ──────────────────────────────────────────────────
+const h = vi.hoisted(() => ({
+  createCustomer: vi.fn(),
+  suspend:        vi.fn(),
+  reactivate:     vi.fn(),
+  createPlan:     vi.fn(),
+  retirePlan:     vi.fn(),
+  navigate:       vi.fn(),
+  auditQueryFn:   vi.fn(),
+}))
+
+// ── react-router-dom mock ───────────────────────────────────────────────────
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => h.navigate,
+  useParams:   () => ({ id: '42' }),
+}))
+
+// ── Hook mocks (state injected per-test) ────────────────────────────────────
+const state = vi.hoisted(() => ({
+  customers: [] as unknown[],
+  plans:     [] as unknown[],
+  customer:  null as unknown,
+  usage:     null as unknown,
+  audit:     [] as unknown[],
+}))
+
+vi.mock('../hooks/usePlatformCustomers', () => ({
+  usePlatformCustomers:      () => ({ data: state.customers, isLoading: false, isError: false }),
+  usePlatformCustomer:       () => ({ data: state.customer }),
+  usePlatformCustomerUsage:  () => ({ data: state.usage, isLoading: false, isError: false }),
+  useCreatePlatformCustomer: () => ({ mutate: h.createCustomer, isPending: false, error: null }),
+  useUpdatePlatformCustomer: () => ({ mutate: vi.fn(), isPending: false, error: null }),
+  useSuspendCustomer:        () => ({ mutate: h.suspend, isPending: false }),
+  useReactivateCustomer:     () => ({ mutate: h.reactivate, isPending: false }),
+}))
+
+vi.mock('../hooks/usePlatformPlans', () => ({
+  usePlatformPlans:       () => ({ data: state.plans, isLoading: false }),
+  useCreatePlatformPlan:  () => ({ mutate: h.createPlan, isPending: false, error: null }),
+  useUpdatePlatformPlan:  () => ({ mutate: vi.fn(), isPending: false, error: null }),
+  useRetirePlatformPlan:  () => ({ mutate: h.retirePlan, isPending: false }),
+}))
+
+vi.mock('../hooks/usePlatformAudit', () => ({
+  usePlatformAudit: (filters: unknown) => {
+    h.auditQueryFn(filters)
+    return { data: state.audit, isLoading: false, isError: false, refetch: vi.fn() }
+  },
+}))
+
+// Imported AFTER mocks so the views resolve the mocked hooks.
+import CustomerListView from '../views/platform/CustomerListView'
+import CustomerDetailView from '../views/platform/CustomerDetailView'
+import PlatformPlansView from '../views/platform/PlatformPlansView'
+import PlatformAuditView from '../views/platform/PlatformAuditView'
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  state.customers = []
+  state.plans     = []
+  state.customer  = null
+  state.usage     = null
+  state.audit     = []
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC-F1 — Customer list renders subdomain, plan, status, userCount
+// ─────────────────────────────────────────────────────────────────────────────
+describe('AC-F1 — CustomerListView rows', () => {
+  it('✅ renders subdomain, name, plan, status badge, and userCount', () => {
+    state.customers = [
+      { id: 1, subdomain: 'happypaws', name: 'Happy Paws', planName: 'Professional', status: 'active', userCount: 7 },
+    ]
+    state.plans = [{ id: 5, name: 'Professional', isRetired: false }]
+    render(<CustomerListView />)
+
+    expect(screen.getByText('happypaws')).toBeInTheDocument()
+    expect(screen.getByText('Happy Paws')).toBeInTheDocument()
+    expect(screen.getByText('Professional')).toBeInTheDocument()
+    expect(screen.getByText('7')).toBeInTheDocument()
+    // status badge — text is the status string
+    expect(screen.getByText(/active/i)).toBeInTheDocument()
+  })
+
+  it('✅ empty list → "No customers yet" empty state', () => {
+    render(<CustomerListView />)
+    expect(screen.getByText(/No customers yet/i)).toBeInTheDocument()
+  })
+
+  it('✅ clicking a row navigates to the detail route', () => {
+    state.customers = [
+      { id: 9, subdomain: 'sub9', name: 'Nine', planName: 'Starter', status: 'active', userCount: 1 },
+    ]
+    render(<CustomerListView />)
+    fireEvent.click(screen.getByText('Nine'))
+    expect(h.navigate).toHaveBeenCalledWith('/platform/customers/9')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC-F2 — Add Customer form requires planId
+// ─────────────────────────────────────────────────────────────────────────────
+describe('AC-F2 — Add Customer form requires planId', () => {
+  it('✅ plan <select> is marked required (native validation gate)', () => {
+    state.plans = [{ id: 5, name: 'Professional', isRetired: false }]
+    render(<CustomerListView />)
+    fireEvent.click(screen.getByRole('button', { name: /Add Customer/i }))
+    const select = screen.getByLabelText(/Plan/i) as HTMLSelectElement
+    expect(select).toBeRequired()
+    // default option has empty value → invalid until a real plan is chosen
+    expect(select.value).toBe('')
+    expect(select.checkValidity()).toBe(false)
+  })
+
+  it('✅ retired plans are NOT offered in the plan dropdown', () => {
+    state.plans = [
+      { id: 5, name: 'Professional', isRetired: false },
+      { id: 6, name: 'Legacy', isRetired: true },
+    ]
+    render(<CustomerListView />)
+    fireEvent.click(screen.getByRole('button', { name: /Add Customer/i }))
+    const select = screen.getByLabelText(/Plan/i)
+    expect(within(select).queryByText('Legacy')).not.toBeInTheDocument()
+    expect(within(select).getByText('Professional')).toBeInTheDocument()
+  })
+
+  it('✅ submitting a complete form calls createCustomer with a numeric planId', () => {
+    state.plans = [{ id: 5, name: 'Professional', isRetired: false }]
+    render(<CustomerListView />)
+    fireEvent.click(screen.getByRole('button', { name: /Add Customer/i }))
+    fireEvent.change(screen.getByLabelText(/Clinic Name/i), { target: { value: 'New Clinic' } })
+    fireEvent.change(screen.getByLabelText(/Subdomain/i),   { target: { value: 'newclinic' } })
+    fireEvent.change(screen.getByLabelText(/Plan/i),        { target: { value: '5' } })
+    fireEvent.submit(screen.getByText(/Create Customer/i).closest('form')!)
+    expect(h.createCustomer).toHaveBeenCalledTimes(1)
+    const payload = h.createCustomer.mock.calls[0][0]
+    expect(payload.planId).toBe(5)
+    expect(typeof payload.planId).toBe('number')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC-F3 — CustomerDetail has 4 tabs; Usage tab shows progress bars
+// ─────────────────────────────────────────────────────────────────────────────
+describe('AC-F3 — CustomerDetailView tabs + usage', () => {
+  beforeEach(() => {
+    state.customer = { id: 42, name: 'Detail Co', subdomain: 'detailco', status: 'active' }
+  })
+
+  it('✅ renders exactly 4 tabs: Overview, Plan & Quota, Provisioning, Usage', () => {
+    render(<CustomerDetailView />)
+    expect(screen.getByRole('button', { name: 'Overview' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Plan & Quota/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Provisioning' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Usage' })).toBeInTheDocument()
+  })
+
+  it('✅ Usage tab renders Branches/Staff/Customers progress bars (component-expected shape)', () => {
+    // Shape the COMPONENT expects (nested current/limit). See contract test below
+    // for why the live backend payload does NOT match this.
+    state.usage = {
+      branches: { current: 2, limit: 3 },
+      staff:    { current: 5, limit: 10 },
+      owners:   { current: 40, limit: 100 },
+    }
+    render(<CustomerDetailView />)
+    fireEvent.click(screen.getByRole('button', { name: 'Usage' }))
+    expect(screen.getByText('Live Usage')).toBeInTheDocument()
+    expect(screen.getByText('Branches')).toBeInTheDocument()
+    expect(screen.getByText('Staff')).toBeInTheDocument()
+    expect(screen.getByText('Customers')).toBeInTheDocument()
+  })
+
+  it('⚠️ CONTRACT: live backend usage shape ({branches:number, no staff}) breaks UsageTab', () => {
+    // This is the real payload from GET /platform/customers/:id/usage. The hook
+    // returns it raw, so UsageTab reads usage.staff.current on `undefined`.
+    state.usage = { branches: 2, users: 5, owners: 40, caps: { maxBranches: 3, maxUsers: 10, maxOwners: 100 }, overPlan: false }
+    expect(() => {
+      render(<CustomerDetailView />)
+      fireEvent.click(screen.getByRole('button', { name: 'Usage' }))
+    }).toThrow() // TypeError: Cannot read properties of undefined (reading 'current')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC-F4 — Suspend button calls suspend API
+// ─────────────────────────────────────────────────────────────────────────────
+describe('AC-F4 — suspend / reactivate', () => {
+  it('✅ active tenant → "Suspend Tenant" button calls suspend.mutate', () => {
+    state.customer = { id: 42, name: 'Detail Co', subdomain: 'detailco', status: 'active' }
+    render(<CustomerDetailView />)
+    // Overview tab is default; suspend button lives there
+    fireEvent.click(screen.getByRole('button', { name: /Suspend Tenant/i }))
+    expect(h.suspend).toHaveBeenCalledTimes(1)
+  })
+
+  it('✅ suspended tenant → shows "Reactivate Tenant" instead', () => {
+    state.customer = { id: 42, name: 'Detail Co', subdomain: 'detailco', status: 'suspended' }
+    render(<CustomerDetailView />)
+    expect(screen.getByRole('button', { name: /Reactivate Tenant/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Suspend Tenant/i })).not.toBeInTheDocument()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC-F5 — Plans CRUD: create appears in list; retired plan shows "Retired"
+// ─────────────────────────────────────────────────────────────────────────────
+describe('AC-F5 — PlatformPlansView CRUD', () => {
+  it('✅ active plan row renders with edit + retire actions', () => {
+    state.plans = [{ id: 1, key: 'pro', name: 'Professional', price: 1200, maxBranches: 3, maxUsers: 20, maxOwners: 5000, isRetired: false }]
+    render(<PlatformPlansView />)
+    expect(screen.getByText('Professional')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Retire Professional/i })).toBeInTheDocument()
+  })
+
+  it('✅ retired plan shows "Retired" badge and no retire button (soft-delete)', () => {
+    state.plans = [{ id: 2, key: 'legacy', name: 'Legacy', price: 0, maxBranches: 1, maxUsers: 5, maxOwners: 500, isRetired: true }]
+    render(<PlatformPlansView />)
+    expect(screen.getByText('Retired')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Retire Legacy/i })).not.toBeInTheDocument()
+  })
+
+  it('✅ "New Plan" opens create modal; submit calls createPlan', () => {
+    render(<PlatformPlansView />)
+    fireEvent.click(screen.getByRole('button', { name: /New Plan/i }))
+    const form = screen.getByText(/^Create$|Save/i).closest('form')!
+    fireEvent.submit(form)
+    expect(h.createPlan).toHaveBeenCalledTimes(1)
+  })
+
+  it('✅ retire action on an active plan calls retirePlan.mutate', () => {
+    state.plans = [{ id: 1, key: 'pro', name: 'Professional', price: 1200, maxBranches: 3, maxUsers: 20, maxOwners: 5000, isRetired: false }]
+    render(<PlatformPlansView />)
+    fireEvent.click(screen.getByRole('button', { name: /Retire Professional/i }))
+    expect(h.retirePlan).toHaveBeenCalledTimes(1)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC-F6 — Audit view filters drive the hook
+// ─────────────────────────────────────────────────────────────────────────────
+describe('AC-F6 — PlatformAuditView filters', () => {
+  it('✅ typing filters passes from/to/action/tenantId into usePlatformAudit', () => {
+    render(<PlatformAuditView />)
+    fireEvent.change(screen.getByLabelText('From'),      { target: { value: '2026-01-01' } })
+    fireEvent.change(screen.getByLabelText('To'),        { target: { value: '2026-01-31' } })
+    fireEvent.change(screen.getByLabelText('Action'),    { target: { value: 'tenant.suspend' } })
+    fireEvent.change(screen.getByLabelText('Tenant ID'), { target: { value: '12' } })
+
+    const lastCall = h.auditQueryFn.mock.calls.at(-1)![0] as {
+      from?: string; to?: string; action?: string; tenantId?: number
+    }
+    expect(lastCall.from).toBe('2026-01-01')
+    expect(lastCall.to).toBe('2026-01-31')
+    expect(lastCall.action).toBe('tenant.suspend')
+    expect(lastCall.tenantId).toBe(12)
+  })
+
+  it('✅ Clear resets all filters back to undefined', () => {
+    render(<PlatformAuditView />)
+    fireEvent.change(screen.getByLabelText('Action'), { target: { value: 'plan.delete' } })
+    fireEvent.click(screen.getByRole('button', { name: /Clear/i }))
+    const lastCall = h.auditQueryFn.mock.calls.at(-1)![0] as { action?: string }
+    expect(lastCall.action).toBeUndefined()
+  })
+
+  it('✅ empty audit list → "No audit entries found" empty state', () => {
+    render(<PlatformAuditView />)
+    expect(screen.getByText(/No audit entries found/i)).toBeInTheDocument()
+  })
+})
