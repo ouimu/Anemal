@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
+import { useT } from '../../i18n'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Appointment {
@@ -61,6 +62,7 @@ function BookingForm({ selectedDate, selectedHour, doctors, onClose, onSaved }: 
   onClose: () => void
   onSaved: () => void
 }) {
+  const t = useT()
   const [petSearch, setPetSearch]   = useState('')
   const [selectedPet, setSelected] = useState<SearchResult | null>(null)
   const [doctorId, setDoctorId]     = useState<number>(doctors[0]?.id ?? 0)
@@ -80,8 +82,8 @@ function BookingForm({ selectedDate, selectedHour, doctors, onClose, onSaved }: 
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedPet) { setError('Please select a pet'); return }
-    if (!doctorId) { setError('Please select a doctor'); return }
+    if (!selectedPet) { setError(t('clinic.appointments.selectPet')); return }
+    if (!doctorId) { setError(t('clinic.appointments.selectDoctor')); return }
     setSaving(true)
     setError('')
     try {
@@ -94,14 +96,14 @@ function BookingForm({ selectedDate, selectedHour, doctors, onClose, onSaved }: 
       })
       onSaved()
     } catch (err) {
-      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to book')
+      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? t('clinic.appointments.failedToBook'))
     } finally { setSaving(false) }
   }
 
   return (
     <div className="w-80 flex-shrink-0 border-l border-outline-variant bg-surface flex flex-col">
       <div className="flex items-center justify-between px-lg py-md border-b border-outline-variant">
-        <h3 className="text-headline-sm font-headline font-bold">Book Appointment</h3>
+        <h3 className="text-headline-sm font-headline font-bold">{t('clinic.appointments.bookNew')}</h3>
         <button onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-surface-container-low rounded-lg"><MaterialIcon name="close" size={20} /></button>
       </div>
       <form onSubmit={submit} className="flex-1 overflow-y-auto p-lg flex flex-col gap-md">
@@ -109,7 +111,7 @@ function BookingForm({ selectedDate, selectedHour, doctors, onClose, onSaved }: 
 
         {/* Pet search */}
         <div>
-          <label className="text-body-sm font-medium text-on-surface-variant mb-xs block">Patient</label>
+          <label className="text-body-sm font-medium text-on-surface-variant mb-xs block">{t('clinic.appointments.patient')}</label>
           {selectedPet ? (
             <div className="flex items-center gap-sm bg-surface-container-low rounded-lg px-md py-sm min-h-[44px]">
               <MaterialIcon name="pets" size={16} className="text-secondary" />
@@ -121,7 +123,7 @@ function BookingForm({ selectedDate, selectedHour, doctors, onClose, onSaved }: 
               <MaterialIcon name="search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
               <input
                 className="w-full bg-surface-container-low rounded-lg py-sm pl-9 pr-md min-h-[44px] text-body-sm border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="Search pet or owner…"
+                placeholder={t('clinic.appointments.searchPet')}
                 value={petSearch}
                 onChange={e => setPetSearch(e.target.value)}
               />
@@ -142,7 +144,7 @@ function BookingForm({ selectedDate, selectedHour, doctors, onClose, onSaved }: 
 
         {/* Doctor */}
         <div>
-          <label className="text-body-sm font-medium text-on-surface-variant mb-xs block">Doctor</label>
+          <label className="text-body-sm font-medium text-on-surface-variant mb-xs block">{t('clinic.appointments.doctor')}</label>
           <select className="w-full bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-sm border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={doctorId} onChange={e => setDoctorId(parseInt(e.target.value))}>
             {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
@@ -151,11 +153,11 @@ function BookingForm({ selectedDate, selectedHour, doctors, onClose, onSaved }: 
         {/* Date & time */}
         <div className="flex gap-md">
           <div className="flex-1">
-            <label className="text-body-sm font-medium text-on-surface-variant mb-xs block">Date</label>
+            <label className="text-body-sm font-medium text-on-surface-variant mb-xs block">{t('clinic.appointments.date')}</label>
             <input type="date" className="w-full bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-sm border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={date} onChange={e => setDate(e.target.value)} />
           </div>
           <div className="flex-1">
-            <label className="text-body-sm font-medium text-on-surface-variant mb-xs block">Time</label>
+            <label className="text-body-sm font-medium text-on-surface-variant mb-xs block">{t('clinic.appointments.time')}</label>
             <select className="w-full bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-sm border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={time} onChange={e => setTime(e.target.value)}>
               {HOURS.flatMap(h => ['00', '30'].map(m => `${String(h).padStart(2, '0')}:${m}`)).map(t => <option key={t} value={t}>{t}</option>)}
             </select>
@@ -164,7 +166,7 @@ function BookingForm({ selectedDate, selectedHour, doctors, onClose, onSaved }: 
 
         {/* Duration */}
         <div>
-          <label className="text-body-sm font-medium text-on-surface-variant mb-xs block">Duration</label>
+          <label className="text-body-sm font-medium text-on-surface-variant mb-xs block">{t('clinic.appointments.duration')}</label>
           <select className="w-full bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-sm border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={duration} onChange={e => setDuration(parseInt(e.target.value))}>
             {[15, 30, 45, 60, 90, 120].map(d => <option key={d} value={d}>{d} min</option>)}
           </select>
@@ -172,11 +174,11 @@ function BookingForm({ selectedDate, selectedHour, doctors, onClose, onSaved }: 
 
         {/* Reason */}
         <div>
-          <label className="text-body-sm font-medium text-on-surface-variant mb-xs block">Reason (optional)</label>
-          <textarea className="w-full bg-surface-container-low rounded-lg px-md py-sm text-body-sm border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary min-h-[80px] resize-none" placeholder="Chief complaint or visit type…" value={reason} onChange={e => setReason(e.target.value)} />
+          <label className="text-body-sm font-medium text-on-surface-variant mb-xs block">{t('clinic.appointments.reason')}</label>
+          <textarea className="w-full bg-surface-container-low rounded-lg px-md py-sm text-body-sm border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary min-h-[80px] resize-none" placeholder={t('clinic.appointments.chiefComplaint')} value={reason} onChange={e => setReason(e.target.value)} />
         </div>
 
-        <button type="submit" disabled={saving} className="w-full min-h-[44px] bg-primary text-primary-on rounded-lg text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? 'Booking…' : 'Book Appointment'}</button>
+        <button type="submit" disabled={saving} className="w-full min-h-[44px] bg-primary text-primary-on rounded-lg text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? t('clinic.appointments.booking') : t('common.confirm')}</button>
       </form>
     </div>
   )
@@ -216,11 +218,12 @@ function AppointmentDetail({ appt, onClose, onStatusChange }: {
 
 // ─── Main View ────────────────────────────────────────────────────────────────
 export default function ClinicAppointments() {
+  const t = useT()
   const qc = useQueryClient()
   const [viewMode, setViewMode]         = useState<'day' | 'week'>('day')
   const [currentDate, setCurrentDate]   = useState(new Date())
   const [filterDoctorId, setFilterDoc]  = useState<number | null>(null)
-  const [showForm, setShowForm]         = useState(false)
+  const [showForm, setShowForm]         = useState(true)
   const [selectedHour, setSelectedHour] = useState<number | undefined>()
   const [detailAppt, setDetailAppt]     = useState<Appointment | null>(null)
 
@@ -307,7 +310,7 @@ export default function ClinicAppointments() {
         <button
           onClick={() => { setShowForm(true); setSelectedHour(undefined) }}
           className="flex items-center gap-sm bg-primary text-primary-on rounded-lg px-lg py-sm min-h-[44px] text-body-sm font-semibold hover:bg-primary/90 transition-colors">
-          <MaterialIcon name="add" size={18} />Book Appointment
+          <MaterialIcon name="add" size={18} />{t('clinic.appointments.bookNew')}
         </button>
       </div>
 

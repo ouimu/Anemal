@@ -139,6 +139,21 @@ const en: Dict = {
   'clinic.dashboard.inpatientsNow': 'Inpatients now',
   'clinic.dashboard.groomingToday': 'Grooming today',
 
+  // Clinic appointments
+  'clinic.appointments.bookNew': 'Book Appointment',
+  'clinic.appointments.searchPet': 'Search pet or owner…',
+  'clinic.appointments.chiefComplaint': 'Chief complaint or visit type…',
+  'clinic.appointments.patient': 'Patient',
+  'clinic.appointments.doctor': 'Doctor',
+  'clinic.appointments.date': 'Date',
+  'clinic.appointments.time': 'Time',
+  'clinic.appointments.duration': 'Duration',
+  'clinic.appointments.reason': 'Reason (optional)',
+  'clinic.appointments.booking': 'Booking…',
+  'clinic.appointments.selectPet': 'Please select a pet',
+  'clinic.appointments.selectDoctor': 'Please select a doctor',
+  'clinic.appointments.failedToBook': 'Failed to book. Please try again.',
+
   // Admin dashboard
   'admin.dashboard.welcome': 'Welcome back, {name}',
   'admin.dashboard.subtitle': 'Clinic overview · Admin panel',
@@ -268,6 +283,21 @@ const th: Dict = {
   'clinic.dashboard.inventoryAlerts': 'แจ้งเตือนสินค้าคงคลัง',
   'clinic.dashboard.inpatientsNow': 'ผู้ป่วยในขณะนี้',
   'clinic.dashboard.groomingToday': 'บริการอาบน้ำวันนี้',
+
+  // Clinic appointments
+  'clinic.appointments.bookNew': 'นัดหมายใหม่',
+  'clinic.appointments.searchPet': 'ค้นหาสัตว์เลี้ยงหรือเจ้าของ…',
+  'clinic.appointments.chiefComplaint': 'อาการหลักหรือประเภทการเยี่ยม…',
+  'clinic.appointments.patient': 'ผู้ป่วย',
+  'clinic.appointments.doctor': 'สัตวแพทย์',
+  'clinic.appointments.date': 'วันที่',
+  'clinic.appointments.time': 'เวลา',
+  'clinic.appointments.duration': 'ระยะเวลา',
+  'clinic.appointments.reason': 'เหตุผล (ไม่จำเป็น)',
+  'clinic.appointments.booking': 'กำลังนัดหมาย…',
+  'clinic.appointments.selectPet': 'กรุณาเลือกสัตว์เลี้ยง',
+  'clinic.appointments.selectDoctor': 'กรุณาเลือกสัตวแพทย์',
+  'clinic.appointments.failedToBook': 'การนัดหมายล้มเหลว กรุณาลองอีกครั้ง',
 
   // Admin dashboard
   'admin.dashboard.welcome': 'ยินดีต้อนรับกลับ, {name}',

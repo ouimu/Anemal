@@ -1,0 +1,25 @@
+// src/frontend/src/__tests__/ClinicAppointments.i18n.test.tsx
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
+
+vi.mock('../store/uiStore', () => ({
+  useUiStore: (s: (s: { language: string }) => unknown) => s({ language: 'th' }),
+}))
+vi.mock('@tanstack/react-query', () => ({
+  useQuery: () => ({ data: [], isLoading: false }),
+  useMutation: () => ({ mutate: vi.fn() }),
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+}))
+
+import ClinicAppointments from '../views/clinic/ClinicAppointments'
+
+describe('ClinicAppointments — Thai i18n', () => {
+  it('renders Thai book button', () => {
+    render(<ClinicAppointments />)
+    expect(screen.getByRole('button', { name: /นัดหมายใหม่/i })).toBeInTheDocument()
+  })
+  it('renders Thai patient label', () => {
+    render(<ClinicAppointments />)
+    expect(screen.getByText(/ผู้ป่วย/i)).toBeInTheDocument()
+  })
+})
