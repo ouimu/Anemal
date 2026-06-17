@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
 import { useAuthStore } from '../../store/authStore'
+import { useT } from '../../i18n'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Pet { id: number; name: string; species: string; photoUrl?: string; allergies?: string; underlyingConditions?: string; owner?: { firstName: string; lastName: string; phone: string } }
@@ -246,6 +247,7 @@ type SoapTab = typeof SOAP_TABS[number]
 
 // ─── Main View ────────────────────────────────────────────────────────────────
 export default function ClinicEMR() {
+  const t = useT()
   const { userId } = useAuthStore()
 
   // Patient selection state
@@ -394,7 +396,7 @@ export default function ClinicEMR() {
               </div>
             </div>
             <button onClick={newRecord} className="w-full min-h-[44px] flex items-center justify-center gap-sm bg-primary text-primary-on rounded-lg text-body-sm font-semibold hover:bg-primary/90 transition-colors">
-              <MaterialIcon name="add" size={18} />New EMR
+              <MaterialIcon name="add" size={18} />{t('clinic.emr.newRecord')}
             </button>
           </div>
         )}
@@ -508,7 +510,7 @@ export default function ClinicEMR() {
             <button onClick={saveRecord} disabled={saving}
               className="min-h-[44px] px-xl bg-primary text-primary-on rounded-lg text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-sm">
               <MaterialIcon name="save" size={18} />
-              {saving ? 'Saving…' : 'Save EMR'}
+              {saving ? 'Saving…' : t('clinic.emr.saveRecord')}
             </button>
           </div>
         </div>

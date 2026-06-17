@@ -155,6 +155,32 @@ const en: Dict = {
   'clinic.appointments.failedToBook': 'Failed to book. Please try again.',
   'clinic.appointments.confirmBook': 'Book Appointment',
 
+  // Clinic pets & owners
+  'clinic.pets.firstName': 'First name',
+  'clinic.pets.lastName': 'Last name',
+  'clinic.pets.phone': 'Phone number',
+  'clinic.pets.emailOptional': 'Email (optional)',
+  'clinic.pets.addressOptional': 'Address (optional)',
+  'clinic.pets.petName': 'Pet name',
+  'clinic.pets.breedOptional': 'Breed (optional)',
+  'clinic.pets.colorOptional': 'Color (optional)',
+  'clinic.pets.microchipOptional': 'Microchip ID (optional)',
+  'clinic.pets.allergiesOptional': 'Allergies (optional)',
+  'clinic.pets.conditionsOptional': 'Underlying conditions (optional)',
+  'clinic.pets.vaccineName': 'Vaccine name',
+  'clinic.pets.batchOptional': 'Batch number (optional)',
+  'clinic.pets.addOwner': 'Add New Owner',
+  'clinic.pets.addPet': 'Add New Pet',
+
+  // Clinic EMR
+  'clinic.emr.newRecord': 'New EMR Record',
+  'clinic.emr.diagnosis': 'Diagnosis',
+  'clinic.emr.treatment': 'Treatment',
+  'clinic.emr.notes': 'Notes',
+  'clinic.emr.weight': 'Weight (kg)',
+  'clinic.emr.temperature': 'Temperature (°C)',
+  'clinic.emr.saveRecord': 'Save Record',
+
   // Admin dashboard
   'admin.dashboard.welcome': 'Welcome back, {name}',
   'admin.dashboard.subtitle': 'Clinic overview · Admin panel',
@@ -300,6 +326,32 @@ const th: Dict = {
   'clinic.appointments.selectDoctor': 'กรุณาเลือกสัตวแพทย์',
   'clinic.appointments.failedToBook': 'การนัดหมายล้มเหลว กรุณาลองอีกครั้ง',
   'clinic.appointments.confirmBook': 'นัดหมาย',
+
+  // Clinic pets & owners
+  'clinic.pets.firstName': 'ชื่อ',
+  'clinic.pets.lastName': 'นามสกุล',
+  'clinic.pets.phone': 'เบอร์โทรศัพท์',
+  'clinic.pets.emailOptional': 'อีเมล (ไม่จำเป็น)',
+  'clinic.pets.addressOptional': 'ที่อยู่ (ไม่จำเป็น)',
+  'clinic.pets.petName': 'ชื่อสัตว์เลี้ยง',
+  'clinic.pets.breedOptional': 'สายพันธุ์ (ไม่จำเป็น)',
+  'clinic.pets.colorOptional': 'สีขน (ไม่จำเป็น)',
+  'clinic.pets.microchipOptional': 'หมายเลขไมโครชิป (ไม่จำเป็น)',
+  'clinic.pets.allergiesOptional': 'ภูมิแพ้ (ไม่จำเป็น)',
+  'clinic.pets.conditionsOptional': 'โรคประจำตัว (ไม่จำเป็น)',
+  'clinic.pets.vaccineName': 'ชื่อวัคซีน',
+  'clinic.pets.batchOptional': 'หมายเลขล็อต (ไม่จำเป็น)',
+  'clinic.pets.addOwner': 'เพิ่มเจ้าของใหม่',
+  'clinic.pets.addPet': 'เพิ่มสัตว์เลี้ยงใหม่',
+
+  // Clinic EMR
+  'clinic.emr.newRecord': 'บันทึกการรักษาใหม่',
+  'clinic.emr.diagnosis': 'การวินิจฉัย',
+  'clinic.emr.treatment': 'การรักษา',
+  'clinic.emr.notes': 'หมายเหตุ',
+  'clinic.emr.weight': 'น้ำหนัก (กก.)',
+  'clinic.emr.temperature': 'อุณหภูมิ (°C)',
+  'clinic.emr.saveRecord': 'บันทึกข้อมูล',
 
   // Admin dashboard
   'admin.dashboard.welcome': 'ยินดีต้อนรับกลับ, {name}',

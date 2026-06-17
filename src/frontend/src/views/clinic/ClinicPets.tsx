@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
 import { usePhotoUpload } from '../../hooks/usePhotoUpload'
+import { useT } from '../../i18n'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Owner { id: number; firstName: string; lastName: string; phone: string; email?: string; lineId?: string; address?: string; pets: Pet[] }
@@ -32,6 +33,7 @@ function initials(firstName: string, lastName: string) {
 
 // ─── Modal: Add Owner ─────────────────────────────────────────────────────────
 function AddOwnerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const t = useT()
   const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', email: '', address: '', lineId: '' })
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -58,12 +60,12 @@ function AddOwnerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
         {error && <p className="text-error text-body-sm mb-md">{error}</p>}
         <form onSubmit={submit} className="flex flex-col gap-md">
           <div className="flex gap-md">
-            <input required className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder="First name" value={form.firstName} onChange={set('firstName')} />
-            <input required className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Last name" value={form.lastName} onChange={set('lastName')} />
+            <input required className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.firstName')} value={form.firstName} onChange={set('firstName')} />
+            <input required className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.lastName')} value={form.lastName} onChange={set('lastName')} />
           </div>
-          <input required className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Phone number" value={form.phone} onChange={set('phone')} />
-          <input type="email" className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Email (optional)" value={form.email} onChange={set('email')} />
-          <input className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Address (optional)" value={form.address} onChange={set('address')} />
+          <input required className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.phone')} value={form.phone} onChange={set('phone')} />
+          <input type="email" className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.emailOptional')} value={form.email} onChange={set('email')} />
+          <input className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.addressOptional')} value={form.address} onChange={set('address')} />
           <div className="flex gap-md pt-sm">
             <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
             <button type="submit" disabled={saving} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? 'Saving…' : 'Save Owner'}</button>
@@ -76,6 +78,7 @@ function AddOwnerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
 
 // ─── Modal: Add Pet ───────────────────────────────────────────────────────────
 function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerId: number; ownerName: string; onClose: () => void; onSuccess: () => void }) {
+  const t = useT()
   const [form, setForm] = useState({ name: '', species: 'canine', breed: '', color: '', gender: '', birthDate: '', microchipId: '', allergies: '', underlyingConditions: '' })
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -161,7 +164,7 @@ function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerId: numb
             </div>
           </div>
 
-          <input required className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Pet name" value={form.name} onChange={set('name')} />
+          <input required className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.petName')} value={form.name} onChange={set('name')} />
           <div className="flex gap-md">
             <select className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.species} onChange={set('species')}>
               <option value="canine">Canine</option>
@@ -177,13 +180,13 @@ function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerId: numb
             </select>
           </div>
           <div className="flex gap-md">
-            <input className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Breed (optional)" value={form.breed} onChange={set('breed')} />
-            <input className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Color (optional)" value={form.color} onChange={set('color')} />
+            <input className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.breedOptional')} value={form.breed} onChange={set('breed')} />
+            <input className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.colorOptional')} value={form.color} onChange={set('color')} />
           </div>
           <input type="date" className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.birthDate} onChange={set('birthDate')} />
-          <input className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Microchip ID (optional)" value={form.microchipId} onChange={set('microchipId')} />
-          <textarea className="bg-surface-container-low rounded-lg px-md py-sm min-h-[80px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary resize-none" placeholder="Allergies (optional)" value={form.allergies} onChange={set('allergies')} />
-          <textarea className="bg-surface-container-low rounded-lg px-md py-sm min-h-[80px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary resize-none" placeholder="Underlying conditions (optional)" value={form.underlyingConditions} onChange={set('underlyingConditions')} />
+          <input className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.microchipOptional')} value={form.microchipId} onChange={set('microchipId')} />
+          <textarea className="bg-surface-container-low rounded-lg px-md py-sm min-h-[80px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary resize-none" placeholder={t('clinic.pets.allergiesOptional')} value={form.allergies} onChange={set('allergies')} />
+          <textarea className="bg-surface-container-low rounded-lg px-md py-sm min-h-[80px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary resize-none" placeholder={t('clinic.pets.conditionsOptional')} value={form.underlyingConditions} onChange={set('underlyingConditions')} />
           <div className="flex gap-md pt-sm">
             <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
             <button type="submit" disabled={busy} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{busy ? 'Saving…' : 'Save Pet'}</button>
@@ -196,6 +199,7 @@ function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerId: numb
 
 // ─── Modal: Add Vaccination ───────────────────────────────────────────────────
 function AddVaccinationModal({ petId, onClose, onSuccess }: { petId: number; onClose: () => void; onSuccess: () => void }) {
+  const t = useT()
   const [form, setForm] = useState({ vaccineName: '', administeredAt: '', nextDueAt: '', batchNo: '', notes: '' })
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -221,12 +225,12 @@ function AddVaccinationModal({ petId, onClose, onSuccess }: { petId: number; onC
         <h3 className="text-headline-sm font-headline font-bold text-primary mb-lg">Record Vaccination</h3>
         {error && <p className="text-error text-body-sm mb-md">{error}</p>}
         <form onSubmit={submit} className="flex flex-col gap-md">
-          <input required className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Vaccine name" value={form.vaccineName} onChange={set('vaccineName')} />
+          <input required className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.vaccineName')} value={form.vaccineName} onChange={set('vaccineName')} />
           <label className="text-body-sm text-on-surface-variant">Date administered</label>
           <input required type="date" className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.administeredAt} onChange={set('administeredAt')} />
           <label className="text-body-sm text-on-surface-variant">Next due date (optional)</label>
           <input type="date" className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.nextDueAt} onChange={set('nextDueAt')} />
-          <input className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Batch number (optional)" value={form.batchNo} onChange={set('batchNo')} />
+          <input className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.batchOptional')} value={form.batchNo} onChange={set('batchNo')} />
           <div className="flex gap-md pt-sm">
             <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
             <button type="submit" disabled={saving} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? 'Saving…' : 'Save'}</button>
@@ -355,6 +359,7 @@ function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVaccinatio
 
 // ─── Main View ────────────────────────────────────────────────────────────────
 export default function ClinicPets() {
+  const t = useT()
   const qc = useQueryClient()
   const [search, setSearch]         = useState('')
   const [speciesFilter, setSpecies] = useState<string | null>(null)
@@ -424,8 +429,14 @@ export default function ClinicPets() {
         {/* Add owner button */}
         <div className="p-md border-b border-outline-variant">
           <button onClick={() => setModal('addOwner')} className="w-full flex items-center justify-center gap-sm bg-surface border border-outline-variant rounded-lg px-md py-sm min-h-[44px] text-body-sm font-semibold hover:bg-surface-container-low transition-colors">
-            <MaterialIcon name="person_add" size={18} />New Owner
+            <MaterialIcon name="person_add" size={18} />{t('clinic.pets.addOwner')}
           </button>
+        </div>
+
+        {/* List column headers */}
+        <div className="flex items-center justify-between px-md py-xs border-b border-outline-variant bg-surface-container">
+          <span className="text-label-md text-on-surface-variant font-medium">{t('clinic.pets.petName')}</span>
+          <span className="text-label-md text-on-surface-variant">{t('clinic.pets.phone')}</span>
         </div>
 
         {/* Pet list */}
@@ -463,7 +474,7 @@ export default function ClinicPets() {
               <h2 className="text-headline-sm font-headline font-bold text-primary">Pet Profile</h2>
               {selectedOwnerId && (
                 <button onClick={() => setModal('addPet')} className="flex items-center gap-sm bg-primary text-primary-on rounded-lg px-lg py-sm min-h-[44px] text-body-sm font-semibold hover:bg-primary/90 transition-colors">
-                  <MaterialIcon name="add" size={18} />Add Pet
+                  <MaterialIcon name="add" size={18} />{t('clinic.pets.addPet')}
                 </button>
               )}
             </div>
