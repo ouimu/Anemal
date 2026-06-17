@@ -6,6 +6,7 @@ import { useAuthStore } from '../../store/authStore'
 import Can from '../../components/Can'
 import RolePicker from '../../components/roles/RolePicker'
 import { useUserRolesQuery } from '../../hooks/useUserRoles'
+import { useT } from '../../i18n'
 
 interface User { id: number; name: string; email: string; role: string; isActive: boolean; createdAt: string }
 
@@ -21,6 +22,7 @@ const AVATAR_BG: Record<string, string> = {
 }
 
 function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; onClose: () => void }) {
+  const t = useT()
   const qc = useQueryClient()
   const isNew = !!user.isNew
   const editUserId = user.id ?? 0
@@ -41,7 +43,7 @@ function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; o
         <h3 className="font-semibold text-on-surface mb-4">{isNew ? 'Add user' : 'Edit user'}</h3>
         <div className="space-y-3">
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-on-surface-variant">Full name</label>
+            <label className="text-xs text-on-surface-variant">{t('admin.users.fullName')}</label>
             <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
               className="min-h-[44px] px-3 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"/>
           </div>
@@ -53,25 +55,25 @@ function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; o
                   className="min-h-[44px] px-3 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"/>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-on-surface-variant">Password</label>
+                <label className="text-xs text-on-surface-variant">{t('admin.users.password')}</label>
                 <input type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
                   className="min-h-[44px] px-3 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"/>
               </div>
             </>
           )}
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-on-surface-variant">Role</label>
+            <label className="text-xs text-on-surface-variant">{t('admin.users.role')}</label>
             <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}
               className="min-h-[44px] px-3 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 bg-surface">
-              <option value="doctor">Doctor</option>
-              <option value="staff">Staff</option>
-              {!isNew && <option value="admin">Admin</option>}
+              <option value="doctor">{t('admin.users.doctor')}</option>
+              <option value="staff">{t('admin.users.staff')}</option>
+              {!isNew && <option value="admin">{t('admin.users.admin')}</option>}
             </select>
           </div>
           {!isNew && (
             <label className="flex items-center gap-2 min-h-[44px] cursor-pointer">
               <input type="checkbox" checked={form.isActive} onChange={e => setForm(p => ({ ...p, isActive: e.target.checked }))} className="w-4 h-4"/>
-              <span className="text-sm text-on-surface">Active account</span>
+              <span className="text-sm text-on-surface">{t('admin.users.activeAccount')}</span>
             </label>
           )}
           {!isNew && (
@@ -89,10 +91,10 @@ function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; o
         </div>
         {save.isError && <p className="text-xs text-error-on-container mt-2">Save failed — check all fields.</p>}
         <div className="flex gap-2 mt-5">
-          <button onClick={onClose} className="flex-1 min-h-[44px] border border-outline-variant rounded-lg text-sm text-on-surface-variant hover:bg-surface-container-low">Cancel</button>
+          <button onClick={onClose} className="flex-1 min-h-[44px] border border-outline-variant rounded-lg text-sm text-on-surface-variant hover:bg-surface-container-low">{t('common.cancel')}</button>
           <button onClick={() => save.mutate()} disabled={save.isPending}
             className="flex-1 min-h-[44px] bg-primary text-primary-on rounded-lg text-sm font-semibold disabled:opacity-50 hover:bg-primary/90">
-            {save.isPending ? 'Saving…' : isNew ? 'Add user' : 'Save'}
+            {save.isPending ? t('common.saving') : isNew ? t('admin.users.addUser') : t('common.save')}
           </button>
         </div>
       </div>
@@ -101,6 +103,7 @@ function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; o
 }
 
 export default function UserManagementTab() {
+  const t = useT()
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ['admin', 'users'],
     queryFn: () => api.get('/users').then(r => r.data.data),
@@ -108,7 +111,7 @@ export default function UserManagementTab() {
   const [modal, setModal] = useState<(Partial<User> & { isNew?: boolean }) | null>(null)
   const currentUserId = useAuthStore(s => s.userId)
 
-  if (isLoading) return <p className="text-sm text-on-surface-variant py-8 text-center">Loading…</p>
+  if (isLoading) return <p className="text-sm text-on-surface-variant py-8 text-center">{t('common.loading')}</p>
 
   const active   = users.filter(u => u.isActive)
   const inactive = users.filter(u => !u.isActive)
@@ -123,7 +126,7 @@ export default function UserManagementTab() {
             <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Active users ({active.length})</h3>
             <button onClick={() => setModal({ isNew: true })}
               className="min-h-[44px] px-4 flex items-center gap-2 border border-outline-variant rounded-lg text-sm text-on-surface-variant hover:bg-surface-container-low">
-              + Add user
+              + {t('admin.users.addUser')}
             </button>
           </div>
           <div className="bg-surface border border-outline-variant rounded-xl divide-y divide-outline-variant">

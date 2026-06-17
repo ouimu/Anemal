@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import { useAuthStore } from '../../store/authStore'
+import { useT } from '../../i18n'
 
 interface User { id: number; name: string; email: string; role: string; isActive: boolean; createdAt: string }
 
@@ -13,6 +14,7 @@ const ROLE_STYLE: Record<string, string> = {
 }
 
 function UserModal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; onClose: () => void }) {
+  const t = useT()
   const qc = useQueryClient()
   const isNew = !!user.isNew
   const [form, setForm] = useState({
@@ -39,7 +41,7 @@ function UserModal({ user, onClose }: { user: Partial<User> & { isNew?: boolean 
         </div>
         <div className="space-y-4">
           <div>
-            <label className="text-xs text-on-surface-variant font-medium block mb-1">Full name *</label>
+            <label className="text-xs text-on-surface-variant font-medium block mb-1">{t('admin.users.fullName')} *</label>
             <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
               className="w-full min-h-[44px] px-3 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"/>
           </div>
@@ -50,13 +52,13 @@ function UserModal({ user, onClose }: { user: Partial<User> & { isNew?: boolean 
                 className="w-full min-h-[44px] px-3 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"/>
             </div>
             <div>
-              <label className="text-xs text-on-surface-variant font-medium block mb-1">Password * (min 8 chars)</label>
+              <label className="text-xs text-on-surface-variant font-medium block mb-1">{t('admin.users.password')} *</label>
               <input type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
                 className="w-full min-h-[44px] px-3 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"/>
             </div>
           </>}
           <div>
-            <label className="text-xs text-on-surface-variant font-medium block mb-2">Role *</label>
+            <label className="text-xs text-on-surface-variant font-medium block mb-2">{t('admin.users.role')} *</label>
             <div className="flex gap-2">
               {ROLES.map(r => (
                 <button key={r} type="button" onClick={() => setForm(p => ({ ...p, role: r }))}
@@ -78,7 +80,7 @@ function UserModal({ user, onClose }: { user: Partial<User> & { isNew?: boolean 
               <input type="checkbox" checked={form.isActive} onChange={e => setForm(p => ({ ...p, isActive: e.target.checked }))}
                 className="w-4 h-4"/>
               <div>
-                <p className="text-sm font-medium text-on-surface">Active account</p>
+                <p className="text-sm font-medium text-on-surface">{t('admin.users.activeAccount')}</p>
                 <p className="text-xs text-on-surface-variant">{form.isActive ? 'User can log in' : 'Login blocked'}</p>
               </div>
             </label>
@@ -86,10 +88,10 @@ function UserModal({ user, onClose }: { user: Partial<User> & { isNew?: boolean 
         </div>
         {err && <p className="text-xs text-error-on-container bg-error-container rounded-lg px-3 py-2 mt-3">{err}</p>}
         <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 min-h-[44px] border border-outline-variant rounded-xl text-sm text-on-surface-variant hover:bg-surface-container-low">Cancel</button>
+          <button onClick={onClose} className="flex-1 min-h-[44px] border border-outline-variant rounded-xl text-sm text-on-surface-variant hover:bg-surface-container-low">{t('common.cancel')}</button>
           <button onClick={() => save.mutate()} disabled={save.isPending}
             className="flex-1 min-h-[44px] bg-primary hover:bg-primary/90 text-primary-on rounded-xl text-sm font-semibold disabled:opacity-50 transition-colors">
-            {save.isPending ? 'Saving…' : isNew ? 'Add user' : 'Save changes'}
+            {save.isPending ? t('common.saving') : isNew ? t('admin.users.addUser') : t('common.save')}
           </button>
         </div>
       </div>
@@ -98,6 +100,7 @@ function UserModal({ user, onClose }: { user: Partial<User> & { isNew?: boolean 
 }
 
 export default function AdminUsers() {
+  const t = useT()
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ['admin', 'users'],
     queryFn: () => api.get('/users').then(r => r.data.data),
@@ -120,12 +123,12 @@ export default function AdminUsers() {
       <div className="p-6 max-w-4xl mx-auto">
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h2 className="text-xl font-semibold text-on-surface">Users & roles</h2>
+            <h2 className="text-xl font-semibold text-on-surface">{t('admin.users.title')}</h2>
             <p className="text-sm text-on-surface-variant mt-1">Manage who has access to this clinic</p>
           </div>
           <button onClick={() => setModal({ isNew: true })}
             className="min-h-[44px] px-5 bg-primary hover:bg-primary/90 text-primary-on text-sm font-semibold rounded-xl transition-colors">
-            + Add user
+            + {t('admin.users.addUser')}
           </button>
         </div>
 
@@ -156,7 +159,7 @@ export default function AdminUsers() {
         ) : (
           <div className="bg-surface border border-outline-variant rounded-2xl overflow-hidden divide-y divide-outline-variant">
             {filtered.length === 0 && (
-              <div className="py-12 text-center text-sm text-on-surface-variant">No users match the selected filters</div>
+              <div className="py-12 text-center text-sm text-on-surface-variant">{t('admin.users.noMatch')}</div>
             )}
             {filtered.map(user => (
               <div key={user.id} className={`flex items-center gap-4 px-5 py-3 min-h-[64px] ${!user.isActive ? 'opacity-50' : ''}`}>

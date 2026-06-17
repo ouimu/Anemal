@@ -1,8 +1,10 @@
 ﻿// @uiux-agent spec: logo upload zone, clinic identity fields, save inline
 import React, { useState, useEffect, useRef } from 'react'
 import { useAdminSettings, useUpdateSettings } from '../../hooks/useAdmin'
+import { useT } from '../../i18n'
 
 export default function ClinicProfileTab() {
+  const t = useT()
   const { data, isLoading } = useAdminSettings()
   const update = useUpdateSettings()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -44,7 +46,7 @@ export default function ClinicProfileTab() {
     reader.readAsDataURL(file)
   }
 
-  if (isLoading) return <p className="text-sm text-on-surface-variant py-8 text-center">Loading…</p>
+  if (isLoading) return <p className="text-sm text-on-surface-variant py-8 text-center">{t('common.loading')}</p>
 
   return (
     <form onSubmit={handleSave} className="space-y-6">
@@ -71,17 +73,17 @@ export default function ClinicProfileTab() {
             {/* Name + subdomain */}
             <div className="flex-1 grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-on-surface-variant">Clinic name</label>
+                <label className="text-xs text-on-surface-variant">{t('admin.profile.clinicName')}</label>
                 <input name="name" value={form.name} onChange={handleChange}
                   className="min-h-[44px] px-3 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"/>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-on-surface-variant">Subdomain</label>
+                <label className="text-xs text-on-surface-variant">{t('admin.profile.subdomain')}</label>
                 <input value={data?.tenant.subdomain ?? ''} disabled
                   className="min-h-[44px] px-3 border border-outline-variant rounded-lg text-sm bg-surface-container-low text-on-surface-variant cursor-not-allowed"/>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-on-surface-variant">Tax ID</label>
+                <label className="text-xs text-on-surface-variant">{t('admin.profile.taxId')}</label>
                 <input name="taxId" value={form.taxId} onChange={handleChange}
                   className="min-h-[44px] px-3 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"/>
               </div>
@@ -107,7 +109,7 @@ export default function ClinicProfileTab() {
             </div>
           </div>
           <div className="flex flex-col gap-1 mt-3">
-            <label className="text-xs text-on-surface-variant">Address</label>
+            <label className="text-xs text-on-surface-variant">{t('admin.profile.address')}</label>
             <textarea name="address" value={form.address} onChange={handleChange} rows={2}
               className="px-3 py-2 border border-outline-variant rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"/>
           </div>
@@ -119,7 +121,7 @@ export default function ClinicProfileTab() {
         {saved && <span className="text-sm text-secondary-on-container">✓ Saved</span>}
         <button type="submit" disabled={update.isPending}
           className="min-h-[44px] px-6 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-on text-sm font-semibold rounded-lg transition-colors">
-          {update.isPending ? 'Saving…' : 'Save changes'}
+          {update.isPending ? t('common.saving') : t('common.save')}
         </button>
       </div>
     </form>
