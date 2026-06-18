@@ -2,6 +2,53 @@
 
 ---
 
+## Phase 9 — i18n Rollout (EN/TH) (2026-06-18)
+
+**Status:** Complete
+**Tests:** 95/95 frontend tests passing (Vitest). 0 missing TH keys. translate() fallback verified.
+
+### Summary
+Full EN/TH i18n rollout across all clinic-plane screens. Custom lightweight i18n with no external library dependency. Language toggle persists via Zustand `uiStore.language`. Branch `refactor/coding-rules-alignment` fast-forward merged to `main` at commit `78672d5`.
+
+### Key Decisions
+
+| Decision | Rationale |
+|---|---|
+| Custom lightweight i18n — no external library | No i18next/react-intl; simpler bundle; `useT()` hook reads `uiStore.language` directly; Ponytail gate: no new transitive deps |
+| Platform Console excluded (`/platform/*`) | Internal SaaS operator tool — not Thai clinic users; no localization requirement |
+| Language persist via Zustand `uiStore.language` | Already wired for cross-device sync via `/api/settings/personal` from Phase 5 — no new backend work needed |
+| Noto Sans Thai already in font stack | Added Phase 5/6 — no new font dependency |
+
+### Screens Translated (16 total)
+Login, ClinicDashboard, AdminDashboard, ClinicAppointments, ClinicPets, ClinicEMR, ClinicInventory, ClinicBilling, AdminUsers, AdminProfile / ClinicProfileTab, UserManagementTab, RoleEditorView, RoleList, RolePermissionEditor, CloneRoleModal, RolePicker
+
+### Commits (branch `refactor/coding-rules-alignment` → `main` at `78672d5`)
+
+| Commit | Task | Keys |
+|---|---|---|
+| `fdbea09` | T-9-01: common + login strings | 11 |
+| `95c3efc` | T-9-02: clinic + admin dashboards | 22 |
+| `f92e137` | T-9-03: clinic appointments (showForm regression fixed) | 14 |
+| `a92dfcd` | T-9-04: clinic pets + EMR | 26 |
+| `64d87ff` | T-9-04 fix: remove injected header div, fix test assertions | — |
+| `fc8a048` | T-9-05: clinic inventory + billing | 18 |
+| `b94f27b` | T-9-06: admin users + profile | 17 |
+| `159293e` | T-9-07: RBAC role components | 27 |
+| `7b9827d` | T-9-05 fix: common.done key + ClinicBilling Done button | — |
+| `2bcb707` | T-9-08: coverage audit + language toggle tests; fix RoleEditorView tests | — |
+| `78672d5` | remaining strings: ClinicBilling, ClinicInventory, ClinicDashboard, AdminUsers | ~39 |
+
+### Test Count
+- Backend (Jest): ~394 (unchanged from Phase 8)
+- Frontend (Vitest): 95/95 (12 test files, includes `i18n.coverage.test.ts`)
+- Total: ~489
+
+### Key Files
+- `src/frontend/src/i18n/index.ts` — 260+ EN/TH key pairs
+- `src/frontend/src/tests/i18n.coverage.test.ts` — 0 missing TH keys, translate() fallback
+
+---
+
 ## T-5D-05 — Per-Tenant Provisioning + Platform Settings Route (2026-06-16)
 
 **Status:** Complete
@@ -885,3 +932,72 @@ subagents; `settings.json contextPaths` also pointed to non-existent `*.md` file
 
 **Security flag (action for owner):** `.claude/settings.local.json` contains a live GitHub PAT in
 plaintext — rotate/revoke it, move to an untracked `.env`, ensure the file is git-ignored. Not auto-edited.
+
+### Ponytail Gate Deployment — Go Live
+
+**Date:** June 20, 2026 (Friday EOD)  
+**Status:** ✅ LIVE (Enforcement Effective June 23, 2026)  
+**Owner:** @pm-agent
+
+#### What Happened
+
+Ponytail Gate (simplicity enforcement) has been deployed and is now **LIVE** effective **Monday, June 23, 2026**.
+
+**Implementation phases:**
+1. Design: Created @ponytail-agent role with 7-point checklist
+2. Dry-run: Validated with @dev-agent (June 19, non-blocking)
+3. Go-live: Activated enforcement (June 20)
+
+#### The Gate
+
+All task submissions now require @ponytail-agent approval before QA review.
+
+**7-Point Checklist:**
+1. Over-engineering? (unnecessary layers, premature abstraction)
+2. Duplicate work? (reimplements existing code)
+3. Existing solution? (library/framework already does this)
+4. Scope too large? (3+ subsystems, >10 files, bundled features)
+5. Too many deps? (>5 packages, no alternatives evaluated)
+6. Too many files? (>15 new files, <50 LOC per file)
+7. Too many APIs? (>2 endpoints, designed for "future clients")
+
+**Flow:** YES on any criterion = REJECT + feedback → agent revises → loop until ALL NO = APPROVE
+
+#### Enforcement Rules
+
+✅ **Applies to:** ALL tasks (feature work, refactors, schema changes, docs)  
+✅ **When:** After agents finalize, BEFORE @qa-agent  
+✅ **Exceptions:** Document in HistoryLog, allow once, adjust checklist if pattern emerges  
+✅ **Ownership:** @ponytail-agent reviews, @pm-agent monitors metrics
+
+#### Week 1 Tracking (June 23–29)
+
+**Target Metrics:**
+- First-pass approval rate: >50%
+- Avg revision cycles: <2
+- Total submissions: 5–8
+
+**Friday (June 27) Review:**
+- Count approvals, rejections, patterns
+- Identify any false positives or misunderstandings
+- Plan Week 2 adjustments
+
+**Week 2 (June 30–July 6):**
+- Target: >70% first-pass approval (agents learned the bar)
+- Apply checklist adjustments if needed
+- Ongoing: track files/task, dependencies, APIs trends
+
+#### Success Criteria
+
+**Week 1:** Submissions flow smoothly, all agents understand criteria, >50% first-pass approval  
+**Week 2:** >70% first-pass approval, no persistent false positives, QA feedback: "Code is simpler"  
+**Ongoing:** Culture shift toward simplicity, less scope creep, fewer wasted revisions
+
+#### Next Steps
+
+- **Mon 23:** Live enforcement begins
+- **Daily (Wk 1):** @pm-agent logs submissions using WEEK1_METRICS_TRACKING.md template
+- **Fri 27:** Review Week 1 metrics, plan adjustments
+- **Wk 2:** Refine checklist, target 70%+ approval rate
+
+**Status:** ✅ ACTIVE | Owner: @ponytail-agent + @pm-agent | Review: Weekly

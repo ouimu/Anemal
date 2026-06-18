@@ -282,7 +282,7 @@
   <div class="nav-group">
     <div class="nav-group-label">Roadmap</div>
     <a class="nav-item" onclick="show('roadmap-upcoming')" href="#" style="color:#16a34a;font-weight:700">
-      <span class="icon">✅</span>Phase 8 Complete · Phase 9 Next
+      <span class="icon">✅</span>Phase 9 Complete · Phase 10 Next
     </a>
     <a class="nav-item" onclick="show('roadmap-upcoming')" href="#">
       <span class="icon">🔜</span>Upcoming Work
@@ -317,13 +317,13 @@
   <!-- ── Build Status ── -->
   <div class="callout ok" style="margin-top:16px">
     <span class="callout-icon">🎉</span>
-    <span><strong>✅ Phase 8 COMPLETE (2026-06-17):</strong> Phases 1–8 done. <strong>~394 tests passing</strong> · tsc clean. <strong style="color:#16a34a">T-5F shipped:</strong> Clinic Role Editor (<code>/clinic-admin/roles</code>), Platform Console UI (<code>/platform/*</code> — 6 views + layout + store), Multi-Role Assignment (<code>RolePicker</code> + <code>Can</code> + <code>useUserRoles</code>). <strong>Next: Phase 9</strong> — i18n rollout (Thai clinic screens). <strong>Postponed (credential-gated):</strong> Phase 10 Payment Gateway · Phase 11 LINE/SMS. <em>See <a onclick="show('roadmap-upcoming')" href="#">Upcoming Work</a>.</em></span>
+    <span><strong>✅ Phase 9 COMPLETE (2026-06-18):</strong> Phases 1–9 done. <strong>~394 backend + 95 frontend tests passing</strong> · tsc clean. <strong style="color:#16a34a">Phase 9 shipped:</strong> Full EN/TH i18n rollout — 260+ key pairs, 16 clinic screens translated (Login, ClinicDashboard, AdminDashboard, Appointments, Pets, EMR, Inventory, Billing, AdminUsers, AdminProfile, RoleEditor, RolePicker and more). Custom lightweight i18n (no external library). Language toggle persists via Zustand <code>uiStore.language</code>. Platform Console excluded (internal SaaS tool). <strong>Next: Phase 10</strong> — Payment Gateway (credential-gated). <em>See <a onclick="show('roadmap-upcoming')" href="#">Upcoming Work</a>.</em></span>
   </div>
 
   <!-- ── Stats ── -->
   <div class="stat-row">
-    <div class="stat"><div class="n" style="color:#16a34a">8/11</div><div class="l">Phases Done</div></div>
-    <div class="stat"><div class="n" style="color:#16a34a">~394</div><div class="l">Tests Passing</div></div>
+    <div class="stat"><div class="n" style="color:#16a34a">9/11</div><div class="l">Phases Done</div></div>
+    <div class="stat"><div class="n" style="color:#16a34a">~489</div><div class="l">Tests Passing</div></div>
     <div class="stat"><div class="n">28</div><div class="l">DB Tables</div></div>
     <div class="stat"><div class="n">13</div><div class="l">API Modules</div></div>
     <div class="stat"><div class="n">8</div><div class="l">Screen Prototypes</div></div>
@@ -342,8 +342,8 @@
       <tr><td><strong>Phase 5</strong> <span style="font-size:11px;color:#6b7280">(was 1.5)</span></td><td>Settings &amp; Configuration — DB + encryption, Settings API (<code>superadmin</code>), frontend pages + System Settings UI (1.5-A/B/C/D)</td><td>226</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
       <tr><td><strong>Phase 6</strong> <span style="font-size:11px;color:#6b7280">(was Sessions A–E)</span></td><td>Production-readiness enhancements — screen specs, PDF receipts, PromptPay QR UI, barcode scan, S3 photo upload</td><td>226</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
       <tr><td><strong>Phase 7</strong> <span style="font-size:11px;color:#6b7280">(redesign)</span></td><td>UI Redesign completion &amp; sign-off — Compassionate Care closeout/verification of Appointments, Pets, EMR (presentational only)</td><td>226</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
-      <tr><td><strong>Phase 8</strong> <span style="font-size:11px;color:#6b7280">(was Phase 5)</span></td><td>RBAC, Platform Console &amp; Restructure — two-plane authz, configurable roles, plan quotas, IA cleanup. <strong>5-A/B/C ✅ · T-5D-02/03/04/05 ✅ · T-5E ✅ · PRE-1..6 ✅ · <span style="color:#16a34a">T-5F ✅</span></strong> — Role Editor (<code>/clinic-admin/roles</code>), Platform Console UI (<code>/platform/*</code>), Multi-Role Assignment. 28 files · ~50 new tests.</td><td>~394</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
-      <tr style="background:#eff6ff"><td><strong>Phase 9</strong> <span style="font-size:11px;color:#6b7280">(next)</span></td><td>i18n Rollout — full clinic-screen Thai (EN/TH); extends existing i18n foundation to all clinic screens</td><td>—</td><td><span style="color:#2563eb;font-weight:700">📋 Planned (next)</span></td></tr>
+      <tr style="opacity:0.5"><td><strong>Phase 8</strong> <span style="font-size:11px;color:#6b7280">(was Phase 5)</span></td><td>RBAC, Platform Console &amp; Restructure — two-plane authz, configurable roles, plan quotas, IA cleanup. <strong>5-A/B/C ✅ · T-5D-02/03/04/05 ✅ · T-5E ✅ · PRE-1..6 ✅ · <span style="color:#16a34a">T-5F ✅</span></strong> — Role Editor (<code>/clinic-admin/roles</code>), Platform Console UI (<code>/platform/*</code>), Multi-Role Assignment. Complete 2026-06-17. ~394 tests.</td><td>~394</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
+      <tr><td><strong>Phase 9</strong></td><td>i18n Rollout — 260+ EN/TH key pairs; 16 clinic screens translated; custom lightweight i18n; language toggle via Zustand; Platform Console excluded</td><td>95 (frontend)</td><td><span style="color:#16a34a;font-weight:700">✅ Complete (2026-06-18)</span></td></tr>
       <tr style="opacity:0.7"><td><strong>Phase 10</strong> <span style="font-size:11px;color:#6b7280">(was Session F)</span></td><td>Payment Gateway &amp; Subscription Billing — Omise/Stripe, webhooks, SaaS billing + cron</td><td>—</td><td><span style="color:#6b7280;font-weight:700">⏸ Postponed (Omise + SMTP)</span></td></tr>
       <tr style="opacity:0.7"><td><strong>Phase 11</strong> <span style="font-size:11px;color:#6b7280">(was Session G)</span></td><td>LINE/SMS Real Dispatch — wire reminder worker to LINE + Twilio</td><td>—</td><td><span style="color:#6b7280;font-weight:700">⏸ Postponed (LINE + Twilio)</span></td></tr>
     </tbody>
@@ -379,13 +379,13 @@
     </div>
     <div class="card" onclick="show('roadmap-upcoming')" style="border-color:#16a34a44;background:linear-gradient(135deg,#fff 0%,#f0fdf8 100%)">
       <div class="card-icon">✅</div>
-      <div class="card-title">Phase 8 Complete <span style="font-size:11px;background:#dcfce7;color:#006c4a;padding:2px 6px;border-radius:4px;font-weight:700">DONE</span></div>
-      <div class="card-desc">Role Editor + Platform Console UI + Multi-Role Assignment shipped. ~394 tests. Next: Phase 9 i18n rollout.</div>
+      <div class="card-title">Phase 9 Complete <span style="font-size:11px;background:#dcfce7;color:#006c4a;padding:2px 6px;border-radius:4px;font-weight:700">DONE</span></div>
+      <div class="card-desc">i18n rollout shipped — 260+ EN/TH keys, 16 screens, 95 frontend tests. Next: Phase 10 Payment Gateway.</div>
     </div>
     <div class="card" onclick="show('roadmap-upcoming')">
       <div class="card-icon">🔜</div>
       <div class="card-title">Upcoming Work</div>
-      <div class="card-desc">Phase 9 i18n (Thai clinic screens — next). ⏸ Phase 10 Payment Gateway · Phase 11 LINE/SMS (credential-gated).</div>
+      <div class="card-desc">⏸ Phase 10 Payment Gateway · Phase 11 LINE/SMS (credential-gated).</div>
     </div>
     <div class="card" onclick="show('qaproto')">
       <div class="card-icon">✅</div>
@@ -797,7 +797,7 @@ CREATE INDEX idx_pet_reminders_pet          ON pet_reminders(tenant_id, pet_id);
   </ul>
 
   <h2>Current Backlog Owner</h2>
-  <div class="callout ok" style="margin-bottom:8px"><span class="callout-icon">✅</span><span><strong>Phases 1–8 complete (~394 tests).</strong> Phase 8 COMPLETE 2026-06-17 — T-5F shipped: Clinic Role Editor (<code>/clinic-admin/roles</code>, AC-1..10), Platform Console UI (<code>/platform/*</code>, 6 views), Multi-Role Assignment (<code>RolePicker</code> + <code>Can</code> + <code>useUserRoles</code>). ~50 new tests (backend + vitest). Phase 9 i18n is next. Phase 10/11 postponed (credential-gated). See <a onclick="show('roadmap-upcoming')" href="#">Upcoming Work →</a></span></div>
+  <div class="callout ok" style="margin-bottom:8px"><span class="callout-icon">✅</span><span><strong>Phases 1–9 complete (~394 backend + 95 frontend tests).</strong> Phase 9 COMPLETE 2026-06-18 — i18n rollout shipped: 260+ EN/TH key pairs, 16 clinic screens translated, custom lightweight i18n (no library), language toggle via Zustand <code>uiStore.language</code>, Platform Console excluded. 95/95 frontend tests passing, 0 missing TH keys. Phase 10/11 postponed (credential-gated). See <a onclick="show('roadmap-upcoming')" href="#">Upcoming Work →</a></span></div>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Phase</th><th>Scope</th><th>Est. Token Cost</th></tr></thead>
     <tbody>
@@ -806,7 +806,7 @@ CREATE INDEX idx_pet_reminders_pet          ON pet_reminders(tenant_id, pet_id);
       <tr style="opacity:0.55"><td><strong>✅ Phase 6</strong> <span style="font-size:11px;color:#6b7280">(was A–E)</span></td><td><s>PDF receipts, PromptPay QR UI, barcode scan, S3 photo upload</s> — Done 2026-06-12 · 226 tests</td><td>~40%</td></tr>
       <tr style="opacity:0.55"><td><strong>✅ Phase 7</strong></td><td><s>UI Redesign completion &amp; sign-off — verify Appointments/Pets/EMR against Compassionate Care specs + 44px audit</s> — Done 2026-06-14 · 226 tests</td><td>~20%</td></tr>
       <tr style="opacity:0.55"><td><strong>✅ Phase 8</strong> <span style="font-size:11px;color:#6b7280">(was Phase 5)</span></td><td>RBAC, Platform Console &amp; Restructure — <strong>5-A ✅ · 5-B ✅ · 5-C ✅ · T-5D-02/03/04/05 ✅ · T-5E ✅ · PRE-1..6 ✅ · T-5F ✅</strong> (~394 tests). T-5F: Role Editor, Platform Console UI (6 views), Multi-Role Assignment. Complete 2026-06-17.</td><td>multi-session</td></tr>
-      <tr style="background:#eff6ff"><td><strong>📋 Phase 9</strong> <span style="font-size:11px;color:#6b7280">(next)</span></td><td>i18n Rollout — full clinic-screen Thai (EN/TH); extends existing i18n foundation to all clinic screens</td><td>~20%</td></tr>
+      <tr style="opacity:0.55"><td><strong>✅ Phase 9</strong></td><td><s>i18n Rollout — 260+ EN/TH key pairs; 16 screens translated; custom lightweight i18n; language toggle; Platform Console excluded</s> — Done 2026-06-18 · 95 frontend tests</td><td>~20%</td></tr>
       <tr style="opacity:0.7"><td><strong>⏸ Phase 10</strong> <span style="font-size:11px;color:#6b7280">(was F)</span></td><td>Payment gateway (Omise/Stripe, webhooks, subscription billing) — postponed</td><td>~55% + credentials</td></tr>
       <tr style="opacity:0.7"><td><strong>⏸ Phase 11</strong> <span style="font-size:11px;color:#6b7280">(was G)</span></td><td>LINE/SMS real dispatch — postponed</td><td>~35% + credentials</td></tr>
     </tbody>
@@ -1040,7 +1040,7 @@ Type: happy_path | edge_case | security | transaction</code></pre>
 <!-- ══════════════════ ROADMAP HISTORY ══════════════════ -->
 <div class="page" id="page-roadmap-history">
   <h1>📜 Roadmap History — Completed Phases (1–7)</h1>
-  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>Phases 1–8 complete. ~394 tests passing.</strong> Phase 8 finished 2026-06-17 with T-5F: Role Editor (<code>/clinic-admin/roles</code>), Platform Console UI (<code>/platform/*</code>), Multi-Role Assignment. Full two-plane RBAC with configurable roles is production-ready.</span></div>
+  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>Phases 1–9 complete. ~394 backend + 95 frontend tests passing.</strong> Phase 9 finished 2026-06-18: full EN/TH i18n rollout — 260+ key pairs, 16 clinic screens, 95/95 tests, 0 missing TH keys. Phase 8 (RBAC + Platform Console) completed 2026-06-17 with T-5F: Role Editor, Platform Console UI, Multi-Role Assignment.</span></div>
   <div class="callout info"><span class="callout-icon">🔄</span><span><strong>2026-06-13 — Full clean re-sequence.</strong> Backlog flattened to linear Phase 1–10+. <code>1.5→5</code> · Sessions <code>A–E→6</code> · Redesign closeout <code>→7</code> · RBAC/Platform <code>Phase 5→8</code> · Payment Gateway <code>→9</code> (postponed) · LINE/SMS <code>→10</code> (postponed). Stable IDs kept: <code>SPEC-RBAC-PLATFORM-01</code>, <code>phase5-rbac-platform-tasks.md</code>, sub-tasks <code>5-A…5-G</code>. Full map: <code>PHASE-RESEQUENCE.md</code>.</span></div>
   <div class="callout info"><span class="callout-icon">🔄</span><span><strong>2026-06-14 — Phase reorder (i18n promotion).</strong> i18n Rollout promoted from Phase 11 → <strong>Phase 9</strong> (no credential dependency, can follow Phase 8 immediately). Payment Gateway shifted <code>9→10</code>; LINE/SMS shifted <code>10→11</code>. Stable IDs unchanged.</span></div>
   <div class="callout ok"><span class="callout-icon">✅</span><span><strong>2026-06-14 — Phase 8 kickoff · 5-A DB foundation + T-5B-00 regression guard committed.</strong> 7 new Prisma models added (<code>permissions</code>, <code>clinic_roles</code>, <code>role_permissions</code>, <code>user_roles</code>, <code>platform_users</code>, <code>plans</code>, <code>tenant_quotas</code>). 49-permission catalogue + 3 system roles seeded. All non-superadmin users backfilled with <code>roleId</code> (T-5A-06/07). T-5B-00 regression guard (16 tests) + 3 new tenant isolation tests committed. Total: <strong>245 tests passing</strong>.</span></div>
@@ -1048,8 +1048,42 @@ Type: happy_path | edge_case | security | transaction</code></pre>
   <div class="callout ok"><span class="callout-icon">✅</span><span><strong>2026-06-15 — T-5A-03/04/05 complete · permission service + JWT extension + middleware factories.</strong> <code>permission.service.ts</code> — resolvePermissions + in-memory cache (c5c7970). <code>permission.middleware.ts</code> — requirePlane + requirePermission factories (d638af1). JWT extended with <code>plane: 'clinic'|'platform'</code> + <code>permSetVersion</code> (2651019). 8 permission service + 8 permission middleware unit tests (13e7be9). tsc --noEmit: 0 errors. Total: <strong>261 tests passing</strong>. Next: <strong>T-5B-01</strong> — apply requirePermission() to all clinic routes.</span></div>
   <div class="callout ok"><span class="callout-icon">✅</span><span><strong>2026-06-15 — T-5D-02/03/04 complete · platform customer mgmt API, plan CRUD, quota enforcement.</strong> T-5D-02: <code>GET/POST /platform/customers</code>, <code>GET/PUT /platform/customers/:id</code>, suspend/reactivate endpoints. T-5D-03: <code>GET/POST/PUT/DELETE /platform/plans</code> + per-tenant quota override endpoints; effective quota = override ?? plan default. T-5D-04: <code>assertCanAddUser/Branch/Owner(tenantId)</code> backed by real DB — returns <code>409 QUOTA_EXCEEDED</code>; suspended tenant login returns <code>401 TENANT_SUSPENDED</code>. New migration: <code>platform_audit_logs</code> table for platform-operator audit trail. 28 new integration tests in <code>platformConsole.test.ts</code>. Total: <strong>313 tests passing</strong>. QA notes: quota override=0 blocked by Zod <code>.positive()</code> (recommend <code>.min(0)</code>); <code>requirePermission</code> deferred to T-5G. Next: <strong>T-5D-05</strong> → T-5E/F/G.</span></div>
   <div class="callout ok"><span class="callout-icon">✅</span><span><strong>2026-06-16 — T-5D-05 complete · per-tenant provisioning + platform settings route rename.</strong> DB: <code>tenant_provisioning</code> table added (Prisma migration <code>add_tenant_provisioning</code>), 1-to-1 with tenants, AES-256-GCM encrypted fields (<code>baseSmsApiKey</code>, <code>smtpPassword</code>, <code>lineChannelSecret</code>). Route: <code>/admin/system-settings</code> renamed to <code>/platform/settings</code> in <code>app.ts</code>. API: <code>GET /platform/customers/:id/provisioning</code> — returns config with secrets masked; <code>PUT /platform/customers/:id/provisioning</code> — upserts config, encrypts secrets, writes audit log. 11 new integration tests in <code>platformConsole.test.ts</code> (provisioning CRUD, plane isolation, audit log, route rename). PII audit: 0 matches. Total: <strong>323 backend tests passing</strong>. Next: <strong>T-5E</strong> (frontend shells) → T-5F (role editor + console UI) → T-5G (matrix QA).</span></div>
+  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>2026-06-18 — Phase 9 complete · i18n Rollout (EN/TH).</strong> 260+ EN/TH key pairs in <code>src/frontend/src/i18n/index.ts</code>. 16 clinic screens translated: Login, ClinicDashboard, AdminDashboard, ClinicAppointments, ClinicPets, ClinicEMR, ClinicInventory, ClinicBilling, AdminUsers, AdminProfile/ClinicProfileTab, UserManagementTab, RoleEditorView, RoleList, RolePermissionEditor, CloneRoleModal, RolePicker. Custom lightweight i18n (no external library). Language toggle persists via Zustand <code>uiStore.language</code>. Platform Console (<code>/platform/*</code>) excluded — internal SaaS tool, not Thai clinic users. <code>i18n.coverage.test.ts</code>: 0 missing TH keys, translate() fallback verified. 12 test files, <strong>95/95 tests pass</strong>. Merged to <code>main</code> at commit <code>78672d5</code>.</span></div>
   <div class="callout ok"><span class="callout-icon">✅</span><span><strong>2026-06-17 — T-5F complete · Clinic Role Editor + Platform Console UI + Multi-Role Assignment.</strong> <strong>T-5F-01</strong>: <code>RoleEditorView</code>, <code>RoleList</code>, <code>RolePermissionEditor</code>, <code>CloneRoleModal</code>, <code>useRoles</code> hook — <code>/clinic-admin/roles</code> guarded by <code>roles.view</code>; AC-1..10 (list, expand, clone, delta-save, no-escalation, delete guards, self-refresh). <strong>T-5F-02</strong>: <code>CustomerListView</code>, <code>CustomerDetailView</code> (4 tabs), <code>PlatformPlansView</code>, <code>PlatformSettingsView</code>, <code>PlatformAuditView</code>, <code>PlatformLoginView</code>, <code>PlatformLayout</code>, <code>platformAuthStore</code>, <code>platformApi</code>, 4 platform hooks — plane-only guards (AC-P8). <strong>T-5F-03</strong>: <code>RolePicker</code>, <code>Can</code>, <code>useUserRoles</code> (last-role 409 guard, self-demotion warning). Backend tests: roleEditor-t5f01, platform-console-t5f02, user-roles-t5f03. Frontend tests: RoleEditorView (28), PlatformConsole, RolePicker. <strong>Total: ~394 tests. Phase 8 COMPLETE.</strong></span></div>
   <div class="callout ok"><span class="callout-icon">✅</span><span><strong>2026-06-16 — T-5E complete · frontend dual-plane RBAC guards + route reorg.</strong> <strong>T-5E-00</strong>: Backend <code>GET /auth/me</code> (clinic) and <code>GET /platform/auth/me</code> (platform) — returns roleIds from <code>user_roles</code> join + permissions from resolvePermissions(); plane mismatch → 403; 32 integration tests passing. <strong>T-5E-01</strong>: authStore upgraded — <code>plane</code>, <code>branchId</code>, <code>roleIds[]</code>, <code>permissions[]</code>, <code>permSetVersion</code> fields added; <code>hasPermission(code)</code> deny-by-default; <code>refreshPermissions()</code> calls /me by plane; <code>normalise()</code> handles old persisted data. <strong>T-5E-02</strong>: New <code>src/frontend/src/guards/</code> barrel — <code>RequireAuth</code> (replaces deleted <code>ProtectedRoute</code>), <code>RequirePlane</code> (wrong-plane → plane-appropriate home), <code>RequirePermission</code> (deny → /403, OR-list via <code>any=[]</code>), <code>Can</code> (renders null when permission missing; tablet a11y safe), <code>usePermissions</code> hook. <strong>T-5E-03</strong>: Route reorg in <code>App.tsx</code> — <code>/admin/*</code> → <code>/clinic-admin/*</code>, 10 legacy redirect shims, RequirePlane guards on <code>/clinic/*</code> and <code>/platform/*</code> shells, <code>/403</code> → <code>ForbiddenView</code> (design-system tokens, Material Symbols). Vitest + @testing-library/react configured. Frontend guard tests: <strong>23/23 passing</strong>. Backend: 321/324 (3 pre-existing clinicUsage failures unrelated to 5-E). <strong>Total: 344 tests</strong> (321 backend + 23 frontend). Deferred to T-5F/G: per-route RequirePermission on <code>/clinic-admin/*</code> children, <code>/settings/*</code> plane guard (needs screen separation), Platform Console UI screens (stub only), backend <code>/clinic/admin/*</code> legacy rbacMiddleware migration.</span></div>
+
+  <h2>Phase 9 — i18n Rollout (Thai / English)</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Item</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Status</strong></td><td>✅ Complete 2026-06-18</td></tr>
+      <tr><td><strong>Tests</strong></td><td>95/95 frontend tests passing (Vitest). 0 missing TH keys. translate() fallback verified.</td></tr>
+      <tr><td><strong>Key Decisions</strong></td>
+        <td>
+          <strong>Custom lightweight i18n — no external library:</strong> <code>src/frontend/src/i18n/index.ts</code> — ~260+ EN/TH key pairs; <code>useT()</code> hook reads <code>uiStore.language</code><br>
+          <strong>Platform Console excluded:</strong> <code>/platform/*</code> is an internal SaaS operator tool, not a Thai clinic user-facing screen<br>
+          <strong>Language toggle:</strong> persists via Zustand <code>uiStore.language</code> (cross-device sync via <code>/api/settings/personal</code> already wired from Phase 5)<br>
+          <strong>Noto Sans Thai:</strong> already in font stack from Phase 5/6 — no new font dependency
+        </td>
+      </tr>
+      <tr><td><strong>Screens Translated</strong></td><td>Login, ClinicDashboard, AdminDashboard, ClinicAppointments, ClinicPets, ClinicEMR, ClinicInventory, ClinicBilling, AdminUsers, AdminProfile / ClinicProfileTab, UserManagementTab, RoleEditorView, RoleList, RolePermissionEditor, CloneRoleModal, RolePicker</td></tr>
+      <tr><td><strong>Commits</strong></td>
+        <td>
+          <code>fdbea09</code> T-9-01: common + login strings (11 keys)<br>
+          <code>95c3efc</code> T-9-02: clinic + admin dashboards (22 keys)<br>
+          <code>f92e137</code> T-9-03: clinic appointments (14 keys, showForm regression fixed)<br>
+          <code>a92dfcd</code> T-9-04: clinic pets + EMR (26 keys)<br>
+          <code>fc8a048</code> T-9-05: clinic inventory + billing (18 keys)<br>
+          <code>b94f27b</code> T-9-06: admin users + profile (17 keys)<br>
+          <code>159293e</code> T-9-07: RBAC role components (27 keys)<br>
+          <code>7b9827d</code> T-9-05 fix: common.done key + ClinicBilling Done button<br>
+          <code>2bcb707</code> T-9-08: coverage audit + language toggle tests; fix RoleEditorView tests<br>
+          <code>78672d5</code> remaining strings pass: ClinicBilling, ClinicInventory, ClinicDashboard, AdminUsers (~39 keys)
+        </td>
+      </tr>
+      <tr><td><strong>Key File</strong></td><td><code>src/frontend/src/i18n/index.ts</code> — 260+ EN/TH key pairs; <code>i18n.coverage.test.ts</code> — 0 missing TH keys verified</td></tr>
+    </tbody>
+  </table></div>
 
   <h2>Phase 8 — RBAC, Platform Console &amp; Restructure <span style="font-size:12px;color:#6b7280;font-weight:400">(was Phase 5)</span></h2>
   <div class="tbl-wrap"><table>
@@ -1171,7 +1205,7 @@ Type: happy_path | edge_case | security | transaction</code></pre>
 <!-- ══════════════════ ROADMAP UPCOMING ══════════════════ -->
 <div class="page" id="page-roadmap-upcoming">
   <h1>🚀 Upcoming Work</h1>
-  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>Phases 1–8 complete · ~394 tests passing.</strong> Phase 8 (RBAC + Platform Console) is <strong>COMPLETE 2026-06-17</strong> — T-5F shipped Role Editor, Platform Console UI, Multi-Role Assignment. <strong>Next: Phase 9</strong> (i18n rollout — Thai clinic screens). Phases 10 &amp; 11 postponed (credential-gated).</span></div>
+  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>Phases 1–9 complete · ~394 backend + 95 frontend tests passing.</strong> Phase 9 (i18n rollout) is <strong>COMPLETE 2026-06-18</strong> — 260+ EN/TH key pairs, 16 clinic screens, 95/95 tests, 0 missing TH keys. <strong>Next: Phase 10</strong> (Payment Gateway — credential-gated). Phase 11 also postponed (credential-gated).</span></div>
 
   <!-- ── Phase 8 — COMPLETE ── -->
   <div style="border-left:4px solid #16a34a;background:#fff;border-radius:8px;padding:16px;margin-bottom:20px">
@@ -1190,9 +1224,9 @@ Type: happy_path | edge_case | security | transaction</code></pre>
           <li>✅ T-5A-03 permission resolution service + in-memory cache — done</li>
           <li>✅ T-5A-04 <code>requirePlane</code> + <code>requirePermission</code> middleware factories — done</li>
           <li>✅ T-5A-05 JWT plane extension (<code>plane</code> + <code>permSetVersion</code>) — done</li>
-          <li><strong>Next: T-5B-01</strong> — apply <code>requirePermission()</code> to all clinic routes</li>
-          <li>T-5B-02 — remove legacy rbacMiddleware</li>
-          <li>T-5B-03/04 — role management + assignment APIs</li>
+          <li>✅ T-5B-01 — apply <code>requirePermission()</code> to all clinic routes — done</li>
+          <li>✅ T-5B-02 — remove legacy rbacMiddleware — done</li>
+          <li>✅ T-5B-03/04 — role management + assignment APIs — done</li>
         </ul>
       </div>
       <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px">
@@ -1204,7 +1238,7 @@ Type: happy_path | edge_case | security | transaction</code></pre>
           <li>✅ T-5D-04 — quota enforcement (<code>assertCanAdd*</code>) + <code>TENANT_SUSPENDED</code> + <code>platform_audit_logs</code> — done</li>
           <li>✅ T-5D-05 — per-tenant provisioning (<code>GET/PUT /platform/customers/:id/provisioning</code>), <code>tenant_provisioning</code> table, route rename <code>/platform/settings</code> — done</li>
           <li>✅ <strong>PRE-6</strong> — audit writes for <code>customer.create</code> / <code>customer.update</code> / <code>plan.create</code> / <code>plan.update</code> / <code>plan.delete</code>; all platform mutations now audited (43 platformConsole tests) — done</li>
-          <li><strong>Next: T-5F</strong> — Clinic role editor UI + Platform Console screens</li>
+          <li>✅ T-5F — Clinic role editor UI + Platform Console screens — done</li>
         </ul>
       </div>
       <div style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:12px">
@@ -1214,7 +1248,8 @@ Type: happy_path | edge_case | security | transaction</code></pre>
           <li>✅ authStore dual-plane — <code>plane</code>, <code>roleIds[]</code>, <code>permissions[]</code>, <code>hasPermission()</code>, <code>refreshPermissions()</code></li>
           <li>✅ Guards barrel: <code>RequireAuth</code> / <code>RequirePlane</code> / <code>RequirePermission</code> / <code>Can</code> / <code>usePermissions</code> (23 vitest tests)</li>
           <li>✅ Route reorg: <code>/admin/*</code> → <code>/clinic-admin/*</code>, 10 legacy redirects, <code>/403</code> ForbiddenView</li>
-          <li><strong>Deferred to T-5F/G:</strong> per-route permission on /clinic-admin/* children · /settings/* plane guard · Platform Console UI · backend rbacMiddleware migration</li>
+          <li>✅ Per-route permission on /clinic-admin/* children · /settings/* plane guard — completed in T-5F</li>
+          <li>✅ backend rbacMiddleware migration — completed in T-5B</li>
         </ul>
       </div>
       <div style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:12px">
@@ -1230,14 +1265,14 @@ Type: happy_path | edge_case | security | transaction</code></pre>
     <div style="font-size:11px;color:#6b7280">Designed 2026-06-13 by @ba-agent · <strong style="color:#16a34a">Phase 8 COMPLETE 2026-06-17 — T-5F done · ~394 tests green · Next: Phase 9 (i18n)</strong></div>
   </div>
 
-  <!-- ── Phase 9 — Planned ── -->
-  <div style="border-left:4px solid #2563eb;background:#fff;border-radius:8px;padding:16px;margin-bottom:16px;opacity:0.85">
+  <!-- ── Phase 9 — COMPLETE ── -->
+  <div style="border-left:4px solid #16a34a;background:#fff;border-radius:8px;padding:16px;margin-bottom:16px;opacity:0.85">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-      <h2 style="margin:0;color:#2563eb">📋 Phase 9 — i18n Rollout (Thai / English)</h2>
-      <span style="background:#eff6ff;color:#2563eb;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:700">PLANNED</span>
+      <h2 style="margin:0">✅ Phase 9 — i18n Rollout (Thai / English)</h2>
+      <span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:700">COMPLETE 2026-06-18</span>
     </div>
-    <p style="margin:0 0 8px;color:#6b7280;font-size:13px">Full clinic-screen Thai (EN/TH). Foundation already shipped: i18n module, app-shell strings, Noto Sans Thai font, theme + language cross-device sync. This phase extends coverage to all clinic screens.</p>
-    <div style="font-size:12px;color:#9ca3af;background:#f8fafc;border-radius:6px;padding:8px 12px;display:inline-block">⏳ Planned after Phase 8 · No credential dependencies</div>
+    <p style="margin:0 0 8px;color:#6b7280;font-size:13px">Full clinic-screen EN/TH translation — 260+ key pairs, 16 screens. Custom lightweight i18n (no library). Language toggle persists via Zustand <code>uiStore.language</code>. Platform Console excluded (internal SaaS tool). 95/95 frontend tests passing, 0 missing TH keys.</p>
+    <div style="font-size:11px;color:#6b7280">Branch <code>refactor/coding-rules-alignment</code> → merged to <code>main</code> (fast-forward, commit <code>78672d5</code>) · 10 commits (T-9-01 through T-9-08)</div>
   </div>
 
   <!-- ── Phase 10 — Postponed ── -->
@@ -1265,15 +1300,15 @@ Type: happy_path | edge_case | security | transaction</code></pre>
     <thead><tr><th>Phase</th><th>Scope</th><th>Status</th><th>Gate / Blocker</th></tr></thead>
     <tbody>
       <tr style="opacity:0.5"><td><strong>1–7</strong></td><td>Foundation → UI redesign</td><td>✅ Complete (226 tests)</td><td>—</td></tr>
-      <tr style="opacity:0.5"><td><strong>8</strong></td><td>RBAC + Platform Console + IA restructure</td><td>✅ Complete (~394 tests)</td><td>T-5G (matrix QA hardening) deferred</td></tr>
-      <tr style="background:#eff6ff"><td><strong>9</strong></td><td>i18n full rollout (EN/TH)</td><td><strong>📋 Planned (next)</strong></td><td>After Phase 8 ✅</td></tr>
+      <tr style="opacity:0.5"><td><strong>8</strong></td><td>RBAC + Platform Console + IA restructure</td><td>✅ Complete 2026-06-17 (~394 tests)</td><td>5-A/B/C + T-5D-02/03/04/05 + T-5E + T-5F ✅</td></tr>
+      <tr style="opacity:0.5"><td><strong>9</strong></td><td>i18n full rollout (EN/TH)</td><td>✅ Complete 2026-06-18 (95 frontend tests)</td><td>After Phase 8 ✅</td></tr>
       <tr style="opacity:0.7"><td><strong>10</strong></td><td>Payment Gateway (Omise/Stripe + SaaS billing)</td><td>⏸ Postponed</td><td>Omise + SMTP keys</td></tr>
       <tr style="opacity:0.7"><td><strong>11</strong></td><td>LINE / SMS real dispatch</td><td>⏸ Postponed</td><td>LINE token + Twilio SID</td></tr>
     </tbody>
   </table></div>
 
-  <h2>How to Start Phase 9 (i18n) 📋</h2>
-  <div class="callout ok" style="margin-bottom:12px"><span class="callout-icon">✅</span><span><strong>Phase 8 COMPLETE 2026-06-17 · ~394 tests green.</strong> T-5F shipped: Role Editor (AC-1..10), Platform Console UI (6 views, 4 hooks), Multi-Role Assignment (RolePicker + Can + useUserRoles). Phase 9 (i18n rollout) is the next priority — no credential dependencies. i18n foundation (module, app-shell strings, Noto Sans Thai, theme/language sync) already shipped in Phase 5/6; Phase 9 extends to all clinic screens.</span></div>
+  <h2>Phase 9 Complete — Next: Phase 10 (Payment Gateway) ✅</h2>
+  <div class="callout ok" style="margin-bottom:12px"><span class="callout-icon">✅</span><span><strong>Phase 9 COMPLETE 2026-06-18 · 95/95 frontend tests green.</strong> i18n rollout shipped: 260+ EN/TH key pairs, 16 clinic screens, custom lightweight i18n (no library), 0 missing TH keys, language toggle via Zustand <code>uiStore.language</code>. Platform Console excluded. Merged to <code>main</code> at commit <code>78672d5</code>. <strong>Phase 10 (Payment Gateway)</strong> is next but credential-gated (requires Omise API keys + SMTP).</span></div>
 
   <h3>Delegate to Agents (copy/paste into Claude Code)</h3>
   <pre><code># Phase 8 — sub-task 5-A: RBAC schema + migration
@@ -1308,6 +1343,7 @@ Deliver: test file at src/backend/src/tests/integration/rbac-regression.test.ts
       <tr style="opacity:0.5"><td><strong>6</strong> (done)</td><td><code>npm test</code> (full suite)</td><td>226</td><td>QR endpoint tenant scoping · S3 key prefix scoped to <code>tenant/{id}</code></td></tr>
       <tr style="opacity:0.5"><td><strong>7</strong> (done)</td><td>Frontend-only — no new backend tests</td><td>226</td><td>Touch targets 44×44px verified manually</td></tr>
       <tr style="opacity:0.5"><td><strong>8</strong> (done)</td><td><code>npm test -- --testNamePattern="permissions|RBAC|roles|platform"</code> (backend) + <code>cd src/frontend &amp;&amp; npx vitest run</code> (guards + T-5F)</td><td>~394 (backend + frontend vitest)</td><td>Permission matrix · plane isolation · Role Editor AC-1..10 · Platform Console plane isolation · Multi-Role assign/remove · last-role 409 · <code>roleEditor-t5f01.test.ts</code> · <code>platform-console-t5f02.test.ts</code> · <code>user-roles-t5f03.test.ts</code> · <code>RoleEditorView.test.tsx</code> (28) · <code>PlatformConsole.test.tsx</code> · <code>RolePicker.test.tsx</code></td></tr>
+      <tr style="opacity:0.5"><td><strong>9</strong> (done)</td><td><code>cd src/frontend &amp;&amp; npx vitest run</code></td><td>95/95 frontend tests</td><td><code>i18n.coverage.test.ts</code> — 0 missing TH keys · translate() fallback · all 12 test files passing</td></tr>
       <tr style="opacity:0.7"><td><strong>10</strong> (postponed)</td><td><code>npm test -- --testNamePattern="reminders|LINE|Twilio"</code></td><td>235+ (10+ new)</td><td>Reminder dispatch · <code>owner.line_user_id</code> scoped per tenant</td></tr>
     </tbody>
   </table></div>

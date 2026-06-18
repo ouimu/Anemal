@@ -8,22 +8,33 @@
 
 | Task | Agent | Model |
 |------|-------|-------|
-| Requirements, authorization design, gap analysis | `@ba-agent` | opus |
-| Scope, task breakdown, docs owner (`docs/`, CLAUDE.md, HistoryLog) | `@pm-agent` | sonnet |
+| Requirements, authorization design, gap analysis, writing plan | `@ba-agent` | opus |
+| Scope controllers, task breakdown, Orchestration, Coordinator, docs owner ( All HTML pages in `docs/`, CLAUDE.md, HistoryLog) | `@pm-agent` | sonnet |
 | Screen/component design, Figma specs | `@uiux-agent` | sonnet |
 | Schema, migration, query safety, tenant isolation | `@db-agent` | sonnet |
 | Backend/frontend implementation | `@dev-agent` | sonnet |
-| **Simplicity gate: over-engineering, scope, dependencies, duplication** | **`@ponytail-agent`** | **opus** |
+| Simplicity gate: over-engineering, scope, dependencies, duplication | `@ponytail-agent` | opus |
 | Tests, edge cases, isolation/RBAC verification | `@qa-agent` | opus |
 
-**RULE:** Delegate first (except trivial one-liners). Agents run in isolated context. Each delegation must: (a) name task, (b) cite specs/skills, (c) say where to write output.
-
+**RULE:** 
+- Delegate first (except trivial one-liners). Agents run in isolated context. Each delegation must: (a) agents name, (b) name task, (c) cite specs/skills, (d) say where to write output.
+- Each agent must:
+	- Perform only its assigned scope.
+	- Produce a final report.
+	- Return the report to the coordinator.
+	- Terminate after report submission.
+  Coordinator must:
+	- Wait for all reports.
+	- Aggregate results.
+	- Confirm all agents completed.
+	- End the workflow.
+- Context > 70%, Consider to Auto-Compact
 ---
 
 ## Standard Pipeline
 
 ```
-@pm-agent (tasks + AC)
+@pm-agent (Coordinator + tasks + AC)
   → @ba-agent (validate + design)
      → @db-agent (schema) ∥ @uiux-agent (screens) ∥ @dev-agent (code)
         → @ponytail-agent (simplicity gate)
@@ -32,6 +43,7 @@
            ├─ YES (any flag) → REJECT + return to agents with feedback
            └─ NO (all clear) → APPROVE → proceed
               → @qa-agent (test + sign-off)
+				→ @pm-agent (Update Status, Document)
 ```
 
 **Enforcement:** 
@@ -52,6 +64,7 @@
 
 ## Ponytail Gate — Simplicity Enforcement
 
+**Status:** ✅ LIVE (Enforced from June 23, 2026)  
 **Scope:** ALL tasks (feature work, refactors, schema changes, docs) — no exemptions  
 **When:** After @ba-agent, @db-agent, @uiux-agent, @dev-agent finalize, BEFORE @qa-agent  
 **Owner:** @ponytail-agent (Opus, independent review)  
@@ -107,7 +120,7 @@ See `RBAC_Platform_Restructure_Spec.md` (spec), `anemal-rbac-matrix` (routes), `
 stitch_vet_clinic_design_system/   # Compassionate Care UI (read-only)
   DESIGN.md, login_page/, dashboard_overview_1024x768/, ...
 .claude/
-  agents/<name>/SKILL.md           # ba, pm, uiux, db, dev, qa
+  agents/<name>/SKILL.md           # ba, pm, uiux, db, dev, ponytail, qa
   skills/
     anemal-{coding-rules, design-system, screen-specs, functional-reqs, db-context, rbac-matrix, platform-console, ba-toolkit}/
   specs/
@@ -130,7 +143,7 @@ src/
 |-------|-------|--------|
 | 1–7 | Foundation through UI redesign sign-off | ✅ (226 tests) |
 | **8** | **RBAC + Platform Console + restructure** — 5-A/B/C + T-5D-02/03/04/05 + T-5E + **T-5F done** (Role Editor, Platform Console UI, Multi-Role Assignment) | **✅ Complete (~394 tests)** |
-| 9 | i18n rollout (Thai clinic screens) | 📋 Planned (next) |
+| **9** | **i18n rollout (Thai/English)** — 260+ EN/TH key pairs, 16 clinic screens translated, custom lightweight i18n (no library), language toggle via Zustand `uiStore.language`, Platform Console excluded | **✅ Complete (95 frontend tests)** |
 | 10 | Payment gateway + SaaS billing | ⏸ (needs credentials) |
 | 11 | LINE/SMS dispatch | ⏸ (needs credentials) |
 
@@ -188,7 +201,7 @@ See `.claude/roadmap/remaining-tasks.md` for sub-tasks.
 
 ## Tracking & Documentation
 
-- **@pm-agent documents owner:**  **Update docs/index.html LAST** (every task end): Phase status, test count, How to Run, Upcoming Work (✅/next pointer), Roadmap History, `CLAUDE.md`, `HistoryLog` after every task
+- **@pm-agent documents owner:** **LAST** (every task end): Phase status, test count, How to Run, Upcoming Work (✅/next pointer), Roadmap History, `CLAUDE.md`, `HistoryLog` 
 - **@ba-agent provides content** for `docs/functional_spec_detailed.html` (functional reqs, API endpoints, architecture), `@pm-agent` commits
 - **Run QA protocol** at end of each task: `.claude/roadmap/qa-protocols.md`
 - **Interrupted work:** save resume state to file (delete after complete)
