@@ -139,6 +139,11 @@ const en: Dict = {
   'clinic.dashboard.inventoryAlerts': 'Inventory Alerts',
   'clinic.dashboard.inpatientsNow': 'Inpatients now',
   'clinic.dashboard.groomingToday': 'Grooming today',
+  'clinic.dashboard.noPaidInvoices': 'No paid invoices yet',
+  'clinic.dashboard.stockRequiringAttention': 'Stock requiring attention',
+  'clinic.dashboard.manageInventory': 'Manage inventory',
+  'clinic.dashboard.atAGlance': 'At a glance',
+  'clinic.dashboard.revenueThisMonth': 'Revenue this month',
 
   // Clinic appointments
   'clinic.appointments.bookNew': 'Book Appointment',
@@ -192,6 +197,20 @@ const en: Dict = {
   'clinic.inventory.expiry': 'Expiry date',
   'clinic.inventory.addItem': 'Add Item',
   'clinic.inventory.lowStockAlert': 'Low Stock Alert',
+  'clinic.inventory.searchPlaceholder': 'Search by name or barcode…',
+  'clinic.inventory.allCategories': 'All categories',
+  'clinic.inventory.name': 'Name',
+  'clinic.inventory.category': 'Category',
+  'clinic.inventory.unitLabel': 'Unit',
+  'clinic.inventory.unitPrice': 'Unit price (฿)',
+  'clinic.inventory.unitCost': 'Unit cost (฿)',
+  'clinic.inventory.minStockLevel': 'Min stock level',
+  'clinic.inventory.barcode': 'Barcode',
+  'clinic.inventory.quantityReceived': 'Quantity received',
+  'clinic.inventory.lotNo': 'Lot no.',
+  'clinic.inventory.expiryDate': 'Expiry date',
+  'clinic.inventory.receiveStock': 'Receive stock',
+  'clinic.inventory.noProducts': 'No products yet — add your first item.',
 
   // Clinic billing
   'clinic.billing.invoiceNo': 'Invoice No.',
@@ -203,6 +222,18 @@ const en: Dict = {
   'clinic.billing.createInvoice': 'Create Invoice',
   'clinic.billing.payNow': 'Pay Now',
   'clinic.billing.print': 'Print',
+  'clinic.billing.searchPet': 'Search pet by name or microchip…',
+  'clinic.billing.lineItems': 'Line items',
+  'clinic.billing.addService': 'Service',
+  'clinic.billing.addProduct': 'Product',
+  'clinic.billing.description': 'Description',
+  'clinic.billing.emptyHint': 'Pick a visit or add line items to start an invoice.',
+  'clinic.billing.subtotal': 'Subtotal',
+  'clinic.billing.discount': 'Discount (฿)',
+  'clinic.billing.totalDue': 'Total due',
+  'clinic.billing.payment': 'Payment',
+  'clinic.billing.cashTendered': 'Cash tendered',
+  'clinic.billing.change': 'Change',
 
   // Admin users
   'admin.users.title': 'Users & Roles',
@@ -215,6 +246,8 @@ const en: Dict = {
   'admin.users.doctor': 'Doctor',
   'admin.users.staff': 'Staff',
   'admin.users.admin': 'Admin',
+  'admin.users.subtitle': 'Manage who has access to this clinic',
+  'admin.users.rolePermissions': 'Role permissions',
 
   // Admin profile
   'admin.profile.title': 'Clinic Profile',
@@ -380,6 +413,11 @@ const th: Dict = {
   'clinic.dashboard.inventoryAlerts': 'แจ้งเตือนสินค้าคงคลัง',
   'clinic.dashboard.inpatientsNow': 'ผู้ป่วยในขณะนี้',
   'clinic.dashboard.groomingToday': 'บริการอาบน้ำวันนี้',
+  'clinic.dashboard.noPaidInvoices': 'ยังไม่มีใบแจ้งหนี้ที่ชำระแล้ว',
+  'clinic.dashboard.stockRequiringAttention': 'สินค้าที่ต้องดูแล',
+  'clinic.dashboard.manageInventory': 'จัดการคลังสินค้า',
+  'clinic.dashboard.atAGlance': 'สรุปภาพรวม',
+  'clinic.dashboard.revenueThisMonth': 'รายได้เดือนนี้',
 
   // Clinic appointments
   'clinic.appointments.bookNew': 'นัดหมายใหม่',
@@ -433,6 +471,20 @@ const th: Dict = {
   'clinic.inventory.expiry': 'วันหมดอายุ',
   'clinic.inventory.addItem': 'เพิ่มสินค้า',
   'clinic.inventory.lowStockAlert': 'แจ้งเตือนสินค้าใกล้หมด',
+  'clinic.inventory.searchPlaceholder': 'ค้นหาด้วยชื่อหรือบาร์โค้ด…',
+  'clinic.inventory.allCategories': 'ทุกหมวดหมู่',
+  'clinic.inventory.name': 'ชื่อ',
+  'clinic.inventory.category': 'หมวดหมู่',
+  'clinic.inventory.unitLabel': 'หน่วย',
+  'clinic.inventory.unitPrice': 'ราคาขาย (฿)',
+  'clinic.inventory.unitCost': 'ราคาทุน (฿)',
+  'clinic.inventory.minStockLevel': 'จำนวนขั้นต่ำ',
+  'clinic.inventory.barcode': 'บาร์โค้ด',
+  'clinic.inventory.quantityReceived': 'จำนวนที่รับเข้า',
+  'clinic.inventory.lotNo': 'หมายเลขล็อต',
+  'clinic.inventory.expiryDate': 'วันหมดอายุ',
+  'clinic.inventory.receiveStock': 'รับสินค้าเข้า',
+  'clinic.inventory.noProducts': 'ยังไม่มีสินค้า — เพิ่มสินค้าชิ้นแรก',
 
   // Clinic billing
   'clinic.billing.invoiceNo': 'เลขที่ใบแจ้งหนี้',
@@ -444,6 +496,18 @@ const th: Dict = {
   'clinic.billing.createInvoice': 'สร้างใบแจ้งหนี้',
   'clinic.billing.payNow': 'ชำระเงิน',
   'clinic.billing.print': 'พิมพ์',
+  'clinic.billing.searchPet': 'ค้นหาสัตว์เลี้ยงด้วยชื่อหรือไมโครชิป…',
+  'clinic.billing.lineItems': 'รายการ',
+  'clinic.billing.addService': 'บริการ',
+  'clinic.billing.addProduct': 'สินค้า',
+  'clinic.billing.description': 'คำอธิบาย',
+  'clinic.billing.emptyHint': 'เลือกการเยี่ยมหรือเพิ่มรายการเพื่อสร้างใบแจ้งหนี้',
+  'clinic.billing.subtotal': 'ยอดรวมก่อนหัก',
+  'clinic.billing.discount': 'ส่วนลด (฿)',
+  'clinic.billing.totalDue': 'ยอดที่ต้องชำระ',
+  'clinic.billing.payment': 'การชำระเงิน',
+  'clinic.billing.cashTendered': 'เงินสดที่รับมา',
+  'clinic.billing.change': 'เงินทอน',
 
   // Admin users
   'admin.users.title': 'ผู้ใช้และบทบาท',
@@ -456,6 +520,8 @@ const th: Dict = {
   'admin.users.doctor': 'สัตวแพทย์',
   'admin.users.staff': 'เจ้าหน้าที่',
   'admin.users.admin': 'ผู้ดูแลระบบ',
+  'admin.users.subtitle': 'จัดการผู้ที่มีสิทธิ์เข้าถึงคลินิกนี้',
+  'admin.users.rolePermissions': 'สิทธิ์ตามบทบาท',
 
   // Admin profile
   'admin.profile.title': 'โปรไฟล์คลินิก',

@@ -76,13 +76,13 @@ export default function ClinicInventory() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name or barcode…"
+            placeholder={t('clinic.inventory.searchPlaceholder')}
             className={`${inputCls} pl-[44px] rounded-full`}
           />
         </div>
         <select value={category} onChange={(e) => setCategory(e.target.value)}
                 className={`${inputCls} w-auto min-w-[160px]`}>
-          <option value="">All categories</option>
+          <option value="">{t('clinic.inventory.allCategories')}</option>
           {PRODUCT_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
         <button
@@ -113,7 +113,7 @@ export default function ClinicInventory() {
               {!isLoading && products.length === 0 && (
                 <tr><td colSpan={7} className="px-md py-xl text-center text-on-surface-variant">
                   <MaterialIcon name="inventory_2" size={32} className="text-outline mb-sm block mx-auto" />
-                  No products yet — add your first item.
+                  {t('clinic.inventory.noProducts')}
                 </td></tr>
               )}
               {products.map((p) => {
@@ -196,6 +196,7 @@ function ModalShell({ title, children, onClose }: { title: string; children: Rea
 }
 
 function ProductModal({ product, onClose }: { product: Product | null; onClose: () => void }) {
+  const t = useT()
   const isEdit = !!product
   const create = useCreateProduct()
   const update = useUpdateProduct()
@@ -237,45 +238,45 @@ function ProductModal({ product, onClose }: { product: Product | null; onClose: 
     <ModalShell title={isEdit ? 'Edit Product' : 'Add Product'} onClose={onClose}>
       <form onSubmit={submit} className="space-y-md">
         <div>
-          <label className={labelCls}>Name</label>
+          <label className={labelCls}>{t('clinic.inventory.name')}</label>
           <input className={inputCls} value={form.name} onChange={set('name')} required />
         </div>
         <div className="grid grid-cols-2 gap-md">
           <div>
-            <label className={labelCls}>Category</label>
+            <label className={labelCls}>{t('clinic.inventory.category')}</label>
             <select className={inputCls} value={form.category} onChange={set('category')}>
               {PRODUCT_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label className={labelCls}>Unit</label>
+            <label className={labelCls}>{t('clinic.inventory.unitLabel')}</label>
             <input className={inputCls} value={form.unit} onChange={set('unit')} placeholder="tablet, ml…" />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-md">
           <div>
-            <label className={labelCls}>Unit price (฿)</label>
+            <label className={labelCls}>{t('clinic.inventory.unitPrice')}</label>
             <input className={inputCls} type="number" min="0" step="0.01" value={form.unitPrice} onChange={set('unitPrice')} />
           </div>
           <div>
-            <label className={labelCls}>Unit cost (฿)</label>
+            <label className={labelCls}>{t('clinic.inventory.unitCost')}</label>
             <input className={inputCls} type="number" min="0" step="0.01" value={form.unitCost} onChange={set('unitCost')} />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-md">
           <div>
-            <label className={labelCls}>Min stock level</label>
+            <label className={labelCls}>{t('clinic.inventory.minStockLevel')}</label>
             <input className={inputCls} type="number" min="0" step="0.01" value={form.minStockLevel} onChange={set('minStockLevel')} />
           </div>
           <div>
-            <label className={labelCls}>Barcode</label>
+            <label className={labelCls}>{t('clinic.inventory.barcode')}</label>
             <input className={inputCls} value={form.barcode} onChange={set('barcode')} />
           </div>
         </div>
         {err && <p className="text-body-sm text-error">{err}</p>}
         <div className="flex justify-end gap-sm pt-sm">
-          <button type="button" onClick={onClose} className="min-h-[44px] px-lg rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors">Cancel</button>
-          <button type="submit" className="min-h-[44px] px-lg rounded-lg bg-primary text-primary-on font-semibold hover:bg-primary/90 transition-colors">{isEdit ? 'Save' : 'Add product'}</button>
+          <button type="button" onClick={onClose} className="min-h-[44px] px-lg rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors">{t('common.cancel')}</button>
+          <button type="submit" className="min-h-[44px] px-lg rounded-lg bg-primary text-primary-on font-semibold hover:bg-primary/90 transition-colors">{isEdit ? t('common.save') : t('clinic.inventory.addItem')}</button>
         </div>
       </form>
     </ModalShell>
@@ -283,6 +284,7 @@ function ProductModal({ product, onClose }: { product: Product | null; onClose: 
 }
 
 function StockInModal({ product, onClose }: { product: Product; onClose: () => void }) {
+  const t = useT()
   const stockIn = useStockIn()
   const [qty, setQty] = useState('')
   const [lotNo, setLotNo] = useState('')
@@ -312,23 +314,23 @@ function StockInModal({ product, onClose }: { product: Product; onClose: () => v
           Current: <span className="font-code text-on-surface">{Number(product.stockQuantity)} {product.unit ?? ''}</span>
         </p>
         <div>
-          <label className={labelCls}>Quantity received</label>
+          <label className={labelCls}>{t('clinic.inventory.quantityReceived')}</label>
           <input className={inputCls} type="number" min="0.01" step="0.01" value={qty} onChange={(e) => setQty(e.target.value)} required autoFocus />
         </div>
         <div className="grid grid-cols-2 gap-md">
           <div>
-            <label className={labelCls}>Lot no.</label>
+            <label className={labelCls}>{t('clinic.inventory.lotNo')}</label>
             <input className={inputCls} value={lotNo} onChange={(e) => setLotNo(e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Expiry date</label>
+            <label className={labelCls}>{t('clinic.inventory.expiryDate')}</label>
             <input className={inputCls} type="date" value={expiry} onChange={(e) => setExpiry(e.target.value)} />
           </div>
         </div>
         {err && <p className="text-body-sm text-error">{err}</p>}
         <div className="flex justify-end gap-sm pt-sm">
-          <button type="button" onClick={onClose} className="min-h-[44px] px-lg rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors">Cancel</button>
-          <button type="submit" className="min-h-[44px] px-lg rounded-lg bg-secondary text-secondary-on font-semibold hover:bg-secondary/90 transition-colors">Receive stock</button>
+          <button type="button" onClick={onClose} className="min-h-[44px] px-lg rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors">{t('common.cancel')}</button>
+          <button type="submit" className="min-h-[44px] px-lg rounded-lg bg-secondary text-secondary-on font-semibold hover:bg-secondary/90 transition-colors">{t('clinic.inventory.receiveStock')}</button>
         </div>
       </form>
     </ModalShell>

@@ -124,7 +124,7 @@ export default function AdminUsers() {
         <div className="flex items-start justify-between mb-6">
           <div>
             <h2 className="text-xl font-semibold text-on-surface">{t('admin.users.title')}</h2>
-            <p className="text-sm text-on-surface-variant mt-1">Manage who has access to this clinic</p>
+            <p className="text-sm text-on-surface-variant mt-1">{t('admin.users.subtitle')}</p>
           </div>
           <button onClick={() => setModal({ isNew: true })}
             className="min-h-[44px] px-5 bg-primary hover:bg-primary/90 text-primary-on text-sm font-semibold rounded-xl transition-colors">
@@ -190,7 +190,7 @@ export default function AdminUsers() {
 
         {/* Role legend */}
         <div className="mt-6 bg-surface-container-low border border-outline-variant rounded-xl p-4">
-          <p className="text-xs font-semibold text-on-surface-variant mb-3">Role permissions</p>
+          <p className="text-xs font-semibold text-on-surface-variant mb-3">{t('admin.users.rolePermissions')}</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {[
               { role: 'admin',  desc: 'Full access: clinic profile, all users, settings, subscription' },

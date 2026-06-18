@@ -193,7 +193,7 @@ export default function ClinicBilling() {
             {!pet ? (
               <div className="relative">
                 <span className="absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none"><MaterialIcon name="search" size={18} /></span>
-                <input value={petQuery} onChange={(e) => setPetQuery(e.target.value)} placeholder="Search pet by name or microchip…" className={`${inputCls} pl-[44px]`} />
+                <input value={petQuery} onChange={(e) => setPetQuery(e.target.value)} placeholder={t('clinic.billing.searchPet')} className={`${inputCls} pl-[44px]`} />
                 {searchResults && searchResults.length > 0 && (
                   <div className="mt-xs border border-outline-variant rounded-lg overflow-hidden bg-surface shadow-lvl2">
                     {searchResults.map((r) => (
@@ -233,10 +233,10 @@ export default function ClinicBilling() {
           {/* Line items */}
           <div className="glass-card rounded-xl shadow-lvl1 overflow-hidden">
             <div className="bg-primary text-primary-on px-md py-sm flex items-center justify-between">
-              <h3 className="text-headline-xs font-headline font-semibold">Line items</h3>
+              <h3 className="text-headline-xs font-headline font-semibold">{t('clinic.billing.lineItems')}</h3>
               <div className="flex gap-xs">
-                <button onClick={addService} className="flex items-center gap-xs text-label-md bg-primary-on/10 hover:bg-primary-on/20 rounded-lg px-sm min-h-[36px] transition-colors"><MaterialIcon name="add" size={16} /> Service</button>
-                <button onClick={() => setAddingRetail(true)} className="flex items-center gap-xs text-label-md bg-primary-on/10 hover:bg-primary-on/20 rounded-lg px-sm min-h-[36px] transition-colors"><MaterialIcon name="add" size={16} /> Product</button>
+                <button onClick={addService} className="flex items-center gap-xs text-label-md bg-primary-on/10 hover:bg-primary-on/20 rounded-lg px-sm min-h-[36px] transition-colors"><MaterialIcon name="add" size={16} /> {t('clinic.billing.addService')}</button>
+                <button onClick={() => setAddingRetail(true)} className="flex items-center gap-xs text-label-md bg-primary-on/10 hover:bg-primary-on/20 rounded-lg px-sm min-h-[36px] transition-colors"><MaterialIcon name="add" size={16} /> {t('clinic.billing.addProduct')}</button>
               </div>
             </div>
 
@@ -255,7 +255,7 @@ export default function ClinicBilling() {
               {cart.map((c) => (
                 <div key={c.key} className="flex items-center gap-sm px-md py-sm min-h-[48px]">
                   <MaterialIcon name={c.itemType === 'retail' ? 'shopping_bag' : 'medical_services'} size={18} className="text-on-surface-variant flex-shrink-0" />
-                  <input value={c.description} onChange={(e) => updateItem(c.key, { description: e.target.value })} placeholder="Description"
+                  <input value={c.description} onChange={(e) => updateItem(c.key, { description: e.target.value })} placeholder={t('clinic.billing.description')}
                          className="flex-1 min-h-[40px] bg-surface-container-low border border-outline-variant rounded-lg px-sm text-body-sm focus:outline-none focus:border-primary" />
                   <input type="number" min="0" step="1" value={c.qty} onChange={(e) => updateItem(c.key, { qty: Number(e.target.value) })}
                          className="w-16 min-h-[40px] bg-surface-container-low border border-outline-variant rounded-lg px-sm text-body-sm text-center font-code focus:outline-none focus:border-primary" />
@@ -269,22 +269,22 @@ export default function ClinicBilling() {
               {!hasLines && (
                 <div className="px-md py-xl text-center text-on-surface-variant text-body-sm">
                   <MaterialIcon name="receipt_long" size={32} className="text-outline mb-sm block mx-auto" />
-                  Pick a visit or add line items to start an invoice.
+                  {t('clinic.billing.emptyHint')}
                 </div>
               )}
             </div>
 
             {/* Totals */}
             <div className="bg-surface-container-low p-md space-y-xs">
-              <Row label="Subtotal" value={baht(subtotal)} />
+              <Row label={t('clinic.billing.subtotal')} value={baht(subtotal)} />
               <div className="flex items-center justify-between">
-                <span className="text-body-sm text-on-surface-variant">Discount (฿)</span>
+                <span className="text-body-sm text-on-surface-variant">{t('clinic.billing.discount')}</span>
                 <input type="number" min="0" step="0.01" value={discount} onChange={(e) => setDiscount(e.target.value)}
                        className="w-28 min-h-[40px] bg-surface border border-outline-variant rounded-lg px-sm text-body-sm text-right font-code focus:outline-none focus:border-primary" />
               </div>
               <Row label={`Tax (${TAX_RATE}%)`} value={baht(tax)} />
               <div className="flex items-center justify-between border-t border-outline-variant pt-sm mt-xs">
-                <span className="text-headline-xs font-headline font-semibold text-on-surface">Total due</span>
+                <span className="text-headline-xs font-headline font-semibold text-on-surface">{t('clinic.billing.totalDue')}</span>
                 <span className="text-headline-md font-headline font-bold text-primary font-code">{baht(total)}</span>
               </div>
             </div>
@@ -294,7 +294,7 @@ export default function ClinicBilling() {
         {/* ── Right: payment ─────────────────────────────── */}
         <div className="w-full lg:w-96 space-y-md">
           <div className="glass-card rounded-xl shadow-lvl1 p-md">
-            <h3 className="text-headline-xs font-headline font-semibold text-on-surface mb-md">Payment</h3>
+            <h3 className="text-headline-xs font-headline font-semibold text-on-surface mb-md">{t('clinic.billing.payment')}</h3>
 
             <div className="grid grid-cols-3 gap-xs mb-md">
               {([['cash', 'payments', 'Cash'], ['qr_promptpay', 'qr_code_2', 'PromptPay'], ['credit_card', 'credit_card', 'Card']] as const).map(([m, icon, label]) => (
@@ -308,10 +308,10 @@ export default function ClinicBilling() {
 
             {method === 'cash' && (
               <div className="space-y-sm mb-md">
-                <label className="text-label-md text-on-surface-variant uppercase tracking-wider">Cash tendered</label>
+                <label className="text-label-md text-on-surface-variant uppercase tracking-wider">{t('clinic.billing.cashTendered')}</label>
                 <input type="number" min="0" step="0.01" value={tendered} onChange={(e) => setTendered(e.target.value)} className={inputCls} placeholder="0.00" />
                 <div className="flex items-center justify-between bg-surface-container-low rounded-lg px-md min-h-[44px]">
-                  <span className="text-body-sm text-on-surface-variant">Change</span>
+                  <span className="text-body-sm text-on-surface-variant">{t('clinic.billing.change')}</span>
                   <span className={`text-body-md font-bold font-code ${change < 0 ? 'text-error' : 'text-success'}`}>{baht(Math.max(0, change))}</span>
                 </div>
               </div>

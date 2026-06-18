@@ -116,7 +116,7 @@ export default function ClinicDashboard() {
           ) : (
             <div className="h-[220px] flex flex-col items-center justify-center text-on-surface-variant">
               <MaterialIcon name="show_chart" size={32} className="text-outline mb-sm" />
-              <p className="text-body-sm">No paid invoices yet</p>
+              <p className="text-body-sm">{t('clinic.dashboard.noPaidInvoices')}</p>
             </div>
           )}
         </div>
@@ -129,7 +129,7 @@ export default function ClinicDashboard() {
             </div>
             <div>
               <h3 className="text-headline-xs font-headline font-semibold text-on-surface">{t('clinic.dashboard.inventoryAlerts')}</h3>
-              <p className="text-label-md text-on-surface-variant">Stock requiring attention</p>
+              <p className="text-label-md text-on-surface-variant">{t('clinic.dashboard.stockRequiringAttention')}</p>
             </div>
           </div>
           <div className="space-y-sm flex-1">
@@ -138,7 +138,7 @@ export default function ClinicDashboard() {
             <AlertRow icon="pending_actions" tone="text-info" label={t('clinic.dashboard.unpaidInvoices')} value={snapshot?.pendingInvoices ?? 0} />
           </div>
           <div className="mt-md border-t border-outline-variant pt-sm flex items-center justify-between text-label-md text-on-surface-variant">
-            <span>Manage inventory</span><MaterialIcon name="chevron_right" size={16} />
+            <span>{t('clinic.dashboard.manageInventory')}</span><MaterialIcon name="chevron_right" size={16} />
           </div>
         </Link>
 
@@ -173,7 +173,7 @@ export default function ClinicDashboard() {
 
         {/* Waiting Queue / totals */}
         <div className="col-span-12 lg:col-span-4 glass-card rounded-xl shadow-lvl1 p-md">
-          <h3 className="text-headline-xs font-headline font-semibold text-on-surface mb-md">At a glance</h3>
+          <h3 className="text-headline-xs font-headline font-semibold text-on-surface mb-md">{t('clinic.dashboard.atAGlance')}</h3>
           <div className="space-y-sm">
             <div className="flex items-center justify-between text-body-sm">
               <span className="text-on-surface-variant">Total patients</span>
@@ -184,7 +184,7 @@ export default function ClinicDashboard() {
               <span className="font-bold text-primary text-headline-xs">{val(data?.invoicesThisMonth)}</span>
             </div>
             <div className="flex items-center justify-between text-body-sm">
-              <span className="text-on-surface-variant">Revenue this month</span>
+              <span className="text-on-surface-variant">{t('clinic.dashboard.revenueThisMonth')}</span>
               <span className="font-bold text-primary text-headline-xs">{snapshot ? baht(snapshot.revenueThisMonth) : '…'}</span>
             </div>
           </div>
