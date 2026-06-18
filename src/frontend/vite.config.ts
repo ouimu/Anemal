@@ -15,10 +15,11 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/auth':  'http://localhost:4000',
-      '/users': 'http://localhost:4000',
-      '/admin': 'http://localhost:4000',
-      '/api':   'http://localhost:4000',
+      '/auth':   'http://localhost:4000',
+      '/users':  'http://localhost:4000',
+      '/admin':  'http://localhost:4000',
+      '/clinic': 'http://localhost:4000',
+      '/api':    'http://localhost:4000',
     }
   }
 })

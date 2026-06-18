@@ -39,7 +39,7 @@ export function RequirePlane({ plane, children }: RequirePlaneProps): React.Reac
   }
 
   if (currentPlane !== plane) {
-    return <Navigate to={PLANE_HOME[currentPlane]} replace />
+    return <Navigate to={PLANE_HOME[currentPlane as Plane] ?? '/login'} replace />
   }
 
   return children !== undefined ? <>{children}</> : <Outlet />
