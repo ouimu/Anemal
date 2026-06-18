@@ -7,7 +7,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') })
 import { PrismaClient, LegacyRole } from '@prisma/client'
 import bcrypt from 'bcrypt'
 import * as platformAuthRepo from '../models/platform-auth.repository'
-import { seedPlans } from './seed-rbac'
+import { seedPlans, seedRbac } from './seed-rbac'
 
 const prisma = new PrismaClient()
 const SALT_ROUNDS = 10
@@ -61,7 +61,10 @@ async function main() {
     { tenantId: tenantB.id, name: 'Staff B',  email: 'staff@test-clinic.com',  role: LegacyRole.staff,  password: 'StaffPass2!' },
   ]
 
-  // Phase 8 (5-A) — resolve system ClinicRole IDs for UserRole seeding
+  // Phase 8 (5-A) — seed system roles + permissions first, then resolve IDs
+  await seedRbac()
+
+  // resolve system ClinicRole IDs for UserRole seeding
   const [adminClinicRole, doctorClinicRole, staffClinicRole] = await Promise.all([
     prisma.clinicRole.findFirst({ where: { key: 'clinic_admin', tenantId: null } }),
     prisma.clinicRole.findFirst({ where: { key: 'doctor',       tenantId: null } }),
