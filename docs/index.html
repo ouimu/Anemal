@@ -395,11 +395,6 @@
 
 <!-- ═══════════════════════════════ MAIN ═══════════════════════════════ -->
 <div id="main">
-  <div id="guide-tabs">
-    <button class="gtab" onclick="show('howtorun')">How to Run</button>
-    <button class="gtab" onclick="show('usermanual')">User Manual</button>
-    <button class="gtab" onclick="show('adminsetup')">Admin Setup</button>
-  </div>
   <div id="topbar">
     <span id="doc-title">Home</span>
     <span id="doc-badge">Overview</span>
@@ -2942,11 +2937,6 @@ class="bg-primary-fixed text-on-primary-fixed
   </div>
 </div>
 
-  </div><!-- /content -->
-</div><!-- /main -->
-
-
-
 
 <div class="page guide-page" id="page-howtorun">
 <div class="guide-hero hero-howto">
@@ -4169,6 +4159,9 @@ cd ../frontend &amp;&amp; rm -rf node_modules &amp;&amp; npm install</code></pre
 
 </div><!-- /page-changelog -->
 
+  </div><!-- /content -->
+</div><!-- /main -->
+
 <script>
 const pages = {
   home:                  { title: 'Home',                    badge: 'Overview' },
@@ -4211,7 +4204,7 @@ const pages = {
   'page-clinic-grooming':{ title: 'Grooming',                badge: 'UI Page' },
 }
 
-const GUIDE_IDS = new Set(['howtorun', 'usermanual', 'adminsetup'])
+const GUIDE_IDS = new Set(['howtorun', 'usermanual', 'adminsetup', 'changelog'])
 
 function show(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
@@ -4227,16 +4220,6 @@ function show(id) {
   document.getElementById('search').value = ''
   doSearch('')
   document.getElementById('content').scrollTop = 0
-  // Tab bar: show only when a guide page is active, highlight current tab
-  const tabs = document.getElementById('guide-tabs')
-  if (GUIDE_IDS.has(id)) {
-    tabs.classList.add('visible')
-    tabs.querySelectorAll('.gtab').forEach(t => {
-      t.classList.toggle('active', t.getAttribute('onclick').includes("'" + id + "'"))
-    })
-  } else {
-    tabs.classList.remove('visible')
-  }
   // Hash-based navigation
   if (history.pushState) { history.pushState(null, '', '#' + id) }
 }
