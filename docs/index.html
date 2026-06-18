@@ -151,8 +151,81 @@
   .cl-entry.fix  { border-color: var(--red); }
   .cl-date { font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
 
+  /* ── Changelog timeline (phase-level) ── */
+  .hero-changelog { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); }
+
+  .cl-phase-block { margin: 0 0 32px; }
+  .cl-phase-header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 20px; border-radius: 10px 10px 0 0;
+    background: linear-gradient(135deg, var(--brand-d) 0%, var(--brand) 100%);
+    color: #fff;
+  }
+  .cl-phase-num {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(255,255,255,.2); color: #fff;
+    font-size: 15px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .cl-phase-title { font-size: 17px; font-weight: 700; margin: 0; }
+  .cl-phase-subtitle { font-size: 12px; opacity: .8; margin-top: 2px; }
+  .cl-phase-meta { margin-left: auto; text-align: right; }
+  .cl-phase-date { font-size: 12px; opacity: .75; }
+  .cl-status {
+    display: inline-block; padding: 2px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 700; margin-top: 4px;
+  }
+  .cl-status.complete { background: #dcfce7; color: #166534; }
+  .cl-status.paused   { background: #fef9c3; color: #713f12; }
+  .cl-status.active   { background: #dbeafe; color: #1e40af; }
+
+  .cl-phase-body {
+    border: 1px solid var(--border); border-top: none;
+    border-radius: 0 0 10px 10px; padding: 16px 20px;
+  }
+  .cl-deliverables { padding-left: 20px; margin: 8px 0 0; }
+  .cl-deliverables li { font-size: 13.5px; line-height: 1.7; color: #334155; margin: 3px 0; }
+  .cl-test-count {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600; color: var(--green);
+    margin-top: 10px; padding: 4px 10px;
+    background: #dcfce7; border-radius: 999px;
+  }
+
   /* ── Search highlight ── */
   mark { background: #fef08a; color: #713f12; border-radius: 2px; padding: 0 2px; }
+
+  /* ── Guide pages (How to Run / User Manual / Admin Setup) ── */
+  .guide-hero { color: #fff; padding: 28px 32px; border-radius: 12px; margin-bottom: 32px; }
+  .guide-hero h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; color: #fff; border: none; padding: 0; }
+  .guide-hero p  { font-size: 14px; opacity: .85; margin: 0; }
+  .guide-hero .sub { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .75; margin-bottom: 8px; }
+  .guide-hero .meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .guide-hero .tag { background: rgba(255,255,255,.2); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+  .hero-howto  { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); }
+  .hero-manual { background: linear-gradient(135deg, #1e3a5f 0%, #0369a1 100%); }
+  .hero-admin  { background: linear-gradient(135deg, #064e3b 0%, #065f46 100%); }
+  .guide-page blockquote { border-left: 4px solid #94a3b8; padding: 10px 16px; margin: 0 0 16px; background: #f8fafc; border-radius: 0 6px 6px 0; font-size: 13.5px; }
+  .guide-page blockquote.tip     { border-left-color: #006c4a; background: #f0fdf4; }
+  .guide-page blockquote.note    { border-left-color: #3b82f6; background: #eff6ff; }
+  .guide-page blockquote.warning { border-left-color: #ef4444; background: #fef2f2; }
+  .guide-page blockquote p { margin: 0; font-size: 13.5px; }
+  .step-header { display: flex; align-items: center; gap: 12px; margin: 36px 0 12px; }
+  .step-num { width: 32px; height: 32px; border-radius: 50%; background: #006c4a; color: #fff; font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .workflow { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin: 0 0 24px; }
+  .workflow h3 { margin-top: 0; }
+  .screenshot { background: #f1f5f9; border: 1px dashed var(--border); border-radius: 8px; padding: 12px 16px; font-size: 12px; color: var(--muted); margin: 0 0 16px; font-style: italic; }
+  .guide-toc { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin: 0 0 28px; }
+  .guide-toc .toc-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 10px; }
+  .guide-toc a { display: block; font-size: 13px; color: var(--muted); text-decoration: none; padding: 3px 0 3px 10px; border-left: 2px solid var(--border); transition: color .15s, border-color .15s; }
+  .guide-toc a:hover { color: var(--text); border-left-color: var(--accent); }
+  /* Tab bar visible when a guide page is active */
+  #guide-tabs { display: none; height: 44px; background: #fff; border-bottom: 1px solid var(--border); flex-shrink: 0; align-items: stretch; padding: 0 28px; }
+  #guide-tabs.visible { display: flex; }
+  .gtab { padding: 0 18px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; border: none; border-bottom: 3px solid transparent; background: none; display: flex; align-items: center; transition: color .15s, border-color .15s; }
+  .gtab:hover { color: var(--text); }
+  .gtab.active { color: #006c4a; border-bottom-color: #006c4a; }
 
   @media (max-width: 768px) {
     #sidebar { display: none; }
@@ -170,134 +243,163 @@
   </div>
 
   <div class="nav-group">
-    <div class="nav-group-label">Overview</div>
-    <a class="nav-item active" onclick="show('home')" href="#">
+    <div class="nav-group-label">Dashboard</div>
+    <a class="nav-item active" onclick="show('home')" href="javascript:void(0)">
       <span class="icon">🏠</span>Project Home
     </a>
-    <a class="nav-item" onclick="show('howto')" href="#">
-      <span class="icon">🚀</span>How to Run
+    <a class="nav-item" onclick="show('changelog')" href="javascript:void(0)">
+      <span class="icon">📋</span>Changelog
     </a>
-    <a class="nav-item" onclick="show('mcp')" href="#">
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Documentation</div>
+    <a class="nav-item" onclick="show('functional')" href="javascript:void(0)">
+      <span class="icon">📝</span>Functional Spec
+    </a>
+    <a class="nav-item" onclick="show('mcp')" href="javascript:void(0)">
       <span class="icon">🔌</span>MCP Servers
     </a>
   </div>
 
   <div class="nav-group">
-    <div class="nav-group-label">UI Pages</div>
-    <a class="nav-item" onclick="show('page-login')" href="#">
-      <span class="icon">🔐</span>Login
-    </a>
-    <a class="nav-item" onclick="show('page-admin-dash')" href="#">
-      <span class="icon">🏛️</span>Admin Dashboard
-    </a>
-    <a class="nav-item" onclick="show('page-admin-users')" href="#">
-      <span class="icon">👥</span>Users &amp; Roles
-    </a>
-    <a class="nav-item" onclick="show('page-admin-usage')" href="#">
-      <span class="icon">📊</span>Usage Stats
-    </a>
-    <a class="nav-item" onclick="show('page-admin-branches')" href="#">
-      <span class="icon">🏢</span>Branches &amp; Shifts
-    </a>
-    <a class="nav-item" onclick="show('page-admin-bloodbank')" href="#">
-      <span class="icon">🩸</span>Blood Bank Admin
-    </a>
-    <a class="nav-item" onclick="show('page-admin-audit')" href="#">
-      <span class="icon">🔍</span>Audit Log
-    </a>
-    <a class="nav-item" onclick="show('page-clinic-dash')" href="#">
-      <span class="icon">🐾</span>Clinic Dashboard
-    </a>
-    <a class="nav-item" onclick="show('page-clinic-appts')" href="#">
-      <span class="icon">📅</span>Appointments
-    </a>
-    <a class="nav-item" onclick="show('page-clinic-pets')" href="#">
-      <span class="icon">🐕</span>Pets &amp; Owners
-    </a>
-    <a class="nav-item" onclick="show('page-clinic-emr')" href="#">
-      <span class="icon">📋</span>EMR
-    </a>
-    <a class="nav-item" onclick="show('page-clinic-inventory')" href="#">
-      <span class="icon">💊</span>Inventory
-    </a>
-    <a class="nav-item" onclick="show('page-clinic-billing')" href="#">
-      <span class="icon">💳</span>Billing / POS
-    </a>
-    <a class="nav-item" onclick="show('page-clinic-inpatient')" href="#">
-      <span class="icon">🏥</span>Inpatient
-    </a>
-    <a class="nav-item" onclick="show('page-clinic-grooming')" href="#">
-      <span class="icon">✂️</span>Grooming
-    </a>
-  </div>
-
-  <div class="nav-group">
-    <div class="nav-group-label">Architecture</div>
-    <a class="nav-item" onclick="show('claude')" href="#">
-      <span class="icon">📘</span>CLAUDE.md
-    </a>
-    <a class="nav-item" onclick="show('functional')" href="#">
-      <span class="icon">📝</span>Functional Spec
-    </a>
-    <a class="nav-item" onclick="show('schema')" href="#">
-      <span class="icon">🗄️</span>Database Schema
-    </a>
-  </div>
-
-  <div class="nav-group">
-    <div class="nav-group-label">Agents</div>
-    <a class="nav-item" onclick="show('pm')" href="#">
-      <span class="icon">🎯</span>PM Agent
-    </a>
-    <a class="nav-item" onclick="show('uiux')" href="#">
-      <span class="icon">🎨</span>UIUX Agent
-    </a>
-    <a class="nav-item" onclick="show('db')" href="#">
-      <span class="icon">🗃️</span>DB Agent
-    </a>
-    <a class="nav-item" onclick="show('dev')" href="#">
-      <span class="icon">💻</span>Dev Agent
-    </a>
-    <a class="nav-item" onclick="show('qa')" href="#">
-      <span class="icon">🧪</span>QA Agent
-    </a>
-  </div>
-
-  <div class="nav-group">
-    <div class="nav-group-label">Design System</div>
-    <a class="nav-item" onclick="show('design-system')" href="#">
+    <div class="nav-group-label">Design</div>
+    <a class="nav-item" onclick="show('design-system')" href="javascript:void(0)">
       <span class="icon">🎨</span>Design Overview
     </a>
-    <a class="nav-item" onclick="show('design-tokens')" href="#">
+    <a class="nav-item" onclick="show('design-tokens')" href="javascript:void(0)">
       <span class="icon">🎨</span>Design Tokens
     </a>
-    <a class="nav-item" onclick="show('design-screens')" href="#">
+    <a class="nav-item" onclick="show('design-screens')" href="javascript:void(0)">
       <span class="icon">🖼️</span>Screen Specs
     </a>
-    <a class="nav-item" onclick="show('design-plan')" href="#">
+    <a class="nav-item" onclick="show('design-plan')" href="javascript:void(0)">
       <span class="icon">📋</span>Alignment Plan
     </a>
   </div>
 
   <div class="nav-group">
+    <div class="nav-group-label">Development</div>
+    <a class="nav-item" onclick="show('claude')" href="javascript:void(0)">
+      <span class="icon">📘</span>CLAUDE.md
+    </a>
+    <a class="nav-item" onclick="show('schema')" href="javascript:void(0)">
+      <span class="icon">🗄️</span>Database Schema
+    </a>
+    <a class="nav-item" onclick="show('roadmap-history')" href="javascript:void(0)">
+      <span class="icon">📚</span>Completed Phases (1–9)
+    </a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Agents</div>
+    <a class="nav-item" onclick="show('ba')" href="javascript:void(0)">
+      <span class="icon">🎯</span>BA Agent
+    </a>
+    <a class="nav-item" onclick="show('pm')" href="javascript:void(0)">
+      <span class="icon">🗂️</span>PM Agent
+    </a>
+    <a class="nav-item" onclick="show('uiux')" href="javascript:void(0)">
+      <span class="icon">🎨</span>UIUX Agent
+    </a>
+    <a class="nav-item" onclick="show('db')" href="javascript:void(0)">
+      <span class="icon">🗃️</span>DB Agent
+    </a>
+    <a class="nav-item" onclick="show('dev')" href="javascript:void(0)">
+      <span class="icon">💻</span>Dev Agent
+    </a>
+    <a class="nav-item" onclick="show('ponytail')" href="javascript:void(0)">
+      <span class="icon">🔮</span>Ponytail Agent
+    </a>
+    <a class="nav-item" onclick="show('qa')" href="javascript:void(0)">
+      <span class="icon">🧪</span>QA Agent
+    </a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">UI Pages</div>
+    <a class="nav-item" onclick="show('login')" href="javascript:void(0)">
+      <span class="icon">🔐</span>Login
+    </a>
+    <a class="nav-item" onclick="show('admin-dash')" href="javascript:void(0)">
+      <span class="icon">🏛️</span>Admin Dashboard
+    </a>
+    <a class="nav-item" onclick="show('admin-users')" href="javascript:void(0)">
+      <span class="icon">👥</span>Users &amp; Roles
+    </a>
+    <a class="nav-item" onclick="show('admin-usage')" href="javascript:void(0)">
+      <span class="icon">📊</span>Usage Stats
+    </a>
+    <a class="nav-item" onclick="show('page-admin-branches')" href="javascript:void(0)">
+      <span class="icon">🏢</span>Branches &amp; Shifts
+    </a>
+    <a class="nav-item" onclick="show('page-admin-bloodbank')" href="javascript:void(0)">
+      <span class="icon">🩸</span>Blood Bank Admin
+    </a>
+    <a class="nav-item" onclick="show('page-admin-audit')" href="javascript:void(0)">
+      <span class="icon">🔍</span>Audit Log
+    </a>
+    <a class="nav-item" onclick="show('clinic-dash')" href="javascript:void(0)">
+      <span class="icon">🐾</span>Clinic Dashboard
+    </a>
+    <a class="nav-item" onclick="show('page-clinic-appts')" href="javascript:void(0)">
+      <span class="icon">📅</span>Appointments
+    </a>
+    <a class="nav-item" onclick="show('page-clinic-pets')" href="javascript:void(0)">
+      <span class="icon">🐕</span>Pets &amp; Owners
+    </a>
+    <a class="nav-item" onclick="show('page-clinic-emr')" href="javascript:void(0)">
+      <span class="icon">📋</span>EMR
+    </a>
+    <a class="nav-item" onclick="show('page-clinic-inventory')" href="javascript:void(0)">
+      <span class="icon">💊</span>Inventory
+    </a>
+    <a class="nav-item" onclick="show('page-clinic-billing')" href="javascript:void(0)">
+      <span class="icon">💳</span>Billing / POS
+    </a>
+    <a class="nav-item" onclick="show('page-clinic-inpatient')" href="javascript:void(0)">
+      <span class="icon">🏥</span>Inpatient
+    </a>
+    <a class="nav-item" onclick="show('page-clinic-grooming')" href="javascript:void(0)">
+      <span class="icon">✂️</span>Grooming
+    </a>
+  </div>
+
+  <div class="nav-group">
     <div class="nav-group-label">Roadmap</div>
-    <a class="nav-item" onclick="show('roadmap-upcoming')" href="#" style="color:#16a34a;font-weight:700">
+    <a class="nav-item" onclick="show('roadmap-upcoming')" href="javascript:void(0)" style="color:#16a34a;font-weight:700">
       <span class="icon">✅</span>Phase 9 Complete · Phase 10 Next
     </a>
-    <a class="nav-item" onclick="show('roadmap-upcoming')" href="#">
-      <span class="icon">🔜</span>Upcoming Work
-    </a>
-    <a class="nav-item" onclick="show('qaproto')" href="#">
+    <a class="nav-item" onclick="show('qaproto')" href="javascript:void(0)">
       <span class="icon">✅</span>QA Protocols
     </a>
-    <a class="nav-item" onclick="show('roadmap-history')" href="#">
-      <span class="icon">📚</span>Completed Phases (1–7)
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">How to Run</div>
+    <a class="nav-item" onclick="show('howtorun')" href="javascript:void(0)">
+      <span class="icon">⚙️</span>How to Run
+    </a>
+    <a class="nav-item" onclick="show('adminsetup')" href="javascript:void(0)">
+      <span class="icon">🏥</span>Admin Setup Guide
+    </a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">User Manual</div>
+    <a class="nav-item" onclick="show('usermanual')" href="javascript:void(0)">
+      <span class="icon">📖</span>All Roles Guide
     </a>
   </div>
 </nav>
 
 <!-- ═══════════════════════════════ MAIN ═══════════════════════════════ -->
 <div id="main">
+  <div id="guide-tabs">
+    <button class="gtab" onclick="show('howtorun')">How to Run</button>
+    <button class="gtab" onclick="show('usermanual')">User Manual</button>
+    <button class="gtab" onclick="show('adminsetup')">Admin Setup</button>
+  </div>
   <div id="topbar">
     <span id="doc-title">Home</span>
     <span id="doc-badge">Overview</span>
@@ -317,7 +419,7 @@
   <!-- ── Build Status ── -->
   <div class="callout ok" style="margin-top:16px">
     <span class="callout-icon">🎉</span>
-    <span><strong>✅ Phase 9 COMPLETE (2026-06-18):</strong> Phases 1–9 done. <strong>~394 backend + 95 frontend tests passing</strong> · tsc clean. <strong style="color:#16a34a">Phase 9 shipped:</strong> Full EN/TH i18n rollout — 260+ key pairs, 16 clinic screens translated (Login, ClinicDashboard, AdminDashboard, Appointments, Pets, EMR, Inventory, Billing, AdminUsers, AdminProfile, RoleEditor, RolePicker and more). Custom lightweight i18n (no external library). Language toggle persists via Zustand <code>uiStore.language</code>. Platform Console excluded (internal SaaS tool). <strong>Next: Phase 10</strong> — Payment Gateway (credential-gated). <em>See <a onclick="show('roadmap-upcoming')" href="#">Upcoming Work</a>.</em></span>
+    <span><strong>✅ Phase 9 COMPLETE (2026-06-18):</strong> Phases 1–9 done. <strong>~394 backend + 95 frontend tests passing</strong> · tsc clean. <strong style="color:#16a34a">Phase 9 shipped:</strong> Full EN/TH i18n rollout — 260+ key pairs, 16 clinic screens translated (Login, ClinicDashboard, AdminDashboard, Appointments, Pets, EMR, Inventory, Billing, AdminUsers, AdminProfile, RoleEditor, RolePicker and more). Custom lightweight i18n (no external library). Language toggle persists via Zustand <code>uiStore.language</code>. Platform Console excluded (internal SaaS tool). <strong>Next: Phase 10</strong> — Payment Gateway (credential-gated). <em>See <a onclick="show('roadmap-upcoming')" href="javascript:void(0)">Upcoming Work</a>.</em></span>
   </div>
 
   <!-- ── Stats ── -->
@@ -327,7 +429,7 @@
     <div class="stat"><div class="n">28</div><div class="l">DB Tables</div></div>
     <div class="stat"><div class="n">13</div><div class="l">API Modules</div></div>
     <div class="stat"><div class="n">8</div><div class="l">Screen Prototypes</div></div>
-    <div class="stat"><div class="n">5</div><div class="l">Agents</div></div>
+    <div class="stat"><div class="n">7</div><div class="l">Agents</div></div>
   </div>
 
   <!-- ── Phase Progress ── -->
@@ -356,16 +458,26 @@
   </div>
   <div class="callout ok" style="margin-top:8px">
     <span class="callout-icon">🎨</span>
-    <span><strong>Design System:</strong> <strong>Compassionate Care System</strong> — Primary <code>#000000</code> · Sage <code>#006c4a</code> · Plus Jakarta Sans + DM Sans · Material Symbols Outlined icons. <a onclick="show('design-system')" href="#">Design Overview →</a></span>
+    <span><strong>Design System:</strong> <strong>Compassionate Care System</strong> — Primary <code>#000000</code> · Sage <code>#006c4a</code> · Plus Jakarta Sans + DM Sans · Material Symbols Outlined icons. <a onclick="show('design-system')" href="javascript:void(0)">Design Overview →</a></span>
   </div>
 
   <!-- ── Quick Nav ── -->
   <h2>📂 Quick Navigation</h2>
   <div class="card-grid">
-    <div class="card" onclick="show('howto')">
+    <div class="card" onclick="show('howtorun')" style="cursor:pointer">
       <div class="card-icon">🚀</div>
       <div class="card-title">How to Run</div>
       <div class="card-desc">Start the app locally — 4 commands</div>
+    </div>
+    <div class="card" onclick="show('usermanual')" style="cursor:pointer">
+      <div class="card-icon">📖</div>
+      <div class="card-title">User Manual</div>
+      <div class="card-desc">Clinic staff guide — appointments, EMR, billing, workflows</div>
+    </div>
+    <div class="card" onclick="show('adminsetup')" style="cursor:pointer">
+      <div class="card-icon">⚙️</div>
+      <div class="card-title">Admin Setup Guide</div>
+      <div class="card-desc">First-time onboarding for Clinic Admin — ~75 min setup</div>
     </div>
     <div class="card" onclick="show('functional')">
       <div class="card-icon">📝</div>
@@ -419,6 +531,7 @@
       <tr><td><span class="badge agent-ui">@uiux-agent</span></td><td><code>sonnet</code></td><td>UI/UX Designer</td><td>Touch-first layout, 44px tap targets, Compassionate Care System compliance</td></tr>
       <tr><td><span class="badge agent-db">@db-agent</span></td><td><code>sonnet</code></td><td>Database Admin</td><td>Schema design, multi-tenancy isolation, index tuning, migration review</td></tr>
       <tr><td><span class="badge agent-dev">@dev-agent</span></td><td><code>sonnet</code></td><td>Full-Stack Engineer</td><td>Express API (Route→Controller→Service→Repo), React components, TypeScript strict</td></tr>
+      <tr><td><span class="badge agent-dev">@ponytail-agent</span></td><td><code>opus</code></td><td>Simplicity Gate</td><td>7-point over-engineering check on ALL deliverables before @qa-agent; blocks scope creep, duplication, and unnecessary complexity. LIVE since 2026-06-23.</td></tr>
       <tr><td><span class="badge agent-qa">@qa-agent</span></td><td><code>opus</code></td><td>QA Engineer</td><td>Data isolation tests, RBAC matrix, edge cases, integration suites</td></tr>
     </tbody>
   </table></div>
@@ -516,6 +629,7 @@ npm run dev            # Start Vite on :5173</code></pre>
 <div class="page" id="page-functional">
   <h1>📝 Functional Specification v2.0</h1>
   <p>Merged reference: functional requirements + detailed per-module spec. All 4 phases complete as of 2026-06-10.</p>
+  <div class="callout ok" style="margin-bottom:16px"><span class="callout-icon">📄</span><span><strong>Full detailed spec:</strong> <a href="functional_spec_detailed.html" target="_blank">functional_spec_detailed.html</a> — complete per-module functional specification (106 KB standalone document).</span></div>
 
   <!-- ── Foundation ── -->
   <h2>Foundation — Multi-Tenancy &amp; Auth</h2>
@@ -797,7 +911,7 @@ CREATE INDEX idx_pet_reminders_pet          ON pet_reminders(tenant_id, pet_id);
   </ul>
 
   <h2>Current Backlog Owner</h2>
-  <div class="callout ok" style="margin-bottom:8px"><span class="callout-icon">✅</span><span><strong>Phases 1–9 complete (~394 backend + 95 frontend tests).</strong> Phase 9 COMPLETE 2026-06-18 — i18n rollout shipped: 260+ EN/TH key pairs, 16 clinic screens translated, custom lightweight i18n (no library), language toggle via Zustand <code>uiStore.language</code>, Platform Console excluded. 95/95 frontend tests passing, 0 missing TH keys. Phase 10/11 postponed (credential-gated). See <a onclick="show('roadmap-upcoming')" href="#">Upcoming Work →</a></span></div>
+  <div class="callout ok" style="margin-bottom:8px"><span class="callout-icon">✅</span><span><strong>Phases 1–9 complete (~394 backend + 95 frontend tests).</strong> Phase 9 COMPLETE 2026-06-18 — i18n rollout shipped: 260+ EN/TH key pairs, 16 clinic screens translated, custom lightweight i18n (no library), language toggle via Zustand <code>uiStore.language</code>, Platform Console excluded. 95/95 frontend tests passing, 0 missing TH keys. Phase 10/11 postponed (credential-gated). See <a onclick="show('roadmap-upcoming')" href="javascript:void(0)">Upcoming Work →</a></span></div>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Phase</th><th>Scope</th><th>Est. Token Cost</th></tr></thead>
     <tbody>
@@ -1026,7 +1140,7 @@ Dependencies: &lt;task IDs or sessions&gt;</code></pre>
   </div>
 
   <h2>QA Protocol (run after every task)</h2>
-  <p>See <a onclick="show('qaproto')" href="#">QA Protocols page</a> for full 7-section checklist.</p>
+  <p>See <a onclick="show('qaproto')" href="javascript:void(0)">QA Protocols page</a> for full 7-section checklist.</p>
 
   <h2>Test Output Format</h2>
   <pre><code>Test Suite: &lt;module&gt;-&lt;task-id&gt;
@@ -1037,9 +1151,84 @@ Then: &lt;expected result&gt;
 Type: happy_path | edge_case | security | transaction</code></pre>
 </div>
 
+<!-- ══════════════════ BA AGENT ══════════════════ -->
+<div class="page" id="page-ba">
+  <h1>🎯 BA Agent — Business Analyst &amp; Solution Consultant</h1>
+  <div class="callout info"><span class="callout-icon">ℹ️</span><span>Model: <code>opus</code> · Invocation: <code>@ba-agent</code> · Skill: <code>anemal-ba-toolkit</code>, <code>anemal-functional-reqs</code>, <code>anemal-rbac-matrix</code>, <code>anemal-platform-console</code></span></div>
+
+  <h2>Role &amp; Responsibilities</h2>
+  <p>The BA Agent is the <strong>upstream gatekeeper</strong> — it validates business requirements, designs authorization and permission structures, identifies gaps and ambiguities, and produces the solution architecture before @pm-agent creates tasks or any code is written.</p>
+
+  <h2>Core Tasks</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Task Type</th><th>Output</th></tr></thead>
+    <tbody>
+      <tr><td>Requirement analysis</td><td>Business rules, AS-IS / TO-BE flows, acceptance criteria</td></tr>
+      <tr><td>Authorization design</td><td>RBAC permission matrix, plane routing, role scoping</td></tr>
+      <tr><td>Gap analysis</td><td>Missing requirements, conflicting rules, edge cases</td></tr>
+      <tr><td>Solution architecture</td><td>High-level design, API contracts, integration points</td></tr>
+      <tr><td>Writing plan</td><td>Functional specs, docs content for @pm-agent to commit</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Pipeline Position</h2>
+  <pre><code>@ba-agent (validate + design)
+  → @db-agent (schema) ∥ @uiux-agent (screens) ∥ @dev-agent (code)
+     → @ponytail-agent (simplicity gate)
+        → @qa-agent (test + sign-off)
+           → @pm-agent (update docs)</code></pre>
+
+  <h2>How to Invoke</h2>
+  <pre><code>@ba-agent Task X.Y: [Task name]
+Context: [Brief description of what needs to be done]
+Deliverable: [What output you need — spec, design, gap analysis]</code></pre>
+</div>
+
+<!-- ══════════════════ PONYTAIL AGENT ══════════════════ -->
+<div class="page" id="page-ponytail">
+  <h1>🔮 Ponytail Agent — Simplicity Gate</h1>
+  <div class="callout warn"><span class="callout-icon">⚠️</span><span>Model: <code>opus</code> · Status: <strong>LIVE (enforced from June 23, 2026)</strong> · Every deliverable claiming to be "done" must pass this gate BEFORE @qa-agent review.</span></div>
+
+  <h2>Purpose</h2>
+  <p>The Ponytail Agent is the <strong>anti-complexity gatekeeper</strong>. It reviews every deliverable from @ba-agent, @db-agent, @uiux-agent, and @dev-agent before @qa-agent sees it, blocking over-engineering, scope creep, and unnecessary duplication.</p>
+
+  <h2>The 7-Point Check</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>#</th><th>Criterion</th><th>Rejection Signal</th></tr></thead>
+    <tbody>
+      <tr><td><strong>1</strong></td><td>Over-engineering?</td><td>Complex solution where simple exists; premature abstractions; unnecessary patterns</td></tr>
+      <tr><td><strong>2</strong></td><td>Duplicate work?</td><td>Reimplements existing feature/utility/schema; violates DRY principle</td></tr>
+      <tr><td><strong>3</strong></td><td>Existing solution available?</td><td>3rd-party lib/tool already solves this; rebuild vs. integrate cost analysis missing</td></tr>
+      <tr><td><strong>4</strong></td><td>Scope too large?</td><td>Affects &gt;3 major subsystems; requires &gt;10 files changed; &gt;500 LOC in single PR</td></tr>
+      <tr><td><strong>5</strong></td><td>Too many dependencies?</td><td>New external libs without justification; circular imports; &gt;5 new transitive deps</td></tr>
+      <tr><td><strong>6</strong></td><td>Too many files?</td><td>&gt;15 new files created; refactor scope sprawl</td></tr>
+      <tr><td><strong>7</strong></td><td>Too many APIs?</td><td>&gt;3 new endpoints/hooks/mutations in single task; scope creep signal</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Decision Logic</h2>
+  <div class="callout danger"><span class="callout-icon">🚫</span><span><strong>Any YES → REJECT.</strong> Return to originating agent with specific feedback. Agent iterates and resubmits.</span></div>
+  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>All NO → APPROVE.</strong> Proceed to @qa-agent review.</span></div>
+
+  <h2>Rejection Feedback Format</h2>
+  <pre><code>@[agent] — Ponytail gate flagged: [criterion #N] [brief reason]
+Suggest: [specific simplification]
+Resubmit when: [concrete step to fix]</code></pre>
+
+  <h2>Examples</h2>
+  <ul>
+    <li>✗ 5 new API endpoints → ✓ 2 endpoints (split 3 others into next phase)</li>
+    <li>✗ 12 new files → ✓ 6 files (extract common utilities into existing <code>utils/</code>)</li>
+    <li>✗ 3 new npm packages → ✓ 1 package + use native solution for other 2</li>
+  </ul>
+
+  <h2>Scope</h2>
+  <p>ALL tasks — feature work, refactors, schema changes, docs. No exemptions. Assigned 2026-06-18.</p>
+</div>
+
 <!-- ══════════════════ ROADMAP HISTORY ══════════════════ -->
 <div class="page" id="page-roadmap-history">
-  <h1>📜 Roadmap History — Completed Phases (1–7)</h1>
+  <h1>📜 Roadmap History — Completed Phases (1–9)</h1>
   <div class="callout ok"><span class="callout-icon">✅</span><span><strong>Phases 1–9 complete. ~394 backend + 95 frontend tests passing.</strong> Phase 9 finished 2026-06-18: full EN/TH i18n rollout — 260+ key pairs, 16 clinic screens, 95/95 tests, 0 missing TH keys. Phase 8 (RBAC + Platform Console) completed 2026-06-17 with T-5F: Role Editor, Platform Console UI, Multi-Role Assignment.</span></div>
   <div class="callout info"><span class="callout-icon">🔄</span><span><strong>2026-06-13 — Full clean re-sequence.</strong> Backlog flattened to linear Phase 1–10+. <code>1.5→5</code> · Sessions <code>A–E→6</code> · Redesign closeout <code>→7</code> · RBAC/Platform <code>Phase 5→8</code> · Payment Gateway <code>→9</code> (postponed) · LINE/SMS <code>→10</code> (postponed). Stable IDs kept: <code>SPEC-RBAC-PLATFORM-01</code>, <code>phase5-rbac-platform-tasks.md</code>, sub-tasks <code>5-A…5-G</code>. Full map: <code>PHASE-RESEQUENCE.md</code>.</span></div>
   <div class="callout info"><span class="callout-icon">🔄</span><span><strong>2026-06-14 — Phase reorder (i18n promotion).</strong> i18n Rollout promoted from Phase 11 → <strong>Phase 9</strong> (no credential dependency, can follow Phase 8 immediately). Payment Gateway shifted <code>9→10</code>; LINE/SMS shifted <code>10→11</code>. Stable IDs unchanged.</span></div>
@@ -1423,7 +1612,7 @@ Test Suites: 20 passed, 20 total
 Tests:       261 passed, 261 total
 Time:        12.45s</code></pre>
 
-  <div class="callout info" style="margin-top:12px"><span class="callout-icon">📋</span><span>Full QA protocol: See <a onclick="show('qaproto')" href="#">QA Protocols page</a> · Task tracking: <code>.claude/roadmap/phase1.5-settings-tasks.md</code> · Agent skills: <code>.claude/skills/</code></span></div>
+  <div class="callout info" style="margin-top:12px"><span class="callout-icon">📋</span><span>Full QA protocol: See <a onclick="show('qaproto')" href="javascript:void(0)">QA Protocols page</a> · Task tracking: <code>.claude/roadmap/phase1.5-settings-tasks.md</code> · Agent skills: <code>.claude/skills/</code></span></div>
 </div>
 
 <!-- ══════════════════ QA PROTOCOLS ══════════════════ -->
@@ -1630,175 +1819,7 @@ npm run test:coverage</code></pre>
   </table></div>
 </div>
 
-<!-- ══════════════════ HOW TO RUN ══════════════════ -->
-<div class="page" id="page-howto">
-  <h1>🚀 How to Run Locally (Windows)</h1>
 
-  <div class="callout ok"><span class="callout-icon">✅</span><span>Phases 1–7 complete + Phase 8 T-5E done (344 tests — 321 backend + 23 frontend vitest). This guide covers running the <strong>current production build</strong> AND invoking agents for next development phases.</span></div>
-
-  <!-- ── Prerequisites ── -->
-  <h2>Prerequisites</h2>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>Tool</th><th>Version</th><th>Notes</th></tr></thead>
-    <tbody>
-      <tr><td>Node.js</td><td>≥ 20</td><td>Required</td></tr>
-      <tr><td>PostgreSQL</td><td>15 or 16 (local or Docker)</td><td>Required</td></tr>
-    </tbody>
-  </table></div>
-
-  <!-- ── Step 1: PostgreSQL ── -->
-  <h2>Step 1 — Start PostgreSQL</h2>
-  <pre><code>docker run --name vetclinic-pg -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=vetclinic_dev -p 5432:5432 -d postgres:16</code></pre>
-
-  <!-- ── Step 2: .env ── -->
-  <h2>Step 2 — Create <code>src\backend\.env</code></h2>
-  <pre><code>DATABASE_URL=postgresql://postgres:dev@localhost:5432/vetclinic_dev
-JWT_SECRET=vetclinic-dev-jwt-secret-change-in-prod-32chars
-JWT_EXPIRES_IN=8h
-REFRESH_TOKEN_EXPIRES_IN=30d
-PORT=4000
-NODE_ENV=development
-
-# Required — AES-256-GCM key for settings secrets (Phase 1.5-A)
-# Generate: openssl rand -hex 32
-SETTINGS_ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000
-
-# Optional — leave blank to skip; app runs without them
-REMINDER_CRON_SCHEDULE=”0 8 * * *”
-LINE_CHANNEL_ACCESS_TOKEN=
-TWILIO_ACCOUNT_SID=
-AWS_ACCESS_KEY_ID=</code></pre>
-  <div class=”callout warn”><span class=”callout-icon”>⚠️</span><span>Prisma reads <code>.env</code> from the directory you run commands in — always <code>cd src\backend</code> first.</span></div>
-
-  <!-- ── Step 3: DB ── -->
-  <h2>Step 3 — Install &amp; Migrate Database</h2>
-  <pre><code>cd src\backend
-npm install
-npm run db:generate    # Regenerate Prisma client
-npm run db:migrate     # Apply all migrations (Phases 1–8)
-npm run db:seed        # Seed 2 tenants × 3 users each
-npx ts-node prisma/seed-rbac.ts  # Phase 8 — seed 49-permission catalogue + 3 system roles</code></pre>
-  <div class=”callout ok”><span class=”callout-icon”>✅</span><span>Expected after seed: 7 users across <code>dev-clinic</code> and <code>test-clinic</code>. All 32 tables created. RBAC permissions + system roles seeded.</span></div>
-
-  <!-- ── Step 4: Run ── -->
-  <h2>Step 4 — Start the App</h2>
-  <pre><code># Terminal 1 — Backend API (http://localhost:4000)
-cd src\backend && npm run dev
-
-# Terminal 2 — Frontend UI (http://localhost:5173)
-cd src\frontend && npm install && npm run dev</code></pre>
-
-  <!-- ── Login Credentials ── -->
-  <h2>Login Credentials</h2>
-  <div class=”callout warn”><span class=”callout-icon”>🔑</span><span><strong>Clinic ID is required</strong> and case-sensitive. On <code>localhost</code> it auto-fills as <code>dev-clinic</code>.</span></div>
-  <div class=”tbl-wrap”><table>
-    <thead><tr><th>Clinic ID</th><th>Role</th><th>Email</th><th>Password</th></tr></thead>
-    <tbody>
-      <tr><td rowspan=”4”><code>dev-clinic</code></td><td>Superadmin</td><td>super@anemal.co</td><td>SuperPass1!</td></tr>
-      <tr><td>Admin</td><td>admin@dev-clinic.com</td><td>AdminPass1!</td></tr>
-      <tr><td>Doctor</td><td>doctor@dev-clinic.com</td><td>DoctorPass1!</td></tr>
-      <tr><td>Staff</td><td>staff@dev-clinic.com</td><td>StaffPass1!</td></tr>
-      <tr><td rowspan=”3”><code>test-clinic</code></td><td>Admin</td><td>admin@test-clinic.com</td><td>AdminPass2!</td></tr>
-      <tr><td>Doctor</td><td>doctor@test-clinic.com</td><td>DoctorPass2!</td></tr>
-      <tr><td>Staff</td><td>staff@test-clinic.com</td><td>StaffPass2!</td></tr>
-    </tbody>
-  </table></div>
-
-  <!-- ── Run Tests ── -->
-  <h2>Run Tests</h2>
-  <pre><code>cd src\backend
-npm test                         # All 323 tests
-npm run test:security            # Tenant isolation suite only
-npm run test:coverage            # With coverage report</code></pre>
-
-  <!-- ── AGENTS SECTION (NEW) ── -->
-  <h2>🤖 Using Agents for Development (Phase 5+)</h2>
-  <div class="callout info"><span class="callout-icon">📋</span><span>The next phases are designed and ready to build. Use Claude Code to invoke subagents. Each agent has isolated context and specialized skills.</span></div>
-
-  <h3>Agent System Overview</h3>
-  <p>Six agents collaborate on this project. You invoke them from Claude Code (chat or CLI). Each agent loads its own skill files and works on a discrete task.</p>
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>Agent</th><th>Role</th><th>Used for</th></tr></thead>
-    <tbody>
-      <tr><td><strong>@ba-agent</strong></td><td>Business Analyst</td><td>Requirements, authorization design, gap analysis</td></tr>
-      <tr><td><strong>@pm-agent</strong></td><td>Product Manager</td><td>Scope validation, task breakdown, acceptance criteria</td></tr>
-      <tr><td><strong>@uiux-agent</strong></td><td>UI/UX Designer</td><td>Screen layouts, design system compliance, tap targets</td></tr>
-      <tr><td><strong>@db-agent</strong></td><td>Database Admin</td><td>Schema design, migrations, tenant isolation review</td></tr>
-      <tr><td><strong>@dev-agent</strong></td><td>Full-Stack Engineer</td><td>API + React implementation, code quality</td></tr>
-      <tr><td><strong>@qa-agent</strong></td><td>QA Engineer</td><td>Tests, edge cases, security isolation checks, sign-off</td></tr>
-    </tbody>
-  </table></div>
-
-  <h3>Standard Workflow</h3>
-  <ol>
-    <li><strong>@ba-agent</strong> validates requirements and designs the solution</li>
-    <li><strong>@pm-agent</strong> breaks work into atomic tasks with acceptance criteria</li>
-    <li><strong>@db-agent</strong> + <strong>@uiux-agent</strong> in parallel — schema + screen specs</li>
-    <li><strong>@dev-agent</strong> implements code from ready task specs</li>
-    <li><strong>@qa-agent</strong> writes tests and verifies isolation/RBAC before "done"</li>
-  </ol>
-
-  <h3>How to Invoke an Agent (Claude Code)</h3>
-  <p>Open Claude Code in your editor. Send this prompt to the chat:</p>
-  <pre><code>Use the @db-agent subagent.
-Task: Phase 5-A T-5A-01 — create permissions/roles/role_permissions tables + users.role_id
-Load skills: anemal-db-context, anemal-rbac-matrix, RBAC_Platform_Restructure_Spec.md
-Deliver: Prisma migration (+down) + updated schema.prisma. Report file paths + the isolation test output.</code></pre>
-
-  <h3>Invoke Examples — Next Sessions</h3>
-
-  <div class="task-card">
-    <h4>Session G — LINE/SMS Dispatch (needs tokens)</h4>
-    <p><strong>When:</strong> After settings UI (Phase 1.5) is deployed</p>
-    <p><strong>Agent:</strong> @dev-agent + @qa-agent</p>
-    <pre><code>Use the @dev-agent subagent.
-Task: Session G — Wire LINE/SMS reminders (real dispatch)
-Load skill: anemal-coding-rules
-Deliver:
-  - Update pet_reminders flow → real LINE Messaging API dispatch
-  - Add owner.line_user_id migration
-  - LINE/SMS settings UI in Phase 1.5 NotificationsPage (already built)
-  - 230+ tests passing (new reminders test suite)</code></pre>
-    <p style="font-size:12px;color:#6b7280;margin-top:6px">Blocked until: <code>LINE_CHANNEL_ACCESS_TOKEN</code> + Twilio credentials provided</p>
-  </div>
-
-  <div class="task-card">
-    <h4>Phase 5-A/5-B — RBAC + Permissions (foundation)</h4>
-    <p><strong>When:</strong> Ready to implement authorization overhaul</p>
-    <p><strong>Agents:</strong> @db-agent (schema) → @dev-agent (middleware) → @qa-agent (regression suite)</p>
-    <pre><code>Use the @ba-agent subagent.
-Task: Validate Phase 5-A scope and authorization matrix
-Load skill: RBAC_Platform_Restructure_Spec.md, anemal-rbac-matrix, anemal-ba-toolkit
-Deliver: Scope doc + gap analysis + task breakdown. Next → @db-agent for schema.</code></pre>
-  </div>
-
-  <div class="task-card">
-    <h4>Session F — Payment Gateway (Omise/Stripe)</h4>
-    <p><strong>When:</strong> Commerce features deployed and stable</p>
-    <p><strong>Agent:</strong> @dev-agent</p>
-    <pre><code>Use the @dev-agent subagent.
-Task: Session F — Real payment gateway via Omise
-Load skill: anemal-coding-rules, anemal-functional-reqs
-Deliver: services/payment.service.ts + webhook handler + SaaS subscription tables + cron trial expiry</code></pre>
-    <p style="font-size:12px;color:#6b7280;margin-top:6px">Blocked until: Omise API keys in <code>.env</code></p>
-  </div>
-
-  <!-- ── Troubleshooting ── -->
-  <h2>Troubleshooting</h2>
-  <div class=”tbl-wrap”><table>
-    <thead><tr><th>Problem</th><th>Fix</th></tr></thead>
-    <tbody>
-      <tr><td>Missing DATABASE_URL env var</td><td>Ensure <code>src\backend\.env</code> exists</td></tr>
-      <tr><td>Can't reach database</td><td>Check Docker container is running: <code>docker ps</code></td></tr>
-      <tr><td>P1003: DB does not exist</td><td>Fix DATABASE_URL or create the DB manually</td></tr>
-      <tr><td>Port 4000 in use</td><td>Set <code>PORT=4001</code> in <code>.env</code></td></tr>
-      <tr><td>Prisma client outdated after schema change</td><td><code>npm run db:generate</code> then restart server</td></tr>
-      <tr><td>Barcode scanner / camera not working</td><td>Browser requires HTTPS or localhost; grant camera permission</td></tr>
-    </tbody>
-  </table></div>
-</div>
-
-<!-- ══════════════════ ADMIN PAGE ══════════════════ -->
 <div class="page" id="page-admin">
   <h1>⚙️ Admin Page</h1>
   <div class="callout info"><span class="callout-icon">🔒</span><span>Admin-only — non-admin users are redirected to /dashboard. The sidebar ⚙️ Admin link is hidden from doctor and staff roles.</span></div>
@@ -2046,7 +2067,7 @@ claude mcp list</code></pre>
 </div>
 
 <!-- ══════════════════ LOGIN PAGE ══════════════════ -->
-<div class="page" id="page-page-login">
+<div class="page" id="page-login">
   <h1>🔐 Login Page — <code>/login</code></h1>
   <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>src/frontend/src/views/LoginView.tsx</code> · Access: public</span></div>
 
@@ -2082,7 +2103,7 @@ claude mcp list</code></pre>
 </div>
 
 <!-- ══════════════════ ADMIN DASHBOARD ══════════════════ -->
-<div class="page" id="page-page-admin-dash">
+<div class="page" id="page-admin-dash">
   <h1>🏠 Admin Dashboard — <code>/admin/dashboard</code></h1>
   <div class="callout danger"><span class="callout-icon">🔒</span><span>Admin only — non-admins redirected to <code>/clinic/dashboard</code></span></div>
   <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>src/frontend/src/views/admin/AdminDashboard.tsx</code></span></div>
@@ -2118,7 +2139,7 @@ claude mcp list</code></pre>
 </div>
 
 <!-- ══════════════════ ADMIN USERS ══════════════════ -->
-<div class="page" id="page-page-admin-users">
+<div class="page" id="page-admin-users">
   <h1>👥 Users &amp; Roles — <code>/admin/users</code></h1>
   <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>src/frontend/src/views/admin/AdminUsers.tsx</code></span></div>
 
@@ -2163,7 +2184,7 @@ claude mcp list</code></pre>
 </div>
 
 <!-- ══════════════════ ADMIN USAGE ══════════════════ -->
-<div class="page" id="page-page-admin-usage">
+<div class="page" id="page-admin-usage">
   <h1>📊 Usage Statistics — <code>/admin/usage</code></h1>
   <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>src/frontend/src/views/admin/AdminUsage.tsx</code> · API: <code>GET /admin/usage</code></span></div>
 
@@ -2197,7 +2218,7 @@ claude mcp list</code></pre>
 </div>
 
 <!-- ══════════════════ CLINIC DASHBOARD ══════════════════ -->
-<div class="page" id="page-page-clinic-dash">
+<div class="page" id="page-clinic-dash">
   <h1>🐾 Clinic Dashboard — <code>/clinic/dashboard</code></h1>
   <div class="callout ok"><span class="callout-icon">✅</span><span>Available to <strong>doctor</strong> and <strong>staff</strong> roles. Admins are redirected to <code>/admin/dashboard</code>.</span></div>
   <div class="callout info"><span class="callout-icon">📁</span><span>File: <code>src/frontend/src/views/clinic/ClinicDashboard.tsx</code></span></div>
@@ -2924,19 +2945,1247 @@ class="bg-primary-fixed text-on-primary-fixed
   </div><!-- /content -->
 </div><!-- /main -->
 
+
+
+
+<div class="page guide-page" id="page-howtorun">
+<div class="guide-hero hero-howto">
+      <h1>HOW TO RUN — Anemal SaaS</h1>
+      <p>Developer and DevOps setup guide for the Anemal multi-tenant veterinary clinic platform.</p>
+    </div>
+
+    <h2 id="prerequisites">Prerequisites</h2>
+    <table>
+      <thead><tr><th>Requirement</th><th>Version</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Node.js</strong></td><td>20.x LTS</td><td>Check with <code>node -v</code>. v18 minimum; v24 requires supertest patch (already applied in <code>jest.setup.js</code>).</td></tr>
+        <tr><td><strong>npm</strong></td><td>9+</td><td>Bundled with Node.js 20</td></tr>
+        <tr><td><strong>PostgreSQL</strong></td><td>15+</td><td>Via Docker (recommended) or local install</td></tr>
+        <tr><td><strong>Docker</strong></td><td>any recent</td><td>Optional — used for the dev database container</td></tr>
+        <tr><td><strong>Git</strong></td><td>any</td><td>For cloning</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="clone-install">Clone &amp; Install</h2>
+    <pre><code>git clone https://github.com/ouimu/AnimalClinic.git
+cd AnimalClinic
+
+# Install backend dependencies
+cd src/backend
+npm install
+
+# Install frontend dependencies
+cd ../frontend
+npm install</code></pre>
+    <p>There is no root-level <code>npm install</code>. Backend and frontend are independent packages managed under <code>src/backend/</code> and <code>src/frontend/</code> respectively.</p>
+
+    <h2 id="environment-setup">Environment Setup</h2>
+    <h3>Backend <code>.env</code></h3>
+    <p>Create <code>src/backend/.env</code> by copying the example and filling in values:</p>
+    <pre><code>cp .env.example src/backend/.env   # from repo root
+# — or —
+cd src/backend &amp;&amp; cp .env.example .env</code></pre>
+    <p>Full template with every variable:</p>
+    <pre><code># ── Server ──────────────────────────────────────────────────────────────────
+PORT=4000
+NODE_ENV=development
+
+# ── Database ─────────────────────────────────────────────────────────────────
+# Prisma datasource url — must match your PostgreSQL container / server
+DATABASE_URL=postgresql://vetclinic:vetclinic_pw@localhost:5432/vetclinic_dev
+
+# ── Auth ─────────────────────────────────────────────────────────────────────
+# Any long random string — generate with: openssl rand -hex 64
+JWT_SECRET=replace-with-a-long-random-secret
+JWT_EXPIRES_IN=8h
+
+# ── Settings encryption ───────────────────────────────────────────────────────
+# AES-256-GCM key for storing secrets in tenant settings
+# Generate with: openssl rand -hex 32
+SETTINGS_ENCRYPTION_KEY=replace-with-64-hex-chars
+
+# ── File storage (S3-compatible) ──────────────────────────────────────────────
+# Leave blank to skip file uploads in development
+STORAGE_BUCKET=
+STORAGE_REGION=
+
+# ── Integrations (Phase 10/11 — leave blank until credentials are ready) ──────
+LINE_CHANNEL_TOKEN=
+SMS_API_KEY=
+
+# ── Tooling ───────────────────────────────────────────────────────────────────
+# Required only if you use GitHub MCP server via Claude Code CLI
+GITHUB_TOKEN=ghp_your_personal_access_token_here</code></pre>
+
+    <h3>Variable reference</h3>
+    <table>
+      <thead><tr><th>Variable</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>PORT</code></td><td>Yes</td><td>Express listen port. Default <code>4000</code>. Frontend proxy targets this.</td></tr>
+        <tr><td><code>NODE_ENV</code></td><td>Yes</td><td><code>development</code> | <code>production</code> | <code>test</code></td></tr>
+        <tr><td><code>DATABASE_URL</code></td><td>Yes</td><td>Prisma connection string. Must match the Postgres container.</td></tr>
+        <tr><td><code>JWT_SECRET</code></td><td>Yes</td><td>Signing secret for JWT tokens (8h TTL). Never commit the real value.</td></tr>
+        <tr><td><code>JWT_EXPIRES_IN</code></td><td>Yes</td><td>Token lifetime. Default <code>8h</code>.</td></tr>
+        <tr><td><code>SETTINGS_ENCRYPTION_KEY</code></td><td>Yes</td><td>64-char hex string for AES-256-GCM encryption of sensitive tenant settings.</td></tr>
+        <tr><td><code>STORAGE_BUCKET</code></td><td>No</td><td>S3 bucket name. Leave blank to disable file uploads.</td></tr>
+        <tr><td><code>STORAGE_REGION</code></td><td>No</td><td>AWS region for the S3 bucket.</td></tr>
+        <tr><td><code>LINE_CHANNEL_TOKEN</code></td><td>No</td><td>LINE Messaging API token (Phase 11).</td></tr>
+        <tr><td><code>SMS_API_KEY</code></td><td>No</td><td>SMS provider key (Phase 11).</td></tr>
+        <tr><td><code>GITHUB_TOKEN</code></td><td>No</td><td>GitHub PAT for Claude Code MCP server only.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="database-initialization">Database Initialization</h2>
+    <h3>Start the dev PostgreSQL container</h3>
+    <pre><code>docker run -d \
+  --name vetclinic-pg \
+  -e POSTGRES_USER=vetclinic \
+  -e POSTGRES_PASSWORD=vetclinic_pw \
+  -e POSTGRES_DB=vetclinic_dev \
+  -p 5432:5432 \
+  postgres:15-alpine</code></pre>
+    <p>Verify it is running:</p>
+    <pre><code>docker ps --filter name=vetclinic-pg</code></pre>
+
+    <h3>Run Prisma migrations</h3>
+    <pre><code>cd src/backend
+
+# Apply all pending migrations and generate the Prisma client
+npm run db:migrate
+# Equivalent to: prisma migrate dev</code></pre>
+
+    <h3>Seed the database</h3>
+    <pre><code>cd src/backend
+npm run db:seed
+# Equivalent to: ts-node prisma/seed.ts</code></pre>
+    <p>The seed script creates:</p>
+    <ul>
+      <li>A default tenant and branch</li>
+      <li>System roles (<code>clinic_admin</code>, <code>doctor</code>, <code>clinic_staff</code>)</li>
+      <li>A platform superadmin user</li>
+      <li>Sample permissions</li>
+    </ul>
+
+    <h3>Regenerate the Prisma client (after schema changes only)</h3>
+    <pre><code>cd src/backend
+npm run db:generate
+# Equivalent to: prisma generate</code></pre>
+
+    <h3>Open Prisma Studio (visual DB browser)</h3>
+    <pre><code>cd src/backend
+npm run db:studio
+# Opens http://localhost:5555 in your browser</code></pre>
+
+    <h2 id="start-services">Start Services</h2>
+    <p>Both services must run concurrently in development. Use two terminal windows / tabs.</p>
+
+    <h3>Backend (Express, port 4000)</h3>
+    <pre><code>cd src/backend
+
+# Development mode — hot reload via ts-node-dev
+npm run dev
+
+# Production mode — compile first, then run the compiled JS
+npm run build
+npm run start</code></pre>
+    <p>The backend starts on <code>http://localhost:4000</code>.</p>
+
+    <h3>Frontend (Vite, port 5173)</h3>
+    <pre><code>cd src/frontend
+
+# Development mode — Vite HMR
+npm run dev
+
+# Production build
+npm run build
+
+# Preview the production build locally
+npm run preview</code></pre>
+    <p>The frontend dev server starts on <code>http://localhost:5173</code>. The Vite dev server proxies <code>/api/*</code> to <code>http://localhost:4000</code> — no CORS configuration needed in development.</p>
+
+    <h2 id="verify-installation">Verify Installation</h2>
+    <h3>Health check</h3>
+    <pre><code>curl -s http://localhost:4000/health | jq .</code></pre>
+    <p>Expected response:</p>
+    <pre><code>{
+  "success": true,
+  "data": { "status": "ok" }
+}</code></pre>
+
+    <h3>Login (obtain a JWT)</h3>
+    <pre><code>curl -s -X POST http://localhost:4000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@dev-clinic.com","password":"AdminPass1!"}' | jq .</code></pre>
+    <p>Expected response shape:</p>
+    <pre><code>{
+  "success": true,
+  "data": {
+    "token": "&lt;jwt&gt;",
+    "user": { "id": 1, "email": "admin@dev-clinic.com", "role": "clinic_admin" }
+  }
+}</code></pre>
+
+    <h3>Authenticated request</h3>
+    <pre><code>TOKEN="&lt;paste JWT here&gt;"
+
+curl -s http://localhost:4000/api/clinic/settings \
+  -H "Authorization: Bearer $TOKEN" | jq .</code></pre>
+
+    <h2 id="running-tests">Running Tests</h2>
+    <h3>Backend (Jest + Supertest)</h3>
+    <pre><code>cd src/backend
+
+# Run all tests once
+npm test
+# Equivalent to: jest --runInBand --forceExit
+
+# Watch mode during development
+npm run test:watch</code></pre>
+    <p>Tests run sequentially (<code>--runInBand</code>) because they share the database. The <code>jest.setup.js</code> patch is required for Node 24 + supertest compatibility — do not remove it.</p>
+
+    <h3>Frontend (Vitest)</h3>
+    <pre><code>cd src/frontend
+
+# Run all tests once
+npm test
+# Equivalent to: vitest run
+
+# Watch mode during development
+npm run test:watch
+# Equivalent to: vitest</code></pre>
+
+    <div class="callout ok"><span class="callout-icon">✓</span><span><strong>Current test baseline (Phase 9):</strong> ~394 backend tests (Jest) + ~95 frontend tests (Vitest) passing.</span></div>
+
+    <h3>Lint</h3>
+    <pre><code># Backend
+cd src/backend &amp;&amp; npm run lint
+
+# Frontend
+cd src/frontend &amp;&amp; npm run lint</code></pre>
+
+    <h3>Full check (lint + test)</h3>
+    <pre><code># Backend
+cd src/backend &amp;&amp; npm run lint &amp;&amp; npm test
+
+# Frontend
+cd src/frontend &amp;&amp; npm run lint &amp;&amp; npm test</code></pre>
+
+    <h2 id="troubleshooting">Troubleshooting</h2>
+
+    <h3>Port already in use</h3>
+    <p><strong>Symptom:</strong> <code>Error: listen EADDRINUSE :::4000</code> or <code>Error: listen EADDRINUSE :::5173</code></p>
+    <pre><code># Find and kill the process holding the port (Linux/macOS)
+lsof -ti :4000 | xargs kill -9
+lsof -ti :5173 | xargs kill -9
+
+# Windows PowerShell
+netstat -ano | findstr :4000
+# Then: taskkill /PID &lt;pid&gt; /F</code></pre>
+    <p>Alternatively, change <code>PORT=</code> in <code>.env</code> (backend) or pass <code>--port</code> to Vite:</p>
+    <pre><code>cd src/frontend &amp;&amp; npx vite --port 5174</code></pre>
+
+    <h3>Database connection refused</h3>
+    <p><strong>Symptom:</strong> <code>PrismaClientInitializationError: Can't reach database server at localhost:5432</code></p>
+    <ol>
+      <li>Confirm the container is running: <pre><code>docker ps --filter name=vetclinic-pg</code></pre></li>
+      <li>If stopped, restart it: <pre><code>docker start vetclinic-pg</code></pre></li>
+      <li>Verify <code>DATABASE_URL</code> in <code>src/backend/.env</code> matches the container credentials (<code>vetclinic:vetclinic_pw</code>).</li>
+      <li>If you used a different container name or port, update <code>DATABASE_URL</code> accordingly.</li>
+    </ol>
+
+    <h3>JWT errors (<code>JsonWebTokenError</code> / <code>invalid signature</code>)</h3>
+    <p><strong>Symptom:</strong> API returns <code>401 Unauthorized</code> with <code>invalid signature</code> or <code>jwt malformed</code>.</p>
+    <ol>
+      <li>Ensure <code>JWT_SECRET</code> in <code>src/backend/.env</code> is set and not the placeholder string.</li>
+      <li>If you changed <code>JWT_SECRET</code> after seeding, all previously issued tokens are invalidated — log in again to get a fresh token.</li>
+      <li>Confirm the frontend is sending <code>Authorization: Bearer &lt;token&gt;</code> (not <code>Token</code> or <code>Basic</code>).</li>
+    </ol>
+
+    <h3>Prisma migration failures</h3>
+    <p><strong>Symptom:</strong> <code>migrate dev</code> fails with <code>Migration failed to apply</code> or <code>relation does not exist</code>.</p>
+    <ol>
+      <li>Check the database is reachable (see above).</li>
+      <li>If the migration state is dirty (interrupted migration): <pre><code>cd src/backend
+npx prisma migrate resolve --rolled-back "&lt;migration-name&gt;"
+npm run db:migrate</code></pre></li>
+      <li>For a full dev reset (drops all data): <pre><code>cd src/backend
+npx prisma migrate reset
+# Runs all migrations + seed automatically</code></pre></li>
+      <li>After any schema change, regenerate the client: <pre><code>npm run db:generate</code></pre></li>
+    </ol>
+
+    <h3>Node version mismatch</h3>
+    <p><strong>Symptom:</strong> <code>SyntaxError: Unexpected token</code> or <code>engine "node" is incompatible with this module</code>.</p>
+    <ol>
+      <li>Check your version: <pre><code>node -v</code></pre></li>
+      <li>The project targets Node 20 LTS. Use <code>nvm</code> to switch: <pre><code>nvm install 20
+nvm use 20
+node -v   # should print v20.x.x</code></pre></li>
+      <li>After switching Node versions, reinstall dependencies in both packages: <pre><code>cd src/backend &amp;&amp; rm -rf node_modules &amp;&amp; npm install
+cd ../frontend &amp;&amp; rm -rf node_modules &amp;&amp; npm install</code></pre></li>
+    </ol>
+
+    <h3><code>SETTINGS_ENCRYPTION_KEY</code> missing or wrong length</h3>
+    <p><strong>Symptom:</strong> <code>Error: SETTINGS_ENCRYPTION_KEY must be a 64-character hex string</code> on backend startup.</p>
+    <p>Generate a valid key:</p>
+    <pre><code>openssl rand -hex 32
+# Copy the output (64 hex chars) into SETTINGS_ENCRYPTION_KEY in src/backend/.env</code></pre>
+
+    <h2 id="quick-reference">Quick Reference</h2>
+    <table>
+      <thead><tr><th>Command</th><th>Directory</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>npm run dev</code></td><td><code>src/backend</code></td><td>Start backend with hot reload</td></tr>
+        <tr><td><code>npm run dev</code></td><td><code>src/frontend</code></td><td>Start frontend with HMR</td></tr>
+        <tr><td><code>npm test</code></td><td><code>src/backend</code></td><td>Run backend Jest suite</td></tr>
+        <tr><td><code>npm test</code></td><td><code>src/frontend</code></td><td>Run frontend Vitest suite</td></tr>
+        <tr><td><code>npm run db:migrate</code></td><td><code>src/backend</code></td><td>Apply Prisma migrations</td></tr>
+        <tr><td><code>npm run db:seed</code></td><td><code>src/backend</code></td><td>Seed roles, tenants, permissions</td></tr>
+        <tr><td><code>npm run db:studio</code></td><td><code>src/backend</code></td><td>Open Prisma Studio on :5555</td></tr>
+        <tr><td><code>npm run build</code></td><td><code>src/backend</code></td><td>Compile TypeScript to <code>dist/</code></td></tr>
+        <tr><td><code>npm run build</code></td><td><code>src/frontend</code></td><td>Production Vite bundle</td></tr>
+      </tbody>
+    </table>
+</div>
+
+<div class="page guide-page" id="page-usermanual">
+<div class="guide-hero hero-manual">
+      <div class="meta">
+        <span class="tag">Receptionist</span>
+        <span class="tag">Doctor</span>
+        <span class="tag">Clinic Admin</span>
+        <span class="tag">Tablet + Web</span>
+      </div>
+      <h1>Anemal — Clinic Staff User Manual</h1>
+      <p>Version: Phase 9 (i18n complete) &middot; Touch-first tablet + web browser.</p>
+    </div>
+
+    <!-- Section 1 -->
+    <h2 id="login-dashboard">1. Login &amp; Dashboard Overview</h2>
+
+    <h3>1.1 Logging In (Multi-Tenant)</h3>
+    <p>Each clinic operates under its own isolated tenant. Your clinic URL is unique to your organization — no data is shared between clinics.</p>
+    <ol>
+      <li>Open your browser and navigate to your clinic's URL (e.g., <code>https://app.anemal.com</code>).</li>
+      <li>Enter your <strong>Email</strong> and <strong>Password</strong> in the login form.</li>
+      <li>Click <strong>Sign In</strong>.</li>
+    </ol>
+    <blockquote class="note"><p><strong>Note:</strong> Each staff account belongs to exactly one clinic tenant. If you work across multiple clinics, you will have a separate login credential for each.</p></blockquote>
+    <blockquote class="warning"><p><strong>Warning:</strong> Never share your password. Each login is tied to your personal role and audit trail. All actions are logged under your account.</p></blockquote>
+
+    <h3>1.2 Language Toggle (Thai / English)</h3>
+    <p>Anemal supports full Thai and English interfaces. To switch languages:</p>
+    <ol>
+      <li>Look for the <strong>language selector</strong> in the top navigation bar (upper-right corner).</li>
+      <li>Click it and choose <strong>ภาษาไทย</strong> (Thai) or <strong>English</strong>.</li>
+      <li>The interface updates immediately — no page reload required.</li>
+    </ol>
+    <blockquote class="tip"><p><strong>Tip:</strong> Language preference is stored per session. Set it once when you log in each day.</p></blockquote>
+
+    <h3>1.3 Dashboard Widgets</h3>
+    <p>After login you land on the <strong>Dashboard</strong>. The dashboard gives you a real-time snapshot of clinic activity:</p>
+    <table>
+      <thead><tr><th>Widget</th><th>What It Shows</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Today's Appointments</strong></td><td>Count and list of scheduled visits for the current day</td></tr>
+        <tr><td><strong>Revenue Summary</strong></td><td>Today's collected payments and running monthly total</td></tr>
+        <tr><td><strong>Inventory Alerts</strong></td><td>Items at or below reorder threshold, plus expiry warnings</td></tr>
+        <tr><td><strong>Quick Actions</strong></td><td>Shortcuts to book appointment, register new patient, create invoice</td></tr>
+      </tbody>
+    </table>
+
+    <h3>1.4 Role-Based Menu Visibility</h3>
+    <p>The sidebar menu shows only the sections your role can access:</p>
+    <table>
+      <thead><tr><th>Role</th><th>Accessible Sections</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Receptionist</strong> <small style="color:#64748b">(clinic_staff)</small></td><td>Dashboard, Pets, Appointments, Billing</td></tr>
+        <tr><td><strong>Doctor</strong></td><td>Dashboard, Pets, Appointments, EMR, Inventory (view)</td></tr>
+        <tr><td><strong>Clinic Admin</strong></td><td>All sections including Settings, Users, Branches</td></tr>
+      </tbody>
+    </table>
+    <blockquote class="note"><p><strong>Note:</strong> If a menu item is not visible, your role does not have permission for that section. Contact your Clinic Admin to adjust your access level.</p></blockquote>
+
+    <!-- Section 2 -->
+    <h2 id="pets-owners">2. Managing Pets &amp; Owners</h2>
+
+    <h3>2.1 Adding a New Owner and Pet</h3>
+    <h4>Step 1 — Register the owner:</h4>
+    <ol>
+      <li>Click <strong>Pets</strong> in the left sidebar.</li>
+      <li>Click the <strong>New Owner</strong> button (top-right).</li>
+      <li>Fill in the <strong>Owner Name</strong>, <strong>Phone Number</strong>, and <strong>Email</strong> fields.</li>
+      <li>Optionally enter the <strong>Address</strong>.</li>
+      <li>Click <strong>Save Owner</strong>.</li>
+    </ol>
+    <h4>Step 2 — Add the pet:</h4>
+    <ol>
+      <li>On the owner's profile page, click <strong>Add Pet</strong>.</li>
+      <li>Enter <strong>Pet Name</strong>, <strong>Species</strong>, <strong>Breed</strong>, <strong>Date of Birth</strong>, and <strong>Sex</strong>.</li>
+      <li>Enter the <strong>Microchip / Chip ID</strong> if the pet has been chipped.</li>
+      <li>Click <strong>Save Pet</strong>.</li>
+    </ol>
+    <blockquote class="tip"><p><strong>Tip:</strong> You can add multiple pets to a single owner record. There is no limit on the number of pets per owner.</p></blockquote>
+
+    <h3>2.2 Pet Photo Upload</h3>
+    <ol>
+      <li>Open the pet's profile by clicking the pet's name.</li>
+      <li>Click the <strong>camera icon</strong> or the <strong>Upload Photo</strong> area on the pet card.</li>
+      <li>On tablet: tap the icon — you can use the device camera or choose from the gallery.</li>
+      <li>On desktop: a file picker opens. Select a JPEG or PNG image (max 5 MB).</li>
+      <li>The photo saves automatically and appears on the pet card and in the EMR header.</li>
+    </ol>
+
+    <h3>2.3 Searching for Patients</h3>
+    <p>Use the <strong>Search</strong> bar at the top of the Pets screen:</p>
+    <ul>
+      <li>Search by <strong>owner name</strong> (first or last name)</li>
+      <li>Search by <strong>pet name</strong></li>
+      <li>Search by <strong>Chip ID</strong> (microchip number)</li>
+    </ul>
+    <p>Results appear as you type. Click any result row to open that pet's profile.</p>
+    <blockquote class="tip"><p><strong>Tip:</strong> For fastest results when a client arrives, search by phone number prefix — the system matches partial numbers.</p></blockquote>
+
+    <h3>2.4 Editing and Archiving Records</h3>
+    <p><strong>To edit</strong> a pet or owner record:</p>
+    <ol>
+      <li>Open the pet or owner profile.</li>
+      <li>Click the <strong>Edit</strong> button (pencil icon).</li>
+      <li>Modify the desired fields.</li>
+      <li>Click <strong>Save</strong>.</li>
+    </ol>
+    <p><strong>To archive</strong> a pet record (e.g., deceased):</p>
+    <ol>
+      <li>Open the pet profile.</li>
+      <li>Click <strong>More Options</strong> (three-dot menu).</li>
+      <li>Select <strong>Archive Pet</strong>.</li>
+      <li>Confirm the action.</li>
+    </ol>
+    <blockquote class="warning"><p><strong>Warning:</strong> Archiving a pet hides it from active search results but preserves all medical history. This action can be reversed by a Clinic Admin.</p></blockquote>
+
+    <!-- Section 3 -->
+    <h2 id="appointments">3. Scheduling Appointments</h2>
+
+    <h3>3.1 Calendar Views</h3>
+    <p>The <strong>Appointments</strong> screen offers two calendar layouts:</p>
+    <ul>
+      <li><strong>Day View:</strong> Shows all time slots for the selected date, grouped by doctor.</li>
+      <li><strong>Week View:</strong> Shows a 7-day grid — useful for spotting availability at a glance.</li>
+    </ul>
+    <p>Switch between views using the <strong>Day / Week</strong> toggle buttons at the top of the calendar.</p>
+
+    <h3>3.2 Booking an Appointment</h3>
+    <ol>
+      <li>Navigate to <strong>Appointments</strong> in the sidebar.</li>
+      <li>Click an empty time slot in the calendar, or click the <strong>New Appointment</strong> button.</li>
+      <li>In the booking panel:
+        <ul>
+          <li>Select the <strong>Pet</strong> (search by name or owner).</li>
+          <li>Select the <strong>Doctor</strong> from the dropdown.</li>
+          <li>Confirm the <strong>Date and Time</strong>.</li>
+          <li>Choose the <strong>Appointment Type</strong> (e.g., General Checkup, Vaccination, Surgery).</li>
+          <li>Add any <strong>Notes</strong> for the doctor.</li>
+        </ul>
+      </li>
+      <li>Click <strong>Book Appointment</strong>.</li>
+    </ol>
+    <blockquote class="tip"><p><strong>Tip:</strong> Double-booked slots are prevented automatically. If a slot turns grey while you are filling the form, another user has just booked it — choose a different time.</p></blockquote>
+
+    <h3>3.3 Editing or Cancelling an Appointment</h3>
+    <p><strong>To edit:</strong></p>
+    <ol>
+      <li>Click the appointment block in the calendar.</li>
+      <li>Click <strong>Edit</strong> in the detail panel.</li>
+      <li>Adjust the time, doctor, or type.</li>
+      <li>Click <strong>Save Changes</strong>.</li>
+    </ol>
+    <p><strong>To cancel:</strong></p>
+    <ol>
+      <li>Click the appointment block.</li>
+      <li>Click <strong>Cancel Appointment</strong>.</li>
+      <li>Select a <strong>Cancellation Reason</strong> from the dropdown.</li>
+      <li>Confirm.</li>
+    </ol>
+    <blockquote class="warning"><p><strong>Warning:</strong> Cancelled appointments cannot be restored. If the client reschedules, create a new booking.</p></blockquote>
+
+    <h3>3.4 SMS Notification Trigger</h3>
+    <p>When booking or editing an appointment, toggle <strong>Send SMS Reminder</strong> to on. The system will send an automated reminder to the owner's registered phone number 24 hours before the visit.</p>
+    <div class="callout warn"><span class="callout-icon">⚠</span><span><strong>Coming Soon (Phase 11):</strong> SMS and LINE OA dispatch are not yet active. The toggle is present in the UI but reminder delivery is disabled until Phase 11 credentials are provisioned. Card the same with the Admin Setup page.</span></div>
+    <blockquote class="note"><p><strong>Note:</strong> SMS notifications require an active SMS integration. Contact your Clinic Admin if the toggle is greyed out.</p></blockquote>
+
+    <!-- Section 4 -->
+    <h2 id="emr">4. Electronic Medical Records (EMR)</h2>
+
+    <h3>4.1 Opening a Patient Chart</h3>
+    <ol>
+      <li>From the calendar, click an appointment that is <strong>checked in</strong>.</li>
+      <li>Click <strong>Open Chart</strong> or navigate to <strong>EMR</strong> in the sidebar and search for the patient.</li>
+      <li>The patient chart opens showing the pet's profile, weight history, and previous visits.</li>
+    </ol>
+
+    <h3>4.2 SOAP Notes</h3>
+    <p>Each visit record follows the standard SOAP structure:</p>
+    <table>
+      <thead><tr><th>Section</th><th>Purpose</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Subjective</strong></td><td>Owner's reported complaint</td><td>"Vomiting for 2 days, reduced appetite"</td></tr>
+        <tr><td><strong>Objective</strong></td><td>Doctor's physical findings</td><td>Temperature 39.5&deg;C, heart rate 110 bpm</td></tr>
+        <tr><td><strong>Assessment</strong></td><td>Diagnosis or differential list</td><td>Gastroenteritis, rule out parvovirus</td></tr>
+        <tr><td><strong>Plan</strong></td><td>Treatment, medications, follow-up</td><td>Metronidazole 3 days, recheck in 7 days</td></tr>
+      </tbody>
+    </table>
+    <ol>
+      <li>Click on the relevant SOAP field.</li>
+      <li>Type or dictate your notes.</li>
+      <li>The record auto-saves every 30 seconds. You can also click <strong>Save Draft</strong> manually.</li>
+    </ol>
+
+    <h3>4.3 Anatomy Canvas (Tablet — Stylus Drawing)</h3>
+    <p>The anatomy canvas lets you annotate a body diagram directly on a tablet using a stylus or finger.</p>
+    <ol>
+      <li>In the EMR view, scroll to the <strong>Anatomy</strong> section.</li>
+      <li>Tap the body diagram area to activate the canvas.</li>
+      <li>Use your stylus or finger to draw markings (wounds, swellings, lesion sites).</li>
+      <li>Use the <strong>Color</strong> and <strong>Brush Size</strong> controls in the canvas toolbar.</li>
+      <li>Tap <strong>Save Annotation</strong> to attach the drawing to the current visit record.</li>
+    </ol>
+    <blockquote class="tip"><p><strong>Tip:</strong> Each annotation is saved as an image linked to the specific visit. Previous visit annotations are viewable in the history timeline.</p></blockquote>
+
+    <h3>4.4 Prescription Entry and Auto-Deduct Inventory</h3>
+    <ol>
+      <li>In the EMR, click <strong>Add Prescription</strong> under the Plan section.</li>
+      <li>Search for the medication by name or barcode.</li>
+      <li>Enter the <strong>Dosage</strong>, <strong>Frequency</strong>, and <strong>Duration</strong>.</li>
+      <li>Click <strong>Add to Prescription</strong>.</li>
+      <li>Repeat for additional medications.</li>
+      <li>Click <strong>Finalize Prescription</strong>.</li>
+    </ol>
+    <p>When you finalize, the system automatically deducts the prescribed quantities from the clinic's inventory in real time.</p>
+    <blockquote class="warning"><p><strong>Warning:</strong> If a medication shows <strong>Out of Stock</strong>, you cannot add it to the prescription. Coordinate with staff to restock before completing the record, or prescribe an alternative.</p></blockquote>
+    <blockquote class="note"><p><strong>Note:</strong> Inventory deduction happens at the branch level. If your clinic has multiple branches, stock is tracked separately per branch.</p></blockquote>
+
+    <h3>4.5 Viewing the History Timeline</h3>
+    <p>At the bottom of any patient chart, the <strong>History Timeline</strong> shows all past visits in reverse chronological order. Each entry shows:</p>
+    <ul>
+      <li>Visit date and attending doctor</li>
+      <li>Chief complaint summary</li>
+      <li>Diagnoses and prescriptions</li>
+      <li>Attached anatomy annotations (tap to expand)</li>
+    </ul>
+    <p>Click any history entry to expand the full SOAP notes for that visit.</p>
+
+    <!-- Section 5 -->
+    <h2 id="inventory">5. Managing Inventory</h2>
+
+    <h3>5.1 Stock List and Search</h3>
+    <ol>
+      <li>Navigate to <strong>Inventory</strong> in the sidebar.</li>
+      <li>The stock list displays all products with current quantities, unit cost, and expiry status.</li>
+      <li>Use the <strong>Search</strong> bar to filter by product name or category.</li>
+      <li>Use the <strong>Category</strong> dropdown to filter by Medication, Vaccine, Consumable, or Equipment.</li>
+    </ol>
+
+    <h3>5.2 Adding or Adjusting Stock</h3>
+    <p><strong>To add new stock (receive a delivery):</strong></p>
+    <ol>
+      <li>Click <strong>Receive Stock</strong>.</li>
+      <li>Search for the product or click <strong>New Product</strong> to create a new item.</li>
+      <li>Enter the <strong>Quantity Received</strong>, <strong>Unit Cost</strong>, <strong>Supplier</strong>, and <strong>Expiry Date</strong>.</li>
+      <li>Click <strong>Save</strong>.</li>
+    </ol>
+    <p><strong>To manually adjust stock (correction):</strong></p>
+    <ol>
+      <li>Find the product in the list and click its row.</li>
+      <li>Click <strong>Adjust Stock</strong>.</li>
+      <li>Enter the adjustment amount (positive to add, negative to reduce).</li>
+      <li>Enter an <strong>Adjustment Reason</strong> (required for audit trail).</li>
+      <li>Click <strong>Confirm Adjustment</strong>.</li>
+    </ol>
+    <blockquote class="warning"><p><strong>Warning:</strong> Manual adjustments are logged and visible to Clinic Admin. Always provide an accurate reason.</p></blockquote>
+
+    <h3>5.3 Transfer Between Branches</h3>
+    <p>For clinics with multiple branches:</p>
+    <ol>
+      <li>Click <strong>Transfer Stock</strong>.</li>
+      <li>Select the <strong>Source Branch</strong> (your current branch).</li>
+      <li>Select the <strong>Destination Branch</strong>.</li>
+      <li>Search for the product and enter the <strong>Quantity to Transfer</strong>.</li>
+      <li>Click <strong>Submit Transfer</strong>.</li>
+    </ol>
+    <p>The receiving branch will see the transfer pending in their <strong>Incoming Transfers</strong> queue. They must confirm receipt to update their stock count.</p>
+
+    <h3>5.4 Expiry Alerts</h3>
+    <p>Items approaching expiry appear highlighted in the inventory list:</p>
+    <ul>
+      <li><strong style="color:#b45309">Yellow:</strong> Expires within 90 days</li>
+      <li><strong style="color:var(--red)">Red:</strong> Expires within 30 days or already expired</li>
+    </ul>
+    <p>The <strong>Dashboard</strong> also shows a summary count of expiring items. Click the alert to jump directly to the affected products.</p>
+
+    <h3>5.5 Barcode Scan (Tablet Camera)</h3>
+    <p>On a tablet, you can scan a product barcode instead of typing:</p>
+    <ol>
+      <li>On the Inventory screen, click the <strong>Scan</strong> icon (barcode symbol).</li>
+      <li>Point the tablet camera at the product barcode.</li>
+      <li>The system identifies the product and opens its detail card.</li>
+      <li>Proceed to receive, adjust, or view as needed.</li>
+    </ol>
+    <blockquote class="note"><p><strong>Note:</strong> Barcode scanning requires camera permission to be granted in your browser settings.</p></blockquote>
+
+    <!-- Section 6 -->
+    <h2 id="billing">6. Billing &amp; Payment</h2>
+
+    <h3>6.1 Generating an Invoice</h3>
+    <ol>
+      <li>Navigate to <strong>Billing</strong> in the sidebar, or click <strong>Create Invoice</strong> from a completed appointment.</li>
+      <li>If starting from Billing, click <strong>New Invoice</strong> and search for the patient/owner.</li>
+      <li>Line items from the appointment (consultation fee, medications dispensed) are pre-populated from the EMR prescription.</li>
+      <li>Add any additional services or products by clicking <strong>Add Item</strong>.</li>
+      <li>Review the subtotal and click <strong>Proceed to Payment</strong>.</li>
+    </ol>
+
+    <h3>6.2 Applying Loyalty Points and Discounts</h3>
+    <p>On the payment screen:</p>
+    <ul>
+      <li><strong>Loyalty Points:</strong> The owner's available points balance is displayed. Toggle <strong>Use Points</strong> to apply them. Points convert to a baht discount at the configured rate.</li>
+      <li><strong>Manual Discount:</strong> Click <strong>Add Discount</strong>, enter the amount or percentage, and select a reason from the dropdown.</li>
+      <li><strong>Promotional Code:</strong> Enter a code in the <strong>Promo Code</strong> field and click <strong>Apply</strong>.</li>
+    </ul>
+    <blockquote class="note"><p><strong>Note:</strong> Loyalty points are accrued per invoice. The owner earns points on the final paid amount after discounts. Redemption and earn rates are configured by the Clinic Admin in Settings.</p></blockquote>
+
+    <h3>6.3 PromptPay QR Code Generation</h3>
+    <ol>
+      <li>On the payment screen, select <strong>QR / PromptPay</strong> as the payment method.</li>
+      <li>The system generates a PromptPay QR code for the invoice total.</li>
+      <li>Show or print the QR code for the client to scan with their banking app.</li>
+      <li>Once the client completes payment, click <strong>Confirm Payment Received</strong>.</li>
+    </ol>
+    <blockquote class="tip"><p><strong>Tip:</strong> The QR code encodes the exact invoice amount — the client cannot enter a different value in their banking app.</p></blockquote>
+
+    <h3>6.4 Recording Payment</h3>
+    <p>Select the payment method:</p>
+    <ul>
+      <li><strong>Cash:</strong> Enter the amount tendered. The system calculates change automatically.</li>
+      <li><strong>Credit / Debit Card:</strong> Select <strong>Card</strong> and record the last four digits for the receipt. <em>Note: automated card processing arrives in Phase 10 — currently record-only.</em></li>
+      <li><strong>QR / PromptPay:</strong> Follow the flow in 6.3 above.</li>
+      <li><strong>Split Payment:</strong> Click <strong>Split</strong> to divide the total across multiple methods.</li>
+    </ul>
+    <p>Click <strong>Complete Payment</strong> to finalise. The invoice status changes to <strong>Paid</strong>.</p>
+
+    <h3>6.5 Issuing a Receipt or Refund</h3>
+    <p><strong>Receipt:</strong> After payment is complete, click <strong>Print Receipt</strong> or <strong>Send Receipt via Email</strong>.</p>
+    <p><strong>Refund:</strong></p>
+    <ol>
+      <li>Find the original invoice in the Billing history.</li>
+      <li>Click the invoice row and select <strong>Issue Refund</strong>.</li>
+      <li>Enter the refund amount and reason.</li>
+      <li>Select the refund method (cash or card).</li>
+      <li>Click <strong>Confirm Refund</strong>.</li>
+    </ol>
+    <blockquote class="warning"><p><strong>Warning:</strong> Refunds reverse the loyalty points earned on that invoice. Partial refunds reduce points proportionally. This cannot be undone.</p></blockquote>
+
+    <!-- Section 7 -->
+    <h2 id="settings">7. Clinic Settings &amp; Admin</h2>
+    <blockquote class="note"><p><strong>Note:</strong> This section is accessible to <strong>Clinic Admin</strong> role only.</p></blockquote>
+
+    <h3>7.1 Clinic Profile</h3>
+    <ol>
+      <li>Click <strong>Settings</strong> in the sidebar.</li>
+      <li>Select the <strong>Clinic Profile</strong> tab.</li>
+      <li>Update the <strong>Clinic Name</strong>, <strong>Logo</strong>, <strong>Address</strong>, <strong>Phone</strong>, and <strong>Tax ID</strong>.</li>
+      <li>Click <strong>Save Profile</strong>.</li>
+    </ol>
+    <p>The clinic name and logo appear on all printed receipts and the login page.</p>
+
+    <h3>7.2 Staff Management</h3>
+    <p><strong>Inviting a new staff member:</strong></p>
+    <ol>
+      <li>Go to <strong>Settings &#8594; Users</strong>.</li>
+      <li>Click <strong>Invite Staff</strong>.</li>
+      <li>Enter the staff member's <strong>Email</strong> and select their <strong>Role</strong> (Receptionist, Doctor, Clinic Admin, or a custom role).</li>
+      <li>Click <strong>Send Invitation</strong>.</li>
+    </ol>
+    <p>The staff member receives an email with a link to set their password.</p>
+    <p><strong>Assigning or changing roles:</strong></p>
+    <ol>
+      <li>Find the staff member in the Users list.</li>
+      <li>Click <strong>Edit</strong> on their row.</li>
+      <li>Update the <strong>Role</strong> dropdown.</li>
+      <li>Click <strong>Save</strong>.</li>
+    </ol>
+    <blockquote class="note"><p><strong>Note:</strong> A staff member can hold multiple roles simultaneously. Permissions are the union of all assigned roles.</p></blockquote>
+
+    <h3>7.3 Notification Settings</h3>
+    <ol>
+      <li>Go to <strong>Settings &#8594; Notifications</strong>.</li>
+      <li>Edit the <strong>SMS Templates</strong> for appointment reminders, appointment confirmations, and prescription-ready alerts.</li>
+      <li>Use placeholders such as <code>{owner_name}</code>, <code>{pet_name}</code>, <code>{appointment_time}</code> in templates.</li>
+      <li>Click <strong>Save Templates</strong>.</li>
+    </ol>
+    <div class="callout warn"><span class="callout-icon">⚠</span><span><strong>Coming Soon (Phase 11):</strong> SMS and LINE OA dispatch are not yet active. Templates can be configured but messages will not send until Phase 11 is deployed.</span></div>
+
+    <h3>7.4 Payment Methods Configuration</h3>
+    <ol>
+      <li>Go to <strong>Settings &#8594; Payments</strong>.</li>
+      <li>Toggle on the payment methods you accept (Cash, Card, PromptPay).</li>
+      <li>For PromptPay, enter your <strong>PromptPay ID</strong> (mobile number or Tax ID).</li>
+      <li>Set the <strong>Loyalty Points earn rate</strong> (baht per point) and <strong>redemption rate</strong>.</li>
+      <li>Click <strong>Save Payment Settings</strong>.</li>
+    </ol>
+
+    <h3>7.5 Branch Management</h3>
+    <ol>
+      <li>Go to <strong>Settings &#8594; Branches</strong>.</li>
+      <li>The list shows all branches under your clinic tenant.</li>
+      <li>Click <strong>Add Branch</strong> to create a new location.</li>
+      <li>Fill in the branch <strong>Name</strong>, <strong>Address</strong>, and <strong>Phone</strong>.</li>
+      <li>Assign a <strong>Branch Manager</strong> from existing staff.</li>
+      <li>Click <strong>Save Branch</strong>.</li>
+    </ol>
+    <blockquote class="note"><p><strong>Note:</strong> Each branch has its own inventory, staff assignment, and appointment calendar. Revenue reports can be viewed per branch or aggregated.</p></blockquote>
+
+    <!-- Section 8 -->
+    <h2 id="quick-workflows">8. Common Quick Workflows</h2>
+
+    <div class="workflow">
+      <h3>Workflow 1 — New Patient First Visit</h3>
+      <p>This end-to-end flow covers everything from the moment a new client walks in to checkout.</p>
+      <ol>
+        <li><strong>Register the owner:</strong> Go to <strong>Pets &#8594; New Owner</strong>. Enter name, phone, email. Click <strong>Save Owner</strong>.</li>
+        <li><strong>Add the pet:</strong> On the owner profile, click <strong>Add Pet</strong>. Enter pet details and chip ID if available. Upload a photo. Click <strong>Save Pet</strong>.</li>
+        <li><strong>Book the appointment:</strong> Go to <strong>Appointments &#8594; New Appointment</strong>. Select the pet, choose the doctor, pick the time slot, and set the type to <strong>First Visit / Consultation</strong>. Click <strong>Book Appointment</strong>.</li>
+        <li><strong>Check in the patient:</strong> When the client arrives, click the appointment on the calendar and click <strong>Check In</strong>.</li>
+        <li><strong>Open the EMR:</strong> Click <strong>Open Chart</strong> from the appointment. The doctor records SOAP notes and uses the anatomy canvas if needed.</li>
+        <li><strong>Prescribe medications:</strong> Under the Plan section, click <strong>Add Prescription</strong>. Search and add medications. Click <strong>Finalize Prescription</strong> — inventory deducts automatically.</li>
+        <li><strong>Generate invoice:</strong> Click <strong>Create Invoice</strong> (the appointment fee and dispensed medications are pre-filled).</li>
+        <li><strong>Apply discounts/loyalty:</strong> The new patient has no points yet. Apply any first-visit promotional discount if configured.</li>
+        <li><strong>Collect payment:</strong> Select payment method, complete payment, and click <strong>Print Receipt</strong>.</li>
+      </ol>
+    </div>
+
+    <div class="workflow">
+      <h3>Workflow 2 — Follow-Up Visit</h3>
+      <p>For a returning patient, most information is already on file.</p>
+      <ol>
+        <li><strong>Search for the patient:</strong> In <strong>Pets</strong>, type the owner's name or the pet's name in the search bar. Click the pet's row to open the profile.</li>
+        <li><strong>Open the appointment:</strong> Navigate to <strong>Appointments</strong> and locate today's booking for this patient. Click <strong>Check In</strong>.</li>
+        <li><strong>Update SOAP notes:</strong> Open the chart. The doctor adds new notes to the Objective, Assessment, and Plan fields. Previous visit history is visible in the timeline below.</li>
+        <li><strong>Dispense medications:</strong> Add or update the prescription. Click <strong>Finalize Prescription</strong> to deduct stock.</li>
+        <li><strong>Generate and pay invoice:</strong> Create the invoice, apply the owner's available loyalty points if they choose, select the payment method, and complete payment.</li>
+        <li><strong>Print or email receipt:</strong> Click <strong>Print Receipt</strong> or <strong>Send via Email</strong>.</li>
+      </ol>
+    </div>
+
+    <div class="workflow">
+      <h3>Workflow 3 — Low Stock Response</h3>
+      <p>When an inventory alert appears on the Dashboard:</p>
+      <ol>
+        <li><strong>Acknowledge the alert:</strong> Click the <strong>Inventory Alerts</strong> widget on the Dashboard. The system shows items at or below the reorder threshold.</li>
+        <li><strong>Review stock levels:</strong> Click any flagged item to see current quantity, reorder point, and last received date.</li>
+        <li><strong>Create a purchase order (external):</strong> Contact your supplier. Record expected delivery date in the item notes.</li>
+        <li><strong>Receive the stock:</strong> When the delivery arrives, go to <strong>Inventory &#8594; Receive Stock</strong>. Search for the product, enter the received quantity and expiry date. Click <strong>Save</strong>.</li>
+        <li><strong>Verify updated count:</strong> Confirm the stock level has updated correctly. The Dashboard alert clears automatically once the quantity exceeds the reorder threshold.</li>
+      </ol>
+      <blockquote class="tip"><p><strong>Tip:</strong> Set reorder thresholds for each product in its detail view (<strong>Inventory &#8594; [product] &#8594; Edit &#8594; Reorder Point</strong>). The system then generates alerts proactively before you run out.</p></blockquote>
+    </div>
+
+    <!-- Section 9 -->
+    <h2 id="troubleshooting">9. Troubleshooting &amp; FAQ</h2>
+
+    <h3>Forgot Password / Reset Flow</h3>
+    <ol>
+      <li>On the login page, click <strong>Forgot Password</strong>.</li>
+      <li>Enter your registered email address and click <strong>Send Reset Link</strong>.</li>
+      <li>Check your inbox for a reset email (check the spam folder if it does not arrive within 5 minutes).</li>
+      <li>Click the link in the email and set a new password.</li>
+      <li>Return to the login page and sign in with your new password.</li>
+    </ol>
+    <blockquote class="note"><p><strong>Note:</strong> Reset links expire after 60 minutes. If yours has expired, repeat the reset request.</p></blockquote>
+
+    <hr/>
+    <h3>"Session Expired" Error</h3>
+    <p>Your session has a maximum duration of 8 hours. When it expires, the system shows a <strong>Session Expired</strong> message.</p>
+    <p><strong>Resolution:</strong> Click <strong>Back to Login</strong> and sign in again. Any unsaved data in open forms may be lost — click <strong>Save Draft</strong> periodically when writing long SOAP notes.</p>
+
+    <hr/>
+    <h3>Cannot Find Patient in Search</h3>
+    <p>If searching by name returns no results:</p>
+    <ol>
+      <li>Check spelling — try the first three letters only to broaden the search.</li>
+      <li>Search by <strong>phone number</strong> or <strong>chip ID</strong> instead.</li>
+      <li>The patient may be <strong>archived</strong> — ask a Clinic Admin to restore the record if needed.</li>
+      <li>If the patient is new, they may not be registered yet — use <strong>New Owner</strong> to create the record.</li>
+    </ol>
+
+    <hr/>
+    <h3>PromptPay QR Not Generating</h3>
+    <p>If the QR code screen shows an error or blank image:</p>
+    <ol>
+      <li>Confirm that the <strong>PromptPay ID</strong> is configured in <strong>Settings &#8594; Payments</strong>.</li>
+      <li>Check that the invoice total is greater than zero.</li>
+      <li>Refresh the payment screen and try again.</li>
+      <li>If the problem persists, collect payment by cash or card and inform your Clinic Admin to verify the PromptPay configuration.</li>
+    </ol>
+
+    <hr/>
+    <h3>Inventory Count Mismatch</h3>
+    <p>If the system's stock count does not match physical stock:</p>
+    <ol>
+      <li>Go to <strong>Inventory</strong> and find the affected product.</li>
+      <li>Click <strong>View Adjustment Log</strong> to see all recent changes (prescriptions, manual adjustments, transfers).</li>
+      <li>Identify the discrepancy source.</li>
+      <li>Use <strong>Adjust Stock</strong> to correct the count, providing a reason in the required field.</li>
+      <li>If the mismatch appears to be a system error, note the product name and the expected vs actual count and contact support.</li>
+    </ol>
+    <blockquote class="tip"><p><strong>Tip:</strong> Conduct a physical stock count at the start of each month and reconcile against the system. This prevents large discrepancies from accumulating.</p></blockquote>
+
+    <hr/>
+    <h3>Support Contact</h3>
+    <p>For issues not covered in this manual:</p>
+    <ul>
+      <li><strong>In-app help:</strong> Click the <strong>Help</strong> icon (question mark) in the top navigation bar.</li>
+      <li><strong>Email support:</strong> Contact your clinic's designated Anemal support representative.</li>
+      <li><strong>Clinic Admin escalation:</strong> Your Clinic Admin has access to the system audit log and can investigate most access or data issues without contacting external support.</li>
+    </ul>
+    <blockquote class="note"><p><strong>Note:</strong> Platform-level issues (login system down, billing/subscription problems) must be escalated by your Clinic Admin to the Anemal platform team. Clinic staff cannot access platform administration.</p></blockquote>
+
+    <hr/>
+    <p><em>Anemal User Manual — Clinic Staff Edition. Covers Phases 1–9 features.</em></p>
+</div>
+
+<div class="page guide-page" id="page-adminsetup">
+<div class="guide-hero hero-admin">
+      <div class="sub">Clinic Owner / Clinic Admin</div>
+      <h1>Admin Setup Guide</h1>
+      <p>First-time onboarding for Clinic Owner / Clinic Admin. Complete all sections in order — estimated total time: ~75 minutes.</p>
+    </div>
+
+    <!-- Section 1 -->
+    <h2 id="first-time-login">1. First-Time Login <small style="font-size:13px;font-weight:400;color:var(--muted)">(~5 min)</small></h2>
+
+    <h3>What to Expect</h3>
+    <p>When you log in for the first time you will land on the <strong>Dashboard</strong>. Because no data has been entered yet, every panel will show zero counts or empty states. This is normal. The system is waiting for you to complete the setup steps described in this guide.</p>
+
+    <h3>Steps</h3>
+    <ol>
+      <li>Open your clinic's Anemal URL (provided in your welcome email).</li>
+      <li>Enter the <strong>Email</strong> and <strong>Password</strong> from that email, then press <strong>Sign In</strong>.</li>
+      <li>On first login you will be prompted to change your password. Choose a strong password (minimum 8 characters, at least one number).</li>
+      <li>You will land on the <strong>Dashboard</strong> with an empty state view.</li>
+    </ol>
+
+    <h3>Language Toggle</h3>
+    <p>The interface is available in <strong>English</strong> and <strong>Thai</strong>. To switch:</p>
+    <ol>
+      <li>Click your <strong>profile avatar</strong> in the top-right corner of the top navigation bar.</li>
+      <li>Select <strong>Language</strong> from the dropdown.</li>
+      <li>Choose <strong>English</strong> or <strong>ภาษาไทย</strong>. The change applies immediately without a page reload.</li>
+    </ol>
+
+    <h3>Admin Menu Overview</h3>
+    <p>The left sidebar contains the following sections visible to Clinic Admin:</p>
+    <table>
+      <thead><tr><th>Menu Item</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Dashboard</strong></td><td>Real-time clinic overview</td></tr>
+        <tr><td><strong>Appointments</strong></td><td>Book, view, and manage appointments</td></tr>
+        <tr><td><strong>Pets &amp; Owners</strong></td><td>Pet records and owner profiles</td></tr>
+        <tr><td><strong>EMR</strong></td><td>Electronic medical records (SOAP notes)</td></tr>
+        <tr><td><strong>Inventory</strong></td><td>Medications and supplies</td></tr>
+        <tr><td><strong>Billing</strong></td><td>Invoices, payments, PromptPay</td></tr>
+        <tr><td><strong>Reports</strong></td><td>Revenue, stock, appointment summaries</td></tr>
+        <tr><td><strong>Settings</strong></td><td>Clinic profile, staff, roles, system</td></tr>
+      </tbody>
+    </table>
+    <blockquote class="tip"><p><strong>Tip:</strong> Pin frequently used menu items by clicking the star icon next to each item name.</p></blockquote>
+
+    <!-- Section 2 -->
+    <h2 id="clinic-profile-setup">2. Clinic Profile Setup <small style="font-size:13px;font-weight:400;color:var(--muted)">(~10 min)</small></h2>
+
+    <h3>Steps</h3>
+    <ol>
+      <li>In the left sidebar, click <strong>Settings</strong>.</li>
+      <li>Select <strong>Clinic Profile</strong> from the settings sub-menu.</li>
+      <li>Fill in the following fields:</li>
+    </ol>
+    <table>
+      <thead><tr><th>Field</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Clinic Name</strong></td><td>Full legal name as it appears on receipts</td></tr>
+        <tr><td><strong>Address</strong></td><td>Street, district, province, postal code</td></tr>
+        <tr><td><strong>Phone Number</strong></td><td>Primary contact number</td></tr>
+        <tr><td><strong>Business Hours</strong></td><td>Set open/close time per day; check <strong>Closed</strong> for days off</td></tr>
+        <tr><td><strong>Logo</strong></td><td>Upload PNG or JPG, minimum 200×200 px, maximum 2 MB</td></tr>
+      </tbody>
+    </table>
+    <ol start="4">
+      <li>Click <strong>Save Changes</strong>.</li>
+      <li>Click <strong>Preview</strong> (top-right of the form) to see how the clinic name and logo appear on printed invoices and appointment confirmations.</li>
+    </ol>
+    <blockquote class="tip"><p><strong>Tip:</strong> Accurate business hours are used by the appointment booking engine to prevent scheduling outside clinic hours. Set them carefully before inviting staff.</p></blockquote>
+    <blockquote class="note"><p><strong>Note:</strong> If your clinic has <strong>multiple branches</strong>, repeat this step for each branch. Navigate to <strong>Settings &#8594; Branches</strong>, add the branch, then edit its profile separately.</p></blockquote>
+
+    <!-- Section 3 -->
+    <h2 id="invite-staff">3. Invite Staff &amp; Assign Roles <small style="font-size:13px;font-weight:400;color:var(--muted)">(~15 min)</small></h2>
+
+    <h3>Steps</h3>
+    <ol>
+      <li>In <strong>Settings</strong>, click <strong>Staff</strong>.</li>
+      <li>Click <strong>+ Invite Staff</strong>.</li>
+      <li>Enter the staff member's <strong>Email Address</strong> and select their <strong>Role</strong>.</li>
+      <li>Click <strong>Send Invitation</strong>. The staff member will receive an email with a link to set their password.</li>
+      <li>Repeat for each staff member.</li>
+    </ol>
+
+    <h3>Role Permissions — Quick Reference</h3>
+    <table>
+      <thead><tr><th>Role</th><th>Appointments</th><th>EMR</th><th>Billing</th><th>Inventory</th><th>Settings</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Clinic Admin</strong></td><td>Full</td><td>Full</td><td>Full</td><td>Full</td><td>Full</td></tr>
+        <tr><td><strong>Doctor</strong></td><td>View + own</td><td>Full own</td><td>View</td><td>View</td><td>None</td></tr>
+        <tr><td><strong>Receptionist</strong> <small style="color:#64748b">(clinic_staff)</small></td><td>Full</td><td>View only</td><td>Full</td><td>View</td><td>None</td></tr>
+        <tr><td><strong>Custom Role</strong></td><td>Configurable</td><td>Configurable</td><td>Configurable</td><td>Configurable</td><td>Configurable</td></tr>
+      </tbody>
+    </table>
+    <blockquote class="tip"><p><strong>Tip:</strong> Use the built-in <strong>Doctor</strong> role for veterinarians and the <strong>Receptionist</strong> role for front-desk staff. Create a <strong>Custom Role</strong> under <strong>Settings &#8594; Roles</strong> only when built-in permissions do not fit a specific job function.</p></blockquote>
+
+    <h3>Multi-Branch Staff Assignment</h3>
+    <p>If your clinic has multiple branches:</p>
+    <ol>
+      <li>After inviting a staff member, click their name in the <strong>Staff</strong> list.</li>
+      <li>Under <strong>Branch Access</strong>, select the branches they can access.</li>
+      <li>Click <strong>Save</strong>. The staff member will only see data for their assigned branches after login.</li>
+    </ol>
+
+    <!-- Section 4 -->
+    <h2 id="appointment-configuration">4. Appointment Configuration <small style="font-size:13px;font-weight:400;color:var(--muted)">(~10 min)</small></h2>
+
+    <h3>Add Doctor Profiles</h3>
+    <ol>
+      <li>Go to <strong>Settings &#8594; Doctors</strong>.</li>
+      <li>Click <strong>+ Add Doctor</strong>.</li>
+      <li>Fill in <strong>Name</strong>, <strong>Specialty</strong> (e.g., General Practice, Surgery, Dermatology), and optionally upload a <strong>Photo</strong>.</li>
+      <li>Click <strong>Save</strong>.</li>
+    </ol>
+
+    <h3>Define Rooms / Consultation Areas</h3>
+    <ol>
+      <li>Go to <strong>Settings &#8594; Rooms</strong>.</li>
+      <li>Click <strong>+ Add Room</strong> and enter the room name (e.g., Consultation Room 1, Surgery Suite).</li>
+      <li>Mark the room as <strong>Active</strong>. Only active rooms appear in the appointment scheduler.</li>
+    </ol>
+
+    <h3>Set Available Time Slots</h3>
+    <ol>
+      <li>In <strong>Settings &#8594; Doctors</strong>, click a doctor's name.</li>
+      <li>Under <strong>Availability</strong>, set the days and hours the doctor is available.</li>
+      <li>Set the <strong>Appointment Duration</strong> (default: 30 minutes). This controls slot intervals in the booking calendar.</li>
+      <li>Click <strong>Save</strong>.</li>
+    </ol>
+
+    <h3>Notification Setup</h3>
+    <blockquote class="note"><p><strong>Note: Coming Soon (Phase 11)</strong> — SMS and LINE OA appointment reminders are planned for Phase 11 and are not yet available. When released, configuration will appear under <strong>Settings &#8594; Notifications</strong>.</p></blockquote>
+
+    <!-- Section 5 -->
+    <h2 id="inventory-setup">5. Inventory Setup <small style="font-size:13px;font-weight:400;color:var(--muted)">(~20 min)</small></h2>
+
+    <h3>Add Medications and Supplies</h3>
+    <ol>
+      <li>Go to <strong>Inventory</strong> in the sidebar.</li>
+      <li>Click <strong>+ Add Item</strong>.</li>
+      <li>Fill in the following fields:</li>
+    </ol>
+    <table>
+      <thead><tr><th>Field</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Item Name</strong></td><td>Generic or brand name</td></tr>
+        <tr><td><strong>Category</strong></td><td>Medication, Vaccine, Supply, Equipment</td></tr>
+        <tr><td><strong>Unit</strong></td><td>Tablet, mL, Box, Piece</td></tr>
+        <tr><td><strong>SKU / Barcode</strong></td><td>Optional; scan with USB barcode reader or enter manually</td></tr>
+      </tbody>
+    </table>
+    <ol start="4"><li>Click <strong>Save Item</strong>.</li></ol>
+
+    <h3>Set Opening Stock</h3>
+    <ol>
+      <li>After creating an item, click <strong>Adjust Stock</strong>.</li>
+      <li>Select <strong>Opening Balance</strong> as the adjustment type.</li>
+      <li>Enter the current quantity on hand.</li>
+      <li>Click <strong>Confirm</strong>. The system records this as the starting quantity.</li>
+    </ol>
+
+    <h3>Set Reorder Points</h3>
+    <ol>
+      <li>In the item detail view, scroll to <strong>Stock Alerts</strong>.</li>
+      <li>Enter the <strong>Reorder Point</strong> — the quantity at which a low-stock alert appears on the Dashboard.</li>
+      <li>Optionally enter a <strong>Reorder Quantity</strong> as a reference for your purchase orders.</li>
+      <li>Click <strong>Save</strong>.</li>
+    </ol>
+    <blockquote class="tip"><p><strong>Tip:</strong> Set reorder points before going live so the Dashboard immediately flags items that are already low. A conservative rule of thumb: reorder point = average weekly usage &times; 2.</p></blockquote>
+
+    <h3>Barcode / SKU Assignment</h3>
+    <p>Barcodes and SKU codes are optional but recommended for faster billing. If you have a USB barcode scanner:</p>
+    <ol>
+      <li>Click the <strong>SKU</strong> field in the item form.</li>
+      <li>Scan the product barcode. The scanner populates the field automatically.</li>
+      <li>Save the item. The barcode can now be scanned at the billing counter to add the item to an invoice instantly.</li>
+    </ol>
+
+    <!-- Section 6 -->
+    <h2 id="payment-method-setup">6. Payment Method Setup <small style="font-size:13px;font-weight:400;color:var(--muted)">(~10 min)</small></h2>
+
+    <h3>PromptPay QR Code</h3>
+    <ol>
+      <li>Go to <strong>Settings &#8594; Payment Methods</strong>.</li>
+      <li>Under <strong>PromptPay</strong>, enter your <strong>PromptPay ID</strong> (registered mobile number or national ID number).</li>
+      <li>Click <strong>Save</strong>.</li>
+      <li>Click <strong>Test QR</strong> to generate a preview QR code. Scan it with a banking app to verify it resolves to the correct payee name before going live.</li>
+    </ol>
+    <blockquote class="tip"><p><strong>Tip:</strong> Always run the <strong>Test QR</strong> step before your first real transaction. A wrong PromptPay ID means payments go to the wrong account.</p></blockquote>
+
+    <h3>Bank Transfer</h3>
+    <ol>
+      <li>Under <strong>Bank Transfer</strong>, click <strong>+ Add Account</strong>.</li>
+      <li>Enter <strong>Bank Name</strong>, <strong>Account Number</strong>, and <strong>Account Name</strong> exactly as they appear on your passbook.</li>
+      <li>Click <strong>Save</strong>. These details print on invoices and receipts.</li>
+    </ol>
+
+    <h3>Credit Card Processor</h3>
+    <blockquote class="note"><p><strong>Note: Coming Soon (Phase 10)</strong> — Integration with credit card payment gateways (e.g., Omise, 2C2P) is planned for Phase 10 and is not yet available.</p></blockquote>
+
+    <!-- Section 7 -->
+    <h2 id="testing-the-system">7. Testing the System <small style="font-size:13px;font-weight:400;color:var(--muted)">(~15 min)</small></h2>
+    <p>Run through this smoke test end-to-end before treating real patients. It confirms that all modules are connected correctly.</p>
+    <ol>
+      <li><strong>Create a test owner and pet.</strong>
+        <ul>
+          <li>Go to <strong>Pets &amp; Owners &#8594; + New Owner</strong>.</li>
+          <li>Enter name: <code>Test Owner</code>, phone: <code>0800000000</code>.</li>
+          <li>Add a pet: name <code>Test Pet</code>, species <code>Dog</code>, breed <code>Mixed</code>.</li>
+          <li>Save both records.</li>
+        </ul>
+      </li>
+      <li><strong>Book a test appointment.</strong>
+        <ul>
+          <li>Go to <strong>Appointments &#8594; + New Appointment</strong>.</li>
+          <li>Select <code>Test Owner / Test Pet</code>, choose a doctor, a room, and an available time slot.</li>
+          <li>Set status to <strong>Confirmed</strong>. Save.</li>
+          <li>Verify the appointment appears on the calendar.</li>
+        </ul>
+      </li>
+      <li><strong>Open EMR and add a SOAP note.</strong>
+        <ul>
+          <li>Open the appointment from the calendar.</li>
+          <li>Click <strong>Open EMR</strong>.</li>
+          <li>Under <strong>SOAP Note</strong>, enter brief text in each field (Subjective, Objective, Assessment, Plan).</li>
+          <li>Click <strong>Save Note</strong>.</li>
+        </ul>
+      </li>
+      <li><strong>Create an invoice.</strong>
+        <ul>
+          <li>From the appointment or EMR view, click <strong>Create Invoice</strong>.</li>
+          <li>Add a line item (select any inventory item you created).</li>
+          <li>Confirm the total. Click <strong>Issue Invoice</strong>.</li>
+        </ul>
+      </li>
+      <li><strong>Scan the PromptPay QR.</strong>
+        <ul>
+          <li>On the invoice, click <strong>PromptPay QR</strong>.</li>
+          <li>A QR code is generated for the invoice total.</li>
+          <li>Scan it with your phone banking app to verify the amount and payee name are correct.</li>
+          <li>In a real transaction you would confirm the transfer in the banking app. For this test, click <strong>Mark as Paid (Manual)</strong> to simulate confirmation.</li>
+        </ul>
+      </li>
+      <li><strong>Confirm payment is recorded.</strong>
+        <ul>
+          <li>The invoice status should change to <strong>Paid</strong>.</li>
+          <li>Go to <strong>Reports &#8594; Daily Summary</strong> and verify the test transaction appears.</li>
+        </ul>
+      </li>
+      <li><strong>Delete test records (optional but recommended).</strong>
+        <ul>
+          <li>Go to <strong>Pets &amp; Owners</strong>, open <code>Test Owner</code>, and click <strong>Delete Owner</strong>.</li>
+          <li>This removes the owner, pet, appointment, EMR note, and invoice from the system.</li>
+        </ul>
+      </li>
+    </ol>
+    <blockquote class="tip"><p><strong>Tip:</strong> Complete this smoke test on your first day and again after any major configuration change. Keep a printed copy of these steps at the front desk for onboarding new admin staff.</p></blockquote>
+
+    <!-- Section 8 -->
+    <h2 id="next-steps">8. Next Steps &amp; Support</h2>
+
+    <h3>Daily Operations Manual</h3>
+    <p>For day-to-day use by doctors and reception staff, refer to <a onclick="show('usermanual')" href="javascript:void(0)"><strong>User Manual</strong></a> (also available as <code>docs/USER_MANUAL.md</code> or provided by your account manager).</p>
+
+    <h3>Recommended Weekly Admin Tasks</h3>
+    <table>
+      <thead><tr><th>Task</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Review low-stock alerts on the Dashboard</td><td>Prevent running out of critical medications</td></tr>
+        <tr><td>Audit staff access (Settings &#8594; Staff)</td><td>Remove ex-staff accounts promptly</td></tr>
+        <tr><td>Check appointment no-shows report</td><td>Identify patterns and adjust reminder settings</td></tr>
+        <tr><td>Export and back up reports</td><td>Keep an offline copy of revenue data</td></tr>
+      </tbody>
+    </table>
+    <blockquote class="tip"><p><strong>Tip:</strong> Schedule a 15-minute "admin check" every Monday morning to cover all four tasks above. It prevents access and stock issues from compounding over the week.</p></blockquote>
+
+    <h3>Support Channels</h3>
+    <table>
+      <thead><tr><th>Channel</th><th>Details</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Email</strong></td><td>support@anemal.com (response within 1 business day)</td></tr>
+        <tr><td><strong>LINE OA</strong></td><td>@anemal — Coming Soon</td></tr>
+        <tr><td><strong>In-app Help</strong></td><td>Click the <strong>?</strong> icon in the top navigation bar for contextual help</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Version Information</h3>
+    <blockquote class="note"><p>This guide is written for <strong>Anemal Phase 9</strong> (i18n complete rollout complete). Feature availability may differ in earlier or later versions. If you are unsure which version your clinic is running, check <strong>Settings → About</strong> or contact your administrator.</p></blockquote>
+
+</div><!-- /page-adminsetup -->
+
+<div class="page guide-page" id="page-changelog">
+  <div class="guide-hero hero-changelog">
+    <div class="meta">
+      <span class="tag">All Roles</span>
+      <span class="tag">Phase History</span>
+    </div>
+    <h1>Anemal — Project Changelog</h1>
+    <p>Complete release history by phase. Deliverables, test counts, and status for each development phase.</p>
+  </div>
+
+  <h2 id="changelog-overview">Release Overview</h2>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Phase</th>
+          <th>Focus</th>
+          <th>Status</th>
+          <th>Tests</th>
+          <th>Completed</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="badge phase">Phase 1–7</span></td><td>Foundation → UI redesign sign-off</td><td><span class="cl-status complete">Complete</span></td><td>226</td><td>2025</td></tr>
+        <tr><td><span class="badge phase">Phase 8</span></td><td>RBAC + Platform Console</td><td><span class="cl-status complete">Complete</span></td><td>~394</td><td>2026-Q1</td></tr>
+        <tr><td><span class="badge phase">Phase 9</span></td><td>i18n Thai/English rollout</td><td><span class="cl-status complete">Complete</span></td><td>95 frontend</td><td>2026-06</td></tr>
+        <tr><td><span class="badge phase">Phase 10</span></td><td>Payment gateway + SaaS billing</td><td><span class="cl-status paused">Paused</span></td><td>—</td><td>Needs credentials</td></tr>
+        <tr><td><span class="badge phase">Phase 11</span></td><td>LINE/SMS dispatch</td><td><span class="cl-status paused">Paused</span></td><td>—</td><td>Needs credentials</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr/>
+
+  <!-- PHASE_9_BLOCK -->
+  <div class="cl-phase-block" id="cl-phase-9">
+    <div class="cl-phase-header">
+      <div class="cl-phase-num">9</div>
+      <div>
+        <div class="cl-phase-title">i18n Rollout — Thai &amp; English</div>
+        <div class="cl-phase-subtitle">Phases 9.01–9.08 · 16 clinic screens translated</div>
+      </div>
+      <div class="cl-phase-meta">
+        <div class="cl-phase-date">Completed: 2026-06-18</div>
+        <span class="cl-status complete">Complete</span>
+      </div>
+    </div>
+    <div class="cl-phase-body">
+      <p>260+ EN/TH key pairs. Custom lightweight i18n (no external library). Language toggle via Zustand <code>uiStore.language</code>. Platform Console excluded.</p>
+      <ul class="cl-deliverables">
+        <li>Custom <code>useTranslation()</code> hook + <code>locales/en.ts</code> / <code>locales/th.ts</code></li>
+        <li>Language toggle in TopNav (flag pill, persists to localStorage)</li>
+        <li>All 16 clinic screens: Dashboard, Appointments, Pets, EMR, Inventory, Billing, Inpatient, Grooming, Admin sections</li>
+        <li>Role Editor + RBAC component strings (EN/TH)</li>
+        <li>common.done key added; SuccessModal Done button wired</li>
+        <li>ClinicBilling, ClinicInventory, ClinicDashboard remaining strings pass</li>
+      </ul>
+      <span class="cl-test-count">95 frontend tests passing</span>
+    </div>
+  </div>
+  <!-- /PHASE_9_BLOCK -->
+
+  <!-- PHASE_8_BLOCK -->
+  <div class="cl-phase-block" id="cl-phase-8">
+    <div class="cl-phase-header">
+      <div class="cl-phase-num">8</div>
+      <div>
+        <div class="cl-phase-title">RBAC + Platform Console Restructure</div>
+        <div class="cl-phase-subtitle">Tasks T-5A through T-5F · Two-plane authorization</div>
+      </div>
+      <div class="cl-phase-meta">
+        <div class="cl-phase-date">Completed: 2026-Q2</div>
+        <span class="cl-status complete">Complete</span>
+      </div>
+    </div>
+    <div class="cl-phase-body">
+      <p>Full two-plane auth: clinic plane (<code>/clinic/*</code>) and platform plane (<code>/platform/*</code>). Deny-by-default. Clinic Role Editor, Platform Console UI, multi-role assignment.</p>
+      <ul class="cl-deliverables">
+        <li>T-5A/B/C: Clinic plane middleware, permission catalogue, route guards</li>
+        <li>T-5D-02–05: Platform plane isolation, <code>requirePlane()</code>, platform user seeding</li>
+        <li>T-5E: Platform Console UI — tenant list, plan management, usage quotas</li>
+        <li>T-5F: Clinic Role Editor, multi-role assignment, custom role CRUD</li>
+        <li><code>&lt;Can&gt;</code> / <code>RequirePermission</code> guard components</li>
+        <li>All nav items hidden when user lacks permission</li>
+      </ul>
+      <span class="cl-test-count">~394 tests passing</span>
+    </div>
+  </div>
+  <!-- /PHASE_8_BLOCK -->
+
+  <!-- PHASE_1_7_BLOCK -->
+  <div class="cl-phase-block" id="cl-phase-1-7">
+    <div class="cl-phase-header">
+      <div class="cl-phase-num">1–7</div>
+      <div>
+        <div class="cl-phase-title">Foundation through UI Redesign Sign-off</div>
+        <div class="cl-phase-subtitle">Core SaaS scaffold, multi-tenancy, all clinic modules, Compassionate Care design system</div>
+      </div>
+      <div class="cl-phase-meta">
+        <div class="cl-phase-date">Completed: 2025</div>
+        <span class="cl-status complete">Complete</span>
+      </div>
+    </div>
+    <div class="cl-phase-body">
+      <p>Multi-tenant PostgreSQL foundation with <code>tenant_id</code> on every table. All eight clinic modules implemented (Login, Dashboard, Appointments, Pets, EMR, Inventory, Billing/POS, Admin). Compassionate Care design system applied.</p>
+      <ul class="cl-deliverables">
+        <li>Phase 1: Project scaffold, Docker Postgres, Prisma, JWT auth</li>
+        <li>Phase 2: Tenant isolation middleware, branch model</li>
+        <li>Phase 3–4: Core clinic modules (Appointments, Pets, EMR, Inventory)</li>
+        <li>Phase 4.5 / 1.5: Settings shell, clinic profile, AES-256-GCM secrets</li>
+        <li>Phase 5–6: Billing/POS, Admin centre, blood bank</li>
+        <li>Phase 7: Full UI redesign — Compassionate Care System tokens applied to all screens</li>
+      </ul>
+      <span class="cl-test-count">226 tests passing</span>
+    </div>
+  </div>
+  <!-- /PHASE_1_7_BLOCK -->
+
+  <div class="callout info">
+    <span class="callout-icon">ℹ</span>
+    <div>Phase 10 (Payment Gateway) and Phase 11 (LINE/SMS) are paused pending third-party credentials. They are scoped and ready to implement when credentials are available.</div>
+  </div>
+
+</div><!-- /page-changelog -->
+
 <script>
 const pages = {
   home:                  { title: 'Home',                    badge: 'Overview' },
-  howto:                 { title: 'How to Run',              badge: 'Setup' },
+  howtorun:              { title: 'How to Run',              badge: 'Setup' },
+  usermanual:            { title: 'User Manual',             badge: 'Clinic Staff' },
+  adminsetup:            { title: 'Admin Setup Guide',       badge: 'Clinic Admin' },
   changelog:             { title: 'Changelog',               badge: 'History' },
   mcp:                   { title: 'MCP Servers',             badge: 'Setup' },
   claude:                { title: 'CLAUDE.md',               badge: 'Architecture' },
   functional:            { title: 'Functional Requirements', badge: 'Architecture' },
   schema:                { title: 'Database Schema',         badge: 'Architecture' },
+  ba:                    { title: 'BA Agent',                badge: 'Agents' },
   pm:                    { title: 'PM Agent',                badge: 'Agents' },
   uiux:                  { title: 'UIUX Agent',              badge: 'Agents' },
   db:                    { title: 'DB Agent',                badge: 'Agents' },
   dev:                   { title: 'Dev Agent',               badge: 'Agents' },
+  ponytail:              { title: 'Ponytail Agent',          badge: 'Agents' },
   qa:                    { title: 'QA Agent',                badge: 'Agents' },
   'design-system':       { title: 'Design System',           badge: 'Design' },
   'design-tokens':       { title: 'Design Tokens',           badge: 'Design' },
@@ -2945,14 +4194,14 @@ const pages = {
   'roadmap-upcoming':    { title: 'Upcoming Work',           badge: 'Roadmap' },
   qaproto:               { title: 'QA Protocols',            badge: 'Roadmap' },
   'roadmap-history':     { title: 'Completed Phases',        badge: 'Roadmap' },
-  'page-login':          { title: 'Login Page',              badge: 'UI Page' },
-  'page-admin-dash':     { title: 'Admin Dashboard',         badge: 'UI Page' },
-  'page-admin-users':    { title: 'Users & Roles',           badge: 'UI Page' },
-  'page-admin-usage':    { title: 'Usage Statistics',        badge: 'UI Page' },
+  login:                 { title: 'Login Page',              badge: 'UI Page' },
+  'admin-dash':          { title: 'Admin Dashboard',         badge: 'UI Page' },
+  'admin-users':         { title: 'Users & Roles',           badge: 'UI Page' },
+  'admin-usage':         { title: 'Usage Statistics',        badge: 'UI Page' },
   'page-admin-branches': { title: 'Branch Management',       badge: 'UI Page' },
   'page-admin-bloodbank':{ title: 'Blood Bank Admin',        badge: 'UI Page' },
   'page-admin-audit':    { title: 'Audit Log',               badge: 'UI Page' },
-  'page-clinic-dash':    { title: 'Clinic Dashboard',        badge: 'UI Page' },
+  'clinic-dash':         { title: 'Clinic Dashboard',        badge: 'UI Page' },
   'page-clinic-appts':   { title: 'Appointments',            badge: 'UI Page' },
   'page-clinic-pets':    { title: 'Pets & Owners',           badge: 'UI Page' },
   'page-clinic-emr':     { title: 'EMR',                     badge: 'UI Page' },
@@ -2961,6 +4210,8 @@ const pages = {
   'page-clinic-inpatient':{ title: 'Inpatient',              badge: 'UI Page' },
   'page-clinic-grooming':{ title: 'Grooming',                badge: 'UI Page' },
 }
+
+const GUIDE_IDS = new Set(['howtorun', 'usermanual', 'adminsetup'])
 
 function show(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
@@ -2976,6 +4227,18 @@ function show(id) {
   document.getElementById('search').value = ''
   doSearch('')
   document.getElementById('content').scrollTop = 0
+  // Tab bar: show only when a guide page is active, highlight current tab
+  const tabs = document.getElementById('guide-tabs')
+  if (GUIDE_IDS.has(id)) {
+    tabs.classList.add('visible')
+    tabs.querySelectorAll('.gtab').forEach(t => {
+      t.classList.toggle('active', t.getAttribute('onclick').includes("'" + id + "'"))
+    })
+  } else {
+    tabs.classList.remove('visible')
+  }
+  // Hash-based navigation
+  if (history.pushState) { history.pushState(null, '', '#' + id) }
 }
 
 function doSearch(q) {
@@ -3021,7 +4284,9 @@ document.getElementById('search').addEventListener('input', e => {
   doSearch(e.target.value.trim())
 })
 
-show('home')
+// Hash-based navigation on load
+const hash = location.hash.slice(1)
+show(hash && document.getElementById('page-' + hash) ? hash : 'home')
 </script>
 </body>
 </html>
