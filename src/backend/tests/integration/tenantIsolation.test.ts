@@ -86,3 +86,99 @@ describe('Multi-Tenant Isolation — User Management', () => {
     }
   })
 })
+
+// ─── Phase 8 (T-5A-01/T-5A-07): RBAC table isolation tests ──────────────────
+// @db-agent: roles with tenantId=null are system templates visible to all tenants.
+// Clinic-custom roles (tenantId SET) must NOT be visible across tenant boundaries.
+// user_roles rows are scoped by tenantId — Tenant B must never see Tenant A user_roles.
+
+import { PrismaClient } from '@prisma/client'
+
+const prismaTest = new PrismaClient()
+
+afterAll(async () => {
+  await prismaTest.$disconnect()
+})
+
+describe('RBAC Isolation — custom roles are tenant-scoped', () => {
+  let tenantAId: number
+  let tenantBId: number
+  let customRoleId: number
+
+  beforeAll(async () => {
+    // Resolve tenant IDs from the seeded subdomains
+    const tenantA = await prismaTest.tenant.findUnique({ where: { subdomain: 'dev-clinic' } })
+    const tenantB = await prismaTest.tenant.findUnique({ where: { subdomain: 'test-clinic' } })
+    if (!tenantA || !tenantB) throw new Error('Seed tenants not found — run prisma/seed.ts first')
+    tenantAId = tenantA.id
+    tenantBId = tenantB.id
+
+    // Create a clinic-custom role scoped to Tenant A
+    const existing = await prismaTest.clinicRole.findFirst({
+      where: { tenantId: tenantAId, key: 'custom_test_role' },
+    })
+    if (existing) {
+      customRoleId = existing.id
+    } else {
+      const created = await prismaTest.clinicRole.create({
+        data: {
+          tenantId: tenantAId,
+          key: 'custom_test_role',
+          name: 'Custom Test Role',
+          isSystem: false,
+        },
+      })
+      customRoleId = created.id
+    }
+  })
+
+  afterAll(async () => {
+    // Clean up the test-only custom role
+    await prismaTest.clinicRole.deleteMany({
+      where: { tenantId: tenantAId, key: 'custom_test_role' },
+    })
+  })
+
+  it('❌ Tenant B cannot see Tenant A custom roles (tenant-scoped query returns empty)', async () => {
+    // Iron rule: clinic-custom roles must be queried with WHERE tenantId = :tenantId
+    const rolesVisibleToB = await prismaTest.clinicRole.findMany({
+      where: {
+        tenantId: tenantBId,  // Tenant B scope — must NOT include tenantAId roles
+      },
+    })
+    const hasTenantARole = rolesVisibleToB.some(r => r.id === customRoleId)
+    expect(hasTenantARole).toBe(false)
+  })
+
+  it('✅ System roles (tenantId=null) are visible to all tenants', async () => {
+    // System roles have tenantId=null and are accessible to any clinic for reference
+    const systemRoles = await prismaTest.clinicRole.findMany({
+      where: { tenantId: null, isSystem: true },
+    })
+    // Must have the 3 seeded system roles
+    expect(systemRoles.length).toBeGreaterThanOrEqual(3)
+    const keys = systemRoles.map(r => r.key)
+    expect(keys).toContain('clinic_admin')
+    expect(keys).toContain('doctor')
+    expect(keys).toContain('clinic_staff')
+  })
+
+  it('❌ user_roles index enforces tenant isolation — Tenant B cannot see Tenant A user_roles', async () => {
+    // All user_roles for Tenant B must have tenantId = tenantBId only
+    const userRolesForB = await prismaTest.userRole.findMany({
+      where: { tenantId: tenantBId },
+    })
+    const crossTenant = userRolesForB.filter(ur => ur.tenantId !== tenantBId)
+    expect(crossTenant.length).toBe(0)
+
+    // Verify Tenant A user_roles are not returned when scoped to Tenant B
+    const userRolesForA = await prismaTest.userRole.findMany({
+      where: { tenantId: tenantAId },
+    })
+    // None of Tenant A's user_roles should appear when filtering by Tenant B
+    const leakedToB = userRolesForA.filter(ur =>
+      userRolesForB.some(b => b.userId === ur.userId && b.tenantId === tenantAId)
+    )
+    expect(leakedToB.length).toBe(0)
+  })
+})

@@ -13,7 +13,7 @@ import bcrypt from 'bcrypt'
 import { AppError } from '../utils/errors'
 import { signPlatformToken } from '../config/jwt'
 import * as platformAuthRepo from '../models/platform-auth.repository'
-import type { PlatformLoginResponse } from '../types'
+import type { PlatformLoginResponse, PlatformMeResponse } from '../types'
 
 /** Thrown for any authentication failure on the platform plane. */
 export class PlatformAuthError extends AppError {
@@ -69,5 +69,30 @@ export async function platformLogin(
       email: user.email,
       role:  user.role,
     },
+  }
+}
+
+/**
+ * Resolve the current platform user's identity from their JWT context.
+ *
+ * `permissions` is a deliberate stub ([]) — the platform-plane RBAC permission
+ * model is not yet implemented (known gap). The role string is authoritative
+ * for now.
+ *
+ * @param platformUserId - From the verified platform JWT.
+ * @throws PlatformAuthError (401) when the user no longer exists or is inactive.
+ */
+export async function platformGetMe(platformUserId: number): Promise<PlatformMeResponse> {
+  const user = await platformAuthRepo.findPlatformUserById(platformUserId)
+  if (!user || !user.isActive) {
+    throw new PlatformAuthError(INVALID_CREDENTIALS, 401)
+  }
+
+  return {
+    platformUserId: user.id,
+    name:           user.name,
+    email:          user.email,
+    role:           user.role,
+    permissions:    [],
   }
 }

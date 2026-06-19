@@ -3066,6 +3066,80 @@ npm run db:generate
 npm run db:studio
 # Opens http://localhost:5555 in your browser</code></pre>
 
+    <h2 id="test-credentials">Test Login Credentials</h2>
+    <p>The seed script populates two isolated clinic tenants and one platform super-admin. Use these credentials in development and in automated tests.</p>
+
+    <h3>Clinic Plane — Dev Clinic (<code>dev-clinic</code>)</h3>
+    <table>
+      <thead><tr><th>Role</th><th>System Key</th><th>Email</th><th>Password</th><th>Permissions snapshot</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Clinic Admin</strong></td>
+          <td><code>clinic_admin</code></td>
+          <td><code>admin@dev-clinic.com</code></td>
+          <td><code>AdminPass1!</code></td>
+          <td>Full access: settings, staff, roles, billing, reports, inventory, audit</td>
+        </tr>
+        <tr>
+          <td><strong>Doctor</strong></td>
+          <td><code>doctor</code></td>
+          <td><code>doctor@dev-clinic.com</code></td>
+          <td><code>DoctorPass1!</code></td>
+          <td>EMR, SOAP notes, prescriptions, lab attachments, inpatient</td>
+        </tr>
+        <tr>
+          <td><strong>Clinic Staff</strong></td>
+          <td><code>clinic_staff</code></td>
+          <td><code>staff@dev-clinic.com</code></td>
+          <td><code>StaffPass1!</code></td>
+          <td>Appointments, CRM, billing/POS, inventory, dispensing, grooming, loyalty</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Clinic Plane — Test Clinic (<code>test-clinic</code>)</h3>
+    <p>Used by the QA suite for tenant-isolation tests. Data is fully isolated from Dev Clinic.</p>
+    <table>
+      <thead><tr><th>Role</th><th>System Key</th><th>Email</th><th>Password</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Clinic Admin</strong></td>
+          <td><code>clinic_admin</code></td>
+          <td><code>admin@test-clinic.com</code></td>
+          <td><code>AdminPass2!</code></td>
+        </tr>
+        <tr>
+          <td><strong>Doctor</strong></td>
+          <td><code>doctor</code></td>
+          <td><code>doctor@test-clinic.com</code></td>
+          <td><code>DoctorPass2!</code></td>
+        </tr>
+        <tr>
+          <td><strong>Clinic Staff</strong></td>
+          <td><code>clinic_staff</code></td>
+          <td><code>staff@test-clinic.com</code></td>
+          <td><code>StaffPass2!</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Platform Plane — Super Admin</h3>
+    <p>Operates the SaaS platform across all tenants. Logs in via <code>POST /api/platform/auth/login</code> — not the clinic login endpoint.</p>
+    <table>
+      <thead><tr><th>Role</th><th>System Key</th><th>Email</th><th>Password</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Platform Super Admin</strong></td>
+          <td><code>platform_super_admin</code></td>
+          <td><code>admin@anemal.co</code></td>
+          <td><code>PlatformAdmin1!</code></td>
+          <td>Override via <code>PLATFORM_ADMIN_EMAIL</code> / <code>PLATFORM_ADMIN_PASSWORD</code> env vars</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout info"><span class="callout-icon">ℹ</span><span>These credentials are seeded by <code>npm run db:seed</code>. Passwords are hashed with bcrypt (10 rounds) — never stored in plain text. To override the platform admin password, set <code>PLATFORM_ADMIN_PASSWORD</code> in <code>src/backend/.env</code> before seeding.</span></div>
+
     <h2 id="start-services">Start Services</h2>
     <p>Both services must run concurrently in development. Use two terminal windows / tabs.</p>
 

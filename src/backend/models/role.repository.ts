@@ -144,6 +144,17 @@ export function countRoleUsage(roleId: number) {
 // ---------------------------------------------------------------------------
 
 /**
+ * Find a user by ID scoped to a specific tenant.
+ * Returns null if the user does not exist or belongs to a different tenant.
+ *
+ * @param userId   - Target user's primary key.
+ * @param tenantId - Required tenant scope for isolation.
+ */
+export function findUserInTenant(userId: number, tenantId: number) {
+  return prisma.user.findFirst({ where: { id: userId, tenantId } })
+}
+
+/**
  * Assign a role to a user within a tenant.
  *
  * @param userId   - Target user.

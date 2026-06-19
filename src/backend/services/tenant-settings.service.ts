@@ -3,8 +3,10 @@
 // masked on read; every changed field is written to settings_audit_log.
 
 import * as settingsRepo from '../models/tenant-settings.repository'
+import * as auditRepo from '../models/settings-audit.repository'
 import type { SettingsAuditEntry } from '../models/settings-audit.repository'
 import { encryptField, decryptField, maskSecret } from '../utils/encryption'
+import { logger } from '../utils/logger'
 
 export interface TenantSettingsInput {
   logoUrl?:             string
@@ -39,12 +41,22 @@ function isSecretField(field: string): field is SecretField {
   return (SECRET_FIELDS as readonly string[]).includes(field)
 }
 
+// Decrypt with fallback — corrupted ciphertext returns '' and logs a warning
+// rather than throwing a 500 that locks the tenant out of their settings panel.
+function safeDecrypt(stored: string, field: string, tenantId: number): string {
+  try { return decryptField(stored) }
+  catch {
+    logger.warn({ tenantId, field }, 'Corrupted ciphertext — treating as empty')
+    return ''
+  }
+}
+
 // Secrets masked for display — safe to return to clients.
 export async function getSettings(tenantId: number) {
   const settings = await settingsRepo.getOrCreateSettings(tenantId)
   for (const field of SECRET_FIELDS) {
     const stored = settings[field]
-    if (stored) settings[field] = maskSecret(decryptField(stored))
+    if (stored) settings[field] = maskSecret(safeDecrypt(stored, field, tenantId))
   }
   return settings
 }
@@ -54,7 +66,7 @@ export async function getDecryptedSettings(tenantId: number) {
   const settings = await settingsRepo.getOrCreateSettings(tenantId)
   for (const field of SECRET_FIELDS) {
     const stored = settings[field]
-    if (stored) settings[field] = decryptField(stored)
+    if (stored) settings[field] = safeDecrypt(stored, field, tenantId)
   }
   return settings
 }
@@ -72,7 +84,9 @@ export async function updateSettings(tenantId: number, data: TenantSettingsInput
     // otherwise the mask itself would be encrypted and destroy the stored secret.
     if (secret && typeof newValue === 'string' && newValue.startsWith('••••')) continue
     const currentRaw = (current as Record<string, unknown>)[field]
-    const currentPlain = secret && typeof currentRaw === 'string' ? decryptField(currentRaw) : currentRaw
+    const currentPlain = secret && typeof currentRaw === 'string'
+      ? safeDecrypt(currentRaw, field, tenantId)
+      : currentRaw
 
     const changed = secret
       ? currentPlain !== newValue
@@ -103,12 +117,23 @@ export async function updateSettings(tenantId: number, data: TenantSettingsInput
   for (const field of SECRET_FIELDS) {
     const stored = (updated as Record<string, unknown>)[field]
     if (typeof stored === 'string' && stored) {
-      ;(updated as Record<string, unknown>)[field] = maskSecret(decryptField(stored))
+      ;(updated as Record<string, unknown>)[field] = maskSecret(safeDecrypt(stored, field, tenantId))
     }
   }
   return updated
 }
 
-export async function updateClinicName(tenantId: number, name: string) {
-  return settingsRepo.updateTenantName(tenantId, name)
+// Updates the clinic name on the tenants table and writes an audit entry.
+export async function updateClinicName(tenantId: number, name: string, userId?: number): Promise<void> {
+  const old = await settingsRepo.getTenantName(tenantId)
+  if (old?.name === name) return
+  await settingsRepo.updateTenantName(tenantId, name)
+  await auditRepo.createMany([{
+    tenantId,
+    changedBy: userId ?? null,
+    tableName: 'tenant_settings',
+    fieldName: 'name',
+    oldValue:  old?.name ?? null,
+    newValue:  name,
+  }])
 }

@@ -6,10 +6,20 @@ import * as systemRepo from '../models/system-settings.repository'
 import * as auditRepo from '../models/settings-audit.repository'
 import { encryptField, decryptField, maskSecret } from '../utils/encryption'
 import { NotFoundError } from '../utils/errors'
+import { logger } from '../utils/logger'
 
-function maskRow<T extends { value: string; isSecret: boolean }>(row: T): T {
+// Corrupted ciphertext returns '' and logs a warning instead of throwing a 500.
+function safeDecrypt(stored: string, key: string): string {
+  try { return decryptField(stored) }
+  catch {
+    logger.warn({ key }, 'Corrupted system-setting ciphertext — treating as empty')
+    return ''
+  }
+}
+
+function maskRow<T extends { key: string; value: string; isSecret: boolean }>(row: T): T {
   if (row.isSecret && row.value) {
-    return { ...row, value: maskSecret(decryptField(row.value)) }
+    return { ...row, value: maskSecret(safeDecrypt(row.value, row.key)) }
   }
   return row
 }
@@ -29,14 +39,17 @@ export async function getByKey(key: string) {
 export async function getDecryptedValue(key: string): Promise<string> {
   const row = await systemRepo.getByKey(key)
   if (!row) throw new NotFoundError('System setting')
-  return row.isSecret ? decryptField(row.value) : row.value
+  return row.isSecret ? safeDecrypt(row.value, key) : row.value
 }
 
 export async function updateByKey(key: string, value: string, userId?: number) {
   const current = await systemRepo.getByKey(key)
   if (!current) throw new NotFoundError('System setting')
 
-  const currentPlain = current.isSecret && current.value ? decryptField(current.value) : current.value
+  // Clients echo masked secrets back on save — skip to avoid encrypting the mask.
+  if (current.isSecret && value.startsWith('••••')) return maskRow(current)
+
+  const currentPlain = current.isSecret && current.value ? safeDecrypt(current.value, key) : current.value
   if (currentPlain === value) return maskRow(current)
 
   const stored = current.isSecret ? encryptField(value) : value

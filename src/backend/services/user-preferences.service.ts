@@ -8,11 +8,13 @@ import { NotFoundError } from '../utils/errors'
 export interface PersonalPreferences {
   language:            string
   defaultCalendarView: string
+  theme:               string
 }
 
 export interface PersonalPreferencesInput {
   language?:            string
   defaultCalendarView?: string
+  theme?:              string
 }
 
 export async function getPreferences(tenantId: number, userId: number): Promise<PersonalPreferences> {

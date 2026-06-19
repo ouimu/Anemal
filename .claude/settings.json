@@ -42,17 +42,11 @@
       "psql"
     ]
   },
+  "_comment_agents": "Subagents are auto-discovered from .claude/agents/*.md (ba, pm, uiux, db, dev, qa) and run in isolated context. They do not need to be listed here.",
   "contextPaths": [
     "CLAUDE.md",
-    ".claude/agents/pm-agent.md",
-    ".claude/agents/uiux-agent.md",
-    ".claude/agents/db-agent.md",
-    ".claude/agents/dev-agent.md",
-    ".claude/agents/qa-agent.md",
-    ".claude/specs/functional-reqs.md",
-    ".claude/specs/database-schema.sql",
-    ".claude/roadmap/phase1-tasks.md",
-    ".claude/roadmap/qa-protocols.md"
+    ".claude/roadmap/qa-protocols.md",
+    ".claude/specs/database-schema.sql"
   ],
   "enabledPlugins": {
     "frontend-design@claude-plugins-official": true

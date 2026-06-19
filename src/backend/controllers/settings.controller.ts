@@ -8,7 +8,7 @@ import * as settingsSvc from '../services/tenant-settings.service'
 import * as prefsSvc from '../services/user-preferences.service'
 import * as connTest from '../services/connection-test.service'
 
-const TIME_HHMM = /^\d{2}:\d{2}$/
+const TIME_HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
 
 // ─── Zod schemas (one per settings section) ──────────────────────────────────
 
@@ -71,6 +71,7 @@ export const hoursSchema = z.object({
 export const personalPrefsSchema = z.object({
   language:            z.enum(['th', 'en']).optional(),
   defaultCalendarView: z.enum(['day', 'week', 'month']).optional(),
+  theme:               z.enum(['light', 'dark']).optional(),
 }).strict()
 
 // ─── S2.1 Clinic settings ────────────────────────────────────────────────────
@@ -82,20 +83,28 @@ export async function getClinicSettings(req: Request, res: Response, next: NextF
   } catch (err) { next(err) }
 }
 
-// Shared by all PUT section endpoints — the zod schema upstream decides which
-// fields are allowed, the service encrypts secrets and writes the audit trail.
-function updateSection(req: Request, res: Response, next: NextFunction): void {
-  const { tenantId, userId } = req.context!
-  const { name, ...rest } = req.body as { name?: string } & settingsSvc.TenantSettingsInput
-  const run = async (): Promise<void> => {
-    if (name) await settingsSvc.updateClinicName(tenantId, name)
-    const data = await settingsSvc.updateSettings(tenantId, rest, userId)
+// Dedicated handler for the clinic profile — handles `name` separately because
+// it lives on the tenants table (not tenant_settings) and needs its own audit entry.
+export async function updateClinicProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { tenantId, userId } = req.context!
+    const { name, ...rest } = req.body as z.infer<typeof clinicProfileSchema>
+    if (name !== undefined) await settingsSvc.updateClinicName(tenantId, name, userId)
+    const data = await settingsSvc.updateSettings(tenantId, rest as settingsSvc.TenantSettingsInput, userId)
     res.json({ success: true, data })
-  }
-  run().catch(next)
+  } catch (err) { next(err) }
 }
 
-export const updateClinicProfile = updateSection
+// Shared handler for section PUT endpoints (notifications, payment, integrations, hours).
+// Each section schema is .strict() and does not include `name`, so no special handling needed.
+async function updateSection(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { tenantId, userId } = req.context!
+    const data = await settingsSvc.updateSettings(tenantId, req.body as settingsSvc.TenantSettingsInput, userId)
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
 export const updateNotifications = updateSection
 export const updatePayment       = updateSection
 export const updateIntegrations  = updateSection
@@ -112,7 +121,9 @@ export async function testNotifications(req: Request, res: Response, next: NextF
       const token = body.lineOaToken ?? (await settingsSvc.getDecryptedSettings(tenantId)).lineOaToken ?? ''
       result = await connTest.testLine(token)
     } else {
-      const stored = body.smsProvider && body.smsApiKey ? null : await settingsSvc.getDecryptedSettings(tenantId)
+      const stored = body.smsProvider !== undefined && body.smsApiKey !== undefined
+        ? null
+        : await settingsSvc.getDecryptedSettings(tenantId)
       result = await connTest.testSms(
         body.smsProvider ?? stored?.smsProvider ?? '',
         body.smsApiKey ?? stored?.smsApiKey ?? '',
@@ -126,7 +137,9 @@ export async function testIntegrations(req: Request, res: Response, next: NextFu
   try {
     const { tenantId } = req.context!
     const body = req.body as z.infer<typeof integrationsTestSchema>
-    const stored = body.labApiUrl && body.labApiKey ? null : await settingsSvc.getDecryptedSettings(tenantId)
+    const stored = body.labApiUrl !== undefined && body.labApiKey !== undefined
+      ? null
+      : await settingsSvc.getDecryptedSettings(tenantId)
     const result = await connTest.testLab(
       body.labApiUrl ?? stored?.labApiUrl ?? '',
       body.labApiKey ?? stored?.labApiKey ?? '',

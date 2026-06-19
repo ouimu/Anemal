@@ -15,11 +15,12 @@ export function useBarcodeScanner(
     if (!active) return
 
     let cancelled = false
+    const videoEl = videoRef.current  // capture for cleanup — avoids stale-ref warning
 
     const reader = new BrowserMultiFormatReader()
 
     reader
-      .decodeFromVideoDevice(undefined, videoRef.current!, (result, err, controls) => {
+      .decodeFromVideoDevice(undefined, videoEl!, (result, err, controls) => {
         if (cancelled) {
           controls?.stop()
           return
@@ -32,7 +33,6 @@ export function useBarcodeScanner(
 
         if (result) {
           controls?.stop()
-          // eslint-disable-next-line @typescript-eslint/no-use-before-define — onScan intentionally omitted from deps
           onScan(result.getText())
           return
         }
@@ -59,7 +59,7 @@ export function useBarcodeScanner(
       controlsRef.current?.stop()
       controlsRef.current = null
       // Belt-and-suspenders: stop raw MediaStream tracks so camera LED turns off
-      ;(videoRef.current?.srcObject as MediaStream)?.getVideoTracks().forEach(t => t.stop())
+      ;(videoEl?.srcObject as MediaStream)?.getVideoTracks().forEach(t => t.stop())
       setIsReady(false)
       setError(null)
     }

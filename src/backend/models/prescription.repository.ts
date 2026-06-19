@@ -20,6 +20,18 @@ export function findPrescription(tenantId: number, id: number) {
   return prisma.prescription.findFirst({ where: { id, tenantId } })
 }
 
+export function findPrescriptionWithDetails(tenantId: number, id: number) {
+  return prisma.prescription.findFirst({
+    where: { id, tenantId },
+    include: {
+      drug: { select: { name: true, unit: true } },
+      medicalRecord: {
+        include: { pet: { include: { owner: true } } },
+      },
+    },
+  })
+}
+
 // Atomic conditional deduction (branch_inventory) + create + 'out' movement. null when insufficient.
 export function deductStockAndCreate(tenantId: number, branchId: number, data: CreatePrescriptionInput) {
   return prisma.$transaction(async (tx) => {

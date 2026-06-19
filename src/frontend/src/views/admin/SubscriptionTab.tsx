@@ -15,8 +15,8 @@ export default function SubscriptionTab() {
 
   const current = data?.planTier ?? 'starter'
 
-  const maxUsers = sub?.limits.maxUsers ?? null
-  const usedUsers = sub?.usage.users ?? 0
+  const maxUsers = sub?.quota?.maxUsers ?? null
+  const usedUsers = sub?.usage?.users ?? 0
   const atLimit = maxUsers !== null && usedUsers >= maxUsers
   const usagePct = maxUsers ? Math.min(100, Math.round((usedUsers / maxUsers) * 100)) : 0
 

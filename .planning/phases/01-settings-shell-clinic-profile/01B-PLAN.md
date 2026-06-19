@@ -23,7 +23,7 @@ must_haves:
     - "Submitting with an invalid website URL shows inline error 'Must be a valid URL (https://...)' without calling the API"
     - "Save button shows loading state while PUT is in flight (isPending from useMutation)"
     - "A success toast/banner appears for 2500ms after a successful save"
-    - "Footer shows 'Last updated: [formatted date]' and appends 'by you' when updatedBy === currentUserId"
+    - "Footer shows 'Last updated: [formatted date]' and appends '· by you' when updatedBy === currentUserId; name resolution for other editors is deferred to Phase 2 (API returns userId only, not name — LAYOUT-03 partial)"
   artifacts:
     - path: "src/frontend/src/hooks/useClinicSettings.ts"
       provides: "useClinicSettings (useQuery) and useUpdateClinicProfile (useMutation) hooks"

@@ -65,9 +65,22 @@ export async function testSms(provider: string, apiKey: string): Promise<Connect
   }
 }
 
+// Block private/loopback/link-local targets to prevent SSRF via admin-supplied lab URL.
+function assertSafeUrl(raw: string): void {
+  let parsed: URL
+  try { parsed = new URL(raw) } catch { throw new Error('Invalid URL') }
+  if (parsed.protocol !== 'https:') throw new Error('Lab API URL must use HTTPS')
+  const host = parsed.hostname
+  if (/^(localhost|127\.|::1$|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.)/.test(host)) {
+    throw new Error('Lab API URL must not target internal addresses')
+  }
+}
+
 // Pings the configured lab API base URL with the API key header.
 export async function testLab(url: string, apiKey: string): Promise<ConnectionTestResult> {
   if (!url) return { success: false, detail: 'No lab API URL configured' }
+  try { assertSafeUrl(url) }
+  catch (err) { return { success: false, detail: err instanceof Error ? err.message : 'Invalid URL' } }
   try {
     const { res, latencyMs } = await timedFetch(url, {
       headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},

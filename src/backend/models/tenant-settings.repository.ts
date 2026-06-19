@@ -14,12 +14,8 @@ export function getOrCreateSettings(tenantId: number) {
   })
 }
 
-export function upsertSettings(tenantId: number, data: TenantSettingsInput) {
-  return prisma.tenantSettings.upsert({
-    where:  { tenantId },
-    update: data,
-    create: { tenantId, ...data },
-  })
+export function getTenantName(tenantId: number) {
+  return prisma.tenant.findUnique({ where: { id: tenantId }, select: { name: true } })
 }
 
 export function updateTenantName(tenantId: number, name: string) {

@@ -196,6 +196,12 @@ export async function assignRoleToUser(
   roleId:        number,
   callerPerms:   Set<string>,
 ): Promise<void> {
+  // Verify the target user exists within the caller's tenant (tenant isolation).
+  const targetUser = await roleRepo.findUserInTenant(targetUserId, tenantId)
+  if (!targetUser) {
+    throw new NotFoundError('User')
+  }
+
   const role = await roleRepo.findRoleById(roleId)
   if (!role) {
     throw new NotFoundError('Role')

@@ -34,7 +34,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
         where: { id: payload.tenantId },
         select: { isActive: true },
       })
-      if (!tenant || !tenant.isActive) {
+      if (tenant?.isActive === false) {
         res.status(401).json({ success: false, code: 'TENANT_SUSPENDED', error: 'Tenant account is suspended' })
         return
       }

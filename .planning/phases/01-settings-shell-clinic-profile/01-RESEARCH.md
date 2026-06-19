@@ -638,22 +638,22 @@ Note: No test files found in `src/frontend/src/` in the current scan. Frontend t
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **"Last updated by [name]" — name resolution**
    - What we know: API returns `updatedBy` as user ID (integer), not name
    - What's unclear: How to resolve user ID to display name without a backend join or extra API call
-   - Recommendation: For Phase 1, show `"Last updated: [date]"` + `"by you"` when `updatedBy === currentUserId`. Defer full name display to Phase 2 (can add `updatedByName` to API response then).
+   - RESOLVED: For Phase 1, show `"Last updated: [date]"` + `"by you"` when `updatedBy === currentUserId`. Defer full name display to Phase 2 (can add `updatedByName` to API response then). Plans document this deferral explicitly in must_haves.truths.
 
 2. **ProtectedRoute — role restriction for SettingsLayout**
    - What we know: Current `ProtectedRoute` only checks `isAuthenticated()`, no role param
    - What's unclear: Should superadmin be allowed into all /settings routes or only /settings/system?
-   - Recommendation: Role filtering in NAV array is sufficient. If a superadmin navigates directly to `/settings/clinic-profile`, the backend `adminOnly` middleware will 403 them — graceful error state in the page handles this. No frontend route-level role guard needed for Phase 1.
+   - RESOLVED: Role filtering in NAV array is sufficient. If a superadmin navigates directly to `/settings/clinic-profile`, the backend `adminOnly` middleware will 403 them — graceful error state in the page handles this. No frontend route-level role guard needed for Phase 1.
 
 3. **Sidebar collapse on mobile: automatic at 768px?**
    - What we know: `useUiStore` `sidebarOpen` is persistent toggle state; LAYOUT-04 says "collapses to icons-only on tablet portrait (768px)"
    - What's unclear: Should collapse happen automatically when viewport is ≤768px, or only on user toggle?
-   - Recommendation: Add `useEffect` to auto-collapse when `window.innerWidth < 768` on mount — same pattern that would complete LAYOUT-04. The toggle still works manually at any size.
+   - RESOLVED: Add `useEffect` to auto-collapse when `window.innerWidth < 768` on mount — same pattern that completes LAYOUT-04. The toggle still works manually at any size.
 
 ---
 

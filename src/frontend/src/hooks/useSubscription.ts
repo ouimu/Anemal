@@ -2,10 +2,9 @@ import { useQuery } from '@tanstack/react-query'
 import api from '../utils/api'
 
 export interface SubscriptionStatus {
-  planTier:     string
-  limits:       { maxUsers: number | null }
-  usage:        { users: number }
-  withinLimits: boolean
+  quota:        { maxBranches: number | null; maxUsers: number | null; maxOwners: number | null }
+  usage:        { users: number; branches: number; owners: number }
+  withinLimits: { users: boolean; branches: boolean; owners: boolean }
 }
 
 export function useSubscriptionStatus() {
