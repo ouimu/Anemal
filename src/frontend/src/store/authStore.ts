@@ -133,7 +133,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     if (!res.ok) return
 
-    const body = await res.json() as {
+    const json = await res.json()
+    const body = (json.data ?? json) as {
       permissions: string[]
       roleIds?: number[]
       permSetVersion?: number

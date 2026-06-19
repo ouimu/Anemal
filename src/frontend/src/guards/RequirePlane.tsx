@@ -21,7 +21,7 @@ interface RequirePlaneProps {
 /** Maps a plane to its root dashboard path. */
 const PLANE_HOME: Record<Plane, string> = {
   clinic:   '/clinic/dashboard',
-  platform: '/platform/dashboard',
+  platform: '/platform/customers',
 }
 
 /**

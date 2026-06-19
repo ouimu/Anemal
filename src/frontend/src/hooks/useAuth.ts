@@ -37,7 +37,8 @@ async function fetchMe(token: string): Promise<MeResponse | null> {
       headers: { Authorization: `Bearer ${token}` },
     })
     if (!res.ok) return null
-    return (await res.json()) as MeResponse
+    const json = await res.json()
+    return (json.data ?? json) as MeResponse
   } catch {
     return null
   }
@@ -78,7 +79,7 @@ export function useLogin() {
       } catch { /* network error — proceed; server enforces permissions */ }
 
       navigate(
-        login.role === 'admin'      ? '/admin/dashboard' :
+        login.role === 'admin'      ? '/clinic-admin/dashboard' :
         login.role === 'superadmin' ? '/settings/system' :
         '/clinic/dashboard'
       )

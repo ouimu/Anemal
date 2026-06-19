@@ -27,7 +27,7 @@ export default function LoginView() {
 
   if (isAuthenticated) {
     return <Navigate to={
-      role === 'admin'      ? '/admin/dashboard' :
+      role === 'admin'      ? '/clinic-admin/dashboard' :
       role === 'superadmin' ? '/settings/system' :
       '/clinic/dashboard'
     } replace />

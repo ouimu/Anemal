@@ -1,29 +1,32 @@
-﻿// Doctor/Staff shell — redirects admins to /admin/dashboard
+﻿// Doctor/Staff shell — redirects admins to /clinic-admin/dashboard
 import { NavLink, Outlet, Navigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { useLogout } from '../hooks/useAuth'
 import { useUiStore } from '../store/uiStore'
+import { useT } from '../i18n'
 import MaterialIcon from '../components/MaterialIcon'
 import TopNav from '../components/TopNav'
 
 const NAV = [
-  { to: '/clinic/dashboard',    icon: 'dashboard',        label: 'Dashboard' },
-  { to: '/clinic/pets',         icon: 'pets',             label: 'Pets & Owners' },
-  { to: '/clinic/appointments', icon: 'calendar_today',   label: 'Schedule' },
-  { to: '/clinic/emr',          icon: 'medical_services', label: 'EMR' },
-  { to: '/clinic/inventory',    icon: 'inventory_2',      label: 'Inventory' },
-  { to: '/clinic/billing',      icon: 'payments',         label: 'Billing' },
-  { to: '/clinic/inpatient',    icon: 'local_hospital',   label: 'Inpatient' },
-  { to: '/clinic/grooming',     icon: 'content_cut',      label: 'Grooming' },
+  { to: '/clinic/dashboard',    icon: 'dashboard',        label: 'nav.dashboard',  perm: undefined },
+  { to: '/clinic/pets',         icon: 'pets',             label: 'nav.pets',       perm: 'crm.view' },
+  { to: '/clinic/appointments', icon: 'calendar_today',   label: 'nav.schedule',   perm: 'appointments.view' },
+  { to: '/clinic/emr',          icon: 'medical_services', label: 'nav.emr',        perm: 'emr.view' },
+  { to: '/clinic/inventory',    icon: 'inventory_2',      label: 'nav.inventory',  perm: 'inventory.view' },
+  { to: '/clinic/billing',      icon: 'payments',         label: 'nav.billing',    perm: 'billing.create' },
+  { to: '/clinic/inpatient',    icon: 'local_hospital',   label: 'nav.inpatient',  perm: 'inpatient.view' },
+  { to: '/clinic/grooming',     icon: 'content_cut',      label: 'nav.grooming',   perm: 'grooming.view' },
 ]
 
 export default function ClinicLayout() {
-  const role   = useAuthStore(s => s.role)
-  const name   = useAuthStore(s => s.name)
+  const role          = useAuthStore(s => s.role)
+  const name          = useAuthStore(s => s.name)
+  const hasPermission = useAuthStore(s => s.hasPermission)
   const logout = useLogout()
+  const t      = useT()
   const { sidebarOpen, toggleSidebar } = useUiStore()
 
-  if (role === 'admin') return <Navigate to="/admin/dashboard" replace />
+  if (role === 'admin') return <Navigate to="/clinic-admin/dashboard" replace />
 
   const sidebarW  = sidebarOpen ? 'w-56' : 'w-14'
   const mainClass = sidebarOpen ? 'ml-56' : 'ml-14'
@@ -52,7 +55,7 @@ export default function ClinicLayout() {
               <p className="text-headline-sm font-headline font-bold text-primary leading-tight truncate">
                 Anemal
               </p>
-              <p className="text-label-md text-on-surface-variant mt-0.5">Clinic Portal</p>
+              <p className="text-label-md text-on-surface-variant mt-0.5">{t('nav.clinicPortal')}</p>
             </div>
           )}
           <button
@@ -66,7 +69,7 @@ export default function ClinicLayout() {
 
         {/* Nav */}
         <nav className="flex flex-col flex-1 py-sm overflow-y-auto">
-          {NAV.map(item => (
+          {NAV.filter(item => !item.perm || hasPermission(item.perm)).map(item => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -74,7 +77,7 @@ export default function ClinicLayout() {
             >
               <MaterialIcon name={item.icon} size={22} className="flex-shrink-0" />
               {sidebarOpen && (
-                <span className="text-body-md whitespace-nowrap">{item.label}</span>
+                <span className="text-body-md whitespace-nowrap">{t(item.label)}</span>
               )}
             </NavLink>
           ))}
@@ -98,7 +101,7 @@ export default function ClinicLayout() {
             className={`w-full min-h-[44px] flex items-center justify-center gap-sm text-on-surface-variant hover:bg-surface-container border border-outline-variant rounded-lg transition-colors text-body-sm ${sidebarOpen ? 'px-md' : ''}`}
           >
             <MaterialIcon name="logout" size={18} />
-            {sidebarOpen && <span>Sign out</span>}
+            {sidebarOpen && <span>{t('menu.signOut')}</span>}
           </button>
         </div>
       </aside>

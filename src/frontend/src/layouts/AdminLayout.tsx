@@ -4,25 +4,27 @@ import { useAuthStore } from '../store/authStore'
 import { useLogout } from '../hooks/useAuth'
 import { useUiStore } from '../store/uiStore'
 import { useAdminSettings } from '../hooks/useAdmin'
+import { useT } from '../i18n'
 import MaterialIcon from '../components/MaterialIcon'
 import TopNav from '../components/TopNav'
 
 const NAV = [
-  { to: '/admin/dashboard',    icon: 'dashboard',    label: 'Overview' },
-  { to: '/admin/users',        icon: 'group',        label: 'Users & Roles' },
-  { to: '/admin/profile',      icon: 'business',     label: 'Clinic Profile' },
-  { to: '/admin/usage',        icon: 'bar_chart',    label: 'Usage Stats' },
-  { to: '/admin/settings',     icon: 'settings',     label: 'Settings' },
-  { to: '/admin/subscription', icon: 'credit_card',  label: 'Subscription' },
-  { to: '/admin/branches',     icon: 'apartment',    label: 'Branches' },
-  { to: '/admin/blood-bank',   icon: 'bloodtype',    label: 'Blood Bank' },
-  { to: '/admin/audit',        icon: 'policy',       label: 'Audit Log' },
+  { to: '/clinic-admin/dashboard',    icon: 'dashboard',    label: 'nav.overview' },
+  { to: '/clinic-admin/users',        icon: 'group',        label: 'nav.users' },
+  { to: '/clinic-admin/profile',      icon: 'business',     label: 'nav.clinicProfile' },
+  { to: '/clinic-admin/usage',        icon: 'bar_chart',    label: 'nav.usage' },
+  { to: '/clinic-admin/settings',     icon: 'settings',     label: 'nav.settings' },
+  { to: '/clinic-admin/subscription', icon: 'credit_card',  label: 'nav.subscription' },
+  { to: '/clinic-admin/branches',     icon: 'apartment',    label: 'nav.branches' },
+  { to: '/clinic-admin/blood-bank',   icon: 'bloodtype',    label: 'nav.bloodBank' },
+  { to: '/clinic-admin/audit',        icon: 'policy',       label: 'nav.auditLog' },
 ]
 
 export default function AdminLayout() {
   const role   = useAuthStore(s => s.role)
   const name   = useAuthStore(s => s.name)
   const logout = useLogout()
+  const t      = useT()
   const { sidebarOpen, toggleSidebar } = useUiStore()
   const { data } = useAdminSettings()
 
@@ -55,7 +57,7 @@ export default function AdminLayout() {
               <p className="text-headline-sm font-headline font-bold text-primary leading-tight truncate">
                 {data?.tenant.name ?? 'Anemal'}
               </p>
-              <p className="text-label-md text-on-surface-variant mt-0.5">Admin Panel</p>
+              <p className="text-label-md text-on-surface-variant mt-0.5">{t('nav.adminPanel')}</p>
             </div>
           )}
           <button
@@ -77,7 +79,7 @@ export default function AdminLayout() {
             >
               <MaterialIcon name={item.icon} size={22} className="flex-shrink-0" />
               {sidebarOpen && (
-                <span className="text-body-md whitespace-nowrap">{item.label}</span>
+                <span className="text-body-md whitespace-nowrap">{t(item.label)}</span>
               )}
             </NavLink>
           ))}
@@ -101,7 +103,7 @@ export default function AdminLayout() {
             className={`w-full min-h-[44px] flex items-center justify-center gap-sm text-on-surface-variant hover:bg-surface-container border border-outline-variant rounded-lg transition-colors text-body-sm ${sidebarOpen ? 'px-md' : ''}`}
           >
             <MaterialIcon name="logout" size={18} />
-            {sidebarOpen && <span>Sign out</span>}
+            {sidebarOpen && <span>{t('menu.signOut')}</span>}
           </button>
         </div>
       </aside>
