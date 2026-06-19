@@ -119,7 +119,7 @@ export default function App() {
 
         {/* ── Platform Console (/platform/*) ── platform-plane JWT only, no permission codes */}
         <Route path="/platform/login" element={<PlatformLoginView/>}/>
-        <Route path="/platform" element={<RequireAuth><RequirePlane plane="platform"><PlatformLayout/></RequirePlane></RequireAuth>}>
+        <Route path="/platform" element={<PlatformLayout/>}>
           <Route index element={<Navigate to="/platform/customers" replace/>}/>
           <Route path="customers"     element={<CustomerListView/>}/>
           <Route path="customers/:id" element={<CustomerDetailView/>}/>

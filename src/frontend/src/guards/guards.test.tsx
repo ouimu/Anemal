@@ -97,12 +97,12 @@ describe('RequirePlane', () => {
     )
   })
 
-  it('redirects platform session to /platform/dashboard when trying clinic plane', () => {
+  it('redirects platform session to /platform/customers when trying clinic plane', () => {
     setStore({ isAuthenticated: (): boolean => true, plane: 'platform' })
     render(<RequirePlane plane="clinic" />)
     expect(screen.getByTestId('navigate')).toHaveAttribute(
       'data-to',
-      '/platform/dashboard',
+      '/platform/customers',
     )
   })
 

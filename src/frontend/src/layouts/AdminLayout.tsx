@@ -18,6 +18,7 @@ const NAV = [
   { to: '/clinic-admin/branches',     icon: 'apartment',    label: 'nav.branches' },
   { to: '/clinic-admin/blood-bank',   icon: 'bloodtype',    label: 'nav.bloodBank' },
   { to: '/clinic-admin/audit',        icon: 'policy',       label: 'nav.auditLog' },
+  { to: '/clinic-admin/roles',        icon: 'admin_panel_settings', label: 'nav.roles' },
 ]
 
 export default function AdminLayout() {

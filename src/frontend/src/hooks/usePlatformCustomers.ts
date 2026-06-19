@@ -80,12 +80,33 @@ export function usePlatformCustomer(id: number) {
   })
 }
 
+/** Raw shape returned by GET /platform/customers/:id/usage */
+interface RawUsage {
+  branches: number
+  users:    number
+  owners:   number
+  caps: {
+    maxBranches: number | null
+    maxUsers:    number | null
+    maxOwners:   number | null
+  }
+  overPlan: boolean
+}
+
 /** Fetch live usage stats for a customer. */
 export function usePlatformCustomerUsage(id: number) {
   return useQuery<CustomerUsage>({
     queryKey: KEYS.usage(id),
     queryFn: () =>
-      platformApi.get(`/platform/customers/${id}/usage`).then((r) => r.data.data),
+      platformApi.get(`/platform/customers/${id}/usage`).then((r) => {
+        const raw = r.data.data as RawUsage
+        const usage: CustomerUsage = {
+          branches: { current: raw.branches, limit: raw.caps.maxBranches },
+          staff:    { current: raw.users,    limit: raw.caps.maxUsers },
+          owners:   { current: raw.owners,   limit: raw.caps.maxOwners },
+        }
+        return usage
+      }),
     enabled: id > 0,
   })
 }

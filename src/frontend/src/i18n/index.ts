@@ -75,6 +75,7 @@ const en: Dict = {
   'nav.auditLog': 'Audit Log',
   'nav.clinicPortal': 'Clinic Portal',
   'nav.adminPanel': 'Admin Panel',
+  'nav.roles': 'Role Editor',
 
   // Preferences page
   'prefs.title': 'My Preferences',
@@ -350,6 +351,7 @@ const th: Dict = {
   'nav.auditLog': 'บันทึกการใช้งาน',
   'nav.clinicPortal': 'พอร์ทัลคลินิก',
   'nav.adminPanel': 'แผงผู้ดูแล',
+  'nav.roles': 'ตัวแก้ไขบทบาท',
 
   'prefs.title': 'การตั้งค่าส่วนตัว',
   'prefs.saved': 'บันทึกการตั้งค่าแล้ว',
