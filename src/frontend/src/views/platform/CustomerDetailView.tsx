@@ -343,7 +343,7 @@ function UsageTab({ id }: { id: number }) {
       <h3 className="text-headline-xs font-headline font-bold text-on-surface">Live Usage</h3>
       <QuotaBar label="Branches"  current={usage.branches.current} limit={usage.branches.limit} />
       <QuotaBar label="Staff"     current={usage.staff.current}    limit={usage.staff.limit} />
-      <QuotaBar label="Customers" current={usage.owners.current}   limit={usage.owners.limit} />
+      <QuotaBar label="Clients"   current={usage.owners.current}   limit={usage.owners.limit} />
     </div>
   )
 }
