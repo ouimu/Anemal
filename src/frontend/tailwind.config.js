@@ -76,6 +76,10 @@ export default {
           on:             tok('--error-on'),
           'on-container': tok('--error-on-container'),
         },
+        // Top-level aliases so `text-on-primary`, `text-on-secondary`, `text-on-error` resolve
+        'on-primary':   tok('--primary-on'),
+        'on-secondary': tok('--secondary-on'),
+        'on-error':     tok('--error-on'),
         success: tok('--success'),
         warning: tok('--warning'),
         info:    tok('--info'),

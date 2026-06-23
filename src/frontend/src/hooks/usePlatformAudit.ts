@@ -45,7 +45,7 @@ export function usePlatformAudit(filters: AuditFilters = {}) {
       if (filters.tenantId !== undefined) params.set('tenantId', String(filters.tenantId))
       return platformApi
         .get(`/platform/audit?${params.toString()}`)
-        .then((r) => r.data.data)
+        .then((r) => r.data.data.items)
     },
   })
 }

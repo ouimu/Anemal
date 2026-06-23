@@ -10,6 +10,8 @@ import {
   useSuspendCustomer,
   useReactivateCustomer,
   useUpdatePlatformCustomer,
+  useSetCustomerQuota,
+  type UpdateQuotaPayload,
 } from '../../hooks/usePlatformCustomers'
 import { usePlatformPlans } from '../../hooks/usePlatformPlans'
 import StatusBadge from '../../components/platform/StatusBadge'
@@ -33,6 +35,11 @@ function OverviewTab({ id }: { id: number }) {
   const { data: customer, isLoading } = usePlatformCustomer(id)
   const suspend    = useSuspendCustomer(id)
   const reactivate = useReactivateCustomer(id)
+  const update     = useUpdatePlatformCustomer(id)
+
+  const [editing,      setEditing]      = useState(false)
+  const [editName,     setEditName]     = useState('')
+  const [editTrial,    setEditTrial]    = useState('')
 
   if (isLoading || !customer) {
     return <div className="p-lg text-on-surface-variant text-body-sm">Loading…</div>
@@ -40,40 +47,107 @@ function OverviewTab({ id }: { id: number }) {
 
   const isSuspended = customer.status === 'suspended'
 
+  const openEdit = () => {
+    setEditName(customer.name)
+    setEditTrial(customer.trialEndsAt ? customer.trialEndsAt.slice(0, 10) : '')
+    setEditing(true)
+  }
+
+  const saveEdit = () => {
+    update.mutate(
+      { name: editName, trialEndsAt: editTrial || null },
+      { onSuccess: () => setEditing(false) },
+    )
+  }
+
   return (
     <div className="space-y-lg">
       <div className="bg-surface rounded-lg shadow-lvl1 p-lg">
-        <h3 className="text-headline-xs font-headline font-bold text-on-surface mb-md">Clinic Info</h3>
-        <dl className="grid grid-cols-2 gap-md text-body-sm">
-          <div>
-            <dt className="text-on-surface-variant">Name</dt>
-            <dd className="text-on-surface font-medium mt-xs">{customer.name}</dd>
-          </div>
-          <div>
-            <dt className="text-on-surface-variant">Subdomain</dt>
-            <dd className="text-on-surface font-code mt-xs">{customer.subdomain}</dd>
-          </div>
-          <div>
-            <dt className="text-on-surface-variant">Status</dt>
-            <dd className="mt-xs"><StatusBadge status={customer.status} /></dd>
-          </div>
-          <div>
-            <dt className="text-on-surface-variant">Plan</dt>
-            <dd className="text-on-surface mt-xs">{customer.planName}</dd>
-          </div>
-          {customer.trialEndsAt && (
-            <div>
-              <dt className="text-on-surface-variant">Trial Ends</dt>
-              <dd className="text-on-surface mt-xs">
-                {new Date(customer.trialEndsAt).toLocaleDateString()}
-              </dd>
-            </div>
+        <div className="flex items-center justify-between mb-md">
+          <h3 className="text-headline-xs font-headline font-bold text-on-surface">Clinic Info</h3>
+          {!editing && (
+            <button
+              onClick={openEdit}
+              className="flex items-center gap-xs min-h-[44px] px-md border border-outline-variant rounded text-body-sm text-on-surface-variant hover:bg-surface-container transition-colors"
+            >
+              <MaterialIcon name="edit" size={16} />
+              Edit
+            </button>
           )}
-          <div>
-            <dt className="text-on-surface-variant">Users</dt>
-            <dd className="text-on-surface mt-xs">{customer.userCount}</dd>
+        </div>
+
+        {editing ? (
+          <div className="space-y-md">
+            <div>
+              <label className="block text-label-md text-on-surface-variant mb-xs">Name</label>
+              <input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="w-full min-h-[44px] px-md border border-outline-variant rounded text-body-md text-on-surface bg-surface focus:outline-none focus:border-secondary"
+              />
+            </div>
+            <div>
+              <label className="block text-label-md text-on-surface-variant mb-xs">Trial Ends (leave blank to clear)</label>
+              <input
+                type="date"
+                value={editTrial}
+                onChange={(e) => setEditTrial(e.target.value)}
+                className="w-full min-h-[44px] px-md border border-outline-variant rounded text-body-md text-on-surface bg-surface focus:outline-none focus:border-secondary"
+              />
+            </div>
+            {update.error && (
+              <p className="text-label-md text-error">Save failed. Please try again.</p>
+            )}
+            <div className="flex gap-sm">
+              <button
+                onClick={saveEdit}
+                disabled={update.isPending}
+                className="flex items-center gap-sm min-h-[44px] px-md bg-primary text-on-primary rounded text-body-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+              >
+                {update.isPending && <span className="w-4 h-4 border-2 border-on-primary border-t-transparent rounded-full animate-spin" />}
+                <MaterialIcon name="save" size={16} />
+                Save
+              </button>
+              <button
+                onClick={() => setEditing(false)}
+                className="min-h-[44px] px-md border border-outline-variant rounded text-body-sm text-on-surface-variant hover:bg-surface-container transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
-        </dl>
+        ) : (
+          <dl className="grid grid-cols-2 gap-md text-body-sm">
+            <div>
+              <dt className="text-on-surface-variant">Name</dt>
+              <dd className="text-on-surface font-medium mt-xs">{customer.name}</dd>
+            </div>
+            <div>
+              <dt className="text-on-surface-variant">Subdomain</dt>
+              <dd className="text-on-surface font-code mt-xs">{customer.subdomain}</dd>
+            </div>
+            <div>
+              <dt className="text-on-surface-variant">Status</dt>
+              <dd className="mt-xs"><StatusBadge status={customer.status} /></dd>
+            </div>
+            <div>
+              <dt className="text-on-surface-variant">Plan</dt>
+              <dd className="text-on-surface mt-xs">{customer.planName}</dd>
+            </div>
+            {customer.trialEndsAt && (
+              <div>
+                <dt className="text-on-surface-variant">Trial Ends</dt>
+                <dd className="text-on-surface mt-xs">
+                  {new Date(customer.trialEndsAt).toLocaleDateString()}
+                </dd>
+              </div>
+            )}
+            <div>
+              <dt className="text-on-surface-variant">Users</dt>
+              <dd className="text-on-surface mt-xs">{customer.userCount}</dd>
+            </div>
+          </dl>
+        )}
       </div>
 
       <div className="bg-surface rounded-lg shadow-lvl1 p-lg">
@@ -118,14 +192,14 @@ function OverviewTab({ id }: { id: number }) {
 function QuotaTab({ id }: { id: number }) {
   const { data: customer, isLoading } = usePlatformCustomer(id)
   const { data: plans }               = usePlatformPlans()
-  const update                        = useUpdatePlatformCustomer(id)
+  const updatePlan                    = useUpdatePlatformCustomer(id)
+  const updateQuota                   = useSetCustomerQuota(id)
 
   const [planId,      setPlanId]      = useState<number | null>(null)
   const [maxBranches, setMaxBranches] = useState<string>('')
   const [maxUsers,    setMaxUsers]    = useState<string>('')
   const [maxOwners,   setMaxOwners]   = useState<string>('')
 
-  // Initialise form values from loaded data (only once)
   const [initialized, setInitialized] = useState(false)
   if (customer && !initialized) {
     setPlanId(customer.planId)
@@ -141,14 +215,20 @@ function QuotaTab({ id }: { id: number }) {
 
   const activePlans = (plans ?? []).filter((p) => !p.isRetired)
 
-  const handleSave = () => {
-    update.mutate({
-      planId:      planId ?? undefined,
+  const handleSavePlan = () => {
+    updatePlan.mutate({ planId: planId ?? undefined })
+  }
+
+  const handleSaveQuota = () => {
+    const payload: UpdateQuotaPayload = {
       maxBranches: maxBranches !== '' ? Number(maxBranches) : null,
       maxUsers:    maxUsers    !== '' ? Number(maxUsers)    : null,
       maxOwners:   maxOwners   !== '' ? Number(maxOwners)   : null,
-    })
+    }
+    updateQuota.mutate(payload)
   }
+
+  const isPending = updatePlan.isPending || updateQuota.isPending
 
   return (
     <div className="space-y-lg">
@@ -163,6 +243,18 @@ function QuotaTab({ id }: { id: number }) {
             <option key={p.id} value={p.id}>{p.name}</option>
           ))}
         </select>
+        {updatePlan.error && (
+          <p className="text-label-md text-error">Save failed. Please try again.</p>
+        )}
+        <button
+          onClick={handleSavePlan}
+          disabled={updatePlan.isPending}
+          className="flex items-center gap-sm min-h-[44px] px-md bg-primary text-on-primary rounded text-body-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+        >
+          {updatePlan.isPending && <span className="w-4 h-4 border-2 border-on-primary border-t-transparent rounded-full animate-spin" />}
+          <MaterialIcon name="save" size={18} />
+          Save Plan
+        </button>
       </div>
 
       <div className="bg-surface rounded-lg shadow-lvl1 p-lg space-y-md">
@@ -176,7 +268,7 @@ function QuotaTab({ id }: { id: number }) {
         {([
           { id: 'maxBranches', label: 'Max Branches', value: maxBranches, set: setMaxBranches },
           { id: 'maxUsers',    label: 'Max Users',    value: maxUsers,    set: setMaxUsers },
-          { id: 'maxOwners',   label: 'Max Owners',   value: maxOwners,   set: setMaxOwners },
+          { id: 'maxOwners',   label: 'Max Clients',  value: maxOwners,   set: setMaxOwners },
         ] as const).map((field) => (
           <div key={field.id}>
             <label className="block text-label-md text-on-surface-variant mb-xs" htmlFor={field.id}>
@@ -194,20 +286,18 @@ function QuotaTab({ id }: { id: number }) {
           </div>
         ))}
 
-        {update.error && (
+        {updateQuota.error && (
           <p className="text-label-md text-error">Save failed. Please try again.</p>
         )}
 
         <button
-          onClick={handleSave}
-          disabled={update.isPending}
+          onClick={handleSaveQuota}
+          disabled={isPending}
           className="flex items-center gap-sm min-h-[44px] px-md bg-primary text-on-primary rounded text-body-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
-          {update.isPending && (
-            <span className="w-4 h-4 border-2 border-on-primary border-t-transparent rounded-full animate-spin" />
-          )}
+          {updateQuota.isPending && <span className="w-4 h-4 border-2 border-on-primary border-t-transparent rounded-full animate-spin" />}
           <MaterialIcon name="save" size={18} />
-          Save Changes
+          Save Quotas
         </button>
       </div>
     </div>

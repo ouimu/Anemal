@@ -161,7 +161,11 @@ export default function PlatformSettingsView() {
             </div>
             <button
               type="button"
-              onClick={() => setMaintenanceMode((v) => !v)}
+              onClick={() => {
+                const next = !maintenanceMode
+                setMaintenanceMode(next)
+                updateMutation.mutate({ maintenanceMode: next })
+              }}
               className={`relative min-w-[52px] h-7 rounded-full transition-colors ${maintenanceMode ? 'bg-error' : 'bg-outline'}`}
               aria-checked={maintenanceMode}
               role="switch"

@@ -93,7 +93,7 @@ function PlanForm({ value, onChange, isEdit = false }: PlanFormProps) {
         {([
           { id: 'plan-branches', label: 'Max Branches', key: 'maxBranches' as const },
           { id: 'plan-users',    label: 'Max Users',    key: 'maxUsers'    as const },
-          { id: 'plan-owners',   label: 'Max Owners',   key: 'maxOwners'   as const },
+          { id: 'plan-owners',   label: 'Max Clients',  key: 'maxOwners'   as const },
         ]).map((field) => (
           <div key={field.id}>
             <label className="block text-label-md text-on-surface-variant mb-xs" htmlFor={field.id}>
@@ -208,7 +208,7 @@ export default function PlatformPlansView() {
                 <th className="text-right px-md py-sm text-label-md text-on-surface-variant">Price</th>
                 <th className="text-right px-md py-sm text-label-md text-on-surface-variant">Branches</th>
                 <th className="text-right px-md py-sm text-label-md text-on-surface-variant">Users</th>
-                <th className="text-right px-md py-sm text-label-md text-on-surface-variant">Owners</th>
+                <th className="text-right px-md py-sm text-label-md text-on-surface-variant">Clients</th>
                 <th className="text-left px-md py-sm text-label-md text-on-surface-variant">Status</th>
                 <th className="px-md py-sm" />
               </tr>
