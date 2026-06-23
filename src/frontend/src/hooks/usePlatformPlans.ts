@@ -17,7 +17,7 @@ export interface Plan {
   maxOwners:    number | null
   features:     string[]
   isRetired:    boolean
-  createdAt:    string
+  createdAt:    string | null
 }
 
 export interface CreatePlanPayload {

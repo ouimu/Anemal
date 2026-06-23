@@ -5,6 +5,14 @@
 import prisma from '../config/db'
 import type { CreateUserRequest, UpdateUserRequest } from '../types'
 
+/** Shape of data accepted by the transactional user+role create. */
+export interface CreateUserData {
+  name:         string
+  email:        string
+  passwordHash: string
+  role:         CreateUserRequest['role']
+}
+
 export function findUsers(tenantId: number) {
   return prisma.user.findMany({ where: { tenantId }, orderBy: { createdAt: 'asc' } })
 }
@@ -20,12 +28,70 @@ export function createUser(
   return prisma.user.create({ data: { tenantId, ...data } })
 }
 
+/**
+ * Create a User row and the corresponding UserRole join row atomically.
+ * If either write fails the entire transaction is rolled back, ensuring
+ * every new user satisfies BR-3 (≥ 1 role at all times).
+ *
+ * @param tenantId - Owning tenant (multi-tenancy scope).
+ * @param data     - User fields (no password — pass passwordHash).
+ * @param roleId   - The system or custom ClinicRole ID to assign.
+ */
+export async function createUserWithRole(
+  tenantId: number,
+  data: CreateUserData,
+  roleId: number,
+) {
+  return prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
+      data: { tenantId, ...data, roleId },
+    })
+    await tx.userRole.create({
+      data: { userId: user.id, roleId, tenantId },
+    })
+    return user
+  })
+}
+
 export function updateUser(userId: number, data: UpdateUserRequest) {
   return prisma.user.update({ where: { id: userId }, data })
 }
 
 export function setActive(userId: number, isActive: boolean) {
   return prisma.user.update({ where: { id: userId }, data: { isActive } })
+}
+
+/**
+ * Replace all existing user_roles rows for a user (within a tenant) with a
+ * single new role assignment, and update the legacy `roleId` FK on the User
+ * row — all in one transaction.
+ *
+ * BR-3 is guaranteed: the new row is created before the old ones are deleted,
+ * so there is never a moment with zero roles.
+ *
+ * @param tenantId - Tenant scope (multi-tenancy isolation).
+ * @param userId   - Target user.
+ * @param roleId   - The ClinicRole ID to assign as the sole role.
+ */
+export async function replaceUserRole(
+  tenantId: number,
+  userId:   number,
+  roleId:   number,
+): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    // Insert new role first (satisfies BR-3 at every point in the transaction).
+    await tx.userRole.upsert({
+      where:  { userId_roleId: { userId, roleId } },
+      create: { userId, roleId, tenantId },
+      update: {},
+    })
+    // Remove all other roles for this user in this tenant.
+    await tx.userRole.deleteMany({
+      where: { userId, tenantId, roleId: { not: roleId } },
+    })
+    // Keep the legacy roleId FK in sync.
+    await tx.user.update({ where: { id: userId }, data: { roleId } })
+  })
 }
 
 // Phase 1.5-B — personal preferences (language, default calendar view, theme)

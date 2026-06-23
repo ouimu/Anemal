@@ -58,6 +58,17 @@ export function findRoleByName(name: string, tenantId: number | null) {
 }
 
 /**
+ * Find a system-seeded clinic role by its stable key (e.g. `clinic_admin`,
+ * `doctor`, `clinic_staff`). System roles have `tenantId = NULL` and
+ * `isSystem = true`.
+ *
+ * @param key - The immutable role key set during seeding.
+ */
+export function findSystemRoleByKey(key: string) {
+  return prisma.clinicRole.findFirst({ where: { key, tenantId: null, isSystem: true } })
+}
+
+/**
  * Create a new custom role for a tenant with an initial set of permission codes.
  *
  * @param tenantId  - Owning tenant.

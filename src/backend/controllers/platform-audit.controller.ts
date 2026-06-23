@@ -46,7 +46,11 @@ export async function handleListPlatformAudit(
 
     const from = q.from ? new Date(q.from) : undefined
     const to = q.to
-      ? new Date(new Date(q.to).setHours(23, 59, 59, 999))
+      ? (() => {
+          const d = new Date(q.to)
+          d.setHours(23, 59, 59, 999)
+          return d
+        })()
       : undefined
 
     const result = await listPlatformAuditLogs({

@@ -11,8 +11,8 @@ export interface Customer {
   id:           number
   name:         string
   subdomain:    string
-  planId:       number
-  planName:     string
+  planId:       number | null
+  planName:     string | null
   status:       'active' | 'trial' | 'suspended'
   userCount:    number
   trialEndsAt:  string | null
