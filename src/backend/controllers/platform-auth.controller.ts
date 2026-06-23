@@ -9,7 +9,7 @@
 
 import { Request, Response, NextFunction } from 'express'
 import { z } from 'zod'
-import { platformLogin, platformGetMe, refreshPlatformToken } from '../services/platform-auth.service'
+import { platformLogin, platformGetMe, refreshPlatformToken, revokePlatformToken } from '../services/platform-auth.service'
 
 /** Zod schema for POST /platform/auth/login */
 export const platformLoginSchema = z.object({
@@ -54,8 +54,9 @@ export async function handlePlatformMe(
   }
 }
 
-/** Zod schema for POST /platform/auth/refresh. */
+/** Zod schema for POST /platform/auth/refresh and POST /platform/auth/logout. */
 export const platformRefreshSchema = z.object({ refreshToken: z.string().min(1) }).strict()
+export const platformLogoutSchema   = z.object({ refreshToken: z.string().min(1) }).strict()
 
 /**
  * Handle POST /platform/auth/refresh.
@@ -70,6 +71,24 @@ export async function handlePlatformRefresh(
     const { refreshToken } = req.body as z.infer<typeof platformRefreshSchema>
     const result = await refreshPlatformToken(refreshToken)
     res.status(200).json({ success: true, data: result })
+  } catch (err) {
+    next(err)
+  }
+}
+
+/**
+ * Handle POST /platform/auth/logout.
+ * Revokes the entire refresh token family for the given token. Returns 204.
+ */
+export async function handlePlatformLogout(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { refreshToken } = req.body as z.infer<typeof platformLogoutSchema>
+    await revokePlatformToken(refreshToken)
+    res.status(204).send()
   } catch (err) {
     next(err)
   }

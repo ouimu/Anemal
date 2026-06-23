@@ -13,7 +13,7 @@ import { validate } from '../middlewares/validate.middleware'
 import { authMiddleware } from '../middlewares/auth.middleware'
 import { requirePlane } from '../middlewares/permission.middleware'
 import { loginRateLimiter } from '../middlewares/rate-limit.middleware'
-import { handlePlatformLogin, platformLoginSchema, handlePlatformMe, handlePlatformRefresh, platformRefreshSchema } from '../controllers/platform-auth.controller'
+import { handlePlatformLogin, platformLoginSchema, handlePlatformMe, handlePlatformRefresh, platformRefreshSchema, handlePlatformLogout, platformLogoutSchema } from '../controllers/platform-auth.controller'
 
 const router = Router()
 
@@ -22,6 +22,9 @@ router.post('/login', loginRateLimiter, validate(platformLoginSchema), handlePla
 
 // POST /platform/auth/refresh — public; exchange platform refresh token for new token pair
 router.post('/refresh', loginRateLimiter, validate(platformRefreshSchema), handlePlatformRefresh)
+
+// POST /platform/auth/logout — revoke refresh token family
+router.post('/logout', validate(platformLogoutSchema), handlePlatformLogout)
 
 // GET /platform/auth/me — current platform identity + permissions stub
 router.get('/me', authMiddleware, requirePlane('platform'), handlePlatformMe)

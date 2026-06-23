@@ -40,6 +40,10 @@ export interface UpdateCustomerPayload {
   name?:        string
   planId?:      number
   trialEndsAt?: string | null
+}
+
+/** Payload for PUT /platform/customers/:id/quota */
+export interface UpdateQuotaPayload {
   maxBranches?: number | null
   maxUsers?:    number | null
   maxOwners?:   number | null
@@ -130,6 +134,19 @@ export function useUpdatePlatformCustomer(id: number) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.all })
       qc.invalidateQueries({ queryKey: KEYS.detail(id) })
+    },
+  })
+}
+
+/** Set per-tenant quota overrides (maxBranches/maxUsers/maxOwners). */
+export function useSetCustomerQuota(id: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: UpdateQuotaPayload) =>
+      platformApi.put(`/platform/customers/${id}/quota`, payload).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.detail(id) })
+      qc.invalidateQueries({ queryKey: KEYS.usage(id) })
     },
   })
 }
