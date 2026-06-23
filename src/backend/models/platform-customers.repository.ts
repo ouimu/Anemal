@@ -21,6 +21,13 @@ export type TenantRow = {
   createdAt: Date
 }
 
+/** Extended list row with fields needed by the Platform Console list view. */
+export type TenantListRow = TenantRow & {
+  planName:    string | null
+  userCount:   number
+  trialEndsAt: Date | null
+}
+
 /** Full tenant row with plan + quota included. */
 export type TenantWithPlanAndQuota = TenantRow & {
   plan: {
@@ -38,6 +45,15 @@ export type TenantWithPlanAndQuota = TenantRow & {
     updatedById: number | null
     updatedAt: Date
   } | null
+  /** Clinic contact details from tenant_settings (null if not configured). */
+  settings: {
+    email:   string | null
+    phone:   string | null
+    address: string | null
+    logoUrl: string | null
+  } | null
+  userCount:   number
+  trialEndsAt: Date | null
 }
 
 /** Input shape for creating a new tenant. */
@@ -65,12 +81,29 @@ const TENANT_SELECT = {
 
 /**
  * Return all tenants ordered by creation date (newest first).
+ * Includes planName (from plan join) and userCount (aggregate).
  */
-export function listTenants(): Promise<TenantRow[]> {
-  return prisma.tenant.findMany({
-    select: TENANT_SELECT,
+export async function listTenants(): Promise<TenantListRow[]> {
+  const rows = await prisma.tenant.findMany({
+    select: {
+      ...TENANT_SELECT,
+      plan: { select: { name: true } },
+      _count: { select: { users: true } },
+    },
     orderBy: { createdAt: 'desc' },
   })
+
+  return rows.map((r) => ({
+    id:          r.id,
+    name:        r.name,
+    subdomain:   r.subdomain,
+    isActive:    r.isActive,
+    planId:      r.planId,
+    createdAt:   r.createdAt,
+    planName:    r.plan?.name ?? null,
+    userCount:   r._count.users,
+    trialEndsAt: null,
+  }))
 }
 
 /**
@@ -131,12 +164,12 @@ export function setTenantActive(id: number, isActive: boolean): Promise<TenantRo
 }
 
 /**
- * Load a tenant with its plan and quota override in one query.
+ * Load a tenant with its plan, quota override, settings, and user count in one query.
  *
  * @param id - Tenant primary key.
  */
-export function getTenantWithPlanAndQuota(id: number): Promise<TenantWithPlanAndQuota | null> {
-  return prisma.tenant.findUnique({
+export async function getTenantWithPlanAndQuota(id: number): Promise<TenantWithPlanAndQuota | null> {
+  const row = await prisma.tenant.findUnique({
     where: { id },
     select: {
       ...TENANT_SELECT,
@@ -159,6 +192,38 @@ export function getTenantWithPlanAndQuota(id: number): Promise<TenantWithPlanAnd
           updatedAt: true,
         },
       },
+      settings: {
+        select: {
+          email:   true,
+          phone:   true,
+          address: true,
+          logoUrl: true,
+        },
+      },
+      _count: { select: { users: true } },
     },
   })
+
+  if (!row) return null
+
+  return {
+    id:          row.id,
+    name:        row.name,
+    subdomain:   row.subdomain,
+    isActive:    row.isActive,
+    planId:      row.planId,
+    createdAt:   row.createdAt,
+    plan:        row.plan,
+    quota:       row.quota,
+    settings:    row.settings
+      ? {
+          email:   row.settings.email   ?? null,
+          phone:   row.settings.phone   ?? null,
+          address: row.settings.address ?? null,
+          logoUrl: row.settings.logoUrl ?? null,
+        }
+      : null,
+    userCount:   row._count.users,
+    trialEndsAt: null,
+  }
 }

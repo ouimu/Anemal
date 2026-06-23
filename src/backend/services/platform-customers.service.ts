@@ -13,8 +13,87 @@ import * as customersRepo from '../models/platform-customers.repository'
 import type {
   CreateTenantData,
   UpdateTenantData,
+  TenantListRow,
+  TenantWithPlanAndQuota,
 } from '../models/platform-customers.repository'
 import prisma from '../config/db'
+
+/** Tenant status computed from isActive + trialEndsAt. */
+type TenantStatus = 'active' | 'trial' | 'suspended'
+
+/**
+ * Compute tenant status from its flags.
+ *
+ * @param isActive    - Whether the tenant account is active.
+ * @param trialEndsAt - Trial expiry date, or null if not in trial.
+ */
+function computeStatus(isActive: boolean, trialEndsAt: Date | null): TenantStatus {
+  if (!isActive) return 'suspended'
+  if (trialEndsAt && trialEndsAt > new Date()) return 'trial'
+  return 'active'
+}
+
+/** Normalized list item returned to the API. */
+export interface CustomerListItem {
+  id:          number
+  name:        string
+  subdomain:   string
+  planId:      number | null
+  planName:    string | null
+  status:      TenantStatus
+  userCount:   number
+  trialEndsAt: Date | null
+  createdAt:   Date
+}
+
+/** Normalized detail item returned to the API. */
+export interface CustomerDetail extends CustomerListItem {
+  maxBranches: number | null
+  maxUsers:    number | null
+  maxOwners:   number | null
+  email:       string | null
+  phone:       string | null
+  address:     string | null
+  logoUrl:     string | null
+}
+
+function toListItem(row: TenantListRow): CustomerListItem {
+  return {
+    id:          row.id,
+    name:        row.name,
+    subdomain:   row.subdomain,
+    planId:      row.planId,
+    planName:    row.planName,
+    status:      computeStatus(row.isActive, row.trialEndsAt),
+    userCount:   row.userCount,
+    trialEndsAt: row.trialEndsAt,
+    createdAt:   row.createdAt,
+  }
+}
+
+function toDetailItem(row: TenantWithPlanAndQuota): CustomerDetail {
+  const maxBranches = row.quota?.maxBranches ?? row.plan?.maxBranches ?? null
+  const maxUsers    = row.quota?.maxUsers    ?? row.plan?.maxUsers    ?? null
+  const maxOwners   = row.quota?.maxOwners   ?? row.plan?.maxOwners   ?? null
+  return {
+    id:          row.id,
+    name:        row.name,
+    subdomain:   row.subdomain,
+    planId:      row.planId,
+    planName:    row.plan?.name ?? null,
+    status:      computeStatus(row.isActive, row.trialEndsAt),
+    userCount:   row.userCount,
+    trialEndsAt: row.trialEndsAt,
+    createdAt:   row.createdAt,
+    maxBranches,
+    maxUsers,
+    maxOwners,
+    email:       row.settings?.email   ?? null,
+    phone:       row.settings?.phone   ?? null,
+    address:     row.settings?.address ?? null,
+    logoUrl:     row.settings?.logoUrl ?? null,
+  }
+}
 
 /** Thrown when a requested tenant does not exist. */
 export class CustomerNotFoundError extends AppError {
@@ -45,22 +124,23 @@ export interface UpdateCustomerInput {
 }
 
 /**
- * Return all tenants as a list for the Platform Console.
+ * Return all tenants as a normalized list for the Platform Console.
  */
-export function listCustomers() {
-  return customersRepo.listTenants()
+export async function listCustomers(): Promise<CustomerListItem[]> {
+  const rows = await customersRepo.listTenants()
+  return rows.map(toListItem)
 }
 
 /**
- * Return a single tenant by id.
+ * Return a single tenant by id with full detail shape.
  * Throws CustomerNotFoundError when missing.
  *
  * @param id - Tenant primary key.
  */
-export async function getCustomer(id: number) {
+export async function getCustomer(id: number): Promise<CustomerDetail> {
   const tenant = await customersRepo.getTenantWithPlanAndQuota(id)
   if (!tenant) throw new CustomerNotFoundError()
-  return tenant
+  return toDetailItem(tenant)
 }
 
 /**

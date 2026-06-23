@@ -452,7 +452,7 @@ user has — without code changes. This deepens the configurable-RBAC value (dec
 | BR-1 | A user may have 1..N roles, all scoped to their own tenant (no cross-tenant roles). |
 | BR-2 | A user's **effective permissions = union** of all assigned roles' permissions (most-permissive wins; v1 has no deny-permissions, so union is safe and unambiguous). |
 | BR-3 | A user must always keep **≥ 1 active role**; removing the last role is blocked. |
-| BR-4 | Only a user with `staff.manage` (Clinic Admin by default) may assign/remove roles. |
+| BR-4 | Only a user with `staff.assign_role` (Clinic Admin by default) may assign/remove roles. |
 | BR-5 | **No escalation:** the assigner may only grant roles whose permission set is a **subset of the assigner's own** effective permissions. |
 | BR-6 | Assigning/removing a role, or editing a role's permissions, **re-resolves** the affected users' permission sets (bump `permSetVersion`; invalidate Redis cache by `userId`). |
 | BR-7 | Deactivating or deleting a role that is still assigned is blocked until users are reassigned (reuse the role-in-use guard). |

@@ -3,10 +3,11 @@
 import prisma from '../config/db'
 import type { CreateAppointmentInput, AppointmentStatus } from '../services/appointment.service'
 
-export function findInRange(tenantId: number, start: Date, end: Date, doctorId?: number) {
+export function findInRange(tenantId: number, branchId: number | null | undefined, start: Date, end: Date, doctorId?: number) {
   return prisma.appointment.findMany({
     where: {
       tenantId,
+      ...(branchId != null ? { branchId } : {}),
       scheduledAt: { gte: start, lt: end },
       ...(doctorId ? { doctorId } : {}),
     },
@@ -18,9 +19,13 @@ export function findInRange(tenantId: number, start: Date, end: Date, doctorId?:
   })
 }
 
-export function findById(tenantId: number, id: number) {
+export function findById(tenantId: number, branchId: number | null | undefined, id: number) {
   return prisma.appointment.findFirst({
-    where: { id, tenantId },
+    where: {
+      id,
+      tenantId,
+      ...(branchId != null ? { branchId } : {}),
+    },
     include: {
       pet:    { include: { owner: true } },
       doctor: { select: { id: true, name: true } },
@@ -29,8 +34,21 @@ export function findById(tenantId: number, id: number) {
 }
 
 // Overlap: existingStart < newEnd AND (existingStart + existingDuration) > newStart
-export async function countDoctorConflicts(tenantId: number, doctorId: number, start: Date, end: Date): Promise<number> {
+// branchId filter applied when present: a doctor's schedule is branch-scoped.
+export async function countDoctorConflicts(tenantId: number, branchId: number | null | undefined, doctorId: number, start: Date, end: Date): Promise<number> {
   // DB columns are camelCase (Prisma maps tables, not columns) — must be double-quoted in raw SQL.
+  if (branchId != null) {
+    const rows = await prisma.$queryRaw<{ count: bigint }[]>`
+      SELECT COUNT(*) as count FROM appointments
+      WHERE "tenantId" = ${tenantId}
+        AND "branchId" = ${branchId}
+        AND "doctorId" = ${doctorId}
+        AND status NOT IN ('cancelled', 'no_show')
+        AND "scheduledAt" < ${end}
+        AND "scheduledAt" + ("durationMin" * interval '1 minute') > ${start}
+    `
+    return Number(rows[0]?.count ?? 0)
+  }
   const rows = await prisma.$queryRaw<{ count: bigint }[]>`
     SELECT COUNT(*) as count FROM appointments
     WHERE "tenantId" = ${tenantId}

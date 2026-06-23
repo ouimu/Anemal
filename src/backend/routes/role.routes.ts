@@ -37,10 +37,10 @@ router.put('/:roleId/permissions', requirePermission('roles.manage'), validate(u
 // Delete a custom role — requires roles.manage
 router.delete('/:roleId', requirePermission('roles.manage'), roleController.deleteRole)
 
-// Assign a role to a user — requires roles.manage
-router.post('/users/:userId/roles', requirePermission('roles.manage'), validate(assignUserRoleSchema), roleController.assignRoleToUser)
+// Assign a role to a user — requires staff.assign_role
+router.post('/users/:userId/roles', requirePermission('staff.assign_role'), validate(assignUserRoleSchema), roleController.assignRoleToUser)
 
-// Remove a role from a user — requires roles.manage
-router.delete('/users/:userId/roles/:roleId', requirePermission('roles.manage'), roleController.removeRoleFromUser)
+// Remove a role from a user — requires staff.assign_role
+router.delete('/users/:userId/roles/:roleId', requirePermission('staff.assign_role'), roleController.removeRoleFromUser)
 
 export default router

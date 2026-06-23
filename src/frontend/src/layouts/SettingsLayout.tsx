@@ -14,7 +14,6 @@ const ALL_NAV = [
   { to: '/settings/payment',        icon: 'payments',             label: 'Payment',          roles: ['admin'] },
   { to: '/settings/integrations',   icon: 'hub',                  label: 'Integrations',     roles: ['admin'] },
   { to: '/settings/preferences',    icon: 'manage_accounts',      label: 'My Preferences',   roles: ['admin', 'doctor', 'staff'] },
-  { to: '/settings/system',         icon: 'admin_panel_settings', label: 'System Settings',  roles: ['superadmin'] },
 ]
 
 export default function SettingsLayout() {

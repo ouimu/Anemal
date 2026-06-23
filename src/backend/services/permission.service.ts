@@ -6,10 +6,62 @@
  * for CACHE_TTL_MS milliseconds. Call invalidatePermCache() whenever a
  * user's role assignment or a role's permission set changes.
  *
+ * Platform-plane permission resolution uses a static role→permission map
+ * (no DB join tables exist for the platform plane; access is governed by
+ * the PlatformRole enum: platform_super_admin | platform_support).
+ *
  * @module permission.service
  */
 
 import prisma from '../config/db'
+
+// ─── Platform permission catalogue ───────────────────────────────────────────
+
+/** All platform permission codes, grouped by capability area. */
+const ALL_PLATFORM_PERMISSIONS: ReadonlyArray<string> = [
+  'platform.customers.view',
+  'platform.customers.manage',
+  'platform.plans.view',
+  'platform.plans.manage',
+  'platform.quotas.manage',
+  'platform.provisioning.manage',
+  'platform.settings.view',
+  'platform.settings.edit',
+  'platform.users.manage',
+  'platform.usage.view',
+  'platform.audit.view',
+]
+
+/** Read-only subset granted to platform_support. */
+const PLATFORM_SUPPORT_PERMISSIONS: ReadonlyArray<string> = [
+  'platform.customers.view',
+  'platform.plans.view',
+  'platform.settings.view',
+  'platform.usage.view',
+  'platform.audit.view',
+]
+
+/** Static map from PlatformRole enum value to its permission set. */
+const PLATFORM_ROLE_PERMISSIONS: Readonly<Record<string, ReadonlyArray<string>>> = {
+  platform_super_admin: ALL_PLATFORM_PERMISSIONS,
+  platform_support:     PLATFORM_SUPPORT_PERMISSIONS,
+}
+
+/**
+ * Resolve the full set of platform permission codes for a given platform role.
+ *
+ * This is a pure static lookup — the platform plane uses a role enum rather
+ * than join tables, so no DB query is required.
+ *
+ * @param role - The PlatformRole enum value from the JWT (`platform_super_admin` | `platform_support`).
+ * @returns A Set of permission code strings, or an empty Set for unknown roles.
+ */
+export function resolvePlatformPermissions(role: string): Set<string> {
+  const codes = PLATFORM_ROLE_PERMISSIONS[role] ?? []
+  return new Set(codes)
+}
+
+// ─── Clinic permission resolution ────────────────────────────────────────────
 
 /** A single cache entry: resolved permission codes + expiry timestamp. */
 interface CacheEntry {

@@ -151,7 +151,7 @@ describe('T-5D-03 Plan management', () => {
     expect(res.body.data.maxUsers).toBe(5)
   })
 
-  it('✅ DELETE /platform/plans/:id with NO tenant assigned → 200, isActive=false', async () => {
+  it('✅ DELETE /platform/plans/:id with NO tenant assigned → 200, isRetired=true', async () => {
     // Fresh plan with no tenants assigned.
     const create = await request(server)
       .post('/platform/plans')
@@ -164,7 +164,8 @@ describe('T-5D-03 Plan management', () => {
       .delete(`/platform/plans/${retireId}`)
       .set('Authorization', `Bearer ${platformToken}`)
     expect(res.status).toBe(200)
-    expect(res.body.data.isActive).toBe(false)
+    // Service normalizes: isActive=false → isRetired=true
+    expect(res.body.data.isRetired).toBe(true)
   })
 
   it('❌ DELETE /platform/plans/:id with a tenant assigned → 409 PLAN_IN_USE', async () => {
@@ -236,14 +237,15 @@ describe('T-5D-02 Customer management', () => {
     expect(res.body.code).toBe('SUBDOMAIN_CONFLICT')
   })
 
-  it('✅ GET /platform/customers/:id returns tenant with plan + effective quota', async () => {
+  it('✅ GET /platform/customers/:id returns tenant with flat quota fields', async () => {
     const res = await request(server)
       .get(`/platform/customers/${customerId}`)
       .set('Authorization', `Bearer ${platformToken}`)
     expect(res.status).toBe(200)
     expect(res.body.data.id).toBe(customerId)
-    expect(res.body.data.plan).toBeTruthy()
-    expect(res.body.data.plan.maxUsers).toBe(3)
+    // Service normalizes to flat CustomerDetail shape (no nested plan object)
+    expect(res.body.data.maxUsers).toBe(3)
+    expect(res.body.data.planName).toBeDefined()
   })
 
   it('✅ PUT /platform/customers/:id updates name and subdomain', async () => {

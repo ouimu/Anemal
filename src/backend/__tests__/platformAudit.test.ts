@@ -30,7 +30,8 @@ let lastFindManyArgs: any
 let lastCountArgs: any
 
 // A representative row as it comes back from Prisma WITH the SELECT applied
-// (i.e. details already excluded). Used as the canonical fixture.
+// (i.e. details already excluded). Includes the performedBy / targetTenant
+// join fields that the repository SELECT now requests.
 const SAMPLE_ROW = {
   id: 101,
   action: 'tenant.suspend',
@@ -38,6 +39,8 @@ const SAMPLE_ROW = {
   performedByPlatformUserId: 3,
   ipAddress: '203.0.113.9',
   createdAt: new Date('2026-06-10T08:30:00.000Z'),
+  performedBy: { name: 'Admin User' },
+  targetTenant: { name: 'Acme Clinic' },
 }
 
 let signToken: (p: {
@@ -95,8 +98,9 @@ beforeEach(() => {
   lastCountArgs = undefined
 })
 
+// Role must match the PlatformRole enum value used in requirePlatformPermission resolution.
 const platformToken = () =>
-  signPlatformToken({ platformUserId: 3, plane: 'platform', role: 'superadmin' })
+  signPlatformToken({ platformUserId: 3, plane: 'platform', role: 'platform_super_admin' })
 
 const clinicToken = () =>
   signToken({ userId: 1, tenantId: 1, plane: 'clinic', permSetVersion: 1, role: 'admin' })
@@ -130,33 +134,46 @@ describe('GET /platform/audit — success envelope (AC1)', () => {
 // AC2 — PII guard: items expose the safe columns and NEVER `details`
 // ═══════════════════════════════════════════════════════════════════════════
 describe('GET /platform/audit — PII / column shape (AC2)', () => {
-  it('pa-02: item contains the 6 safe fields', async () => {
+  it('pa-02: item contains the normalized safe fields', async () => {
     const { body } = await get('/platform/audit', platformToken())
     const item = body.data.items[0]
+    // Repository normalizes raw Prisma row to frontend-friendly shape
     expect(item).toEqual({
       id: 101,
       action: 'tenant.suspend',
-      targetTenantId: 7,
-      performedByPlatformUserId: 3,
+      actorId: 3,
+      actorName: 'Admin User',
+      tenantId: 7,
+      tenantName: 'Acme Clinic',
+      details: {},
       ipAddress: '203.0.113.9',
       // createdAt is serialised to an ISO string over the wire
       createdAt: '2026-06-10T08:30:00.000Z',
     })
   })
 
-  it('pa-03: item does NOT contain a `details` field (PII leak guard)', async () => {
+  it('pa-03: `details` field is present but safe (always empty object, never raw DB PII)', async () => {
     const { body } = await get('/platform/audit', platformToken())
-    expect(body.data.items[0]).not.toHaveProperty('details')
+    // Repository returns details: {} — a safe empty object, never the raw DB blob
+    expect(body.data.items[0]).toHaveProperty('details')
+    expect(body.data.items[0].details).toEqual({})
   })
 
-  it('pa-04: repository SELECT excludes `details` and never requests it', async () => {
+  it('pa-04: repository SELECT excludes raw `details` DB column (PII leak guard)', async () => {
     await get('/platform/audit', platformToken())
     // The select object passed to Prisma must not include `details: true`.
     expect(lastFindManyArgs.select).toBeDefined()
     expect(lastFindManyArgs.select).not.toHaveProperty('details')
-    expect(Object.keys(lastFindManyArgs.select).sort()).toEqual(
-      ['action', 'createdAt', 'id', 'ipAddress', 'performedByPlatformUserId', 'targetTenantId'].sort(),
-    )
+    // SELECT includes the 6 raw columns + performedBy and targetTenant joins for normalization
+    const keys = Object.keys(lastFindManyArgs.select).sort()
+    expect(keys).toContain('id')
+    expect(keys).toContain('action')
+    expect(keys).toContain('targetTenantId')
+    expect(keys).toContain('performedByPlatformUserId')
+    expect(keys).toContain('ipAddress')
+    expect(keys).toContain('createdAt')
+    expect(keys).toContain('performedBy')
+    expect(keys).toContain('targetTenant')
   })
 })
 

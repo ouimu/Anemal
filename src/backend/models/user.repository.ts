@@ -53,12 +53,13 @@ export async function createUserWithRole(
   })
 }
 
-export function updateUser(userId: number, data: UpdateUserRequest) {
-  return prisma.user.update({ where: { id: userId }, data })
+export async function updateUser(tenantId: number, userId: number, data: UpdateUserRequest) {
+  await prisma.user.updateMany({ where: { id: userId, tenantId }, data })
+  return prisma.user.findFirst({ where: { id: userId, tenantId } })
 }
 
-export function setActive(userId: number, isActive: boolean) {
-  return prisma.user.update({ where: { id: userId }, data: { isActive } })
+export async function setActive(tenantId: number, userId: number, isActive: boolean) {
+  await prisma.user.updateMany({ where: { id: userId, tenantId }, data: { isActive } })
 }
 
 /**
@@ -90,7 +91,28 @@ export async function replaceUserRole(
       where: { userId, tenantId, roleId: { not: roleId } },
     })
     // Keep the legacy roleId FK in sync.
-    await tx.user.update({ where: { id: userId }, data: { roleId } })
+    await tx.user.updateMany({ where: { id: userId, tenantId }, data: { roleId } })
+  })
+}
+
+/**
+ * Return all roles assigned to a user within a tenant, including the role's
+ * permission codes and aggregate user count. Used by the user-roles endpoint.
+ *
+ * @param tenantId - Tenant scope (required for isolation).
+ * @param userId   - Target user's primary key.
+ */
+export function findUserRolesWithDetails(tenantId: number, userId: number) {
+  return prisma.userRole.findMany({
+    where: { userId, tenantId },
+    include: {
+      role: {
+        include: {
+          permissions: { select: { permissionCode: true } },
+          _count:       { select: { userRoles: true } },
+        },
+      },
+    },
   })
 }
 

@@ -9,11 +9,23 @@
  * @module platform-auth.service
  */
 
+import crypto from 'crypto'
 import bcrypt from 'bcrypt'
 import { AppError } from '../utils/errors'
 import { signPlatformToken } from '../config/jwt'
 import * as platformAuthRepo from '../models/platform-auth.repository'
-import type { PlatformLoginResponse, PlatformMeResponse } from '../types'
+import * as refreshTokenRepo from '../models/refresh-token.repository'
+import { resolvePlatformPermissions } from './permission.service'
+import type { PlatformLoginResponse, PlatformMeResponse, RefreshResponse } from '../types'
+
+/** TTL for refresh tokens: 30 days in milliseconds. */
+const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1_000
+
+/** JWT access token duration in seconds (8 hours). */
+const JWT_EXPIRES_IN_SECONDS = 8 * 60 * 60
+
+/** Generic error message — prevents oracle attacks on token validity. */
+const INVALID_TOKEN_MSG = 'Invalid or expired token'
 
 /** Thrown for any authentication failure on the platform plane. */
 export class PlatformAuthError extends AppError {
@@ -61,8 +73,20 @@ export async function platformLogin(
     role:           user.role,
   })
 
+  // Issue refresh token — store SHA-256 hash, return raw token to caller
+  const rawRefreshToken = crypto.randomBytes(32).toString('hex')
+  const familyId        = crypto.randomUUID()
+  await refreshTokenRepo.create({
+    tokenHash:      refreshTokenRepo.hashToken(rawRefreshToken),
+    familyId,
+    platformUserId: user.id,
+    plane:          'platform',
+    expiresAt:      new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+  })
+
   return {
     token,
+    refreshToken: rawRefreshToken,
     user: {
       id:    user.id,
       name:  user.name,
@@ -75,9 +99,10 @@ export async function platformLogin(
 /**
  * Resolve the current platform user's identity from their JWT context.
  *
- * `permissions` is a deliberate stub ([]) — the platform-plane RBAC permission
- * model is not yet implemented (known gap). The role string is authoritative
- * for now.
+ * Permissions are resolved statically from the user's platform role enum
+ * (platform_super_admin → all codes; platform_support → read-only codes).
+ * No DB query is needed for permission resolution since the platform plane
+ * uses a role enum rather than join-table RBAC.
  *
  * @param platformUserId - From the verified platform JWT.
  * @throws PlatformAuthError (401) when the user no longer exists or is inactive.
@@ -88,11 +113,82 @@ export async function platformGetMe(platformUserId: number): Promise<PlatformMeR
     throw new PlatformAuthError(INVALID_CREDENTIALS, 401)
   }
 
+  const permissions = Array.from(resolvePlatformPermissions(user.role))
+
   return {
     platformUserId: user.id,
     name:           user.name,
     email:          user.email,
     role:           user.role,
-    permissions:    [],
+    permissions,
   }
+}
+
+/**
+ * Exchange a valid platform-plane refresh token for a new access + refresh token pair.
+ *
+ * Security invariants enforced:
+ * - Token must exist, not be expired, not rotated, not revoked, and have plane === 'platform'.
+ * - If `rotatedAt` is already set the token was already consumed — replay detected.
+ *   The entire family is revoked and a 401 is returned.
+ * - Platform user must still be active.
+ *
+ * @param rawRefreshToken - The opaque token string sent by the client.
+ * @throws PlatformAuthError(401) on any validation failure.
+ */
+export async function refreshPlatformToken(rawRefreshToken: string): Promise<RefreshResponse> {
+  const hash   = refreshTokenRepo.hashToken(rawRefreshToken)
+  const record = await refreshTokenRepo.findByHash(hash)
+
+  if (!record || record.plane !== 'platform') {
+    throw new PlatformAuthError(INVALID_TOKEN_MSG, 401)
+  }
+
+  if (record.revokedAt) {
+    throw new PlatformAuthError(INVALID_TOKEN_MSG, 401)
+  }
+
+  if (record.expiresAt < new Date()) {
+    throw new PlatformAuthError(INVALID_TOKEN_MSG, 401)
+  }
+
+  if (record.rotatedAt) {
+    // Replay attack — revoke entire family
+    await refreshTokenRepo.revokeFamily(record.familyId)
+    throw new PlatformAuthError(INVALID_TOKEN_MSG, 401)
+  }
+
+  if (!record.platformUserId) {
+    throw new PlatformAuthError(INVALID_TOKEN_MSG, 401)
+  }
+
+  const user = await platformAuthRepo.findPlatformUserById(record.platformUserId)
+  if (!user || !user.isActive) {
+    throw new PlatformAuthError(INVALID_TOKEN_MSG, 401)
+  }
+
+  const newToken = signPlatformToken({
+    platformUserId: user.id,
+    plane:          'platform',
+    role:           user.role,
+  })
+
+  const newRaw       = crypto.randomBytes(32).toString('hex')
+  const newExpiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS)
+  await refreshTokenRepo.rotateToken(record.id, refreshTokenRepo.hashToken(newRaw), record.familyId, newExpiresAt)
+
+  return { token: newToken, refreshToken: newRaw, expiresIn: JWT_EXPIRES_IN_SECONDS }
+}
+
+/**
+ * Revoke the entire refresh token family for a platform user (logout).
+ * Idempotent: not-found is silently ignored.
+ *
+ * @param rawRefreshToken - The opaque token string sent by the client.
+ */
+export async function revokePlatformToken(rawRefreshToken: string): Promise<void> {
+  const hash   = refreshTokenRepo.hashToken(rawRefreshToken)
+  const record = await refreshTokenRepo.findByHash(hash)
+  if (!record) return
+  await refreshTokenRepo.revokeFamily(record.familyId)
 }

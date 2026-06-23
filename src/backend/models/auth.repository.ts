@@ -21,3 +21,8 @@ export function findBranchById(tenantId: number, branchId: number) {
 export function touchLastLogin(userId: number) {
   return prisma.user.update({ where: { id: userId }, data: { lastLoginAt: new Date() } })
 }
+
+/** Find a tenant by primary key (used by the refresh token flow for active-tenant check). */
+export function findTenantById(tenantId: number) {
+  return prisma.tenant.findUnique({ where: { id: tenantId } })
+}

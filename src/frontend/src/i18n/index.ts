@@ -52,7 +52,6 @@ const en: Dict = {
   'page./settings/payment': 'Payment',
   'page./settings/integrations': 'Integrations',
   'page./settings/preferences': 'My Preferences',
-  'page./settings/system': 'System Settings',
 
   // Sidebar nav — clinic
   'nav.dashboard': 'Dashboard',
@@ -330,7 +329,6 @@ const th: Dict = {
   'page./settings/payment': 'การชำระเงิน',
   'page./settings/integrations': 'การเชื่อมต่อ',
   'page./settings/preferences': 'การตั้งค่าส่วนตัว',
-  'page./settings/system': 'ตั้งค่าระบบ',
 
   'nav.dashboard': 'แดชบอร์ด',
   'nav.pets': 'สัตว์เลี้ยงและเจ้าของ',

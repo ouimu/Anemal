@@ -145,7 +145,8 @@ export async function updateRolePermissions(
     )
   }
 
-  const updated = await roleRepo.updateRolePermissions(roleId, add, remove)
+  const updated = await roleRepo.updateRolePermissions(tenantId, roleId, add, remove)
+  if (!updated) throw new NotFoundError('Role')
 
   const affectedUserIds = await roleRepo.findUserIdsByRole(roleId, tenantId)
   await Promise.all(affectedUserIds.map(uid => invalidatePermCache(uid, tenantId)))
@@ -178,7 +179,7 @@ export async function deleteRole(tenantId: number, roleId: number): Promise<void
     throw new ConflictError('Cannot delete a role that is currently assigned to users')
   }
 
-  await roleRepo.deleteRole(roleId)
+  await roleRepo.deleteRole(tenantId, roleId)
 }
 
 /**

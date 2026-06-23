@@ -32,7 +32,7 @@ export class AppointmentError extends AppError {
   }
 }
 
-export async function listAppointments(tenantId: number, date?: string, doctorId?: number, week = false) {
+export async function listAppointments(tenantId: number, branchId: number | null | undefined, date?: string, doctorId?: number, week = false) {
   let startDate: Date
   let endDate: Date
 
@@ -48,11 +48,11 @@ export async function listAppointments(tenantId: number, date?: string, doctorId
     endDate.setDate(endDate.getDate() + 1)
   }
 
-  return appointmentRepo.findInRange(tenantId, startDate, endDate, doctorId)
+  return appointmentRepo.findInRange(tenantId, branchId, startDate, endDate, doctorId)
 }
 
-export async function getAppointment(tenantId: number, id: number) {
-  const appt = await appointmentRepo.findById(tenantId, id)
+export async function getAppointment(tenantId: number, branchId: number | null | undefined, id: number) {
+  const appt = await appointmentRepo.findById(tenantId, branchId, id)
   if (!appt) throw new AppointmentError('Appointment not found', 404)
   return appt
 }
@@ -61,7 +61,7 @@ export async function createAppointment(tenantId: number, branchId: number | nul
   const start = new Date(data.scheduledAt)
   const end   = new Date(start.getTime() + data.durationMin * 60_000)
 
-  const conflicts = await appointmentRepo.countDoctorConflicts(tenantId, data.doctorId, start, end)
+  const conflicts = await appointmentRepo.countDoctorConflicts(tenantId, branchId, data.doctorId, start, end)
   if (conflicts > 0) {
     throw new AppointmentError('Doctor already has an appointment in this time slot', 409)
   }
@@ -77,7 +77,7 @@ export async function createWalkIn(tenantId: number, branchId: number | null, pe
   return appointmentRepo.createWalkIn(tenantId, branchId, petId, doctorId, reason)
 }
 
-export async function updateStatus(tenantId: number, id: number, status: AppointmentStatus) {
-  await getAppointment(tenantId, id)
+export async function updateStatus(tenantId: number, branchId: number | null | undefined, id: number, status: AppointmentStatus) {
+  await getAppointment(tenantId, branchId, id)
   return appointmentRepo.updateStatus(id, status)
 }

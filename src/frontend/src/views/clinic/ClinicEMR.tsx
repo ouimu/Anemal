@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from 'react'
+﻿import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
@@ -151,18 +151,53 @@ function VitalStepper({ label, unit, value, onChange, step = 0.1, min = 0 }: {
   )
 }
 
+/** Minimum characters before triggering drug search */
+const DRUG_SEARCH_MIN_CHARS = 2
+
+/** Debounce delay in milliseconds before firing the drug search query */
+const DRUG_SEARCH_DEBOUNCE_MS = 300
+
 // ─── Prescription form ────────────────────────────────────────────────────────
 function PrescriptionPanel({ recordId, prescriptions, onRefresh }: {
   recordId: number
   prescriptions: Prescription[]
   onRefresh: () => void
 }) {
-  const [drugSearch, setDrugSearch] = useState('')
-  const [selectedDrug, setDrug]     = useState<Drug | null>(null)
-  const [qty, setQty]               = useState(1)
-  const [instruction, setInstruction] = useState('')
-  const [error, setError]           = useState('')
-  const [saving, setSaving]         = useState(false)
+  const [drugSearch, setDrugSearch]     = useState('')
+  const [debouncedSearch, setDebounced] = useState('')
+  const [selectedDrug, setDrug]         = useState<Drug | null>(null)
+  const [qty, setQty]                   = useState(1)
+  const [instruction, setInstruction]   = useState('')
+  const [error, setError]               = useState('')
+  const [saving, setSaving]             = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
+  const debounceTimer                   = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  /** Debounce drugSearch → debouncedSearch so the query fires at most every 300 ms */
+  const handleDrugSearchChange = useCallback((value: string) => {
+    setDrugSearch(value)
+    setShowDropdown(true)
+    if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    debounceTimer.current = setTimeout(() => {
+      setDebounced(value)
+    }, DRUG_SEARCH_DEBOUNCE_MS)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    }
+  }, [])
+
+  /** Search products by name/barcode — enabled only when >= 2 chars typed */
+  const { data: drugResults, isFetching: searchingDrugs } = useQuery({
+    queryKey: ['drug-search', debouncedSearch],
+    queryFn: () =>
+      api.get('/api/products', { params: { search: debouncedSearch, limit: 10 } })
+        .then(r => (r.data.data as { products: Drug[] }).products),
+    enabled: debouncedSearch.length >= DRUG_SEARCH_MIN_CHARS,
+    staleTime: 30_000,
+  })
 
   const addPrescription = async () => {
     if (!selectedDrug) return
@@ -214,11 +249,59 @@ function PrescriptionPanel({ recordId, prescriptions, onRefresh }: {
             <span className={`text-label-md font-medium px-sm py-xs rounded-full ${Number(selectedDrug.stockQuantity) > 0 ? 'bg-success/10 text-success' : 'bg-error-container text-error'}`}>
               Stock: {Number(selectedDrug.stockQuantity)} {selectedDrug.unit}
             </span>
-            <button type="button" onClick={() => setDrug(null)} className="min-h-[32px] min-w-[32px] flex items-center justify-center text-on-surface-variant"><MaterialIcon name="close" size={16} /></button>
+            <button
+              type="button"
+              aria-label="Clear selected drug"
+              onClick={() => { setDrug(null); setDrugSearch(''); setDebounced('') }}
+              className="min-h-[32px] min-w-[32px] flex items-center justify-center text-on-surface-variant"
+            >
+              <MaterialIcon name="close" size={16} />
+            </button>
           </div>
         ) : (
-          <input className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-sm border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary"
-            placeholder="Search drug by name or barcode…" value={drugSearch} onChange={e => setDrugSearch(e.target.value)} />
+          <div className="relative">
+            <input
+              className="w-full bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-sm border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="Search drug by name or barcode…"
+              value={drugSearch}
+              onChange={e => handleDrugSearchChange(e.target.value)}
+              onFocus={() => drugSearch.length >= DRUG_SEARCH_MIN_CHARS && setShowDropdown(true)}
+              onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+              autoComplete="off"
+            />
+            {showDropdown && debouncedSearch.length >= DRUG_SEARCH_MIN_CHARS && (
+              <div className="absolute left-0 right-0 top-full mt-xs z-10 bg-surface shadow-lvl2 rounded-md border border-outline-variant max-h-48 overflow-y-auto">
+                {searchingDrugs ? (
+                  <div className="flex items-center justify-center min-h-[44px] text-body-sm text-on-surface-variant">
+                    Searching…
+                  </div>
+                ) : drugResults && drugResults.length > 0 ? (
+                  drugResults.map((drug: Drug) => (
+                    <button
+                      key={drug.id}
+                      type="button"
+                      onMouseDown={() => {
+                        setDrug(drug)
+                        setDrugSearch('')
+                        setDebounced('')
+                        setShowDropdown(false)
+                      }}
+                      className="w-full text-left px-md flex items-center justify-between min-h-[44px] hover:bg-surface-container-low transition-colors border-b border-outline-variant/50 last:border-0"
+                    >
+                      <span className="text-body-sm font-medium truncate">{drug.name}</span>
+                      <span className={`ml-sm text-label-md font-medium px-sm py-xs rounded-full flex-shrink-0 ${Number(drug.stockQuantity) > 0 ? 'bg-success/10 text-success' : 'bg-error-container text-error'}`}>
+                        {Number(drug.stockQuantity)} {drug.unit}
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="flex items-center justify-center min-h-[44px] text-body-sm text-on-surface-variant">
+                    No results
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
         {selectedDrug && (

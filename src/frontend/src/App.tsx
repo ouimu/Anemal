@@ -12,6 +12,7 @@ import PlatformLayout from './layouts/PlatformLayout'
 // ── Admin pages ──────────────────────────────────────────────────────────────
 const AdminDashboard    = lazy(() => import('./views/admin/AdminDashboard'))
 const AdminUsers        = lazy(() => import('./views/admin/AdminUsers'))
+const UserManagementTab = lazy(() => import('./views/admin/UserManagementTab'))
 const AdminProfile      = lazy(() => import('./views/admin/AdminProfile'))
 const AdminUsage        = lazy(() => import('./views/admin/AdminUsage'))
 const AdminSettings     = lazy(() => import('./views/admin/AdminSettings'))
@@ -50,7 +51,6 @@ const NotificationsPage  = lazy(() => import('./views/settings/NotificationsPage
 const PaymentPage        = lazy(() => import('./views/settings/PaymentPage'))
 const IntegrationsPage   = lazy(() => import('./views/settings/IntegrationsPage'))
 const PreferencesPage    = lazy(() => import('./views/settings/PreferencesPage'))
-const SystemSettingsPage = lazy(() => import('./views/settings/SystemSettingsPage'))
 
 const Loader = () => (
   <div className="flex items-center justify-center h-screen">
@@ -94,7 +94,7 @@ export default function App() {
         <Route path="/clinic-admin" element={<RequireAuth><RequirePlane plane="clinic"><AdminLayout/></RequirePlane></RequireAuth>}>
           <Route index element={<Navigate to="/clinic-admin/dashboard" replace/>}/>
           <Route path="dashboard"    element={<RequirePermission perm="clinic.profile.view"><AdminDashboard/></RequirePermission>}/>
-          <Route path="users"        element={<RequirePermission perm="staff.view"><AdminUsers/></RequirePermission>}/>
+          <Route path="users"        element={<RequirePermission perm="staff.view"><UserManagementTab/></RequirePermission>}/>
           <Route path="profile"      element={<RequirePermission perm="clinic.profile.view"><AdminProfile/></RequirePermission>}/>
           <Route path="usage"        element={<RequirePermission perm="clinic.profile.view"><AdminUsage/></RequirePermission>}/>
           <Route path="settings"     element={<RequirePermission perm="clinic.profile.view"><AdminSettings/></RequirePermission>}/>
@@ -152,8 +152,6 @@ export default function App() {
           <Route path="payment"       element={<RequirePermission perm="clinic.payment.edit"><PaymentPage/></RequirePermission>}/>
           <Route path="integrations"  element={<RequirePermission perm="clinic.integrations.edit"><IntegrationsPage/></RequirePermission>}/>
           <Route path="preferences"   element={<PreferencesPage/>}/>
-          {/* platform-plane screen mis-located here; backend enforces requirePlane('platform') — no frontend permission guard needed */}
-          <Route path="system"        element={<SystemSettingsPage/>}/>
         </Route>
 
         {/* Access denied stub — target of RequirePermission on deny */}

@@ -9,7 +9,7 @@
 
 import { Router } from 'express'
 import { authMiddleware } from '../middlewares/auth.middleware'
-import { requirePlane } from '../middlewares/permission.middleware'
+import { requirePlane, requirePlatformPermission } from '../middlewares/permission.middleware'
 import { validate } from '../middlewares/validate.middleware'
 import {
   createCustomerSchema,
@@ -35,24 +35,24 @@ const router = Router()
 router.use(authMiddleware, requirePlane('platform'))
 
 // Collection
-router.get('/',    handleListCustomers)
-router.post('/',   validate(createCustomerSchema), handleCreateCustomer)
+router.get('/',    requirePlatformPermission('platform.customers.view'),   handleListCustomers)
+router.post('/',   requirePlatformPermission('platform.customers.manage'), validate(createCustomerSchema), handleCreateCustomer)
 
 // Single customer
-router.get( '/:id',            handleGetCustomer)
-router.put( '/:id',            validate(updateCustomerSchema), handleUpdateCustomer)
-router.post('/:id/suspend',    handleSuspendCustomer)
-router.post('/:id/reactivate', handleReactivateCustomer)
+router.get( '/:id',            requirePlatformPermission('platform.customers.view'),   handleGetCustomer)
+router.put( '/:id',            requirePlatformPermission('platform.customers.manage'), validate(updateCustomerSchema), handleUpdateCustomer)
+router.post('/:id/suspend',    requirePlatformPermission('platform.customers.manage'), handleSuspendCustomer)
+router.post('/:id/reactivate', requirePlatformPermission('platform.customers.manage'), handleReactivateCustomer)
 
 // Quota
-router.get('/:id/quota', handleGetEffectiveQuota)
-router.put('/:id/quota', validate(setQuotaSchema), handleSetQuotaOverride)
+router.get('/:id/quota', requirePlatformPermission('platform.customers.view'),   handleGetEffectiveQuota)
+router.put('/:id/quota', requirePlatformPermission('platform.quotas.manage'),    validate(setQuotaSchema), handleSetQuotaOverride)
 
 // Usage
-router.get('/:id/usage', handleGetCustomerUsage)
+router.get('/:id/usage', requirePlatformPermission('platform.usage.view'), handleGetCustomerUsage)
 
 // Provisioning
-router.get('/:id/provisioning', handleGetProvisioning)
-router.put('/:id/provisioning', validate(updateProvisioningSchema), handleUpdateProvisioning)
+router.get('/:id/provisioning', requirePlatformPermission('platform.provisioning.manage'), handleGetProvisioning)
+router.put('/:id/provisioning', requirePlatformPermission('platform.provisioning.manage'), validate(updateProvisioningSchema), handleUpdateProvisioning)
 
 export default router

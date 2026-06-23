@@ -6,8 +6,9 @@ import { login } from '../../services/auth.service'
 jest.mock('../../config/db', () => ({
   __esModule: true,
   default: {
-    tenant: { findUnique: jest.fn() },
-    user:   { findUnique: jest.fn(), update: jest.fn() }, // update: touchLastLogin (Phase 4)
+    tenant:       { findUnique: jest.fn() },
+    user:         { findUnique: jest.fn(), update: jest.fn() }, // update: touchLastLogin (Phase 4)
+    refreshToken: { create: jest.fn().mockResolvedValue({ id: 'rt-1', tokenHash: 'h', familyId: 'f', plane: 'clinic', expiresAt: new Date(), createdAt: new Date() }) },
   },
 }))
 jest.mock('../../config/jwt', () => ({

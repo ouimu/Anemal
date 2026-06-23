@@ -10,7 +10,7 @@
 
 import { Router } from 'express'
 import { authMiddleware } from '../middlewares/auth.middleware'
-import { requirePlane } from '../middlewares/permission.middleware'
+import { requirePlane, requirePlatformPermission } from '../middlewares/permission.middleware'
 import { handleListPlatformAudit } from '../controllers/platform-audit.controller'
 
 const router = Router()
@@ -18,6 +18,6 @@ const router = Router()
 // All routes require a platform-plane JWT
 router.use(authMiddleware, requirePlane('platform'))
 
-router.get('/', handleListPlatformAudit)
+router.get('/', requirePlatformPermission('platform.audit.view'), handleListPlatformAudit)
 
 export default router

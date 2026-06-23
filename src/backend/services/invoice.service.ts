@@ -98,27 +98,27 @@ export async function createInvoice(tenantId: number, branchId: number, data: Cr
   })
 }
 
-export async function getInvoice(tenantId: number, id: number) {
-  const invoice = await invoiceRepo.findInvoiceById(tenantId, id)
+export async function getInvoice(tenantId: number, branchId: number | null | undefined, id: number) {
+  const invoice = await invoiceRepo.findInvoiceById(tenantId, branchId, id)
   if (!invoice) throw new InvoiceError('Invoice not found', 404)
   return invoice
 }
 
 export async function listInvoices(
-  tenantId: number, page = 1, limit = 20, status?: string, date?: string,
+  tenantId: number, branchId: number | null | undefined, page = 1, limit = 20, status?: string, date?: string,
 ) {
   const skip = (page - 1) * limit
   const [invoices, total] = await Promise.all([
-    invoiceRepo.findInvoices(tenantId, { skip, take: limit, status, date }),
-    invoiceRepo.countInvoices(tenantId, status, date),
+    invoiceRepo.findInvoices(tenantId, branchId, { skip, take: limit, status, date }),
+    invoiceRepo.countInvoices(tenantId, branchId, status, date),
   ])
   return { invoices, total, page, limit }
 }
 
-export async function recordPayment(tenantId: number, id: number, paymentMethod: string) {
-  const invoice = await getInvoice(tenantId, id)
+export async function recordPayment(tenantId: number, branchId: number | null | undefined, id: number, paymentMethod: string) {
+  const invoice = await getInvoice(tenantId, branchId, id)
   if (invoice.paymentStatus === 'paid') throw new InvoiceError('Invoice is already paid', 409)
-  const paid = await invoiceRepo.recordPayment(tenantId, id, paymentMethod)
+  const paid = await invoiceRepo.recordPayment(tenantId, branchId, id, paymentMethod)
   // Loyalty: earn points on payment (best-effort; skips retail invoices with no owner).
   await earnOnPayment(tenantId, id, Number(invoice.totalAmount))
   return paid

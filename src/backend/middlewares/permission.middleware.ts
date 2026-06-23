@@ -16,7 +16,7 @@
  */
 
 import { Request, Response, NextFunction, RequestHandler } from 'express'
-import { resolvePermissions } from '../services/permission.service'
+import { resolvePermissions, resolvePlatformPermissions } from '../services/permission.service'
 
 /**
  * Guard that enforces the JWT plane claim.
@@ -118,5 +118,35 @@ export function requireAnyPermission(permissionCodes: string[]): RequestHandler 
     } catch (err) {
       next(err)
     }
+  }
+}
+
+/**
+ * Guard that enforces a platform-plane permission code.
+ *
+ * Platform users have a role enum (`platform_super_admin` | `platform_support`)
+ * rather than join-table-based permissions. This guard resolves the permission
+ * set statically from that role and rejects if the required code is absent.
+ *
+ * Must run after `authMiddleware` + `requirePlane('platform')`.
+ *
+ * @param permissionCode - The platform permission code, e.g. `'platform.customers.view'`.
+ * @returns Express middleware that passes or responds with 401/403.
+ */
+export function requirePlatformPermission(permissionCode: string): RequestHandler {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.context) {
+      res.status(401).json({ success: false, error: 'Authentication required' })
+      return
+    }
+    const perms = resolvePlatformPermissions(req.context.role)
+    if (!perms.has(permissionCode)) {
+      res.status(403).json({
+        success: false,
+        error: `Access denied: missing permission '${permissionCode}'`,
+      })
+      return
+    }
+    next()
   }
 }

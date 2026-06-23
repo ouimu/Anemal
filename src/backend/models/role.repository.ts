@@ -102,9 +102,10 @@ export async function createRole(tenantId: number, name: string, permCodes: stri
  * @param remove - Permission codes to revoke.
  */
 export async function updateRolePermissions(
-  roleId: number,
-  add:    string[],
-  remove: string[],
+  tenantId: number,
+  roleId:   number,
+  add:      string[],
+  remove:   string[],
 ) {
   return prisma.$transaction(async (tx) => {
     if (remove.length > 0) {
@@ -123,9 +124,14 @@ export async function updateRolePermissions(
       })
     }
 
-    return tx.clinicRole.update({
-      where: { id: roleId },
+    // Scope the write to the owning tenant (custom roles only — system roles are blocked upstream).
+    await tx.clinicRole.updateMany({
+      where: { id: roleId, tenantId },
       data:  { permVersion: { increment: 1 } },
+    })
+
+    return tx.clinicRole.findFirst({
+      where:   { id: roleId, tenantId },
       include: { permissions: { select: { permissionCode: true } } },
     })
   })
@@ -133,11 +139,13 @@ export async function updateRolePermissions(
 
 /**
  * Delete a custom role row (permissions cascade via FK).
+ * Scoped to tenantId — system roles (tenantId = null) are never matched.
  *
- * @param roleId - Role to remove.
+ * @param tenantId - Owning tenant scope; prevents cross-tenant deletes.
+ * @param roleId   - Role to remove.
  */
-export function deleteRole(roleId: number) {
-  return prisma.clinicRole.delete({ where: { id: roleId } })
+export function deleteRole(tenantId: number, roleId: number) {
+  return prisma.clinicRole.deleteMany({ where: { id: roleId, tenantId } })
 }
 
 /**

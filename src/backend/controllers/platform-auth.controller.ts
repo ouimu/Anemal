@@ -9,7 +9,7 @@
 
 import { Request, Response, NextFunction } from 'express'
 import { z } from 'zod'
-import { platformLogin, platformGetMe } from '../services/platform-auth.service'
+import { platformLogin, platformGetMe, refreshPlatformToken } from '../services/platform-auth.service'
 
 /** Zod schema for POST /platform/auth/login */
 export const platformLoginSchema = z.object({
@@ -48,6 +48,27 @@ export async function handlePlatformMe(
   try {
     const { platformUserId } = req.context!
     const result = await platformGetMe(platformUserId!)
+    res.status(200).json({ success: true, data: result })
+  } catch (err) {
+    next(err)
+  }
+}
+
+/** Zod schema for POST /platform/auth/refresh. */
+export const platformRefreshSchema = z.object({ refreshToken: z.string().min(1) }).strict()
+
+/**
+ * Handle POST /platform/auth/refresh.
+ * Exchanges a valid platform-plane refresh token for a new access + refresh token pair.
+ */
+export async function handlePlatformRefresh(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { refreshToken } = req.body as z.infer<typeof platformRefreshSchema>
+    const result = await refreshPlatformToken(refreshToken)
     res.status(200).json({ success: true, data: result })
   } catch (err) {
     next(err)

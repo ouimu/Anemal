@@ -10,14 +10,14 @@ export async function handleListAppointments(req: Request, res: Response, next: 
     const date     = req.query.date     as string | undefined
     const doctorId = req.query.doctorId ? parseInt(String(req.query.doctorId)) : undefined
     const week     = req.query.week === 'true'
-    const data     = await listAppointments(req.context!.tenantId, date, doctorId, week)
+    const data     = await listAppointments(req.context!.tenantId, branchOf(req), date, doctorId, week)
     res.json({ success: true, data })
   } catch (err) { next(err) }
 }
 
 export async function handleGetAppointment(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await getAppointment(req.context!.tenantId, parseInt(req.params.id))
+    const data = await getAppointment(req.context!.tenantId, branchOf(req), parseInt(req.params.id))
     res.json({ success: true, data })
   } catch (err) { next(err) }
 }
@@ -39,7 +39,7 @@ export async function handleWalkIn(req: Request, res: Response, next: NextFuncti
 
 export async function handleUpdateStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await updateStatus(req.context!.tenantId, parseInt(req.params.id), req.body.status)
+    const data = await updateStatus(req.context!.tenantId, branchOf(req), parseInt(req.params.id), req.body.status)
     res.json({ success: true, data })
   } catch (err) { next(err) }
 }

@@ -10,6 +10,7 @@
 
 import { AppError } from '../utils/errors'
 import * as plansRepo from '../models/platform-plans.repository'
+import type { PlanRow } from '../models/platform-plans.repository'
 import * as customersRepo from '../models/platform-customers.repository'
 import type {
   CreatePlanData,
@@ -18,6 +19,50 @@ import type {
 } from '../models/platform-plans.repository'
 import { CustomerNotFoundError } from './platform-customers.service'
 import prisma from '../config/db'
+
+/** Normalized plan shape returned to API callers. */
+export interface PlanResponse {
+  id:          number
+  key:         string
+  name:        string
+  price:       number
+  maxBranches: number
+  maxUsers:    number
+  maxOwners:   number | null
+  features:    string[]
+  isRetired:   boolean
+  createdAt:   null
+}
+
+/**
+ * Transform a raw PlanRow into the normalized API shape.
+ * - `priceMonth` (Prisma Decimal) → `price` (number)
+ * - `isActive` → `isRetired` (inverted)
+ * - `features` (Json object) → `features` (string[] of keys, or [])
+ * - `createdAt` not in schema → null
+ */
+function normalizePlan(row: PlanRow): PlanResponse {
+  const featuresRaw = row.features
+  const features: string[] =
+    featuresRaw !== null &&
+    typeof featuresRaw === 'object' &&
+    !Array.isArray(featuresRaw)
+      ? Object.keys(featuresRaw as Record<string, unknown>)
+      : []
+
+  return {
+    id:          row.id,
+    key:         row.key,
+    name:        row.name,
+    price:       parseFloat(String(row.priceMonth)),
+    maxBranches: row.maxBranches,
+    maxUsers:    row.maxUsers,
+    maxOwners:   row.maxOwners,
+    features,
+    isRetired:   !row.isActive,
+    createdAt:   null,
+  }
+}
 
 /** Thrown when a requested plan does not exist. */
 export class PlanNotFoundError extends AppError {
@@ -57,22 +102,23 @@ export interface EffectiveQuota {
 }
 
 /**
- * Return all plans.
+ * Return all plans with normalized API shape.
  */
-export function listPlans() {
-  return plansRepo.listPlans()
+export async function listPlans(): Promise<PlanResponse[]> {
+  const rows = await plansRepo.listPlans()
+  return rows.map(normalizePlan)
 }
 
 /**
- * Return a single plan by id.
+ * Return a single plan by id with normalized API shape.
  * Throws PlanNotFoundError when missing.
  *
  * @param id - Plan primary key.
  */
-export async function getPlan(id: number) {
+export async function getPlan(id: number): Promise<PlanResponse> {
   const plan = await plansRepo.getPlanById(id)
   if (!plan) throw new PlanNotFoundError()
-  return plan
+  return normalizePlan(plan)
 }
 
 /**
@@ -81,7 +127,7 @@ export async function getPlan(id: number) {
  * @param data           - Plan definition.
  * @param performedById  - Platform user creating the plan.
  */
-export async function createPlan(data: Omit<CreatePlanData, 'features'> & { features?: Record<string, unknown> }, performedById: number) {
+export async function createPlan(data: Omit<CreatePlanData, 'features'> & { features?: Record<string, unknown> }, performedById: number): Promise<PlanResponse> {
   const plan = await plansRepo.createPlan(data as CreatePlanData)
 
   await prisma.platformAuditLog.create({
@@ -93,7 +139,7 @@ export async function createPlan(data: Omit<CreatePlanData, 'features'> & { feat
     },
   })
 
-  return plan
+  return normalizePlan(plan)
 }
 
 /**
@@ -103,7 +149,7 @@ export async function createPlan(data: Omit<CreatePlanData, 'features'> & { feat
  * @param data           - Fields to update.
  * @param performedById  - Platform user making the change.
  */
-export async function updatePlan(id: number, data: Omit<UpdatePlanData, 'features'> & { features?: Record<string, unknown> }, performedById: number) {
+export async function updatePlan(id: number, data: Omit<UpdatePlanData, 'features'> & { features?: Record<string, unknown> }, performedById: number): Promise<PlanResponse> {
   await getPlan(id)
   const updated = await plansRepo.updatePlan(id, data as UpdatePlanData)
 
@@ -116,7 +162,7 @@ export async function updatePlan(id: number, data: Omit<UpdatePlanData, 'feature
     },
   })
 
-  return updated
+  return normalizePlan(updated)
 }
 
 /**
@@ -126,7 +172,7 @@ export async function updatePlan(id: number, data: Omit<UpdatePlanData, 'feature
  * @param id             - Plan primary key.
  * @param performedById  - Platform user retiring the plan.
  */
-export async function retirePlan(id: number, performedById: number) {
+export async function retirePlan(id: number, performedById: number): Promise<PlanResponse> {
   const plan = await getPlan(id)
   const count = await plansRepo.countTenantsOnPlan(id)
   if (count > 0) throw new PlanInUseError(count)
@@ -141,7 +187,7 @@ export async function retirePlan(id: number, performedById: number) {
     },
   })
 
-  return retired
+  return normalizePlan(retired)
 }
 
 /**

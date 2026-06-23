@@ -1,4 +1,8 @@
 // Reports repository — read-only aggregates, all tenant-scoped raw SQL.
+// NOTE: revenueDaily, revenueMonthly, revenueToday, revenueThisMonth, countPendingInvoices,
+// topServices, inventoryUsage are intentionally tenant-wide: admin aggregate reports that
+// summarise across ALL branches for the clinic dashboard. Do NOT add branchId filters here.
+// branchRevenue is the only function that already breaks down by branch.
 import prisma from '../config/db'
 
 export interface SeriesPoint { label: string; revenue: number }

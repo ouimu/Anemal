@@ -184,8 +184,10 @@ describe('GET /platform/auth/me', () => {
     expect(typeof res.body.data.platformUserId).toBe('number')
     expect(res.body.data.email).toBe(process.env.PLATFORM_ADMIN_EMAIL || 'admin@anemal.co')
     expect(res.body.data.role).toBeDefined()
-    // permissions is a known stub until platform RBAC lands
-    expect(res.body.data.permissions).toEqual([])
+    // platform RBAC landed — super_admin should have full platform permissions
+    expect(Array.isArray(res.body.data.permissions)).toBe(true)
+    expect(res.body.data.permissions).toContain('platform.customers.view')
+    expect(res.body.data.permissions).toContain('platform.audit.view')
     // Never leak the password hash
     expect(res.body.data.passwordHash).toBeUndefined()
   })

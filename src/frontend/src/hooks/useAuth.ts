@@ -80,7 +80,6 @@ export function useLogin() {
 
       navigate(
         login.role === 'admin'      ? '/clinic-admin/dashboard' :
-        login.role === 'superadmin' ? '/settings/system' :
         '/clinic/dashboard'
       )
     },

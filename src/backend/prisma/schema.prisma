@@ -899,3 +899,28 @@ model TenantProvisioning {
 
   @@map("tenant_provisioning")
 }
+
+// ─── Refresh Token store (D-1-01) ────────────────────────────────────────────
+// tokenHash: SHA-256 of the opaque token string — raw token is NEVER stored.
+// familyId: rotation lineage; reuse of a consumed token revokes the entire family.
+// tenantId: NULL for platform-plane tokens; set for clinic-plane tokens.
+// No Prisma relation fields — service looks up userId/platformUserId explicitly
+// to avoid cascade-delete coupling across the two identity tables.
+model RefreshToken {
+  id             String    @id @default(cuid())
+  tokenHash      String    @unique
+  familyId       String
+  userId         Int?      // clinic users (users.id); NULL for platform tokens
+  platformUserId Int?      // platform users (platform_users.id); NULL for clinic tokens
+  tenantId       Int?      // clinic plane only; NULL for platform plane
+  plane          String    @db.VarChar(20) // 'clinic' | 'platform'
+  expiresAt      DateTime
+  rotatedAt      DateTime? // set when consumed by a successful refresh
+  revokedAt      DateTime? // set on logout or family kill
+  createdAt      DateTime  @default(now())
+
+  @@index([familyId])
+  @@index([userId, tenantId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}

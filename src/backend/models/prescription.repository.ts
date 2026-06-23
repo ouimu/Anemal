@@ -56,7 +56,7 @@ export function deductStockAndCreate(tenantId: number, branchId: number, data: C
 // Delete + restock branch_inventory + compensating 'in' movement.
 export function deleteAndRestock(tenantId: number, branchId: number, id: number, drugId: number, quantity: number) {
   return prisma.$transaction(async (tx) => {
-    await tx.prescription.delete({ where: { id } })
+    await tx.prescription.deleteMany({ where: { id, tenantId } })
     await tx.branchInventory.updateMany({
       where: { tenantId, branchId, productId: drugId },
       data: { stockQty: { increment: quantity } },

@@ -7,6 +7,7 @@
  * AC-1..AC-10 are all delegated to child components.
  */
 import { useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import MaterialIcon from '../../components/MaterialIcon'
 import RoleList from '../../components/roles/RoleList'
 import {
@@ -25,6 +26,7 @@ const MANAGE_PERM = 'roles.manage'
  */
 export default function RoleEditorView() {
   const t            = useT()
+  const navigate     = useNavigate()
   const rolesQuery   = useRolesQuery()
   const catalogQuery = usePermissionCatalogueQuery()
   const permissions  = useAuthStore((s) => s.permissions)
@@ -32,14 +34,17 @@ export default function RoleEditorView() {
   const canManage = permissions.includes(MANAGE_PERM)
 
   /**
-   * AC-9: Assign-staff entry point.
-   * T-5F-03 multi-role picker is not yet implemented — this is a placeholder callback
-   * that will be replaced when T-5F-03 is delivered.
+   * AC-9: Navigate to the Users page so the admin can open a staff member's
+   * edit modal and use the embedded RolePicker (T-5F-03) to assign this role.
+   * The roleId/roleName are available here but the Users page manages its own
+   * selection state — navigating there is the correct handoff point.
+   *
+   * @param _roleId   - The role being assigned (not used; Users page manages state).
+   * @param _roleName - Display name of the role (not used; informational only).
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleAssignStaff = useCallback((_roleId: string, _roleName: string) => {
-    // TODO T-5F-03: open multi-role picker
-  }, [])
+    navigate('/clinic-admin/users')
+  }, [navigate])
 
   const isLoading = rolesQuery.isLoading || catalogQuery.isLoading
   const isError   = rolesQuery.isError || catalogQuery.isError

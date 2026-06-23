@@ -50,8 +50,8 @@ function row2(
 
 // ─── Invoice PDF ─────────────────────────────────────────────────────────────
 
-export async function generateInvoicePdf(tenantId: number, invoiceId: number): Promise<Buffer> {
-  const inv = await invoiceRepo.findInvoiceById(tenantId, invoiceId)
+export async function generateInvoicePdf(tenantId: number, branchId: number | null | undefined, invoiceId: number): Promise<Buffer> {
+  const inv = await invoiceRepo.findInvoiceById(tenantId, branchId, invoiceId)
   if (!inv) throw new PdfError('Invoice not found', 404)
 
   const doc = new PDFDocument({ size: 'A4', margin: MARGIN, info: { Title: inv.invoiceNo } })

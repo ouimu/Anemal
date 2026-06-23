@@ -29,7 +29,8 @@ declare global {
 
 // ─── Platform Auth (T-5C-02) ─────────────────────────────────────────────────
 export interface PlatformLoginResponse {
-  token: string
+  token:        string
+  refreshToken: string
   user: {
     id:    number
     name:  string
@@ -46,12 +47,20 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  token:    string
-  userId:   number
-  tenantId: number
-  branchId: number | null
-  role:     string
-  name:     string
+  token:        string
+  refreshToken: string
+  userId:       number
+  tenantId:     number
+  branchId:     number | null
+  role:         string
+  name:         string
+}
+
+/** Returned by POST /auth/refresh and POST /platform/auth/refresh. */
+export interface RefreshResponse {
+  token:        string
+  refreshToken: string
+  expiresIn:    number
 }
 
 // Current clinic-plane identity, returned by GET /auth/me.

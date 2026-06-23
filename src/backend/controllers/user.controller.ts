@@ -43,6 +43,22 @@ export async function updateUser(req: Request, res: Response, next: NextFunction
   } catch (err) { next(err) }
 }
 
+/**
+ * GET /users/:userId/roles
+ * Returns the roles assigned to a specific user within the caller's tenant.
+ * Guarded by staff.assign_role — only admins with that permission can view
+ * another user's role assignments.
+ */
+export async function getUserRoles(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await userService.getUserRoles(
+      req.context!.tenantId,
+      Number(req.params.userId),
+    )
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
 export async function deactivateUser(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     await userService.deactivateUser(req.context!.tenantId, Number(req.params.id))

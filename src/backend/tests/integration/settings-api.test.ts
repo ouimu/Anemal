@@ -89,6 +89,7 @@ afterAll(async () => {
   await prisma.user.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.tenant.deleteMany({ where: { id: { in: [tidA, tidB] } } })
   if (platformUserId) {
+    await prisma.platformAuditLog.deleteMany({ where: { performedByPlatformUserId: platformUserId } })
     await prisma.platformUser.deleteMany({ where: { email: 'sysadmin@test.anemal' } })
   }
   await prisma.$disconnect()
@@ -157,11 +158,13 @@ describe('TC-S003 — RBAC on clinic settings', () => {
 })
 
 describe('TC-S004 — system settings restricted to platform plane (T-5C-03)', () => {
-  it('platform token GET /platform/settings → 200 with seeded keys', async () => {
+  it('platform token GET /platform/settings → 200 with named object shape', async () => {
     const res = await request(server).get('/platform/settings').set('Authorization', `Bearer ${platformToken}`)
     expect(res.status).toBe(200)
-    const keys = (res.body.data as { key: string }[]).map(r => r.key)
-    expect(keys).toContain('app_name')
+    // GET /platform/settings returns a named PlatformSettings object (not an array)
+    expect(typeof res.body.data).toBe('object')
+    expect(Array.isArray(res.body.data)).toBe(false)
+    expect(res.body.data).toHaveProperty('appName')
   })
 
   it('clinic admin GET /platform/settings → 403 (wrong plane)', async () => {
@@ -288,6 +291,116 @@ describe('personal preferences (S2.3) — all roles', () => {
       .set('Authorization', `Bearer ${staffA}`)
       .send({ language: 'fr' })
     expect(res.status).toBe(400)
+  })
+})
+
+describe('TC-S011 — PUT /platform/settings aggregate update', () => {
+  afterAll(async () => {
+    // Restore seeded defaults so other tests are not affected
+    await prisma.systemSettings.updateMany({
+      where: { key: { in: ['app_name', 'app_base_url', 'maintenance_mode', 'default_trial_days', 'smtp_host', 'smtp_port', 'smtp_from_email'] } },
+      data: { updatedBy: null },
+    })
+    await prisma.systemSettings.update({ where: { key: 'app_name'          }, data: { value: 'Anemal' } })
+    await prisma.systemSettings.update({ where: { key: 'app_base_url'      }, data: { value: 'https://app.anemal.co' } })
+    await prisma.systemSettings.update({ where: { key: 'maintenance_mode'  }, data: { value: 'false' } })
+    await prisma.systemSettings.update({ where: { key: 'default_trial_days'}, data: { value: '30' } })
+    await prisma.systemSettings.update({ where: { key: 'smtp_port'         }, data: { value: '587' } })
+    await prisma.settingsAuditLog.deleteMany({
+      where: { tableName: 'system_settings', fieldName: { in: ['app_name', 'app_base_url', 'maintenance_mode', 'default_trial_days', 'smtp_port', 'smtp_from_email'] } },
+    })
+  })
+
+  it('platform token PUT /platform/settings updates multiple keys → 200 + updated count', async () => {
+    const res = await request(server)
+      .put('/platform/settings')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ appName: 'Anemal Test', trialDays: 14, maintenanceMode: false })
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(true)
+    expect(res.body.data.updated).toBe(3)
+  })
+
+  it('partial update — omitted fields are unchanged', async () => {
+    const before = await request(server).get('/platform/settings').set('Authorization', `Bearer ${platformToken}`)
+    // GET /platform/settings returns a named object (not an array)
+    const portBefore = (before.body.data as { smtpPort: number | null }).smtpPort
+
+    await request(server)
+      .put('/platform/settings')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ appName: 'Anemal Partial' })
+
+    const after = await request(server).get('/platform/settings').set('Authorization', `Bearer ${platformToken}`)
+    const portAfter = (after.body.data as { smtpPort: number | null }).smtpPort
+    expect(portAfter).toBe(portBefore)
+  })
+
+  it('boolean maintenanceMode coerces to "true"/"false" in DB', async () => {
+    await request(server)
+      .put('/platform/settings')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ maintenanceMode: true })
+    const row = await prisma.systemSettings.findUnique({ where: { key: 'maintenance_mode' } })
+    expect(row!.value).toBe('true')
+  })
+
+  it('numeric trialDays coerces to string in DB', async () => {
+    await request(server)
+      .put('/platform/settings')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ trialDays: 60 })
+    const row = await prisma.systemSettings.findUnique({ where: { key: 'default_trial_days' } })
+    expect(row!.value).toBe('60')
+  })
+
+  it('empty body returns updated: 0', async () => {
+    const res = await request(server)
+      .put('/platform/settings')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({})
+    expect(res.status).toBe(200)
+    expect(res.body.data.updated).toBe(0)
+  })
+
+  it('invalid payload (bad URL) → 400', async () => {
+    const res = await request(server)
+      .put('/platform/settings')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ baseUrl: 'not-a-url' })
+    expect(res.status).toBe(400)
+  })
+
+  it('unknown field in body → 400 (strict schema)', async () => {
+    const res = await request(server)
+      .put('/platform/settings')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ unknownField: 'value' })
+    expect(res.status).toBe(400)
+  })
+
+  it('clinic admin PUT /platform/settings → 403 (wrong plane)', async () => {
+    const res = await request(server)
+      .put('/platform/settings')
+      .set('Authorization', `Bearer ${adminA}`)
+      .send({ appName: 'Hacked' })
+    expect(res.status).toBe(403)
+  })
+
+  it('no token PUT /platform/settings → 401', async () => {
+    const res = await request(server).put('/platform/settings').send({ appName: 'X' })
+    expect(res.status).toBe(401)
+  })
+
+  it('PUT /:key still works (backward compat)', async () => {
+    const res = await request(server)
+      .put('/platform/settings/smtp_port')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ value: '2525' })
+    expect(res.status).toBe(200)
+    // restore
+    await prisma.systemSettings.update({ where: { key: 'smtp_port' }, data: { value: '587', updatedBy: null } })
+    await prisma.settingsAuditLog.deleteMany({ where: { tableName: 'system_settings', fieldName: 'smtp_port' } })
   })
 })
 

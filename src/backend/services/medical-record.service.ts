@@ -35,29 +35,29 @@ export class MedicalRecordError extends AppError {
   }
 }
 
-export async function listMedicalRecords(tenantId: number, petId: number, page = 1, limit = 10) {
+export async function listMedicalRecords(tenantId: number, branchId: number | null | undefined, petId: number, page = 1, limit = 10) {
   const skip = (page - 1) * limit
   const [records, total] = await Promise.all([
-    recordRepo.findByPet(tenantId, petId, skip, limit),
-    recordRepo.countByPet(tenantId, petId),
+    recordRepo.findByPet(tenantId, branchId, petId, skip, limit),
+    recordRepo.countByPet(tenantId, branchId, petId),
   ])
   return { records, total, page, limit }
 }
 
-export async function getMedicalRecord(tenantId: number, id: number) {
-  const record = await recordRepo.findById(tenantId, id)
+export async function getMedicalRecord(tenantId: number, branchId: number | null | undefined, id: number) {
+  const record = await recordRepo.findById(tenantId, branchId, id)
   if (!record) throw new MedicalRecordError('Medical record not found', 404)
   return record
 }
 
-export async function createMedicalRecord(tenantId: number, data: CreateMedicalRecordInput) {
+export async function createMedicalRecord(tenantId: number, branchId: number | null | undefined, data: CreateMedicalRecordInput) {
   const pet = await recordRepo.findPet(tenantId, data.petId)
   if (!pet) throw new MedicalRecordError('Pet not found', 404)
-  return recordRepo.createRecord(tenantId, data)
+  return recordRepo.createRecord(tenantId, branchId, data)
 }
 
-export async function updateMedicalRecord(tenantId: number, id: number, data: UpdateMedicalRecordInput) {
-  const record = await getMedicalRecord(tenantId, id)
+export async function updateMedicalRecord(tenantId: number, branchId: number | null | undefined, id: number, data: UpdateMedicalRecordInput) {
+  const record = await getMedicalRecord(tenantId, branchId, id)
 
   const hasPaidInvoice = record.invoices?.some((inv: { paymentStatus: string }) => inv.paymentStatus === 'paid')
   if (hasPaidInvoice) throw new MedicalRecordError('Cannot edit a billed medical record', 403)
@@ -65,7 +65,7 @@ export async function updateMedicalRecord(tenantId: number, id: number, data: Up
   return recordRepo.updateRecord(tenantId, id, data)
 }
 
-export async function addAttachment(tenantId: number, medicalRecordId: number, data: AddAttachmentInput) {
-  await getMedicalRecord(tenantId, medicalRecordId)
+export async function addAttachment(tenantId: number, branchId: number | null | undefined, medicalRecordId: number, data: AddAttachmentInput) {
+  await getMedicalRecord(tenantId, branchId, medicalRecordId)
   return recordRepo.createAttachment(tenantId, medicalRecordId, data)
 }

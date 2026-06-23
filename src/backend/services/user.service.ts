@@ -79,14 +79,45 @@ export async function updateUser(
     await userRepo.replaceUserRole(tenantId, userId, roleRow.id)
   }
 
-  const user = await userRepo.updateUser(userId, body)
+  const user = await userRepo.updateUser(tenantId, userId, body)
+  if (!user) throw new UserError('User not found', 404)
   return safe(user)
+}
+
+/** Shape returned for a single role in user-roles responses. */
+export interface UserRoleDto {
+  id:                number
+  name:              string
+  isSystem:          boolean
+  permissions:       string[]
+  assignedUserCount: number
+}
+
+/**
+ * Return the roles assigned to a user within a tenant, each with permission
+ * codes and assignedUserCount.
+ *
+ * @param tenantId - Tenant scope (required for isolation).
+ * @param userId   - Target user's primary key.
+ */
+export async function getUserRoles(tenantId: number, userId: number): Promise<UserRoleDto[]> {
+  const existing = await userRepo.findUserById(tenantId, userId)
+  if (!existing) throw new UserError('User not found', 404)
+
+  const rows = await userRepo.findUserRolesWithDetails(tenantId, userId)
+  return rows.map(ur => ({
+    id:                ur.role.id,
+    name:              ur.role.name,
+    isSystem:          ur.role.isSystem,
+    permissions:       ur.role.permissions.map(p => p.permissionCode),
+    assignedUserCount: ur.role._count.userRoles,
+  }))
 }
 
 export async function deactivateUser(tenantId: number, userId: number): Promise<void> {
   const existing = await userRepo.findUserById(tenantId, userId)
   if (!existing) throw new UserError('User not found', 404)
-  await userRepo.setActive(userId, false)
+  await userRepo.setActive(tenantId, userId, false)
 }
 
 export class UserError extends AppError {

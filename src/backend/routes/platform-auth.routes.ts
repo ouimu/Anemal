@@ -12,12 +12,16 @@ import { Router } from 'express'
 import { validate } from '../middlewares/validate.middleware'
 import { authMiddleware } from '../middlewares/auth.middleware'
 import { requirePlane } from '../middlewares/permission.middleware'
-import { handlePlatformLogin, platformLoginSchema, handlePlatformMe } from '../controllers/platform-auth.controller'
+import { loginRateLimiter } from '../middlewares/rate-limit.middleware'
+import { handlePlatformLogin, platformLoginSchema, handlePlatformMe, handlePlatformRefresh, platformRefreshSchema } from '../controllers/platform-auth.controller'
 
 const router = Router()
 
 // POST /platform/auth/login — public; no auth middleware
-router.post('/login', validate(platformLoginSchema), handlePlatformLogin)
+router.post('/login', loginRateLimiter, validate(platformLoginSchema), handlePlatformLogin)
+
+// POST /platform/auth/refresh — public; exchange platform refresh token for new token pair
+router.post('/refresh', loginRateLimiter, validate(platformRefreshSchema), handlePlatformRefresh)
 
 // GET /platform/auth/me — current platform identity + permissions stub
 router.get('/me', authMiddleware, requirePlane('platform'), handlePlatformMe)

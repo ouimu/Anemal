@@ -114,9 +114,13 @@ export function createInvoice(tenantId: number, data: CreateInvoiceData) {
   })
 }
 
-export function findInvoiceById(tenantId: number, id: number) {
+export function findInvoiceById(tenantId: number, branchId: number | null | undefined, id: number) {
   return prisma.invoice.findFirst({
-    where: { id, tenantId },
+    where: {
+      id,
+      tenantId,
+      ...(branchId != null ? { branchId } : {}),
+    },
     include: {
       items: true,
       pet:   { include: { owner: true } },
@@ -126,7 +130,7 @@ export function findInvoiceById(tenantId: number, id: number) {
 
 interface ListParams { skip: number; take: number; status?: string; date?: string }
 
-function listWhere(tenantId: number, status?: string, date?: string) {
+function listWhere(tenantId: number, branchId: number | null | undefined, status?: string, date?: string) {
   let issuedAt: { gte: Date; lt: Date } | undefined
   if (date) {
     const start = new Date(date); start.setHours(0, 0, 0, 0)
@@ -135,14 +139,15 @@ function listWhere(tenantId: number, status?: string, date?: string) {
   }
   return {
     tenantId,
+    ...(branchId != null ? { branchId } : {}),
     ...(status ? { paymentStatus: status as never } : {}),
     ...(issuedAt ? { issuedAt } : {}),
   }
 }
 
-export function findInvoices(tenantId: number, { skip, take, status, date }: ListParams) {
+export function findInvoices(tenantId: number, branchId: number | null | undefined, { skip, take, status, date }: ListParams) {
   return prisma.invoice.findMany({
-    where: listWhere(tenantId, status, date),
+    where: listWhere(tenantId, branchId, status, date),
     include: { pet: { select: { id: true, name: true } } },
     orderBy: { issuedAt: 'desc' },
     skip,
@@ -150,15 +155,19 @@ export function findInvoices(tenantId: number, { skip, take, status, date }: Lis
   })
 }
 
-export function countInvoices(tenantId: number, status?: string, date?: string) {
-  return prisma.invoice.count({ where: listWhere(tenantId, status, date) })
+export function countInvoices(tenantId: number, branchId: number | null | undefined, status?: string, date?: string) {
+  return prisma.invoice.count({ where: listWhere(tenantId, branchId, status, date) })
 }
 
-export function recordPayment(tenantId: number, id: number, paymentMethod: string) {
+export function recordPayment(tenantId: number, branchId: number | null | undefined, id: number, paymentMethod: string) {
   return prisma.invoice
     .updateMany({
-      where: { id, tenantId },
-      data:  { paymentStatus: 'paid', paymentMethod, paidAt: new Date() },
+      where: {
+        id,
+        tenantId,
+        ...(branchId != null ? { branchId } : {}),
+      },
+      data: { paymentStatus: 'paid', paymentMethod, paidAt: new Date() },
     })
-    .then(() => findInvoiceById(tenantId, id))
+    .then(() => findInvoiceById(tenantId, branchId, id))
 }
