@@ -148,6 +148,57 @@ export async function updateUserBranch(
   }) as Promise<{ id: number; tenantId: number; name: string; username: string; email: string | null; phone: string | null; role: string; branchId: number | null; isActive: boolean; createdAt: Date } | null>
 }
 
+// ─── Multi-branch assignment ────────────────────────────────────────────────
+
+/**
+ * Return all branches currently assigned to a user within a tenant, ordered
+ * alphabetically by branch name.
+ *
+ * @param tenantId - Owning tenant (multi-tenancy scope).
+ * @param userId   - Target user's primary key.
+ */
+export async function getUserBranches(
+  tenantId: number,
+  userId: number,
+): Promise<{ id: number; name: string }[]> {
+  const rows = await prisma.userBranch.findMany({
+    where:   { tenantId, userId },
+    include: { branch: { select: { id: true, name: true } } },
+    orderBy: { branch: { name: 'asc' } },
+  })
+  return rows.map(r => r.branch)
+}
+
+/**
+ * Atomically replace all branch assignments for a user within a tenant.
+ * Also keeps the legacy `branchId` FK on the User row in sync by setting it
+ * to the first branch in the new list (or null when the list is empty).
+ *
+ * @param tenantId  - Owning tenant (multi-tenancy scope).
+ * @param userId    - Target user's primary key.
+ * @param branchIds - Ordered list of branch IDs to assign; pass [] to clear.
+ */
+export async function replaceUserBranches(
+  tenantId: number,
+  userId: number,
+  branchIds: number[],
+): Promise<void> {
+  await prisma.$transaction([
+    prisma.userBranch.deleteMany({ where: { tenantId, userId } }),
+    ...(branchIds.length > 0
+      ? [prisma.userBranch.createMany({
+          data: branchIds.map(branchId => ({ tenantId, userId, branchId })),
+          skipDuplicates: true,
+        })]
+      : []),
+    // Keep users.branchId in sync: set to first assigned branch (or null).
+    prisma.user.update({
+      where: { id: userId },
+      data:  { branchId: branchIds[0] ?? null },
+    }),
+  ])
+}
+
 // Phase 1.5-B — personal preferences (language, default calendar view, theme)
 export function getPreferences(tenantId: number, userId: number) {
   return prisma.user.findFirst({
