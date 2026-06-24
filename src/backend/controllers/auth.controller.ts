@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { z } from 'zod'
-import { login, switchBranch, getMe, refreshClinicToken, revokeClinicToken } from '../services/auth.service'
+import { login, switchBranch, selectBranch, getMe, refreshClinicToken, revokeClinicToken } from '../services/auth.service'
 
 export const loginSchema = z.object({
   subdomain: z.string().min(1),
@@ -15,6 +15,19 @@ export const switchBranchSchema = z.object({
 export async function handleLogin(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const result = await login(req.body)
+    res.status(200).json({ success: true, data: result })
+  } catch (err) { next(err) }
+}
+
+export const selectBranchSchema = z.object({
+  pendingToken: z.string().min(1),
+  branchId:     z.number().int().positive(),
+}).strict()
+
+export async function handleSelectBranch(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { pendingToken, branchId } = req.body as z.infer<typeof selectBranchSchema>
+    const result = await selectBranch(pendingToken, branchId)
     res.status(200).json({ success: true, data: result })
   } catch (err) { next(err) }
 }

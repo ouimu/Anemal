@@ -26,9 +26,12 @@ let platformToken = ''
 let platformUserId = 0
 
 async function login(subdomain: string, username: string): Promise<string> {
-  const res = await request(server).post('/auth/login').send({ subdomain, username, password: PASSWORD })
-  expect(res.status).toBe(200)
-  return res.body.data.token
+  const step1 = await request(server).post('/auth/login').send({ subdomain, username, password: PASSWORD })
+  expect(step1.status).toBe(200)
+  const { pendingToken, branches } = step1.body.data
+  const step2 = await request(server).post('/auth/select-branch').send({ pendingToken, branchId: branches[0].id })
+  expect(step2.status).toBe(200)
+  return step2.body.data.token as string
 }
 
 beforeAll(async () => {
@@ -39,6 +42,9 @@ beforeAll(async () => {
   const tB = await prisma.tenant.create({ data: { name: 'Settings API B', subdomain: SUB_B } })
   tidA = tA.id
   tidB = tB.id
+
+  const branchA = await prisma.branch.create({ data: { tenantId: tidA, name: 'Main A' } })
+  await prisma.branch.create({ data: { tenantId: tidB, name: 'Main B' } })
 
   const passwordHash = await bcrypt.hash(PASSWORD, 4)
   await prisma.user.createMany({
@@ -76,6 +82,14 @@ beforeAll(async () => {
     { userId: uAdminB.id,  tenantId: tidB, roleKey: 'clinic_admin' },
   ])
 
+  await prisma.userBranch.createMany({
+    data: [
+      { tenantId: tidA, userId: uStaffA.id,  branchId: branchA.id },
+      { tenantId: tidA, userId: uDoctorA.id, branchId: branchA.id },
+    ],
+    skipDuplicates: true,
+  })
+
   adminA  = await login(SUB_A, 'sapi_admin_a')
   staffA  = await login(SUB_A, 'sapi_staff_a')
   doctorA = await login(SUB_A, 'sapi_doctor_a')
@@ -86,7 +100,9 @@ afterAll(async () => {
   await cleanupUserRoles(prisma, [tidA, tidB])
   await prisma.settingsAuditLog.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.tenantSettings.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
+  await prisma.userBranch.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.user.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
+  await prisma.branch.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.tenant.deleteMany({ where: { id: { in: [tidA, tidB] } } })
   if (platformUserId) {
     await prisma.platformAuditLog.deleteMany({ where: { performedByPlatformUserId: platformUserId } })

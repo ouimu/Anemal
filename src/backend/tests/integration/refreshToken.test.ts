@@ -12,6 +12,13 @@ const PLATFORM_PASSWORD = process.env.PLATFORM_ADMIN_PASSWORD || 'PlatformAdmin1
 
 let server: Server
 
+async function clinicLogin(): Promise<{ token: string; refreshToken: string }> {
+  const step1 = await request(server).post('/auth/login').send(CLINIC_CREDS)
+  const { pendingToken, branches } = step1.body.data
+  const step2 = await request(server).post('/auth/select-branch').send({ pendingToken, branchId: branches[0].id })
+  return step2.body.data as { token: string; refreshToken: string }
+}
+
 beforeAll(async () => {
   await new Promise<void>(resolve => { server = app.listen(0, resolve) })
   server.keepAliveTimeout = 0
@@ -25,11 +32,9 @@ afterAll(async () => {
 // ─── Clinic login returns refreshToken ───────────────────────────────────────
 describe('POST /auth/login — refresh token in response', () => {
   it('returns refreshToken alongside the access token', async () => {
-    const res = await request(server).post('/auth/login').send(CLINIC_CREDS)
-    expect(res.status).toBe(200)
-    expect(res.body.success).toBe(true)
-    expect(typeof res.body.data.refreshToken).toBe('string')
-    expect(res.body.data.refreshToken.length).toBeGreaterThan(10)
+    const data = await clinicLogin()
+    expect(typeof data.refreshToken).toBe('string')
+    expect(data.refreshToken.length).toBeGreaterThan(10)
   })
 })
 
@@ -38,8 +43,8 @@ describe('POST /auth/refresh (clinic)', () => {
   let initialRefreshToken: string
 
   beforeEach(async () => {
-    const res = await request(server).post('/auth/login').send(CLINIC_CREDS)
-    initialRefreshToken = res.body.data.refreshToken
+    const data = await clinicLogin()
+    initialRefreshToken = data.refreshToken
   })
 
   it('returns 200 with new access + refresh tokens on valid token', async () => {
@@ -128,8 +133,7 @@ describe('POST /auth/refresh (clinic)', () => {
 // ─── POST /auth/logout ────────────────────────────────────────────────────────
 describe('POST /auth/logout (clinic)', () => {
   it('returns 204 and revokes the token family', async () => {
-    const loginRes = await request(server).post('/auth/login').send(CLINIC_CREDS)
-    const refreshToken = loginRes.body.data.refreshToken
+    const { refreshToken } = await clinicLogin()
 
     const logoutRes = await request(server)
       .post('/auth/logout')
@@ -145,8 +149,7 @@ describe('POST /auth/logout (clinic)', () => {
   })
 
   it('is idempotent — second logout with same token returns 204', async () => {
-    const loginRes = await request(server).post('/auth/login').send(CLINIC_CREDS)
-    const refreshToken = loginRes.body.data.refreshToken
+    const { refreshToken } = await clinicLogin()
 
     await request(server).post('/auth/logout').send({ refreshToken })
     const res = await request(server).post('/auth/logout').send({ refreshToken })
@@ -222,8 +225,7 @@ describe('POST /platform/auth/refresh', () => {
   })
 
   it('returns 401 for a clinic refresh token used on platform endpoint', async () => {
-    const clinicLogin = await request(server).post('/auth/login').send(CLINIC_CREDS)
-    const clinicRefreshToken = clinicLogin.body.data.refreshToken
+    const { refreshToken: clinicRefreshToken } = await clinicLogin()
 
     const res = await request(server)
       .post('/platform/auth/refresh')

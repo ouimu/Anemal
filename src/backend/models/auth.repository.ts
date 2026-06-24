@@ -29,6 +29,15 @@ export function findBranchById(tenantId: number, branchId: number) {
   return prisma.branch.findFirst({ where: { id: branchId, tenantId, isActive: true } })
 }
 
+/** All active branches for a tenant — used to populate admin's branch list at login step 1. */
+export function findActiveBranchesByTenant(tenantId: number) {
+  return prisma.branch.findMany({
+    where:   { tenantId, isActive: true },
+    select:  { id: true, name: true },
+    orderBy: { name: 'asc' },
+  })
+}
+
 export function touchLastLogin(userId: number) {
   return prisma.user.update({ where: { id: userId }, data: { lastLoginAt: new Date() } })
 }

@@ -117,11 +117,15 @@ describe('plane isolation', () => {
       })
     platformToken = pRes.body.data?.token
 
-    // Get clinic token
-    const cRes = await request(server)
+    // Get clinic token (two-step: login → select-branch)
+    const cStep1 = await request(server)
       .post('/auth/login')
       .send({ subdomain: 'dev-clinic', username: 'admin_a', password: 'AdminPass1!' })
-    clinicToken = cRes.body.data?.token
+    const { pendingToken, branches } = cStep1.body.data
+    const cStep2 = await request(server)
+      .post('/auth/select-branch')
+      .send({ pendingToken, branchId: branches[0].id })
+    clinicToken = cStep2.body.data?.token
   })
 
   it('platform token is rejected on a clinic route (GET /users → 403)', async () => {

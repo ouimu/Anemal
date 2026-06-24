@@ -19,8 +19,10 @@ afterAll(async () => {
 })
 
 async function getToken(subdomain: string, username: string, password: string): Promise<string> {
-  const res = await request(server).post('/auth/login').send({ subdomain, username, password })
-  return res.body.data?.token
+  const step1 = await request(server).post('/auth/login').send({ subdomain, username, password })
+  const { pendingToken, branches } = step1.body.data
+  const step2 = await request(server).post('/auth/select-branch').send({ pendingToken, branchId: branches[0].id })
+  return step2.body.data?.token
 }
 
 describe('Multi-Tenant Isolation — User Management', () => {

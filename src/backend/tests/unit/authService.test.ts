@@ -1,5 +1,4 @@
-// @qa-agent — Unit tests: auth service
-// Tests run against a mocked Prisma client; no DB required
+// @qa-agent — Unit tests: auth service (two-step login + switchBranch)
 import bcrypt from 'bcrypt'
 import { login, switchBranch } from '../../services/auth.service'
 
@@ -25,28 +24,61 @@ jest.mock('../../services/permission.service', () => ({
 import prisma from '../../config/db'
 
 const mockTenant = { id: 1, subdomain: 'dev-clinic', isActive: true }
+const mockBranch = { id: 5, tenantId: 1, name: 'Main', isActive: true }
 
 async function makeUser(role = 'admin') {
   return {
-    id: 10, tenantId: 1, name: 'Admin A', username: 'admin_a', email: 'admin@dev-clinic.com',
+    id: 10, tenantId: 1, name: 'Admin A', username: 'admin_a',
+    email: 'admin@dev-clinic.com',
     passwordHash: await bcrypt.hash('AdminPass1!', 10),
-    role, isActive: true,
+    role, isActive: true, branchId: null, allowedStartTime: null, allowedEndTime: null,
   }
 }
 
-describe('authService.login', () => {
+describe('authService.login — step 1 (credentials → pendingToken + branches)', () => {
   beforeEach(() => jest.clearAllMocks())
 
-  it('returns token on valid credentials', async () => {
-    const user = await makeUser()
+  it('admin: returns pendingToken + all active branches for tenant', async () => {
+    const user = await makeUser('admin')
     ;(prisma.tenant.findUnique as jest.Mock).mockResolvedValue(mockTenant)
     ;(prisma.user.findUnique   as jest.Mock).mockResolvedValue(user)
+    ;(prisma.branch.findMany   as jest.Mock).mockResolvedValue([mockBranch])
 
-    const result = await login({ subdomain: 'dev-clinic', username: user.username, password: 'AdminPass1!' })
+    const result = await login({ subdomain: 'dev-clinic', username: 'admin_a', password: 'AdminPass1!' })
 
-    expect(result.token).toBe('mock.jwt.token')
-    expect(result.tenantId).toBe(1)
-    expect(result.role).toBe('admin')
+    expect(result.requiresBranchSelection).toBe(true)
+    if (!result.requiresBranchSelection) throw new Error('Expected requiresBranchSelection=true')
+    expect(result.pendingToken).toBe('mock.pending.token')
+    expect(result.branches).toEqual([mockBranch])
+    // userBranch.findMany NOT called for admin
+    expect((prisma.userBranch.findMany as jest.Mock)).not.toHaveBeenCalled()
+  })
+
+  it('staff: returns pendingToken + assigned branches only', async () => {
+    const user = await makeUser('staff')
+    ;(prisma.tenant.findUnique   as jest.Mock).mockResolvedValue(mockTenant)
+    ;(prisma.user.findUnique     as jest.Mock).mockResolvedValue(user)
+    ;(prisma.userBranch.findMany as jest.Mock).mockResolvedValue([{ branch: { id: 5, name: 'Main' } }])
+
+    const result = await login({ subdomain: 'dev-clinic', username: 'admin_a', password: 'AdminPass1!' })
+
+    expect(result.requiresBranchSelection).toBe(true)
+    if (result.requiresBranchSelection) {
+      expect(result.branches).toHaveLength(1)
+      expect(result.branches[0].id).toBe(5)
+    }
+    // branch.findMany NOT called for non-admin
+    expect((prisma.branch.findMany as jest.Mock)).not.toHaveBeenCalled()
+  })
+
+  it('staff with zero assigned branches → throws 403', async () => {
+    const user = await makeUser('staff')
+    ;(prisma.tenant.findUnique   as jest.Mock).mockResolvedValue(mockTenant)
+    ;(prisma.user.findUnique     as jest.Mock).mockResolvedValue(user)
+    ;(prisma.userBranch.findMany as jest.Mock).mockResolvedValue([])
+
+    await expect(login({ subdomain: 'dev-clinic', username: 'admin_a', password: 'AdminPass1!' }))
+      .rejects.toMatchObject({ statusCode: 403 })
   })
 
   it('throws 401 on wrong password', async () => {
@@ -54,13 +86,12 @@ describe('authService.login', () => {
     ;(prisma.tenant.findUnique as jest.Mock).mockResolvedValue(mockTenant)
     ;(prisma.user.findUnique   as jest.Mock).mockResolvedValue(user)
 
-    await expect(login({ subdomain: 'dev-clinic', username: user.username, password: 'WrongPass!' }))
+    await expect(login({ subdomain: 'dev-clinic', username: 'admin_a', password: 'WrongPass!' }))
       .rejects.toMatchObject({ statusCode: 401 })
   })
 
   it('throws 401 when tenant not found', async () => {
     ;(prisma.tenant.findUnique as jest.Mock).mockResolvedValue(null)
-
     await expect(login({ subdomain: 'no-tenant', username: 'nobody', password: 'pass' }))
       .rejects.toMatchObject({ statusCode: 401 })
   })
@@ -69,22 +100,19 @@ describe('authService.login', () => {
     const user = { ...(await makeUser()), isActive: false }
     ;(prisma.tenant.findUnique as jest.Mock).mockResolvedValue(mockTenant)
     ;(prisma.user.findUnique   as jest.Mock).mockResolvedValue(user)
-
-    await expect(login({ subdomain: 'dev-clinic', username: user.username, password: 'AdminPass1!' }))
+    await expect(login({ subdomain: 'dev-clinic', username: 'admin_a', password: 'AdminPass1!' }))
       .rejects.toMatchObject({ statusCode: 401 })
   })
 
   it('throws 401 for inactive tenant', async () => {
     ;(prisma.tenant.findUnique as jest.Mock).mockResolvedValue({ ...mockTenant, isActive: false })
-
     await expect(login({ subdomain: 'dev-clinic', username: 'nobody', password: 'pass' }))
       .rejects.toMatchObject({ statusCode: 401 })
   })
 })
 
 describe('authService.switchBranch', () => {
-  const tenantId  = 1
-  const userId    = 10
+  const tenantId  = 1;  const userId = 10
   const branch1   = { id: 1, tenantId, name: 'Main', isActive: true }
   const branch2   = { id: 2, tenantId, name: 'Branch 2', isActive: true }
   const staffUser = { id: userId, tenantId, name: 'Staff', role: 'staff', isActive: true, branchId: null }
@@ -93,21 +121,17 @@ describe('authService.switchBranch', () => {
   beforeEach(() => jest.clearAllMocks())
 
   it('staff can switch to an assigned branch', async () => {
-    ;(prisma.user.findFirst   as jest.Mock).mockResolvedValue(staffUser)
-    ;(prisma.branch.findFirst as jest.Mock).mockResolvedValue(branch1)
-    ;(prisma.userBranch.findMany as jest.Mock).mockResolvedValue([
-      { branch: { id: 1, name: 'Main' } },
-    ])
+    ;(prisma.user.findFirst      as jest.Mock).mockResolvedValue(staffUser)
+    ;(prisma.branch.findFirst    as jest.Mock).mockResolvedValue(branch1)
+    ;(prisma.userBranch.findMany as jest.Mock).mockResolvedValue([{ branch: { id: 1, name: 'Main' } }])
     const result = await switchBranch(tenantId, userId, 'staff', 1)
     expect(result.branchId).toBe(1)
   })
 
   it('staff cannot switch to unassigned branch — throws 403', async () => {
-    ;(prisma.user.findFirst   as jest.Mock).mockResolvedValue(staffUser)
-    ;(prisma.branch.findFirst as jest.Mock).mockResolvedValue(branch2)
-    ;(prisma.userBranch.findMany as jest.Mock).mockResolvedValue([
-      { branch: { id: 1, name: 'Main' } },  // only branch1 assigned
-    ])
+    ;(prisma.user.findFirst      as jest.Mock).mockResolvedValue(staffUser)
+    ;(prisma.branch.findFirst    as jest.Mock).mockResolvedValue(branch2)
+    ;(prisma.userBranch.findMany as jest.Mock).mockResolvedValue([{ branch: { id: 1, name: 'Main' } }])
     await expect(switchBranch(tenantId, userId, 'staff', 2))
       .rejects.toMatchObject({ statusCode: 403 })
   })
@@ -115,8 +139,8 @@ describe('authService.switchBranch', () => {
   it('admin can switch to any branch regardless of user_branches', async () => {
     ;(prisma.user.findFirst   as jest.Mock).mockResolvedValue(adminUser)
     ;(prisma.branch.findFirst as jest.Mock).mockResolvedValue(branch2)
-    // userBranch.findMany is NOT called for admin
     const result = await switchBranch(tenantId, userId, 'admin', 2)
     expect(result.branchId).toBe(2)
+    expect((prisma.userBranch.findMany as jest.Mock)).not.toHaveBeenCalled()
   })
 })

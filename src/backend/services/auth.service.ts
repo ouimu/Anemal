@@ -3,13 +3,13 @@
 import crypto from 'crypto'
 import bcrypt from 'bcrypt'
 import { AppError } from '../utils/errors'
-import { signToken } from '../config/jwt'
+import { signToken, signPendingToken, verifyPendingToken } from '../config/jwt'
 import * as authRepo from '../models/auth.repository'
 import * as refreshTokenRepo from '../models/refresh-token.repository'
 import * as userRepo from '../models/user.repository'
 import { findUserRoleIds } from '../models/role.repository'
 import { computePermSetVersion, resolvePermissions } from './permission.service'
-import type { JwtPayload, LoginRequest, LoginResponse, MeResponse, RefreshResponse } from '../types'
+import type { JwtPayload, LoginRequest, LoginResponse, SelectBranchResponse, MeResponse, RefreshResponse } from '../types'
 
 /** TTL for refresh tokens: 30 days in milliseconds. */
 const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1_000
@@ -59,37 +59,89 @@ export async function login(body: LoginRequest): Promise<LoginResponse> {
 
   await authRepo.touchLastLogin(user.id)
 
-  // 5. Sign JWT — tenantId + branchId + plane + permSetVersion embedded
+  // 5. All users go through two-step: issue pending token + branch list
   const permSetVersion = await computePermSetVersion(user.id, tenant.id)
-  const token = signToken({
+  const isAdmin = user.role === 'admin'
+
+  // admin: all active branches for tenant; staff/doctor: assigned branches only
+  const branches = isAdmin
+    ? await authRepo.findActiveBranchesByTenant(tenant.id)
+    : await userRepo.getUserBranches(tenant.id, user.id)
+
+  // Non-admin with zero assigned branches cannot log in
+  if (!isAdmin && branches.length === 0) {
+    throw new AuthError('You are not assigned to any branch. Contact your administrator.', 403)
+  }
+
+  const pendingToken = signPendingToken({
     userId:         user.id,
     tenantId:       tenant.id,
-    branchId:       user.branchId ?? undefined,
     plane:          'clinic',
     permSetVersion,
     role:           user.role,
+    scope:          'branch_select',
   })
 
-  // 6. Issue refresh token — store SHA-256 hash, return raw token to caller
+  return { requiresBranchSelection: true as const, pendingToken, branches }
+}
+
+/**
+ * Step 2 of two-step login: exchange a pending token + chosen branchId for a full JWT.
+ * clinic_admin: any active branch in tenant allowed.
+ * staff/doctor: branchId must be in user_branches for this user.
+ */
+export async function selectBranch(
+  pendingToken: string,
+  branchId:     number,
+): Promise<SelectBranchResponse> {
+  let payload: JwtPayload
+  try {
+    payload = verifyPendingToken(pendingToken)
+  } catch {
+    throw new AuthError('Invalid or expired session. Please log in again.', 401)
+  }
+
+  const { userId, tenantId, role, permSetVersion } = payload
+
+  // Verify user still active
+  const user = await authRepo.findUserById(tenantId, userId)
+  if (!user || !user.isActive) throw new AuthError('User not found or inactive.', 401)
+
+  // Verify branch exists and is active in this tenant
+  const branch = await authRepo.findBranchById(tenantId, branchId)
+  if (!branch) throw new AuthError('Branch not found or inactive.', 404)
+
+  // Non-admin: verify branchId is in user_branches
+  if (role !== 'admin') {
+    const assignedBranches = await userRepo.getUserBranches(tenantId, userId)
+    if (!assignedBranches.some(b => b.id === branchId)) {
+      throw new AuthError('You are not assigned to this branch.', 403)
+    }
+  }
+
+  const token = signToken({ userId, tenantId, branchId, plane: 'clinic', permSetVersion, role })
+
   const rawRefreshToken = crypto.randomBytes(32).toString('hex')
   const familyId        = crypto.randomUUID()
   await refreshTokenRepo.create({
     tokenHash: refreshTokenRepo.hashToken(rawRefreshToken),
     familyId,
-    userId:    user.id,
-    tenantId:  tenant.id,
+    userId,
+    tenantId,
+    branchId,
     plane:     'clinic',
     expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
   })
 
   return {
+    requiresBranchSelection: false as const,
     token,
     refreshToken: rawRefreshToken,
-    userId:       user.id,
-    tenantId:     tenant.id,
-    branchId:     user.branchId,
-    role:         user.role,
-    name:         user.name,
+    userId,
+    tenantId,
+    branchId,
+    role:  user.role,
+    name:  user.name,
   }
 }
 
@@ -203,7 +255,7 @@ export async function refreshClinicToken(rawRefreshToken: string): Promise<Refre
   const newToken = signToken({
     userId:         record.userId,
     tenantId:       record.tenantId,
-    branchId:       user.branchId ?? undefined,
+    branchId:       record.branchId ?? user.branchId ?? undefined,
     plane:          'clinic',
     permSetVersion,
     role:           user.role,

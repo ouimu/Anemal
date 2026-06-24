@@ -121,6 +121,25 @@ async function main() {
     }
   }
 
+  // Task 4 (two-step login): seed user_branches for non-admin seed users
+  // so staff/doctor can complete branch selection at login.
+  const nonAdminSeedMap: { tenantId: number; username: string; branchId: number }[] = [
+    { tenantId: tenantA.id, username: 'doctor_a', branchId: branchA.id },
+    { tenantId: tenantA.id, username: 'staff_a',  branchId: branchA.id },
+    { tenantId: tenantB.id, username: 'doctor_b', branchId: branchB.id },
+    { tenantId: tenantB.id, username: 'staff_b',  branchId: branchB.id },
+  ]
+  for (const entry of nonAdminSeedMap) {
+    const u = await prisma.user.findFirst({ where: { tenantId: entry.tenantId, username: entry.username } })
+    if (u) {
+      await prisma.userBranch.upsert({
+        where:  { tenantId_userId_branchId: { tenantId: entry.tenantId, userId: u.id, branchId: entry.branchId } },
+        update: {},
+        create: { tenantId: entry.tenantId, userId: u.id, branchId: entry.branchId },
+      })
+    }
+  }
+
   // Phase 3/4 — sample catalog + per-branch stock for Tenant A Main Branch (idempotent by name).
   const soon = new Date(); soon.setDate(soon.getDate() + 20) // expiring-soon demo
   const products = [

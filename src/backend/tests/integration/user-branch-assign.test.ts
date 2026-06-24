@@ -30,11 +30,19 @@ let branch1Id = 0
 let branch2Id = 0
 
 async function login(username: string): Promise<string> {
-  const res = await request(server)
+  // Step 1: credentials
+  const step1 = await request(server)
     .post('/auth/login')
     .send({ subdomain: SUB, username, password: PASSWORD })
-  expect(res.status).toBe(200)
-  return res.body.data.token as string
+  expect(step1.status).toBe(200)
+  expect(step1.body.data.requiresBranchSelection).toBe(true)
+  const { pendingToken, branches } = step1.body.data
+  // Step 2: select first available branch
+  const step2 = await request(server)
+    .post('/auth/select-branch')
+    .send({ pendingToken, branchId: branches[0].id })
+  expect(step2.status).toBe(200)
+  return step2.body.data.token as string
 }
 
 beforeAll(async () => {
@@ -89,6 +97,11 @@ beforeAll(async () => {
   })
   staffUserId = uStaff.id
   await prisma.userRole.create({ data: { userId: staffUserId, roleId: staffRole.id, tenantId: tid } })
+
+  // staff_t3 must have a user_branches row to log in
+  await prisma.userBranch.create({
+    data: { tenantId: tid, userId: staffUserId, branchId: branch1Id },
+  })
 
   adminToken = await login('admin_t3')
   staffToken = await login('staff_t3')

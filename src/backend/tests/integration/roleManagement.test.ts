@@ -30,11 +30,12 @@ let adminRoleId = 0
 let doctorRoleId = 0
 
 async function login(username: string): Promise<string> {
-  const res = await request(server)
-    .post('/auth/login')
-    .send({ subdomain: SUB, username, password: PASSWORD })
-  expect(res.status).toBe(200)
-  return res.body.data.token
+  const step1 = await request(server).post('/auth/login').send({ subdomain: SUB, username, password: PASSWORD })
+  expect(step1.status).toBe(200)
+  const { pendingToken, branches } = step1.body.data
+  const step2 = await request(server).post('/auth/select-branch').send({ pendingToken, branchId: branches[0].id })
+  expect(step2.status).toBe(200)
+  return step2.body.data.token as string
 }
 
 beforeAll(async () => {
@@ -94,6 +95,8 @@ beforeAll(async () => {
     ],
     skipDuplicates: true,
   })
+
+  await prisma.userBranch.create({ data: { tenantId: tid, userId: doctorUserId, branchId: branch.id } })
 
   adminToken  = await login('admin_rm')
   doctorToken = await login('doctor_rm')
@@ -450,6 +453,8 @@ describe('updateRolePermissions cache invalidation', () => {
     await prisma.userRole.create({
       data: { userId: targetUserId, roleId: customRoleId, tenantId: tid },
     })
+
+    await prisma.userBranch.create({ data: { tenantId: tid, userId: targetUserId, branchId: branch.id } })
 
     targetToken = await login('cache_test_rm')
   })

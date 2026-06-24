@@ -36,9 +36,12 @@ let petId = 0
 let pet2Id = 0
 
 async function login(subdomain: string, username: string): Promise<string> {
-  const res = await request(server).post('/auth/login').send({ subdomain, username, password: PASSWORD })
-  expect(res.status).toBe(200)
-  return res.body.data.token
+  const step1 = await request(server).post('/auth/login').send({ subdomain, username, password: PASSWORD })
+  expect(step1.status).toBe(200)
+  const { pendingToken, branches } = step1.body.data
+  const step2 = await request(server).post('/auth/select-branch').send({ pendingToken, branchId: branches[0].id })
+  expect(step2.status).toBe(200)
+  return step2.body.data.token as string
 }
 
 // Resolve a seeded system role id by key (tenantId IS NULL). Returns null if not seeded.
@@ -95,6 +98,14 @@ beforeAll(async () => {
       { userId: uDoctor.id, roleId: doctorRole.id, tenantId: tid  },
       { userId: uStaff.id,  roleId: staffRole.id,  tenantId: tid  },
       { userId: uAdmin2.id, roleId: adminRole.id,  tenantId: tid2 },
+    ],
+    skipDuplicates: true,
+  })
+
+  await prisma.userBranch.createMany({
+    data: [
+      { tenantId: tid, userId: uDoctor.id, branchId: branch1.id },
+      { tenantId: tid, userId: uStaff.id,  branchId: branch1.id },
     ],
     skipDuplicates: true,
   })

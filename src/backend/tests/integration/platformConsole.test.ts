@@ -47,10 +47,10 @@ async function getPlatformToken(): Promise<string> {
 }
 
 async function getClinicToken(): Promise<string> {
-  const res = await request(server)
-    .post('/auth/login')
-    .send({ subdomain: 'dev-clinic', username: 'admin_a', password: 'AdminPass1!' })
-  return res.body.data?.token
+  const step1 = await request(server).post('/auth/login').send({ subdomain: 'dev-clinic', username: 'admin_a', password: 'AdminPass1!' })
+  const { pendingToken, branches } = step1.body.data
+  const step2 = await request(server).post('/auth/select-branch').send({ pendingToken, branchId: branches[0].id })
+  return step2.body.data?.token
 }
 
 beforeAll(async () => {

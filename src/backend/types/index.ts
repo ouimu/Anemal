@@ -14,6 +14,7 @@ export interface JwtPayload {
   permSetVersion:  number
   role:            string    // transitional — kept until T-5B-02
   platformUserId?: number    // T-5C-02: set only on platform-plane tokens
+  scope?:          'branch_select'   // marks 5-min pending tokens only
   iat?:            number
   exp?:            number
 }
@@ -46,15 +47,27 @@ export interface LoginRequest {
   password:  string
 }
 
-export interface LoginResponse {
-  token:        string
-  refreshToken: string
-  userId:       number
-  tenantId:     number
-  branchId:     number | null
-  role:         string
-  name:         string
-}
+// Two-step login: step 1 always returns branch selection prompt.
+// Step 2 (/auth/select-branch) returns the full token.
+export type LoginResponse =
+  | {
+      requiresBranchSelection: true
+      pendingToken: string                        // 5-min JWT, scope='branch_select'
+      branches:     { id: number; name: string }[] // admin: all active; staff/doctor: assigned only
+    }
+  | {
+      requiresBranchSelection: false              // returned only by POST /auth/select-branch
+      token:        string
+      refreshToken: string
+      userId:       number
+      tenantId:     number
+      branchId:     number
+      role:         string
+      name:         string
+    }
+
+/** Alias for the full-token variant — return type of selectBranch(). */
+export type SelectBranchResponse = Extract<LoginResponse, { requiresBranchSelection: false }>
 
 /** Returned by POST /auth/refresh and POST /platform/auth/refresh. */
 export interface RefreshResponse {
