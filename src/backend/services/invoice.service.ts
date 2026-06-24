@@ -115,11 +115,31 @@ export async function listInvoices(
   return { invoices, total, page, limit }
 }
 
-export async function recordPayment(tenantId: number, branchId: number | null | undefined, id: number, paymentMethod: string) {
+export async function recordPayment(tenantId: number, branchId: number | null | undefined, id: number, paymentMethod: string, userId: number) {
   const invoice = await getInvoice(tenantId, branchId, id)
   if (invoice.paymentStatus === 'paid') throw new InvoiceError('Invoice is already paid', 409)
   const paid = await invoiceRepo.recordPayment(tenantId, branchId, id, paymentMethod)
+  // Write payment history row (best-effort: skip if invoice lacks a branchId).
+  if (paid?.branchId != null) {
+    await invoiceRepo.createPaymentHistory({
+      tenantId,
+      branchId:     paid.branchId,
+      invoiceId:    id,
+      amount:       Number(paid.totalAmount),
+      method:       paymentMethod,
+      receivedById: userId,
+    })
+  }
   // Loyalty: earn points on payment (best-effort; skips retail invoices with no owner).
   await earnOnPayment(tenantId, id, Number(invoice.totalAmount))
   return paid
+}
+
+export async function listPaymentHistory(
+  tenantId: number, userBranchId: number | null | undefined,
+  page = 1, limit = 20, startDate?: string, endDate?: string, filterBranchId?: number,
+) {
+  const skip = (page - 1) * limit
+  const [rows, total] = await invoiceRepo.findPaymentHistory(tenantId, userBranchId, { startDate, endDate, filterBranchId, skip, take: limit })
+  return { rows, total, page, limit }
 }

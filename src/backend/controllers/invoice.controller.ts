@@ -32,7 +32,19 @@ export async function createInvoice(req: Request, res: Response, next: NextFunct
 
 export async function recordPayment(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await invoiceService.recordPayment(req.context!.tenantId, req.context?.branchId, Number(req.params.id), req.body.paymentMethod)
+    const data = await invoiceService.recordPayment(req.context!.tenantId, req.context?.branchId, Number(req.params.id), req.body.paymentMethod, req.context!.userId)
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export async function listPaymentHistory(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const page           = req.query.page      ? Number(req.query.page)     : 1
+    const limit          = req.query.limit     ? Number(req.query.limit)    : 20
+    const startDate      = typeof req.query.startDate === 'string' ? req.query.startDate : undefined
+    const endDate        = typeof req.query.endDate   === 'string' ? req.query.endDate   : undefined
+    const filterBranchId = req.query.branchId  ? Number(req.query.branchId) : undefined
+    const data = await invoiceService.listPaymentHistory(req.context!.tenantId, req.context?.branchId, page, limit, startDate, endDate, filterBranchId)
     res.json({ success: true, data })
   } catch (err) { next(err) }
 }

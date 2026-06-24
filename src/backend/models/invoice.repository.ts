@@ -171,3 +171,49 @@ export function recordPayment(tenantId: number, branchId: number | null | undefi
     })
     .then(() => findInvoiceById(tenantId, branchId, id))
 }
+
+export function createPaymentHistory(data: {
+  tenantId:     number
+  branchId:     number
+  invoiceId:    number
+  amount:       number
+  method:       string
+  receivedById: number
+  note?:        string
+}) {
+  return prisma.paymentHistory.create({ data })
+}
+
+interface PaymentHistoryParams { startDate?: string; endDate?: string; filterBranchId?: number; skip: number; take: number }
+
+function paymentHistoryWhere(tenantId: number, userBranchId: number | null | undefined, p: PaymentHistoryParams) {
+  const where: Record<string, unknown> = { tenantId }
+  // Staff/Doctor see own branch only; Admin may optionally filter by branchId query param
+  if (userBranchId != null)        where['branchId'] = userBranchId
+  else if (p.filterBranchId != null) where['branchId'] = p.filterBranchId
+  if (p.startDate || p.endDate) {
+    const paidAt: Record<string, Date> = {}
+    if (p.startDate) paidAt['gte'] = new Date(p.startDate)
+    if (p.endDate)   paidAt['lte'] = new Date(p.endDate)
+    where['paidAt'] = paidAt
+  }
+  return where
+}
+
+export function findPaymentHistory(tenantId: number, userBranchId: number | null | undefined, params: PaymentHistoryParams) {
+  const where = paymentHistoryWhere(tenantId, userBranchId, params)
+  return Promise.all([
+    prisma.paymentHistory.findMany({
+      where: where as never,
+      include: {
+        invoice:    { select: { invoiceNo: true } },
+        receivedBy: { select: { id: true, name: true } },
+        branch:     { select: { id: true, name: true } },
+      },
+      orderBy: { paidAt: 'desc' },
+      skip: params.skip,
+      take: params.take,
+    }),
+    prisma.paymentHistory.count({ where: where as never }),
+  ])
+}

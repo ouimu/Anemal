@@ -8,6 +8,7 @@ import { createInvoiceSchema, paymentSchema } from '../services/invoice.service'
 const router = Router()
 router.use(authMiddleware)
 
+router.get('/payment-history',  requirePlane('clinic'), requirePermission('billing.view'),    ctrl.listPaymentHistory)
 router.get('/',                 requirePlane('clinic'), requirePermission('billing.view'),    ctrl.listInvoices)
 router.post('/',                requirePlane('clinic'), requirePermission('billing.create'),  validate(createInvoiceSchema), ctrl.createInvoice)
 router.get('/:id/pdf',          requirePlane('clinic'), requirePermission('billing.view'),    ctrl.downloadInvoicePdf)
