@@ -193,7 +193,7 @@ export async function replaceUserBranches(
       : []),
     // Keep users.branchId in sync: set to first assigned branch (or null).
     prisma.user.update({
-      where: { id: userId },
+      where: { id: userId, tenantId },
       data:  { branchId: branchIds[0] ?? null },
     }),
   ])
