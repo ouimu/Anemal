@@ -357,50 +357,101 @@ function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVaccinatio
   )
 }
 
+// ─── Owner Panel ─────────────────────────────────────────────────────────────
+function OwnerPanel({ ownerId, onSelectPet, onAddPet }: { ownerId: number; onSelectPet: (petId: number) => void; onAddPet: () => void }) {
+  const { data, isLoading } = useQuery<{ data: Owner }>({
+    queryKey: ['owner', ownerId],
+    queryFn: () => api.get(`/api/owners/${ownerId}`).then(r => r.data),
+  })
+  const owner = data?.data
+  if (isLoading) return <div className="flex-1 flex items-center justify-center text-on-surface-variant text-body-sm">Loading…</div>
+  if (!owner) return null
+
+  return (
+    <div className="flex-1 overflow-y-auto p-lg flex flex-col gap-lg">
+      {/* Owner header */}
+      <div className="flex items-center gap-lg bg-surface rounded-xl border border-outline-variant p-lg">
+        <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-primary-on font-bold text-headline-xs flex-shrink-0">
+          {initials(owner.firstName, owner.lastName)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-headline-sm font-headline font-bold text-on-surface">{owner.firstName} {owner.lastName}</h3>
+          <p className="text-body-sm text-on-surface-variant mt-xs">{owner.phone}</p>
+          {owner.email && <p className="text-body-sm text-on-surface-variant">{owner.email}</p>}
+          {owner.address && <p className="text-body-sm text-on-surface-variant truncate">{owner.address}</p>}
+        </div>
+      </div>
+
+      {/* Pet cards */}
+      <div>
+        <div className="flex items-center justify-between mb-md">
+          <h4 className="text-label-md font-semibold text-on-surface-variant uppercase tracking-wider">Pets ({owner.pets?.length ?? 0})</h4>
+          <button onClick={onAddPet} className="flex items-center gap-xs bg-primary text-primary-on rounded-lg px-md py-sm min-h-[44px] text-body-sm font-semibold hover:bg-primary/90 transition-colors">
+            <MaterialIcon name="add" size={18} /> Add Pet
+          </button>
+        </div>
+        {owner.pets?.length ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-md">
+            {owner.pets.map(pet => (
+              <button key={pet.id} onClick={() => onSelectPet(pet.id)}
+                      className="flex flex-col items-center gap-sm p-lg bg-surface rounded-xl border border-outline-variant hover:border-primary hover:shadow-lvl1 transition-all min-h-[120px] text-center">
+                {pet.photoUrl
+                  ? <img src={pet.photoUrl} alt={pet.name} className="w-16 h-16 rounded-full object-cover border border-outline-variant" />
+                  : <div className="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center">
+                      <MaterialIcon name="pets" size={28} className="text-on-surface-variant" />
+                    </div>
+                }
+                <span className="text-body-sm font-semibold text-on-surface">{pet.name}</span>
+                <span className={`px-sm py-xs rounded-full text-label-md capitalize ${speciesChip(pet.species)}`}>{pet.species}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-xl text-on-surface-variant">
+            <MaterialIcon name="pets" size={40} className="mb-sm opacity-30 block mx-auto" />
+            <p className="text-body-sm">No pets yet. Add one above.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Main View ────────────────────────────────────────────────────────────────
 export default function ClinicPets() {
   const t = useT()
   const qc = useQueryClient()
-  const [search, setSearch]         = useState('')
-  const [speciesFilter, setSpecies] = useState<string | null>(null)
-  const [selectedPetId, setSelectedPetId] = useState<number | null>(null)
+  const [search, setSearch] = useState('')
   const [selectedOwnerId, setSelectedOwnerId] = useState<number | null>(null)
+  const [selectedPetId, setSelectedPetId] = useState<number | null>(null)
   const [modal, setModal] = useState<'addOwner' | 'addPet' | 'addVaccination' | null>(null)
 
-  const { data: petsData, isLoading } = useQuery({
-    queryKey: ['pets', search, speciesFilter],
-    queryFn: () => api.get('/api/pets', { params: { q: search || undefined, species: speciesFilter || undefined, limit: 50 } }).then(r => r.data.data),
+  const { data: ownersData, isLoading } = useQuery({
+    queryKey: ['owners', search],
+    queryFn: () => api.get('/api/owners', { params: { q: search || undefined, limit: 50 } }).then(r => r.data.data),
     staleTime: 30_000,
   })
+  const owners: Owner[] = ownersData?.owners ?? []
 
-  const pets: Pet[] = petsData?.pets ?? []
-
-  const onSelectPet = useCallback((pet: Pet) => {
-    setSelectedPetId(pet.id)
-    setSelectedOwnerId(pet.ownerId)
-  }, [])
+  const { data: ownerDetail } = useQuery<{ data: Owner }>({
+    queryKey: ['owner', selectedOwnerId],
+    queryFn: () => api.get(`/api/owners/${selectedOwnerId}`).then(r => r.data),
+    enabled: selectedOwnerId != null,
+  })
+  const selectedOwner = ownerDetail?.data
 
   const closeModal = useCallback(() => setModal(null), [])
   const refreshAndClose = useCallback(() => {
-    qc.invalidateQueries({ queryKey: ['pets'] })
+    qc.invalidateQueries({ queryKey: ['owners'] })
+    qc.invalidateQueries({ queryKey: ['owner', selectedOwnerId] })
     if (selectedPetId) qc.invalidateQueries({ queryKey: ['pet', selectedPetId] })
     setModal(null)
-  }, [qc, selectedPetId])
-
-  const SPECIES_FILTERS = [
-    { label: 'All', value: null },
-    { label: 'Canine', value: 'canine' },
-    { label: 'Feline', value: 'feline' },
-    { label: 'Other', value: 'other' },
-  ]
-
-  const selectedPet = pets.find(p => p.id === selectedPetId)
+  }, [qc, selectedOwnerId, selectedPetId])
 
   return (
     <div className="flex h-full">
-      {/* ── Left panel ── */}
+      {/* ── Left panel: Owner list ── */}
       <div className="w-72 flex-shrink-0 border-r border-outline-variant flex flex-col bg-surface overflow-hidden">
-        {/* Search */}
         <div className="p-md border-b border-outline-variant">
           <div className="relative">
             <MaterialIcon name="search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
@@ -408,51 +459,33 @@ export default function ClinicPets() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="w-full bg-surface-container-low rounded-full py-sm pl-10 pr-md text-body-sm border-none focus:outline-none focus:ring-2 focus:ring-primary min-h-[44px]"
-              placeholder="Search pets, owners, phone…"
+              placeholder="Search owners, phone…"
             />
           </div>
         </div>
 
-        {/* Filter chips */}
-        <div className="flex gap-sm p-md border-b border-outline-variant overflow-x-auto">
-          {SPECIES_FILTERS.map(f => (
-            <button
-              key={f.label}
-              onClick={() => setSpecies(f.value)}
-              className={`px-md py-xs rounded-full text-label-md font-medium whitespace-nowrap min-h-[36px] transition-colors ${speciesFilter === f.value ? 'bg-primary text-primary-on' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Add owner button */}
         <div className="p-md border-b border-outline-variant">
           <button onClick={() => setModal('addOwner')} className="w-full flex items-center justify-center gap-sm bg-surface border border-outline-variant rounded-lg px-md py-sm min-h-[44px] text-body-sm font-semibold hover:bg-surface-container-low transition-colors">
             <MaterialIcon name="person_add" size={18} />{t('clinic.pets.addOwner')}
           </button>
         </div>
 
-        {/* Pet list */}
         <div className="flex-1 overflow-y-auto">
           {isLoading && <div className="p-lg text-body-sm text-on-surface-variant">Loading…</div>}
-          {!isLoading && pets.length === 0 && <div className="p-lg text-body-sm text-on-surface-variant">No pets found.</div>}
-          {pets.map(pet => (
+          {!isLoading && owners.length === 0 && <div className="p-lg text-body-sm text-on-surface-variant">No owners found.</div>}
+          {owners.map(owner => (
             <button
-              key={pet.id}
-              onClick={() => onSelectPet(pet)}
-              className={`w-full text-left flex items-center gap-md p-md border-b border-outline-variant/50 min-h-[72px] transition-colors ${selectedPetId === pet.id ? 'bg-surface-container-low border-l-4 border-primary' : 'hover:bg-surface-container-low border-l-4 border-transparent'}`}
+              key={owner.id}
+              onClick={() => { setSelectedOwnerId(owner.id); setSelectedPetId(null) }}
+              className={`w-full text-left flex items-center gap-md p-md border-b border-outline-variant/50 min-h-[72px] transition-colors ${selectedOwnerId === owner.id ? 'bg-surface-container-low border-l-4 border-primary' : 'hover:bg-surface-container-low border-l-4 border-transparent'}`}
             >
-              <div className="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center flex-shrink-0">
-                {pet.photoUrl
-                  ? <img src={pet.photoUrl} alt={pet.name} className="w-12 h-12 rounded-full object-cover" />
-                  : <MaterialIcon name="pets" size={22} className="text-on-surface-variant" />
-                }
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary font-bold text-label-md">
+                {initials(owner.firstName, owner.lastName)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-headline-xs font-bold truncate">{pet.name}</p>
-                {pet.owner && <p className="text-body-sm text-on-surface-variant truncate">{pet.owner.firstName} {pet.owner.lastName}</p>}
-                <span className={`inline-block mt-xs px-sm py-xs rounded-full text-label-md capitalize ${speciesChip(pet.species)}`}>{pet.species}</span>
+                <p className="text-headline-xs font-bold truncate">{owner.firstName} {owner.lastName}</p>
+                <p className="text-body-sm text-on-surface-variant truncate">{owner.phone}</p>
+                <p className="text-label-md text-on-surface-variant">{owner.pets?.length ?? 0} pet{owner.pets?.length !== 1 ? 's' : ''}</p>
               </div>
             </button>
           ))}
@@ -463,34 +496,38 @@ export default function ClinicPets() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {selectedPetId ? (
           <>
-            {/* Header bar with "Add Pet" button for selected owner */}
-            <div className="flex items-center justify-between px-lg py-md border-b border-outline-variant bg-surface flex-shrink-0">
+            <div className="flex items-center px-lg py-md border-b border-outline-variant bg-surface flex-shrink-0 gap-md">
+              <button onClick={() => setSelectedPetId(null)} className="flex items-center gap-xs text-on-surface-variant hover:text-on-surface min-h-[44px] transition-colors">
+                <MaterialIcon name="arrow_back" size={18} />
+                <span className="text-body-sm">Back</span>
+              </button>
               <h2 className="text-headline-sm font-headline font-bold text-primary">Pet Profile</h2>
-              {selectedOwnerId && (
-                <button onClick={() => setModal('addPet')} className="flex items-center gap-sm bg-primary text-primary-on rounded-lg px-lg py-sm min-h-[44px] text-body-sm font-semibold hover:bg-primary/90 transition-colors">
-                  <MaterialIcon name="add" size={18} />{t('clinic.pets.addPet')}
-                </button>
-              )}
             </div>
             <PetDetail petId={selectedPetId} onAddVaccination={() => setModal('addVaccination')} />
           </>
+        ) : selectedOwnerId ? (
+          <OwnerPanel
+            ownerId={selectedOwnerId}
+            onSelectPet={setSelectedPetId}
+            onAddPet={() => setModal('addPet')}
+          />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-xl text-on-surface-variant">
-            <MaterialIcon name="pets" size={64} className="mb-lg opacity-20" />
-            <p className="text-headline-sm font-headline font-bold mb-sm">Select a patient</p>
-            <p className="text-body-md">Choose a pet from the list to view their profile and medical history.</p>
+            <MaterialIcon name="group" size={64} className="mb-lg opacity-20" />
+            <p className="text-headline-sm font-headline font-bold mb-sm">Select an owner</p>
+            <p className="text-body-md">Choose an owner from the list to see their pets.</p>
           </div>
         )}
       </div>
 
       {/* ── Modals ── */}
       {modal === 'addOwner' && (
-        <AddOwnerModal onClose={closeModal} onSuccess={() => { qc.invalidateQueries({ queryKey: ['pets'] }); setModal(null) }} />
+        <AddOwnerModal onClose={closeModal} onSuccess={() => { qc.invalidateQueries({ queryKey: ['owners'] }); setModal(null) }} />
       )}
-      {modal === 'addPet' && selectedOwnerId && selectedPet && (
+      {modal === 'addPet' && selectedOwnerId && selectedOwner && (
         <AddPetModal
           ownerId={selectedOwnerId}
-          ownerName={selectedPet.owner ? `${selectedPet.owner.firstName} ${selectedPet.owner.lastName}` : ''}
+          ownerName={`${selectedOwner.firstName} ${selectedOwner.lastName}`}
           onClose={closeModal}
           onSuccess={refreshAndClose}
         />
