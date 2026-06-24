@@ -137,10 +137,7 @@ export async function getUserRoles(tenantId: number, userId: number): Promise<Us
 /**
  * Assign (or clear) the branch for a staff or doctor user.
  *
- * Business rules (D-2-04):
- * 1. Branch must belong to the same tenant (404 if not found).
- * 2. Staff and doctors must be assigned to a branch (branchId cannot be null).
- * 3. Admins (roles whose key contains 'admin') may have a null branchId.
+ * @deprecated Use assignUserBranches instead (supports multiple branches).
  *
  * @param tenantId - Tenant scope (required for isolation).
  * @param userId   - Target user's primary key.
@@ -170,6 +167,65 @@ export async function assignUserBranch(
   const updated = await userRepo.updateUserBranch(tenantId, userId, branchId)
   if (!updated) throw new UserError('User not found', 404)
   return safe(updated)
+}
+
+/** Shape returned by assignUserBranches. */
+export interface AssignBranchesResponse {
+  id:               number
+  name:             string
+  username:         string
+  role:             string
+  assignedBranches: { id: number; name: string }[]
+}
+
+/**
+ * Atomically replace all branch assignments for a user, validating that every
+ * supplied branch ID belongs to the same tenant.
+ *
+ * Business rules:
+ * 1. All branch IDs must belong to the caller's tenant (404 if any mismatch).
+ * 2. Staff and doctors must have at least one branch (422 if empty array).
+ * 3. Admins (roles whose key contains 'admin') may have zero branches.
+ *
+ * @param tenantId  - Tenant scope (required for isolation).
+ * @param userId    - Target user's primary key.
+ * @param branchIds - Ordered list of branch IDs to assign; [] to clear (admin only).
+ */
+export async function assignUserBranches(
+  tenantId:  number,
+  userId:    number,
+  branchIds: number[],
+): Promise<AssignBranchesResponse> {
+  const user = await userRepo.findUserById(tenantId, userId)
+  if (!user) throw new UserError('User not found', 404)
+
+  if (branchIds.length > 0) {
+    const validBranches = await prisma.branch.findMany({
+      where:  { id: { in: branchIds }, tenantId },
+      select: { id: true },
+    })
+    if (validBranches.length !== branchIds.length) {
+      throw new UserError('One or more branches not found in this tenant', 404)
+    }
+  }
+
+  const userRoleRows = await userRepo.findUserRolesWithDetails(tenantId, userId)
+  const isAdmin = userRoleRows.some(ur => ur.role.key?.includes('admin'))
+
+  if (!isAdmin && branchIds.length === 0) {
+    throw new UserError('Staff and Doctor must be assigned to at least one branch', 422)
+  }
+
+  await userRepo.replaceUserBranches(tenantId, userId, branchIds)
+
+  const assignedBranches = await userRepo.getUserBranches(tenantId, userId)
+  return {
+    id:               user.id,
+    name:             user.name,
+    username:         user.username,
+    role:             user.role,
+    assignedBranches,
+  }
 }
 
 export async function deactivateUser(tenantId: number, userId: number): Promise<void> {

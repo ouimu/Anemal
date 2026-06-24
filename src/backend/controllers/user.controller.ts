@@ -67,21 +67,28 @@ export async function getUserRoles(req: Request, res: Response, next: NextFuncti
   } catch (err) { next(err) }
 }
 
-/** Zod schema for PATCH /users/:userId/branch */
+/**
+ * Zod schema for PATCH /users/:userId/branch.
+ * Accepts an array of branch IDs; empty array is valid (admin-only cleared state).
+ */
 export const assignBranchSchema = z.object({
-  branchId: z.number().int().positive().nullable(),
+  branchIds: z.array(z.number().int().positive()).min(0),
 }).strict()
 
 /**
  * PATCH /users/:userId/branch
- * Assigns (or clears) the primary branch for a staff or doctor user.
+ * Assigns one or more branches for a staff, doctor, or admin user.
  * Guarded by staff.assign_branch — only clinic admins may call this.
+ *
+ * @param req - Express request; body validated by assignBranchSchema.
+ * @param res - Express response; returns standard { success, data } envelope.
+ * @param next - Express next for error propagation.
  */
 export async function handleAssignBranch(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const userId   = Number(req.params.userId)
-    const branchId = (req.body as { branchId: number | null }).branchId
-    const data = await userService.assignUserBranch(req.context!.tenantId, userId, branchId)
+    const userId    = Number(req.params.userId)
+    const branchIds = (req.body as { branchIds: number[] }).branchIds
+    const data = await userService.assignUserBranches(req.context!.tenantId, userId, branchIds)
     res.json({ success: true, data })
   } catch (err) { next(err) }
 }
