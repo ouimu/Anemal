@@ -18,13 +18,14 @@ export function hashToken(raw: string): string {
 
 /** Data required to create a new refresh token row. */
 export interface CreateRefreshTokenData {
-  tokenHash:      string
-  familyId:       string
-  userId?:        number
+  tokenHash:       string
+  familyId:        string
+  userId?:         number
   platformUserId?: number
-  tenantId?:      number
-  plane:          string
-  expiresAt:      Date
+  tenantId?:       number
+  branchId?:       number   // clinic plane only; NULL for platform tokens
+  plane:           string
+  expiresAt:       Date
 }
 
 /**
@@ -77,6 +78,7 @@ export async function rotateToken(
         userId:         old.userId,
         platformUserId: old.platformUserId,
         tenantId:       old.tenantId,
+        branchId:       old.branchId,
         plane:          old.plane,
         expiresAt,
       },

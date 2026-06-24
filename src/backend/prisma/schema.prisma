@@ -968,6 +968,7 @@ model RefreshToken {
   userId         Int? // clinic users (users.id); NULL for platform tokens
   platformUserId Int? // platform users (platform_users.id); NULL for clinic tokens
   tenantId       Int? // clinic plane only; NULL for platform plane
+  branchId       Int?      // clinic plane only; NULL for platform tokens and admin tokens without branch
   plane          String    @db.VarChar(20) // 'clinic' | 'platform'
   expiresAt      DateTime
   rotatedAt      DateTime? // set when consumed by a successful refresh

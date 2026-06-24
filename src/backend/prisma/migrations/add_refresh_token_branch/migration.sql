@@ -1,0 +1,2 @@
+ALTER TABLE "refresh_tokens"
+  ADD COLUMN IF NOT EXISTS "branchId" INTEGER REFERENCES "branches"("id") ON DELETE SET NULL;
