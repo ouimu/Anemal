@@ -5,6 +5,7 @@ import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
 import { useProducts, type Product } from '../../hooks/useInventory'
 import { useCreateInvoice, useRecordPayment, type Invoice } from '../../hooks/useInvoices'
+import { useAuthStore } from '../../store/authStore'
 
 const baht = (n: number) => '฿' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const TAX_RATE = 7
@@ -23,6 +24,7 @@ let keySeq = 1
 
 export default function ClinicBilling() {
   const t = useT()
+  const [tab, setTab] = useState<'invoice' | 'history'>('invoice')
   const [petQuery, setPetQuery] = useState('')
   const [pet, setPet] = useState<PetResult | null>(null)
   const [recordId, setRecordId] = useState<number | null>(null)
@@ -172,6 +174,18 @@ export default function ClinicBilling() {
 
   return (
     <div className="p-lg">
+      <div className="flex gap-xs mb-lg border-b border-outline-variant">
+        {(['invoice', 'history'] as const).map((tabKey) => (
+          <button key={tabKey} onClick={() => setTab(tabKey)}
+                  className={`min-h-[44px] px-lg text-body-md font-medium border-b-2 -mb-px transition-colors ${
+                    tab === tabKey ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface'
+                  }`}>
+            {tabKey === 'invoice' ? t('clinic.billing.createInvoiceTab') : t('clinic.billing.paymentHistory')}
+          </button>
+        ))}
+      </div>
+      {tab === 'history' && <PaymentHistoryTab />}
+      {tab === 'invoice' && <>
       <div className="flex items-start justify-between mb-lg">
         <div>
           <h2 className="text-headline-lg font-headline font-bold text-primary">{t('clinic.billing.createInvoice')}</h2>
@@ -394,8 +408,127 @@ export default function ClinicBilling() {
         </div>
       </div>
 
+      </>}
       {addingRetail && <RetailPicker onPick={addProduct} onClose={() => setAddingRetail(false)} />}
       {paid && <SuccessModal invoice={paid} pet={pet} method={method} earnedMsg={earnedMsg} onClose={reset} />}
+    </div>
+  )
+}
+
+interface PayHistoryRow {
+  id: number; paidAt: string; amount: string; method: string; note: string | null
+  invoice: { invoiceNo: string }
+  receivedBy: { id: number; name: string }
+  branch: { id: number; name: string }
+}
+interface PayHistoryResult { rows: PayHistoryRow[]; total: number; page: number; limit: number }
+
+const METHOD_LABELS: Record<string, string> = { cash: 'Cash', qr_promptpay: 'PromptPay', credit_card: 'Card', transfer: 'Transfer', other: 'Other' }
+
+function PaymentHistoryTab() {
+  const t = useT()
+  const { branchId } = useAuthStore()
+  const isAdmin = branchId === null
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [filterBranchId, setFilterBranchId] = useState('')
+  const [page, setPage] = useState(1)
+
+  const { data, isLoading } = useQuery<PayHistoryResult>({
+    queryKey: ['billing', 'payment-history', startDate, endDate, filterBranchId, page],
+    queryFn: () =>
+      api.get('/api/invoices/payment-history', {
+        params: {
+          ...(startDate ? { startDate } : {}),
+          ...(endDate ? { endDate } : {}),
+          ...(filterBranchId ? { branchId: filterBranchId } : {}),
+          page,
+        },
+      }).then((r) => r.data.data),
+  })
+
+  const rows = data?.rows ?? []
+  const totalPages = data ? Math.ceil(data.total / data.limit) : 1
+  const colCount = isAdmin ? 7 : 6
+  const dateCls = 'min-h-[44px] bg-surface-container-low border border-outline-variant rounded-lg px-md text-body-md text-on-surface focus:outline-none focus:border-primary'
+
+  return (
+    <div>
+      <div className="glass-card rounded-xl shadow-lvl1 p-md mb-md flex flex-wrap gap-sm items-end">
+        <div className="flex flex-col gap-xs">
+          <label className="text-label-md text-on-surface-variant uppercase tracking-wider">{t('clinic.billing.dateFrom')}</label>
+          <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1) }} className={dateCls} />
+        </div>
+        <div className="flex flex-col gap-xs">
+          <label className="text-label-md text-on-surface-variant uppercase tracking-wider">{t('clinic.billing.dateTo')}</label>
+          <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1) }} className={dateCls} />
+        </div>
+        {isAdmin && (
+          <div className="flex flex-col gap-xs">
+            <label className="text-label-md text-on-surface-variant uppercase tracking-wider">{t('clinic.billing.filterBranch')}</label>
+            <input value={filterBranchId} onChange={(e) => { setFilterBranchId(e.target.value); setPage(1) }}
+                   placeholder="Branch ID" className={`${dateCls} w-32`} />
+          </div>
+        )}
+        {(startDate || endDate || filterBranchId) && (
+          <button onClick={() => { setStartDate(''); setEndDate(''); setFilterBranchId(''); setPage(1) }}
+                  className="min-h-[44px] px-md rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-low text-body-sm flex items-center gap-xs">
+            <MaterialIcon name="close" size={16} /> Clear
+          </button>
+        )}
+      </div>
+
+      <div className="glass-card rounded-xl shadow-lvl1 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-body-sm">
+            <thead>
+              <tr className="bg-surface-container-low border-b border-outline-variant">
+                {['Date', 'Invoice #', 'Amount', t('clinic.billing.method'), t('clinic.billing.receivedBy')].map((h, i) => (
+                  <th key={i} className={`px-md py-sm text-label-md text-on-surface-variant uppercase tracking-wider ${i === 2 ? 'text-right' : 'text-left'}`}>{h}</th>
+                ))}
+                {isAdmin && <th className="text-left px-md py-sm text-label-md text-on-surface-variant uppercase tracking-wider">{t('clinic.billing.branch')}</th>}
+                <th className="text-left px-md py-sm text-label-md text-on-surface-variant uppercase tracking-wider">{t('clinic.billing.note')}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-outline-variant">
+              {isLoading && (
+                <tr><td colSpan={colCount} className="px-md py-xl text-center text-on-surface-variant">
+                  <MaterialIcon name="progress_activity" size={24} className="animate-spin mx-auto block" />
+                </td></tr>
+              )}
+              {!isLoading && rows.length === 0 && (
+                <tr><td colSpan={colCount} className="px-md py-xl text-center text-on-surface-variant">{t('clinic.billing.noHistory')}</td></tr>
+              )}
+              {rows.map((row) => (
+                <tr key={row.id} className="hover:bg-surface-container-low/50 transition-colors">
+                  <td className="px-md py-sm text-on-surface font-code">{new Date(row.paidAt).toLocaleDateString()}</td>
+                  <td className="px-md py-sm text-on-surface font-medium">{row.invoice.invoiceNo}</td>
+                  <td className="px-md py-sm text-on-surface text-right font-code">{baht(Number(row.amount))}</td>
+                  <td className="px-md py-sm text-on-surface-variant">{METHOD_LABELS[row.method] ?? row.method}</td>
+                  <td className="px-md py-sm text-on-surface-variant">{row.receivedBy.name}</td>
+                  {isAdmin && <td className="px-md py-sm text-on-surface-variant">{row.branch.name}</td>}
+                  <td className="px-md py-sm text-on-surface-variant">{row.note ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-md py-sm border-t border-outline-variant">
+            <span className="text-body-sm text-on-surface-variant">Page {page} of {totalPages} · {data?.total} records</span>
+            <div className="flex gap-xs">
+              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
+                      className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-low disabled:opacity-40 transition-colors">
+                <MaterialIcon name="chevron_left" size={18} />
+              </button>
+              <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
+                      className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-low disabled:opacity-40 transition-colors">
+                <MaterialIcon name="chevron_right" size={18} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

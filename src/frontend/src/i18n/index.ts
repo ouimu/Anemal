@@ -234,6 +234,16 @@ const en: Dict = {
   'clinic.billing.payment': 'Payment',
   'clinic.billing.cashTendered': 'Cash tendered',
   'clinic.billing.change': 'Change',
+  'clinic.billing.paymentHistory': 'Payment History',
+  'clinic.billing.createInvoiceTab': 'Create Invoice',
+  'clinic.billing.receivedBy': 'Received By',
+  'clinic.billing.method': 'Method',
+  'clinic.billing.branch': 'Branch',
+  'clinic.billing.note': 'Note',
+  'clinic.billing.dateFrom': 'From',
+  'clinic.billing.dateTo': 'To',
+  'clinic.billing.noHistory': 'No payment history found.',
+  'clinic.billing.filterBranch': 'Filter by branch',
 
   // Admin users
   'admin.users.title': 'Users & Roles',
@@ -508,6 +518,16 @@ const th: Dict = {
   'clinic.billing.payment': 'การชำระเงิน',
   'clinic.billing.cashTendered': 'เงินสดที่รับมา',
   'clinic.billing.change': 'เงินทอน',
+  'clinic.billing.paymentHistory': 'ประวัติการชำระเงิน',
+  'clinic.billing.createInvoiceTab': 'สร้างใบแจ้งหนี้',
+  'clinic.billing.receivedBy': 'ผู้รับเงิน',
+  'clinic.billing.method': 'วิธีชำระ',
+  'clinic.billing.branch': 'สาขา',
+  'clinic.billing.note': 'หมายเหตุ',
+  'clinic.billing.dateFrom': 'จาก',
+  'clinic.billing.dateTo': 'ถึง',
+  'clinic.billing.noHistory': 'ไม่พบประวัติการชำระเงิน',
+  'clinic.billing.filterBranch': 'กรองตามสาขา',
 
   // Admin users
   'admin.users.title': 'ผู้ใช้และบทบาท',
