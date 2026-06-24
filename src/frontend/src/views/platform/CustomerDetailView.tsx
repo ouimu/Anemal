@@ -3,7 +3,9 @@
  * Four-tab detail page: Overview | Plan & Quota | Provisioning | Usage
  */
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useParams, useNavigate } from 'react-router-dom'
+import api from '../../utils/api'
 import {
   usePlatformCustomer,
   usePlatformCustomerUsage,
@@ -31,15 +33,22 @@ const TABS: { id: Tab; label: string }[] = [
 
 // ── Overview tab ─────────────────────────────────────────────────────────────
 
+interface CompanyType { id: number; key: string; label: string }
+
 function OverviewTab({ id }: { id: number }) {
   const { data: customer, isLoading } = usePlatformCustomer(id)
+  const { data: companyTypes = [] } = useQuery<CompanyType[]>({
+    queryKey: ['platform', 'company-types'],
+    queryFn: () => api.get('/api/platform/company-types').then(r => r.data.data),
+  })
   const suspend    = useSuspendCustomer(id)
   const reactivate = useReactivateCustomer(id)
   const update     = useUpdatePlatformCustomer(id)
 
-  const [editing,      setEditing]      = useState(false)
-  const [editName,     setEditName]     = useState('')
-  const [editTrial,    setEditTrial]    = useState('')
+  const [editing,           setEditing]           = useState(false)
+  const [editName,          setEditName]          = useState('')
+  const [editTrial,         setEditTrial]         = useState('')
+  const [editCompanyTypeId, setEditCompanyTypeId] = useState<number | null>(null)
 
   if (isLoading || !customer) {
     return <div className="p-lg text-on-surface-variant text-body-sm">Loading…</div>
@@ -50,12 +59,13 @@ function OverviewTab({ id }: { id: number }) {
   const openEdit = () => {
     setEditName(customer.name)
     setEditTrial(customer.trialEndsAt ? customer.trialEndsAt.slice(0, 10) : '')
+    setEditCompanyTypeId((customer as { companyTypeId?: number | null }).companyTypeId ?? null)
     setEditing(true)
   }
 
   const saveEdit = () => {
     update.mutate(
-      { name: editName, trialEndsAt: editTrial || null },
+      { name: editName, trialEndsAt: editTrial || null, companyTypeId: editCompanyTypeId },
       { onSuccess: () => setEditing(false) },
     )
   }
@@ -64,7 +74,7 @@ function OverviewTab({ id }: { id: number }) {
     <div className="space-y-lg">
       <div className="bg-surface rounded-lg shadow-lvl1 p-lg">
         <div className="flex items-center justify-between mb-md">
-          <h3 className="text-headline-xs font-headline font-bold text-on-surface">Clinic Info</h3>
+          <h3 className="text-headline-xs font-headline font-bold text-on-surface">Company Info</h3>
           {!editing && (
             <button
               onClick={openEdit}
@@ -95,6 +105,19 @@ function OverviewTab({ id }: { id: number }) {
                 className="w-full min-h-[44px] px-md border border-outline-variant rounded text-body-md text-on-surface bg-surface focus:outline-none focus:border-secondary"
               />
             </div>
+            {companyTypes.length > 0 && (
+              <div>
+                <label className="block text-label-md text-on-surface-variant mb-xs">Company Type</label>
+                <select
+                  value={editCompanyTypeId ?? ''}
+                  onChange={(e) => setEditCompanyTypeId(e.target.value ? Number(e.target.value) : null)}
+                  className="w-full min-h-[44px] px-md border border-outline-variant rounded text-body-md text-on-surface bg-surface focus:outline-none focus:border-secondary"
+                >
+                  <option value="">— None —</option>
+                  {companyTypes.map(ct => <option key={ct.id} value={ct.id}>{ct.label}</option>)}
+                </select>
+              </div>
+            )}
             {update.error && (
               <p className="text-label-md text-error">Save failed. Please try again.</p>
             )}

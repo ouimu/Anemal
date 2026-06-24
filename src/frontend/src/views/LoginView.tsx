@@ -20,7 +20,7 @@ export default function LoginView() {
     return ''
   })()
 
-  const [form, setForm]       = useState({ subdomain: detectedSubdomain, email: '', password: '' })
+  const [form, setForm]       = useState({ subdomain: detectedSubdomain, username: '', password: '' })
   const [showPass, setShowPass] = useState(false)
   const [remember, setRemember] = useState(false)
   const login = useLogin()
@@ -122,20 +122,20 @@ export default function LoginView() {
                 </div>
               </div>
 
-              {/* Email */}
+              {/* Username */}
               <div className="space-y-xs">
-                <label htmlFor="email" className="block text-label-md text-on-surface-variant font-medium">
-                  {t('login.email')}
+                <label htmlFor="username" className="block text-label-md text-on-surface-variant font-medium">
+                  {t('login.username')}
                 </label>
                 <div className="relative">
                   <span className="absolute left-md top-1/2 -translate-y-1/2 material-symbols-outlined text-outline" style={{ fontSize: '20px' }}>
-                    mail
+                    person
                   </span>
                   <input
-                    id="email" name="email" type="email"
-                    value={form.email} onChange={set('email')}
-                    placeholder="name@clinic.com"
-                    autoComplete="email" required
+                    id="username" name="username" type="text"
+                    value={form.username} onChange={set('username')}
+                    placeholder="your_username"
+                    autoComplete="username" required
                     className="w-full pl-[48px] pr-md py-[14px] bg-surface-container-low border border-outline-variant rounded-lg focus:border-secondary focus:ring-1 focus:ring-secondary outline-none transition-all text-body-md text-on-surface"
                   />
                 </div>

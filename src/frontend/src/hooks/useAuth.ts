@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '../utils/api'
 import { useAuthStore, AuthData } from '../store/authStore'
 
-interface LoginPayload { subdomain: string; email: string; password: string; remember: boolean }
+interface LoginPayload { subdomain: string; username: string; password: string; remember: boolean }
 
 /** Response shape from POST /auth/login */
 interface LoginResponse {

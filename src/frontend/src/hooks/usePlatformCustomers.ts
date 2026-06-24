@@ -37,9 +37,10 @@ export interface CreateCustomerPayload {
 }
 
 export interface UpdateCustomerPayload {
-  name?:        string
-  planId?:      number
-  trialEndsAt?: string | null
+  name?:          string
+  planId?:        number
+  trialEndsAt?:   string | null
+  companyTypeId?: number | null
 }
 
 /** Payload for PUT /platform/customers/:id/quota */

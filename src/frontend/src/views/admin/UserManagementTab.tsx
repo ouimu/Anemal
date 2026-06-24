@@ -8,7 +8,8 @@ import RolePicker from '../../components/roles/RolePicker'
 import { useUserRolesQuery } from '../../hooks/useUserRoles'
 import { useT } from '../../i18n'
 
-interface User { id: number; name: string; email: string; role: string; isActive: boolean; createdAt: string }
+interface User { id: number; name: string; username: string; email: string | null; role: string; isActive: boolean; createdAt: string; branchId: number | null }
+interface Branch { id: number; name: string }
 
 const ROLE_COLORS: Record<string, string> = {
   admin:  'bg-error-container text-error-on-container',
@@ -28,14 +29,31 @@ function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; o
   const editUserId = user.id ?? 0
   const { data: userRolesData, refetch: refetchUserRoles } = useUserRolesQuery(isNew ? 0 : editUserId)
   const userRoles = userRolesData ?? []
-  const [form, setForm] = useState({ name: user.name ?? '', email: user.email ?? '', role: user.role ?? 'staff', password: '', isActive: user.isActive ?? true })
+  const { data: branches = [] } = useQuery<Branch[]>({
+    queryKey: ['admin', 'branches'],
+    queryFn: () => api.get('/api/branches').then(r => r.data.data),
+  })
+  const [form, setForm] = useState({
+    name: user.name ?? '', username: user.username ?? '', email: user.email ?? '',
+    role: user.role ?? 'staff', password: '', isActive: user.isActive ?? true,
+    branchId: user.branchId ?? null as number | null,
+  })
 
   const save = useMutation({
     mutationFn: () => isNew
-      ? api.post('/users', { ...form })
+      ? api.post('/users', { name: form.name, username: form.username, email: form.email || undefined, password: form.password, role: form.role })
       : api.put(`/users/${user.id}`, { name: form.name, role: form.role, isActive: form.isActive }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'users'] }); onClose() },
+    onSuccess: async (res) => {
+      // Assign branch for new users if selected
+      if (isNew && form.branchId != null) {
+        const uid = (res.data as { data: { id: number } }).data.id
+        await api.put(`/users/${uid}/branch`, { branchId: form.branchId }).catch(() => {})
+      }
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] }); onClose()
+    },
   })
+
+  const inputCls = 'min-h-[44px] px-3 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20'
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
@@ -44,20 +62,30 @@ function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; o
         <div className="space-y-3">
           <div className="flex flex-col gap-1">
             <label className="text-xs text-on-surface-variant">{t('admin.users.fullName')}</label>
-            <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-              className="min-h-[44px] px-3 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"/>
+            <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className={inputCls} />
           </div>
           {isNew && (
             <>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-on-surface-variant">Email</label>
-                <input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-                  className="min-h-[44px] px-3 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"/>
+                <label className="text-xs text-on-surface-variant">Username</label>
+                <input value={form.username} onChange={e => setForm(p => ({ ...p, username: e.target.value }))}
+                  placeholder="3-20 chars, letters/digits/_" className={inputCls} />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-on-surface-variant">Email (optional)</label>
+                <input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} className={inputCls} />
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-xs text-on-surface-variant">{t('admin.users.password')}</label>
-                <input type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
-                  className="min-h-[44px] px-3 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"/>
+                <input type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} className={inputCls} />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-on-surface-variant">Branch (optional)</label>
+                <select value={form.branchId ?? ''} onChange={e => setForm(p => ({ ...p, branchId: e.target.value ? Number(e.target.value) : null }))}
+                  className={`${inputCls} bg-surface`}>
+                  <option value="">— All branches (admin) —</option>
+                  {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
               </div>
             </>
           )}
@@ -139,7 +167,7 @@ export default function UserManagementTab() {
                   <p className="text-sm font-medium text-on-surface truncate">
                     {user.name} {user.id === currentUserId && <span className="text-xs text-on-surface-variant">(you)</span>}
                   </p>
-                  <p className="text-xs text-on-surface-variant truncate">{user.email}</p>
+                  <p className="text-xs text-on-surface-variant truncate font-code">@{user.username}</p>
                 </div>
                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${ROLE_COLORS[user.role] ?? ''}`}>{user.role}</span>
                 <button onClick={() => setModal(user)}
@@ -163,7 +191,7 @@ export default function UserManagementTab() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-on-surface-variant truncate line-through">{user.name}</p>
-                    <p className="text-xs text-outline-variant truncate">{user.email}</p>
+                    <p className="text-xs text-outline-variant truncate font-code">@{user.username}</p>
                   </div>
                   <span className="text-xs px-2 py-1 rounded-full bg-surface-container text-on-surface-variant">inactive</span>
                   <button onClick={() => setModal(user)}
