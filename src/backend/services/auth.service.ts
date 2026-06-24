@@ -6,6 +6,7 @@ import { AppError } from '../utils/errors'
 import { signToken } from '../config/jwt'
 import * as authRepo from '../models/auth.repository'
 import * as refreshTokenRepo from '../models/refresh-token.repository'
+import * as userRepo from '../models/user.repository'
 import { findUserRoleIds } from '../models/role.repository'
 import { computePermSetVersion, resolvePermissions } from './permission.service'
 import type { JwtPayload, LoginRequest, LoginResponse, MeResponse, RefreshResponse } from '../types'
@@ -111,6 +112,14 @@ export async function switchBranch(
 
   const branch = await authRepo.findBranchById(tenantId, targetBranchId)
   if (!branch) throw new AuthError('Branch not found', 404)
+
+  // Non-admin: verify target branch is in user's assigned branches
+  if (role !== 'admin') {
+    const assignedBranches = await userRepo.getUserBranches(tenantId, userId)
+    if (!assignedBranches.some(b => b.id === targetBranchId)) {
+      throw new AuthError('You are not assigned to this branch.', 403)
+    }
+  }
 
   const permSetVersion = await computePermSetVersion(userId, tenantId)
   const token = signToken({ userId, tenantId, branchId: targetBranchId, plane: 'clinic', permSetVersion, role })
