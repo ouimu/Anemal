@@ -35,26 +35,32 @@ describe('getUserBranches', () => {
 
 describe('replaceUserBranches', () => {
   it('replaces all branch assignments', async () => {
-    const tenant   = await prisma.tenant.findFirst()
-    const branches = await prisma.branch.findMany({ where: { tenantId: tenant!.id }, take: 2 })
-    const user     = await prisma.user.findFirst({ where: { tenantId: tenant!.id } })
+    const tenant = await prisma.tenant.findFirst()
+    const user   = await prisma.user.findFirst({ where: { tenantId: tenant!.id } })
     expect(tenant).toBeTruthy()
-    expect(branches.length).toBeGreaterThan(0)
     expect(user).toBeTruthy()
 
-    // If two branches exist: seed a different branch first, then replace with
-    // branches[0] to verify the prior assignment is removed.
-    if (branches.length >= 2) {
-      await userRepo.replaceUserBranches(tenant!.id, user!.id, [branches[1].id])
-    }
+    // Create two branches explicitly so the deletion check always runs.
+    const branchA = await prisma.branch.create({
+      data: { tenantId: tenant!.id, name: '__test_branchA__', isActive: true },
+    })
+    const branchB = await prisma.branch.create({
+      data: { tenantId: tenant!.id, name: '__test_branchB__', isActive: true },
+    })
 
-    await userRepo.replaceUserBranches(tenant!.id, user!.id, [branches[0].id])
-    const after = await userRepo.getUserBranches(tenant!.id, user!.id)
-    expect(after.map((b: { id: number; name: string }) => b.id)).toEqual([branches[0].id])
+    try {
+      // Assign branchB first, then replace with branchA.
+      await userRepo.replaceUserBranches(tenant!.id, user!.id, [branchB.id])
+      await userRepo.replaceUserBranches(tenant!.id, user!.id, [branchA.id])
 
-    // Verify branches[1] is no longer present after the replace (two-branch case only).
-    if (branches.length >= 2) {
-      expect(after.map((b: { id: number; name: string }) => b.id)).not.toContain(branches[1].id)
+      const after = await userRepo.getUserBranches(tenant!.id, user!.id)
+      const ids = after.map((b: { id: number; name: string }) => b.id)
+      expect(ids).toContain(branchA.id)
+      expect(ids).not.toContain(branchB.id)
+    } finally {
+      // Cleanup: clear assignments then delete test branches.
+      await prisma.userBranch.deleteMany({ where: { tenantId: tenant!.id, branchId: { in: [branchA.id, branchB.id] } } })
+      await prisma.branch.deleteMany({ where: { id: { in: [branchA.id, branchB.id] } } })
     }
   })
 })
