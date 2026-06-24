@@ -11,7 +11,6 @@ import PlatformLayout from './layouts/PlatformLayout'
 
 // ── Admin pages ──────────────────────────────────────────────────────────────
 const AdminDashboard    = lazy(() => import('./views/admin/AdminDashboard'))
-const AdminUsers        = lazy(() => import('./views/admin/AdminUsers'))
 const UserManagementTab = lazy(() => import('./views/admin/UserManagementTab'))
 const AdminProfile      = lazy(() => import('./views/admin/AdminProfile'))
 const AdminUsage        = lazy(() => import('./views/admin/AdminUsage'))
