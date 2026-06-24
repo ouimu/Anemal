@@ -78,6 +78,7 @@ model Tenant {
   provisioning        TenantProvisioning?
   // Session D-3-01: payment history back-relation
   paymentHistory      PaymentHistory[]
+  userBranches        UserBranch[]
 
   @@map("tenants")
 }
@@ -163,6 +164,7 @@ model User {
   settingsAuditChanges  SettingsAuditLog[] @relation("SettingsAuditChangedBy")
   // Session D-3-01: payment history received by this user
   paymentHistoryReceived PaymentHistory[]  @relation("ReceivedPayments")
+  userBranches           UserBranch[]
 
   // Session D-1: unique on (tenantId, username); email uniqueness enforced in service layer
   @@unique([tenantId, username])
@@ -546,10 +548,28 @@ model Branch {
   branchInventory BranchInventory[]
   // Session D-3-01: payment history back-relation
   paymentHistory  PaymentHistory[]
+  userBranches    UserBranch[]
 
   @@unique([tenantId, name])
   @@index([tenantId, isActive])
   @@map("branches")
+}
+
+// Join table: users <-> branches (multi-branch assignment per user)
+// tenantId denormalized for isolation — every query MUST filter WHERE tenantId = :tenantId
+model UserBranch {
+  id        Int    @id @default(autoincrement())
+  tenantId  Int
+  userId    Int
+  branchId  Int
+
+  tenant  Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch  Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId, branchId])
+  @@index([tenantId, userId])
+  @@map("user_branches")
 }
 
 model DoctorShift {
