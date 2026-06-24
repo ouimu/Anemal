@@ -19,8 +19,8 @@ afterAll(async () => {
   await new Promise<void>(resolve => server.close(() => resolve()))
 })
 
-async function getToken(subdomain: string, email: string, password: string): Promise<string> {
-  const res = await request(server).post('/auth/login').send({ subdomain, email, password })
+async function getToken(subdomain: string, username: string, password: string): Promise<string> {
+  const res = await request(server).post('/auth/login').send({ subdomain, username, password })
   return res.body.data?.token
 }
 
@@ -30,8 +30,8 @@ let invoiceId: number
 let prescriptionId: number
 
 beforeAll(async () => {
-  adminA = await getToken('dev-clinic',  'admin@dev-clinic.com',  'AdminPass1!')
-  adminB = await getToken('test-clinic', 'admin@test-clinic.com', 'AdminPass2!')
+  adminA = await getToken('dev-clinic',  'admin_a', 'AdminPass1!')
+  adminB = await getToken('test-clinic', 'admin_b', 'AdminPass2!')
 
   // Seed: owner + pet + invoice + payment for Tenant A.
   const uniq = `${Date.now()}`

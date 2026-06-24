@@ -20,8 +20,8 @@ afterAll(async () => {
   await new Promise<void>(resolve => server.close(() => resolve()))
 })
 
-async function getToken(subdomain: string, email: string, password: string): Promise<string> {
-  const res = await request(server).post('/auth/login').send({ subdomain, email, password })
+async function getToken(subdomain: string, username: string, password: string): Promise<string> {
+  const res = await request(server).post('/auth/login').send({ subdomain, username, password })
   return res.body.data?.token
 }
 
@@ -32,9 +32,9 @@ let ownerId: number
 let petId: number
 
 beforeAll(async () => {
-  adminA = await getToken('dev-clinic',  'admin@dev-clinic.com',  'AdminPass1!')
-  adminB = await getToken('test-clinic', 'admin@test-clinic.com', 'AdminPass2!')
-  staffA = await getToken('dev-clinic',  'staff@dev-clinic.com',  'StaffPass1!')
+  adminA = await getToken('dev-clinic',  'admin_a', 'AdminPass1!')
+  adminB = await getToken('test-clinic', 'admin_b', 'AdminPass2!')
+  staffA = await getToken('dev-clinic',  'staff_a', 'StaffPass1!')
 
   // Each run creates its own owner + pet (unique microchip via timestamp) in Tenant A.
   const uniq = `${Date.now()}`

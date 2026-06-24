@@ -17,16 +17,20 @@ import * as usageService from '../services/usage.service'
 
 /** Zod schema for POST /platform/customers */
 export const createCustomerSchema = z.object({
-  name:      z.string().trim().min(1).max(255),
-  subdomain: z.string().trim().min(1).max(100).regex(/^[a-z0-9-]+$/, 'Only lowercase letters, digits, and hyphens'),
-  planId:    z.number().int().positive(),
+  name:          z.string().trim().min(1).max(255),
+  subdomain:     z.string().trim().min(1).max(100).regex(/^[a-z0-9-]+$/, 'Only lowercase letters, digits, and hyphens'),
+  planId:        z.number().int().positive(),
+  // D-2-06: optional company type assignment at creation time
+  companyTypeId: z.number().int().positive().optional(),
 }).strict()
 
 /** Zod schema for PUT /platform/customers/:id */
 export const updateCustomerSchema = z.object({
-  name:      z.string().trim().min(1).max(255).optional(),
-  subdomain: z.string().trim().min(1).max(100).regex(/^[a-z0-9-]+$/, 'Only lowercase letters, digits, and hyphens').optional(),
-  planId:    z.number().int().positive().optional().nullable(),
+  name:          z.string().trim().min(1).max(255).optional(),
+  subdomain:     z.string().trim().min(1).max(100).regex(/^[a-z0-9-]+$/, 'Only lowercase letters, digits, and hyphens').optional(),
+  planId:        z.number().int().positive().optional().nullable(),
+  // D-2-06: optional company type update (nullable to clear the assignment)
+  companyTypeId: z.number().int().positive().nullable().optional(),
 }).strict()
 
 /** Zod schema for PUT /platform/customers/:id/provisioning */

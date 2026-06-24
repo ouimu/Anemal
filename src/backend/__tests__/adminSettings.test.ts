@@ -37,7 +37,7 @@ beforeAll(async () => {
   tenantId = tenant.id
 
   const admin = await prisma.user.create({
-    data: { tenantId, name: 'Admin', email: `admin-${ts}@settings.local`, passwordHash: hash, role: 'admin' },
+    data: { tenantId, name: 'Admin', username: `settings_adm_${ts % 100000}`, email: `admin-${ts}@settings.local`, passwordHash: hash, role: 'admin' },
   })
   adminId = admin.id
 

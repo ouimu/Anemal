@@ -25,8 +25,8 @@ let doctorA = ''
 let platformToken = ''
 let platformUserId = 0
 
-async function login(subdomain: string, email: string): Promise<string> {
-  const res = await request(server).post('/auth/login').send({ subdomain, email, password: PASSWORD })
+async function login(subdomain: string, username: string): Promise<string> {
+  const res = await request(server).post('/auth/login').send({ subdomain, username, password: PASSWORD })
   expect(res.status).toBe(200)
   return res.body.data.token
 }
@@ -43,10 +43,10 @@ beforeAll(async () => {
   const passwordHash = await bcrypt.hash(PASSWORD, 4)
   await prisma.user.createMany({
     data: [
-      { tenantId: tidA, name: 'Admin A',  email: 'admin@a.test',  passwordHash, role: 'admin' },
-      { tenantId: tidA, name: 'Staff A',  email: 'staff@a.test',  passwordHash, role: 'staff' },
-      { tenantId: tidA, name: 'Doctor A', email: 'doctor@a.test', passwordHash, role: 'doctor' },
-      { tenantId: tidB, name: 'Admin B',  email: 'admin@b.test',  passwordHash, role: 'admin' },
+      { tenantId: tidA, name: 'Admin A',  username: 'sapi_admin_a',  email: 'admin@a.test',  passwordHash, role: 'admin' },
+      { tenantId: tidA, name: 'Staff A',  username: 'sapi_staff_a',  email: 'staff@a.test',  passwordHash, role: 'staff' },
+      { tenantId: tidA, name: 'Doctor A', username: 'sapi_doctor_a', email: 'doctor@a.test', passwordHash, role: 'doctor' },
+      { tenantId: tidB, name: 'Admin B',  username: 'sapi_admin_b',  email: 'admin@b.test',  passwordHash, role: 'admin' },
     ],
   })
 
@@ -64,10 +64,10 @@ beforeAll(async () => {
 
   // Seed UserRole rows so requirePermission() resolves permissions for these users
   const [uAdminA, uStaffA, uDoctorA, uAdminB] = await Promise.all([
-    prisma.user.findFirstOrThrow({ where: { tenantId: tidA, email: 'admin@a.test'  } }),
-    prisma.user.findFirstOrThrow({ where: { tenantId: tidA, email: 'staff@a.test'  } }),
-    prisma.user.findFirstOrThrow({ where: { tenantId: tidA, email: 'doctor@a.test' } }),
-    prisma.user.findFirstOrThrow({ where: { tenantId: tidB, email: 'admin@b.test'  } }),
+    prisma.user.findFirstOrThrow({ where: { tenantId: tidA, username: 'sapi_admin_a'  } }),
+    prisma.user.findFirstOrThrow({ where: { tenantId: tidA, username: 'sapi_staff_a'  } }),
+    prisma.user.findFirstOrThrow({ where: { tenantId: tidA, username: 'sapi_doctor_a' } }),
+    prisma.user.findFirstOrThrow({ where: { tenantId: tidB, username: 'sapi_admin_b' } }),
   ])
   await seedUserRoles(prisma, [
     { userId: uAdminA.id,  tenantId: tidA, roleKey: 'clinic_admin' },
@@ -76,10 +76,10 @@ beforeAll(async () => {
     { userId: uAdminB.id,  tenantId: tidB, roleKey: 'clinic_admin' },
   ])
 
-  adminA  = await login(SUB_A, 'admin@a.test')
-  staffA  = await login(SUB_A, 'staff@a.test')
-  doctorA = await login(SUB_A, 'doctor@a.test')
-  adminB  = await login(SUB_B, 'admin@b.test')
+  adminA  = await login(SUB_A, 'sapi_admin_a')
+  staffA  = await login(SUB_A, 'sapi_staff_a')
+  doctorA = await login(SUB_A, 'sapi_doctor_a')
+  adminB  = await login(SUB_B, 'sapi_admin_b')
 })
 
 afterAll(async () => {

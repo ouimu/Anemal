@@ -40,12 +40,12 @@ beforeAll(async () => {
   await prisma.tenantSettings.create({ data: { tenantId, planTier: 'professional' } })
 
   const admin = await prisma.user.create({
-    data: { tenantId, name: 'Test Admin', email: `admin-${ts}@users-test.local`, passwordHash: hash, role: 'admin' },
+    data: { tenantId, name: 'Test Admin', username: `adm_${ts % 100000}`, email: `admin-${ts}@users-test.local`, passwordHash: hash, role: 'admin' },
   })
   adminId = admin.id
 
   const target = await prisma.user.create({
-    data: { tenantId, name: 'Target Doctor', email: `doctor-${ts}@users-test.local`, passwordHash: hash, role: 'doctor' },
+    data: { tenantId, name: 'Target Doctor', username: `doc_${ts % 100000}`, email: `doctor-${ts}@users-test.local`, passwordHash: hash, role: 'doctor' },
   })
   targetUserId = target.id
 
@@ -129,11 +129,11 @@ describe('user-1.5 — POST /users', () => {
 
   test('user-05: Create new staff user', async () => {
     // Type: happy_path
-    const ts = Date.now()
+    const ts = Date.now() % 100000
     const res = await request(server)
       .post('/users')
       .set('Authorization', adminToken())
-      .send({ name: 'New Staff', email: `newstaff-${ts}@users-test.local`, password: 'StaffPass1!', role: 'staff' })
+      .send({ name: 'New Staff', username: `newstaff_${ts}`, email: `newstaff-${ts}@users-test.local`, password: 'StaffPass1!', role: 'staff' })
       .expect(201)
 
     expect(res.body.data.role).toBe('staff')
@@ -143,56 +143,60 @@ describe('user-1.5 — POST /users', () => {
 
   test('user-06: Create new doctor user', async () => {
     // Type: happy_path
-    const ts = Date.now()
+    const ts = Date.now() % 100000
     const res = await request(server)
       .post('/users')
       .set('Authorization', adminToken())
-      .send({ name: 'New Doctor', email: `newdoc-${ts}@users-test.local`, password: 'DocPass1!', role: 'doctor' })
+      .send({ name: 'New Doctor', username: `newdoc_${ts}`, email: `newdoc-${ts}@users-test.local`, password: 'DocPass1!', role: 'doctor' })
       .expect(201)
 
     expect(res.body.data.role).toBe('doctor')
   })
 
-  test('user-07: Duplicate email within same tenant → 409', async () => {
+  test('user-07: Duplicate username within same tenant → 409', async () => {
     // Type: edge_case
-    const email = `dup-${Date.now()}@users-test.local`
+    const ts = Date.now() % 100000
+    const username = `dup_${ts}`
     await request(server)
       .post('/users')
       .set('Authorization', adminToken())
-      .send({ name: 'First', email, password: 'Pass1234!', role: 'staff' })
+      .send({ name: 'First', username, email: `dup1-${ts}@users-test.local`, password: 'Pass1234!', role: 'staff' })
       .expect(201)
 
     await request(server)
       .post('/users')
       .set('Authorization', adminToken())
-      .send({ name: 'Second', email, password: 'Pass1234!', role: 'staff' })
+      .send({ name: 'Second', username, email: `dup2-${ts}@users-test.local`, password: 'Pass1234!', role: 'staff' })
       .expect(409)
   })
 
   test('user-08: Missing required field name → 400', async () => {
     // Type: edge_case / input validation
+    const ts = Date.now() % 100000
     await request(server)
       .post('/users')
       .set('Authorization', adminToken())
-      .send({ email: `x-${Date.now()}@t.com`, password: 'Pass1234!', role: 'staff' })
+      .send({ username: `noname_${ts}`, email: `x-${ts}@t.com`, password: 'Pass1234!', role: 'staff' })
       .expect(400)
   })
 
   test('user-09: Password shorter than 8 chars → 400', async () => {
     // Type: edge_case / input validation (NFR-04)
+    const ts = Date.now() % 100000
     await request(server)
       .post('/users')
       .set('Authorization', adminToken())
-      .send({ name: 'Short Pass', email: `sp-${Date.now()}@t.com`, password: 'abc', role: 'staff' })
+      .send({ name: 'Short Pass', username: `short_${ts}`, email: `sp-${ts}@t.com`, password: 'abc', role: 'staff' })
       .expect(400)
   })
 
   test('user-10: Invalid role value → 400', async () => {
     // Type: edge_case / input validation
+    const ts = Date.now() % 100000
     await request(server)
       .post('/users')
       .set('Authorization', adminToken())
-      .send({ name: 'Bad Role', email: `br-${Date.now()}@t.com`, password: 'Pass1234!', role: 'superuser' })
+      .send({ name: 'Bad Role', username: `badrole_${ts}`, email: `br-${ts}@t.com`, password: 'Pass1234!', role: 'superuser' })
       .expect(400)
   })
 
@@ -201,11 +205,11 @@ describe('user-1.5 — POST /users', () => {
     // When:  Admin from Tenant A creates a user — tenantId is always taken from JWT
     // Then:  created user belongs to Tenant A, not any other tenant
     // Type:  security
-    const ts = Date.now()
+    const ts = Date.now() % 100000
     const res = await request(server)
       .post('/users')
       .set('Authorization', adminToken())
-      .send({ name: 'Isolated', email: `iso-${ts}@t.com`, password: 'Pass1234!', role: 'staff' })
+      .send({ name: 'Isolated', username: `iso_${ts}`, email: `iso-${ts}@t.com`, password: 'Pass1234!', role: 'staff' })
       .expect(201)
 
     // The service always uses req.context.tenantId — never from request body
@@ -279,10 +283,10 @@ describe('user-1.5 — DELETE /users/:id (soft delete)', () => {
 
   test('user-17: Deactivate user via DELETE', async () => {
     // Type: happy_path
-    const ts = Date.now()
+    const ts = Date.now() % 100000
     const hash = await bcrypt.hash('TestPass1!', 10)
     const tempUser = await prisma.user.create({
-      data: { tenantId, name: 'Temp User', email: `temp-${ts}@users-test.local`, passwordHash: hash, role: 'staff' },
+      data: { tenantId, name: 'Temp User', username: `temp_${ts}`, email: `temp-${ts}@users-test.local`, passwordHash: hash, role: 'staff' },
     })
 
     await request(server)
@@ -311,8 +315,9 @@ describe('user-1.5 — Concurrent edge cases', () => {
     // Given: rapid double-submit with identical payload
     // Then:  first succeeds, second returns 409 (duplicate email)
     // Type:  concurrent / edge_case
+    const ts = Date.now() % 100000
     const payload = {
-      name: 'Double Tap', email: `double-${Date.now()}@users-test.local`,
+      name: 'Double Tap', username: `doubletap_${ts}`, email: `double-${ts}@users-test.local`,
       password: 'Pass1234!', role: 'staff',
     }
     const [r1, r2] = await Promise.all([

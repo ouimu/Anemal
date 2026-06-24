@@ -33,10 +33,10 @@ beforeAll(async () => {
   tidA = tA.id; tidB = tB.id
 
   const uA = await prisma.user.create({
-    data: { tenantId: tidA, name: 'Admin A', email: `iso-admin-a-${ts}@test.local`, passwordHash: hash, role: 'admin' },
+    data: { tenantId: tidA, name: 'Admin A', username: `iso_adm_a_${ts % 100000}`, email: `iso-admin-a-${ts}@test.local`, passwordHash: hash, role: 'admin' },
   })
   const uB = await prisma.user.create({
-    data: { tenantId: tidB, name: 'Admin B', email: `iso-admin-b-${ts}@test.local`, passwordHash: hash, role: 'admin' },
+    data: { tenantId: tidB, name: 'Admin B', username: `iso_adm_b_${ts % 100000}`, email: `iso-admin-b-${ts}@test.local`, passwordHash: hash, role: 'admin' },
   })
   uidA = uA.id; uidB = uB.id
 

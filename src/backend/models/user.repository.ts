@@ -8,7 +8,9 @@ import type { CreateUserRequest, UpdateUserRequest } from '../types'
 /** Shape of data accepted by the transactional user+role create. */
 export interface CreateUserData {
   name:         string
-  email:        string
+  username:     string            // D-2-02: required unique login handle
+  email:        string | null     // D-2-02: nullable; at least email or phone required
+  phone:        string | null     // D-2-02: optional contact field
   passwordHash: string
   role:         CreateUserRequest['role']
 }
@@ -23,7 +25,7 @@ export function findUserById(tenantId: number, userId: number) {
 
 export function createUser(
   tenantId: number,
-  data: { name: string; email: string; passwordHash: string; role: CreateUserRequest['role'] },
+  data: { name: string; username: string; email: string | null; passwordHash: string; role: CreateUserRequest['role'] },
 ) {
   return prisma.user.create({ data: { tenantId, ...data } })
 }
@@ -114,6 +116,36 @@ export function findUserRolesWithDetails(tenantId: number, userId: number) {
       },
     },
   })
+}
+
+/**
+ * Update the branchId for a user within a tenant.
+ *
+ * Uses updateMany (tenant-scoped) to keep the write isolated to the correct
+ * tenant. Returns null when no row matched (user not found in this tenant).
+ *
+ * @param tenantId - Owning tenant (multi-tenancy scope).
+ * @param userId   - Target user's primary key.
+ * @param branchId - Branch to assign, or null to clear the assignment.
+ */
+export async function updateUserBranch(
+  tenantId: number,
+  userId:   number,
+  branchId: number | null,
+): Promise<{ id: number; tenantId: number; name: string; username: string; email: string | null; phone: string | null; role: string; branchId: number | null; isActive: boolean; createdAt: Date } | null> {
+  const count = await prisma.user.updateMany({
+    where: { id: userId, tenantId },
+    data:  { branchId },
+  })
+  if (count.count === 0) return null
+  return prisma.user.findFirst({
+    where: { id: userId, tenantId },
+    select: {
+      id: true, tenantId: true, name: true, username: true,
+      email: true, phone: true, role: true,
+      branchId: true, isActive: true, createdAt: true,
+    },
+  }) as Promise<{ id: number; tenantId: number; name: string; username: string; email: string | null; phone: string | null; role: string; branchId: number | null; isActive: boolean; createdAt: Date } | null>
 }
 
 // Phase 1.5-B — personal preferences (language, default calendar view, theme)

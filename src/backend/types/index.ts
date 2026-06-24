@@ -42,7 +42,7 @@ export interface PlatformLoginResponse {
 // ─── Auth ────────────────────────────────────────────────────────────────────
 export interface LoginRequest {
   subdomain: string   // identifies the tenant
-  email:     string
+  username:  string   // D-2-01: login changed from email to username
   password:  string
 }
 
@@ -70,7 +70,8 @@ export interface MeResponse {
   tenantId:    number
   branchId:    number | null
   name:        string
-  email:       string
+  username:    string
+  email:       string | null
   roleIds:     number[]
   permissions: string[]
 }
@@ -88,13 +89,18 @@ export interface PlatformMeResponse {
 // ─── Users ───────────────────────────────────────────────────────────────────
 export interface CreateUserRequest {
   name:     string
-  email:    string
+  username: string              // D-2-02: required unique login handle
+  email?:   string              // D-2-02: now optional; at least one of email/phone required
+  phone?:   string              // D-2-02: new optional contact field
   password: string
-  role:     'doctor' | 'staff'   // admin cannot be created via API
+  role:     'doctor' | 'staff'  // admin cannot be created via API
 }
 
 export interface UpdateUserRequest {
   name?:     string
+  username?: string             // D-2-02: optional update
+  email?:    string             // D-2-02: optional
+  phone?:    string             // D-2-02: new optional contact field
   role?:     'admin' | 'doctor' | 'staff'
   isActive?: boolean
 }
@@ -103,7 +109,9 @@ export interface UserResponse {
   id:        number
   tenantId:  number
   name:      string
-  email:     string
+  username:  string             // D-2-02: included in response
+  email:     string | null      // D-2-02: nullable
+  phone:     string | null      // D-2-02: new field
   role:      string
   isActive:  boolean
   createdAt: string

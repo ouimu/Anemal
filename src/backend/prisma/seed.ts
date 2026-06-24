@@ -12,8 +12,29 @@ import { seedPlans, seedRbac } from './seed-rbac'
 const prisma = new PrismaClient()
 const SALT_ROUNDS = 10
 
+async function seedCompanyTypes() {
+  const companyTypes = [
+    { key: 'animal_hospital',     nameEn: 'Animal Hospital',      nameTh: 'โรงพยาบาลสัตว์',         sortOrder: 0 },
+    { key: 'animal_clinic',       nameEn: 'Animal Clinic',        nameTh: 'คลีนิคสัตว์',             sortOrder: 1 },
+    { key: 'pet_hotel',           nameEn: 'Pet Hotel',            nameTh: 'โรงแรมรับฝากสัตว์เลี้ยง', sortOrder: 2 },
+    { key: 'animal_health_center',nameEn: 'Animal Health Center', nameTh: 'ศูนย์สุขภาพสัตว์',        sortOrder: 3 },
+    { key: 'other',               nameEn: 'Other',                nameTh: 'อื่น ๆ',                  sortOrder: 4 },
+  ]
+  for (const ct of companyTypes) {
+    await prisma.companyType.upsert({
+      where:  { key: ct.key },
+      update: { nameEn: ct.nameEn, nameTh: ct.nameTh, sortOrder: ct.sortOrder },
+      create: { ...ct },
+    })
+  }
+  console.log(`  ✓ company_types — ${companyTypes.length} types seeded`)
+}
+
 async function main() {
   console.log('🌱 Seeding database...')
+
+  // Session D-1: seed company type reference data first (idempotent)
+  await seedCompanyTypes()
 
   // Tenant A — Dev Clinic
   const tenantA = await prisma.tenant.upsert({
@@ -49,16 +70,17 @@ async function main() {
   })
   const mainBranch: Record<number, number> = { [tenantA.id]: branchA.id, [tenantB.id]: branchB.id }
 
+  // Session D-1: username added; unique finder is now tenantId_username (email unique dropped)
   const usersToSeed = [
     // Tenant A
-    { tenantId: tenantA.id, name: 'Admin A',  email: 'admin@dev-clinic.com',  role: LegacyRole.admin,  password: 'AdminPass1!' },
-    { tenantId: tenantA.id, name: 'Doctor A', email: 'doctor@dev-clinic.com', role: LegacyRole.doctor, password: 'DoctorPass1!' },
-    { tenantId: tenantA.id, name: 'Staff A',  email: 'staff@dev-clinic.com',  role: LegacyRole.staff,  password: 'StaffPass1!' },
+    { tenantId: tenantA.id, name: 'Admin A',  username: 'admin_a',  email: 'admin@dev-clinic.com',  role: LegacyRole.admin,  password: 'AdminPass1!' },
+    { tenantId: tenantA.id, name: 'Doctor A', username: 'doctor_a', email: 'doctor@dev-clinic.com', role: LegacyRole.doctor, password: 'DoctorPass1!' },
+    { tenantId: tenantA.id, name: 'Staff A',  username: 'staff_a',  email: 'staff@dev-clinic.com',  role: LegacyRole.staff,  password: 'StaffPass1!' },
     // T-5C-03: superadmin removed from users — platform admin lives in platform_users (see T-5C-02)
     // Tenant B
-    { tenantId: tenantB.id, name: 'Admin B',  email: 'admin@test-clinic.com',  role: LegacyRole.admin,  password: 'AdminPass2!' },
-    { tenantId: tenantB.id, name: 'Doctor B', email: 'doctor@test-clinic.com', role: LegacyRole.doctor, password: 'DoctorPass2!' },
-    { tenantId: tenantB.id, name: 'Staff B',  email: 'staff@test-clinic.com',  role: LegacyRole.staff,  password: 'StaffPass2!' },
+    { tenantId: tenantB.id, name: 'Admin B',  username: 'admin_b',  email: 'admin@test-clinic.com',  role: LegacyRole.admin,  password: 'AdminPass2!' },
+    { tenantId: tenantB.id, name: 'Doctor B', username: 'doctor_b', email: 'doctor@test-clinic.com', role: LegacyRole.doctor, password: 'DoctorPass2!' },
+    { tenantId: tenantB.id, name: 'Staff B',  username: 'staff_b',  email: 'staff@test-clinic.com',  role: LegacyRole.staff,  password: 'StaffPass2!' },
   ]
 
   // Phase 8 (5-A) — seed system roles + permissions first, then resolve IDs
@@ -80,10 +102,11 @@ async function main() {
   for (const u of usersToSeed) {
     const passwordHash = await bcrypt.hash(u.password, SALT_ROUNDS)
     const branchId = mainBranch[u.tenantId]
+    // Session D-1: unique finder is now tenantId_username (email unique index removed)
     const seededUser = await prisma.user.upsert({
-      where: { tenantId_email: { tenantId: u.tenantId, email: u.email } },
-      update: { branchId },
-      create: { tenantId: u.tenantId, branchId, name: u.name, email: u.email, passwordHash, role: u.role },
+      where: { tenantId_username: { tenantId: u.tenantId, username: u.username } },
+      update: { branchId, email: u.email },
+      create: { tenantId: u.tenantId, branchId, name: u.name, username: u.username, email: u.email, passwordHash, role: u.role },
     })
     console.log(`  ✓ ${u.role} — ${u.email}`)
 

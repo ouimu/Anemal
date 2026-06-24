@@ -80,7 +80,8 @@ const PERMISSIONS: Array<{ code: string; module: string; action: string; descrip
   // Staff management
   { code: 'staff.view',                module: 'staff',        action: 'view',        description: 'View staff / user list' },
   { code: 'staff.manage',              module: 'staff',        action: 'manage',      description: 'Create / edit / deactivate staff' },
-  { code: 'staff.assign_role',         module: 'staff',        action: 'assign_role', description: 'Assign / remove roles for staff (CR-01)' },
+  { code: 'staff.assign_role',         module: 'staff',        action: 'assign_role',   description: 'Assign / remove roles for staff (CR-01)' },
+  { code: 'staff.assign_branch',       module: 'staff',        action: 'assign_branch', description: 'Assign a staff member to a branch (D-2-03)' },
   // Role management
   { code: 'roles.view',                module: 'roles',        action: 'view',        description: 'View roles & permissions' },
   { code: 'roles.manage',              module: 'roles',        action: 'manage',      description: 'Create / edit custom roles & assign permissions' },
@@ -121,7 +122,7 @@ const SYSTEM_ROLES = [
       'clinic.profile.view', 'clinic.profile.edit',
       'clinic.branch.view', 'clinic.branch.manage',
       'clinic.hours.edit', 'clinic.payment.edit', 'clinic.integrations.edit',
-      'staff.view', 'staff.manage', 'staff.assign_role',
+      'staff.view', 'staff.manage', 'staff.assign_role', 'staff.assign_branch',
       'roles.view', 'roles.manage',
       'audit.view',
     ],

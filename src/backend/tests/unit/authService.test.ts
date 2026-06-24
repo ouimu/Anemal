@@ -24,7 +24,7 @@ const mockTenant = { id: 1, subdomain: 'dev-clinic', isActive: true }
 
 async function makeUser(role = 'admin') {
   return {
-    id: 10, tenantId: 1, name: 'Admin A', email: 'admin@dev-clinic.com',
+    id: 10, tenantId: 1, name: 'Admin A', username: 'admin_a', email: 'admin@dev-clinic.com',
     passwordHash: await bcrypt.hash('AdminPass1!', 10),
     role, isActive: true,
   }
@@ -38,7 +38,7 @@ describe('authService.login', () => {
     ;(prisma.tenant.findUnique as jest.Mock).mockResolvedValue(mockTenant)
     ;(prisma.user.findUnique   as jest.Mock).mockResolvedValue(user)
 
-    const result = await login({ subdomain: 'dev-clinic', email: user.email, password: 'AdminPass1!' })
+    const result = await login({ subdomain: 'dev-clinic', username: user.username, password: 'AdminPass1!' })
 
     expect(result.token).toBe('mock.jwt.token')
     expect(result.tenantId).toBe(1)
@@ -50,14 +50,14 @@ describe('authService.login', () => {
     ;(prisma.tenant.findUnique as jest.Mock).mockResolvedValue(mockTenant)
     ;(prisma.user.findUnique   as jest.Mock).mockResolvedValue(user)
 
-    await expect(login({ subdomain: 'dev-clinic', email: user.email, password: 'WrongPass!' }))
+    await expect(login({ subdomain: 'dev-clinic', username: user.username, password: 'WrongPass!' }))
       .rejects.toMatchObject({ statusCode: 401 })
   })
 
   it('throws 401 when tenant not found', async () => {
     ;(prisma.tenant.findUnique as jest.Mock).mockResolvedValue(null)
 
-    await expect(login({ subdomain: 'no-tenant', email: 'x@x.com', password: 'pass' }))
+    await expect(login({ subdomain: 'no-tenant', username: 'nobody', password: 'pass' }))
       .rejects.toMatchObject({ statusCode: 401 })
   })
 
@@ -66,14 +66,14 @@ describe('authService.login', () => {
     ;(prisma.tenant.findUnique as jest.Mock).mockResolvedValue(mockTenant)
     ;(prisma.user.findUnique   as jest.Mock).mockResolvedValue(user)
 
-    await expect(login({ subdomain: 'dev-clinic', email: user.email, password: 'AdminPass1!' }))
+    await expect(login({ subdomain: 'dev-clinic', username: user.username, password: 'AdminPass1!' }))
       .rejects.toMatchObject({ statusCode: 401 })
   })
 
   it('throws 401 for inactive tenant', async () => {
     ;(prisma.tenant.findUnique as jest.Mock).mockResolvedValue({ ...mockTenant, isActive: false })
 
-    await expect(login({ subdomain: 'dev-clinic', email: 'x@x.com', password: 'pass' }))
+    await expect(login({ subdomain: 'dev-clinic', username: 'nobody', password: 'pass' }))
       .rejects.toMatchObject({ statusCode: 401 })
   })
 })

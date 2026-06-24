@@ -120,7 +120,7 @@ describe('plane isolation', () => {
     // Get clinic token
     const cRes = await request(server)
       .post('/auth/login')
-      .send({ subdomain: 'dev-clinic', email: 'admin@dev-clinic.com', password: 'AdminPass1!' })
+      .send({ subdomain: 'dev-clinic', username: 'admin_a', password: 'AdminPass1!' })
     clinicToken = cRes.body.data?.token
   })
 

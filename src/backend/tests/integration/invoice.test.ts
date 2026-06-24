@@ -18,10 +18,10 @@ let adminA = ''
 let adminB = ''
 let invoiceIdA = 0
 
-async function login(subdomain: string, email: string): Promise<string> {
+async function login(subdomain: string, username: string): Promise<string> {
   const res = await request(server)
     .post('/auth/login')
-    .send({ subdomain, email, password: PASSWORD })
+    .send({ subdomain, username, password: PASSWORD })
   expect(res.status).toBe(200)
   return res.body.data.token
 }
@@ -64,23 +64,23 @@ beforeAll(async () => {
   const passwordHash = await bcrypt.hash(PASSWORD, 4)
   await prisma.user.createMany({
     data: [
-      { tenantId: tidA, name: 'Admin A', email: 'admin@qr-a.test', passwordHash, role: 'admin' },
-      { tenantId: tidB, name: 'Admin B', email: 'admin@qr-b.test', passwordHash, role: 'admin' },
+      { tenantId: tidA, name: 'Admin A', username: 'admin_qra', email: 'admin@qr-a.test', passwordHash, role: 'admin' },
+      { tenantId: tidB, name: 'Admin B', username: 'admin_qrb', email: 'admin@qr-b.test', passwordHash, role: 'admin' },
     ],
   })
 
   // Seed UserRole rows before login so requirePermission() resolves permissions
   const [uAdminA, uAdminB] = await Promise.all([
-    prisma.user.findFirstOrThrow({ where: { tenantId: tidA, email: 'admin@qr-a.test' } }),
-    prisma.user.findFirstOrThrow({ where: { tenantId: tidB, email: 'admin@qr-b.test' } }),
+    prisma.user.findFirstOrThrow({ where: { tenantId: tidA, username: 'admin_qra' } }),
+    prisma.user.findFirstOrThrow({ where: { tenantId: tidB, username: 'admin_qrb' } }),
   ])
   await seedUserRoles(prisma, [
     { userId: uAdminA.id, tenantId: tidA, roleKey: 'clinic_admin' },
     { userId: uAdminB.id, tenantId: tidB, roleKey: 'clinic_admin' },
   ])
 
-  adminA = await login(SUB_A, 'admin@qr-a.test')
-  adminB = await login(SUB_B, 'admin@qr-b.test')
+  adminA = await login(SUB_A, 'admin_qra')
+  adminB = await login(SUB_B, 'admin_qrb')
 
   // Create an invoice for tenant A
   invoiceIdA = await createMinimalInvoice(tidA, branchA.id)

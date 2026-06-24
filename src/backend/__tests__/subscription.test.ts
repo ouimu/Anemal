@@ -37,8 +37,8 @@ beforeAll(async () => {
   tid = t.id
 
   // Start with two active users (admin + staff)
-  const admin = await prisma.user.create({ data: { tenantId: tid, name: 'Admin', email: `sub-admin-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
-  const staff = await prisma.user.create({ data: { tenantId: tid, name: 'Staff', email: `sub-staff-${ts}@t.local`, passwordHash: hash, role: 'staff' } })
+  const admin = await prisma.user.create({ data: { tenantId: tid, name: 'Admin', username: `sub_adm_${ts % 100000}`, email: `sub-admin-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
+  const staff = await prisma.user.create({ data: { tenantId: tid, name: 'Staff', username: `sub_stf_${ts % 100000}`, email: `sub-staff-${ts}@t.local`, passwordHash: hash, role: 'staff' } })
   adminToken = signToken({ userId: admin.id, tenantId: tid, plane: 'clinic', permSetVersion: 1, role: 'admin' })
   staffToken = signToken({ userId: staff.id, tenantId: tid, plane: 'clinic', permSetVersion: 1, role: 'staff' })
 
@@ -76,9 +76,9 @@ describe('sub-3.4 — Subscription status & quota enforcement', () => {
     const ts = Date.now()
     // 2 active users already; plan limit is 3 → one more succeeds, the next is blocked
     await request(server).post('/users').set(auth(adminToken))
-      .send({ name: 'Doc', email: `sub-doc-${ts}@t.local`, password: 'TestPass1!', role: 'doctor' }).expect(201)
+      .send({ name: 'Doc', username: `sub_doc_${ts % 100000}`, email: `sub-doc-${ts}@t.local`, password: 'TestPass1!', role: 'doctor' }).expect(201)
     const res = await request(server).post('/users').set(auth(adminToken))
-      .send({ name: 'Extra', email: `sub-extra-${ts}@t.local`, password: 'TestPass1!', role: 'staff' }).expect(409)
+      .send({ name: 'Extra', username: `sub_ext_${ts % 100000}`, email: `sub-extra-${ts}@t.local`, password: 'TestPass1!', role: 'staff' }).expect(409)
     expect(res.body.code).toBe('QUOTA_EXCEEDED')
     expect(res.body.details.resource).toBe('users')
     expect(res.body.details.limit).toBe(3)

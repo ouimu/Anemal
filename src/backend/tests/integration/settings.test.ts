@@ -16,7 +16,7 @@ beforeAll(async () => {
   tidA = tA.id
   tidB = tB.id
   const u = await prisma.user.create({
-    data: { tenantId: tidA, name: 'Settings Admin', email: 'admin@settings-a.test', passwordHash: 'x', role: 'admin' },
+    data: { tenantId: tidA, name: 'Settings Admin', username: 'settings_admin_a', email: 'admin@settings-a.test', passwordHash: 'x', role: 'admin' },
   })
   userA = u.id
 })

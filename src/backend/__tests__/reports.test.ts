@@ -25,8 +25,8 @@ beforeAll(async () => {
   const tA = await prisma.tenant.create({ data: { name: 'Rep A', subdomain: SUB_A } })
   const tB = await prisma.tenant.create({ data: { name: 'Rep B', subdomain: SUB_B } })
   tidA = tA.id; tidB = tB.id
-  const uA = await prisma.user.create({ data: { tenantId: tidA, name: 'A', email: `rep-a-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
-  const uB = await prisma.user.create({ data: { tenantId: tidB, name: 'B', email: `rep-b-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
+  const uA = await prisma.user.create({ data: { tenantId: tidA, name: 'A', username: `rep_adm_a_${ts % 100000}`, email: `rep-a-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
+  const uB = await prisma.user.create({ data: { tenantId: tidB, name: 'B', username: `rep_adm_b_${ts % 100000}`, email: `rep-b-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
   // Phase 4: every operating context has a branch; snapshot requires one in the token.
   const bA = await prisma.branch.create({ data: { tenantId: tidA, name: 'Main' } })
   const bB = await prisma.branch.create({ data: { tenantId: tidB, name: 'Main' } })

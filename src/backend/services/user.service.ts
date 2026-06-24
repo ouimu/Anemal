@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt'
 import { Prisma } from '@prisma/client'
 import { AppError } from '../utils/errors'
 import { config } from '../config/env'
+import prisma from '../config/db'
 import * as userRepo from '../models/user.repository'
 import * as roleRepo from '../models/role.repository'
 import * as subscriptionService from './subscription.service'
@@ -20,11 +21,18 @@ const LEGACY_ROLE_TO_SYSTEM_KEY: Record<string, string> = {
 } as const
 
 function safe(user: {
-  id: number; tenantId: number; name: string; email: string
+  id: number; tenantId: number; name: string; username: string
+  email: string | null; phone?: string | null
   passwordHash?: string; role: string; isActive: boolean; createdAt: Date
 }): UserResponse {
   const { passwordHash: _pw, ...rest } = user
-  return { ...rest, role: String(rest.role), createdAt: rest.createdAt.toISOString() }
+  return {
+    ...rest,
+    role:      String(rest.role),
+    email:     rest.email ?? null,
+    phone:     rest.phone ?? null,
+    createdAt: rest.createdAt.toISOString(),
+  }
 }
 
 export async function listUsers(tenantId: number): Promise<UserResponse[]> {
@@ -39,6 +47,11 @@ export async function getUserById(tenantId: number, userId: number): Promise<Use
 }
 
 export async function createUser(tenantId: number, body: CreateUserRequest): Promise<UserResponse> {
+  // D-2-02: at least one contact method required
+  if (!body.email && !body.phone) {
+    throw new UserError('At least one contact (email or phone) is required', 422)
+  }
+
   await subscriptionService.assertCanAddUser(tenantId)
 
   const systemKey = LEGACY_ROLE_TO_SYSTEM_KEY[body.role]
@@ -51,13 +64,20 @@ export async function createUser(tenantId: number, body: CreateUserRequest): Pro
   try {
     const user = await userRepo.createUserWithRole(
       tenantId,
-      { name: body.name, email: body.email, passwordHash, role: body.role },
+      {
+        name:     body.name,
+        username: body.username,
+        email:    body.email ?? null,
+        phone:    body.phone ?? null,
+        passwordHash,
+        role:     body.role,
+      },
       roleRow.id,
     )
     return safe(user)
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-      throw new UserError('Email already in use within this clinic', 409)
+      throw new UserError('Username or email already in use within this clinic', 409)
     }
     throw err
   }
@@ -112,6 +132,44 @@ export async function getUserRoles(tenantId: number, userId: number): Promise<Us
     permissions:       ur.role.permissions.map(p => p.permissionCode),
     assignedUserCount: ur.role._count.userRoles,
   }))
+}
+
+/**
+ * Assign (or clear) the branch for a staff or doctor user.
+ *
+ * Business rules (D-2-04):
+ * 1. Branch must belong to the same tenant (404 if not found).
+ * 2. Staff and doctors must be assigned to a branch (branchId cannot be null).
+ * 3. Admins (roles whose key contains 'admin') may have a null branchId.
+ *
+ * @param tenantId - Tenant scope (required for isolation).
+ * @param userId   - Target user's primary key.
+ * @param branchId - Branch to assign, or null to clear the assignment.
+ */
+export async function assignUserBranch(
+  tenantId: number,
+  userId:   number,
+  branchId: number | null,
+): Promise<UserResponse> {
+  const user = await userRepo.findUserById(tenantId, userId)
+  if (!user) throw new UserError('User not found', 404)
+
+  if (branchId !== null) {
+    const branch = await prisma.branch.findFirst({ where: { id: branchId, tenantId } })
+    if (!branch) throw new UserError('Branch not found in this tenant', 404)
+  }
+
+  // Determine if any of the user's roles are admin-level
+  const userRoleRows = await userRepo.findUserRolesWithDetails(tenantId, userId)
+  const isAdmin = userRoleRows.some(ur => ur.role.key?.includes('admin'))
+
+  if (!isAdmin && branchId === null) {
+    throw new UserError('Staff and Doctor must be assigned to a branch', 422)
+  }
+
+  const updated = await userRepo.updateUserBranch(tenantId, userId, branchId)
+  if (!updated) throw new UserError('User not found', 404)
+  return safe(updated)
 }
 
 export async function deactivateUser(tenantId: number, userId: number): Promise<void> {

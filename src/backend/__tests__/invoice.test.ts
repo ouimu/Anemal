@@ -31,8 +31,8 @@ beforeAll(async () => {
   const tA = await prisma.tenant.create({ data: { name: 'Bill A', subdomain: SUB_A } })
   const tB = await prisma.tenant.create({ data: { name: 'Bill B', subdomain: SUB_B } })
   tidA = tA.id; tidB = tB.id
-  const uA = await prisma.user.create({ data: { tenantId: tidA, name: 'Doc A', email: `bill-a-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
-  const uB = await prisma.user.create({ data: { tenantId: tidB, name: 'Doc B', email: `bill-b-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
+  const uA = await prisma.user.create({ data: { tenantId: tidA, name: 'Doc A', username: `bill_adm_a_${ts % 100000}`, email: `bill-a-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
+  const uB = await prisma.user.create({ data: { tenantId: tidB, name: 'Doc B', username: `bill_adm_b_${ts % 100000}`, email: `bill-b-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
   const bA = await prisma.branch.create({ data: { tenantId: tidA, name: 'Main' } })
   const bB = await prisma.branch.create({ data: { tenantId: tidB, name: 'Main' } })
   branchAId = bA.id

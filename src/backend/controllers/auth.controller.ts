@@ -4,7 +4,7 @@ import { login, switchBranch, getMe, refreshClinicToken, revokeClinicToken } fro
 
 export const loginSchema = z.object({
   subdomain: z.string().min(1),
-  email:     z.string().email(),
+  username:  z.string().min(3).max(20).regex(/^[a-zA-Z0-9_]+$/, 'Username may only contain letters, digits, and underscores'),
   password:  z.string().min(1),
 }).strict()
 

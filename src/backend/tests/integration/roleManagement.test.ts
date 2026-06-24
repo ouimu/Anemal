@@ -29,10 +29,10 @@ let doctorUserId = 0
 let adminRoleId = 0
 let doctorRoleId = 0
 
-async function login(email: string): Promise<string> {
+async function login(username: string): Promise<string> {
   const res = await request(server)
     .post('/auth/login')
-    .send({ subdomain: SUB, email, password: PASSWORD })
+    .send({ subdomain: SUB, username, password: PASSWORD })
   expect(res.status).toBe(200)
   return res.body.data.token
 }
@@ -64,6 +64,7 @@ beforeAll(async () => {
         tenantId:     tid,
         branchId:     branch.id,
         name:         'Admin RM',
+        username:     'admin_rm',
         email:        'admin@rm.test',
         passwordHash,
         role:         'admin',
@@ -75,6 +76,7 @@ beforeAll(async () => {
         tenantId:     tid,
         branchId:     branch.id,
         name:         'Doctor RM',
+        username:     'doctor_rm',
         email:        'doctor@rm.test',
         passwordHash,
         role:         'doctor',
@@ -93,8 +95,8 @@ beforeAll(async () => {
     skipDuplicates: true,
   })
 
-  adminToken  = await login('admin@rm.test')
-  doctorToken = await login('doctor@rm.test')
+  adminToken  = await login('admin_rm')
+  doctorToken = await login('doctor_rm')
 })
 
 afterAll(async () => {
@@ -436,6 +438,7 @@ describe('updateRolePermissions cache invalidation', () => {
         tenantId:     tid,
         branchId:     branch.id,
         name:         'Cache Test User',
+        username:     'cache_test_rm',
         email:        'cachetest@rm.test',
         passwordHash,
         role:         'doctor',
@@ -448,7 +451,7 @@ describe('updateRolePermissions cache invalidation', () => {
       data: { userId: targetUserId, roleId: customRoleId, tenantId: tid },
     })
 
-    targetToken = await login('cachetest@rm.test')
+    targetToken = await login('cache_test_rm')
   })
 
   afterAll(async () => {

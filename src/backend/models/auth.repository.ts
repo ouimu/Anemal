@@ -7,7 +7,18 @@ export function findTenantBySubdomain(subdomain: string) {
 }
 
 export function findUserByTenantEmail(tenantId: number, email: string) {
-  return prisma.user.findUnique({ where: { tenantId_email: { tenantId, email } } })
+  return prisma.user.findFirst({ where: { tenantId, email } })
+}
+
+/**
+ * Look up a clinic user by their username within a tenant.
+ * Uses the unique index `tenantId_username` added in D-1.
+ *
+ * @param tenantId - Tenant scope (required for isolation).
+ * @param username - The user's login handle (3-20 chars, alphanumeric + underscore).
+ */
+export function findUserByTenantUsername(tenantId: number, username: string) {
+  return prisma.user.findUnique({ where: { tenantId_username: { tenantId, username } } })
 }
 
 export function findUserById(tenantId: number, userId: number) {

@@ -18,8 +18,8 @@ afterAll(async () => {
   await new Promise<void>(resolve => server.close(() => resolve()))
 })
 
-async function getToken(subdomain: string, email: string, password: string): Promise<string> {
-  const res = await request(server).post('/auth/login').send({ subdomain, email, password })
+async function getToken(subdomain: string, username: string, password: string): Promise<string> {
+  const res = await request(server).post('/auth/login').send({ subdomain, username, password })
   return res.body.data?.token
 }
 
@@ -29,8 +29,8 @@ describe('Multi-Tenant Isolation — User Management', () => {
   let userIdFromA: number
 
   beforeAll(async () => {
-    tokenA = await getToken('dev-clinic',  'admin@dev-clinic.com',  'AdminPass1!')
-    tokenB = await getToken('test-clinic', 'admin@test-clinic.com', 'AdminPass2!')
+    tokenA = await getToken('dev-clinic',  'admin_a', 'AdminPass1!')
+    tokenB = await getToken('test-clinic', 'admin_b', 'AdminPass2!')
   })
 
   it('✅ Tenant A admin can list own users', async () => {
@@ -65,7 +65,7 @@ describe('Multi-Tenant Isolation — User Management', () => {
   })
 
   it('❌ Staff token cannot access admin-only /users route → 403', async () => {
-    const staffToken = await getToken('dev-clinic', 'staff@dev-clinic.com', 'StaffPass1!')
+    const staffToken = await getToken('dev-clinic', 'staff_a', 'StaffPass1!')
     const res = await request(server)
       .get('/users')
       .set('Authorization', `Bearer ${staffToken}`)
@@ -77,7 +77,7 @@ describe('Multi-Tenant Isolation — User Management', () => {
     const res = await request(server)
       .post('/users')
       .set('Authorization', `Bearer ${tokenB}`)
-      .send({ name: 'Intruder', email: 'intruder@dev-clinic.com', password: 'Pass1234!', role: 'staff' })
+      .send({ name: 'Intruder', username: 'intruder_b', email: 'intruder@dev-clinic.com', password: 'Pass1234!', role: 'staff' })
     // User would be created in Tenant B, not Tenant A — verify by listing Tenant A users
     if (res.status === 201) {
       const listA = await request(server).get('/users').set('Authorization', `Bearer ${tokenA}`)

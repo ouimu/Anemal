@@ -39,8 +39,8 @@ export async function login(body: LoginRequest): Promise<LoginResponse> {
     throw new AuthError('Invalid credentials', 401)
   }
 
-  // 2. Find user scoped to this tenant
-  const user = await authRepo.findUserByTenantEmail(tenant.id, body.email)
+  // 2. Find user scoped to this tenant (D-2-01: username-based lookup)
+  const user = await authRepo.findUserByTenantUsername(tenant.id, body.username)
   if (!user || !user.isActive) {
     throw new AuthError('Invalid credentials', 401)
   }
@@ -134,6 +134,7 @@ export async function getMe(tenantId: number, userId: number, branchId: number |
     tenantId,
     branchId:    branchId ?? user.branchId,
     name:        user.name,
+    username:    user.username,
     email:       user.email,
     roleIds,
     permissions: [...perms],

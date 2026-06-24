@@ -7,6 +7,7 @@ import platformAuthRoutes from './routes/platform-auth.routes'
 import platformCustomersRoutes from './routes/platform-customers.routes'
 import platformPlansRoutes from './routes/platform-plans.routes'
 import platformAuditRoutes from './routes/platform-audit.routes'
+import platformCompanyTypeRoutes from './routes/platform-company-type.routes'
 import userRoutes from './routes/user.routes'
 import adminRoutes from './routes/admin.routes'
 import clinicRoutes from './routes/clinic.routes'
@@ -57,7 +58,8 @@ app.use(auditMiddleware)
 app.use('/platform/auth',      platformAuthRoutes)
 app.use('/platform/customers', platformCustomersRoutes)
 app.use('/platform/plans',     platformPlansRoutes)
-app.use('/platform/audit',     platformAuditRoutes)
+app.use('/platform/audit',        platformAuditRoutes)
+app.use('/platform/company-types', platformCompanyTypeRoutes)
 app.use('/auth',            authRoutes)
 app.use('/users',           userRoutes)
 app.use('/platform/settings', systemSettingsRoutes) // platform-plane only — before /admin

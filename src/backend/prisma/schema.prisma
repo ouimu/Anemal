@@ -1,6 +1,8 @@
 // @db-agent reviewed — every tenant-scoped model has tenantId
 // RULE: All queries must pass tenantId explicitly; never derive inside service
 // Phase 8 (5-A): RBAC foundation — permissions, roles, role_permissions, user_roles, platform_users, plans, tenant_quotas
+// Session D-1: CompanyType model, Tenant.companyTypeId, User.username/phone/email nullable
+// Session D-3-01: PaymentHistory model added
 
 generator client {
   provider = "prisma-client-js"
@@ -11,28 +13,45 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Tenant {
+// Session D-1: Company/clinic type lookup table — global, no tenant_id (reference data)
+model CompanyType {
   id        Int      @id @default(autoincrement())
-  name      String   @db.VarChar(255)
-  subdomain String   @unique @db.VarChar(100)
+  key       String   @unique @db.VarChar(50)
+  nameEn    String   @db.VarChar(100)
+  nameTh    String   @db.VarChar(100)
   isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
   createdAt DateTime @default(now())
-  // Phase 8 (5-A): subscription plan link
-  planId    Int?
 
-  users          User[]
-  owners         Owner[]
-  pets           Pet[]
-  appointments   Appointment[]
-  medicalRecords MedicalRecord[]
-  prescriptions  Prescription[]
-  inventoryItems InventoryItem[]
-  stockMovements StockMovement[]
-  invoices       Invoice[]
-  invoiceItems   InvoiceItem[]
-  vaccinations   Vaccination[]
-  attachments    Attachment[]
-  settings       TenantSettings?
+  tenants Tenant[]
+
+  @@map("company_types")
+}
+
+model Tenant {
+  id            Int      @id @default(autoincrement())
+  name          String   @db.VarChar(255)
+  subdomain     String   @unique @db.VarChar(100)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  // Phase 8 (5-A): subscription plan link
+  planId        Int?
+  // Session D-1: clinic/company type
+  companyTypeId Int?
+
+  users               User[]
+  owners              Owner[]
+  pets                Pet[]
+  appointments        Appointment[]
+  medicalRecords      MedicalRecord[]
+  prescriptions       Prescription[]
+  inventoryItems      InventoryItem[]
+  stockMovements      StockMovement[]
+  invoices            Invoice[]
+  invoiceItems        InvoiceItem[]
+  vaccinations        Vaccination[]
+  attachments         Attachment[]
+  settings            TenantSettings?
   // Phase 4
   branches            Branch[]
   branchInventory     BranchInventory[]
@@ -47,55 +66,59 @@ model Tenant {
   auditLogs           AuditLog[]
   petReminders        PetReminder[]
   // Phase 8 (5-A): RBAC
-  plan      Plan?         @relation(fields: [planId], references: [id])
-  quota     TenantQuota?
-  roles     ClinicRole[]
-  userRoles UserRole[]
+  plan                Plan?                @relation(fields: [planId], references: [id])
+  quota               TenantQuota?
+  // Session D-1: company type FK (SetNull so deleting a type doesn't cascade)
+  companyType         CompanyType?         @relation(fields: [companyTypeId], references: [id], onDelete: SetNull)
+  roles               ClinicRole[]
+  userRoles           UserRole[]
   // Phase 8 (5-D): platform audit back-relation
-  platformAuditLogs PlatformAuditLog[]
+  platformAuditLogs   PlatformAuditLog[]
   // Phase 8 (5-D): per-tenant integration provisioning
-  provisioning      TenantProvisioning?
+  provisioning        TenantProvisioning?
+  // Session D-3-01: payment history back-relation
+  paymentHistory      PaymentHistory[]
 
   @@map("tenants")
 }
 
 // Clinic profile & configuration — one row per tenant
 model TenantSettings {
-  id                  Int      @id @default(autoincrement())
-  tenantId            Int      @unique
-  logoUrl             String?
-  phone               String?  @db.VarChar(50)
-  email               String?  @db.VarChar(255)
-  website             String?  @db.VarChar(255)
-  address             String?
-  taxId               String?  @db.VarChar(50)
+  id                   Int      @id @default(autoincrement())
+  tenantId             Int      @unique
+  logoUrl              String?
+  phone                String?  @db.VarChar(50)
+  email                String?  @db.VarChar(255)
+  website              String?  @db.VarChar(255)
+  address              String?
+  taxId                String?  @db.VarChar(50)
   // Appointment defaults
-  defaultSlotMinutes  Int      @default(30)
-  workStartTime       String   @default("08:00") @db.VarChar(5)
-  workEndTime         String   @default("18:00") @db.VarChar(5)
+  defaultSlotMinutes   Int      @default(30)
+  workStartTime        String   @default("08:00") @db.VarChar(5)
+  workEndTime          String   @default("18:00") @db.VarChar(5)
   // Notification toggles
-  smsRemindersEnabled  Boolean @default(true)
-  lineRemindersEnabled Boolean @default(true)
+  smsRemindersEnabled  Boolean  @default(true)
+  lineRemindersEnabled Boolean  @default(true)
   // Subscription
-  planTier            String   @default("starter") @db.VarChar(50)
+  planTier             String   @default("starter") @db.VarChar(50)
   // Phase 1.5 — operating hours per day: { mon:{open:"08:00",close:"18:00"}, sun:null, ... }
-  operatingHours      Json?
+  operatingHours       Json?
   // Phase 1.5 — LINE OA (token AES-256-GCM encrypted, enc:v1 format)
-  lineOaToken         String?
+  lineOaToken          String?
   // Phase 1.5 — SMS ('thaibulksms' | 'thsms' | null; apiKey encrypted)
-  smsProvider         String?  @db.VarChar(50)
-  smsApiKey           String?
-  smsSenderName       String?  @db.VarChar(100)
+  smsProvider          String?  @db.VarChar(50)
+  smsApiKey            String?
+  smsSenderName        String?  @db.VarChar(100)
   // Phase 1.5 — Payments (gbprimepaySecret encrypted)
-  promptpayId         String?  @db.VarChar(50)
-  paymentQrUrl        String?
-  gbprimepayPublic    String?  @db.VarChar(255)
-  gbprimepaySecret    String?
+  promptpayId          String?  @db.VarChar(50)
+  paymentQrUrl         String?
+  gbprimepayPublic     String?  @db.VarChar(255)
+  gbprimepaySecret     String?
   // Phase 1.5 — Lab integration (labApiKey encrypted)
-  labApiUrl           String?  @db.VarChar(500)
-  labApiKey           String?
-  updatedBy           Int?
-  updatedAt           DateTime @updatedAt
+  labApiUrl            String?  @db.VarChar(500)
+  labApiKey            String?
+  updatedBy            Int?
+  updatedAt            DateTime @updatedAt
 
   tenant        Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   updatedByUser User?  @relation("TenantSettingsUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
@@ -104,37 +127,45 @@ model TenantSettings {
 }
 
 model User {
-  id               Int      @id @default(autoincrement())
-  tenantId         Int
-  branchId         Int?     // primary branch (Phase 4)
-  name             String   @db.VarChar(255)
-  email            String   @db.VarChar(255)
-  passwordHash     String   @db.VarChar(255)
-  role             LegacyRole
+  id                  Int        @id @default(autoincrement())
+  tenantId            Int
+  branchId            Int? // primary branch (Phase 4)
+  name                String     @db.VarChar(255)
+  // Session D-1: username unique per tenant; backfilled as 'user' || id for existing rows
+  username            String     @db.VarChar(20)
+  // Session D-1: email now nullable; service enforces at least one of (email OR phone)
+  email               String?    @db.VarChar(255)
+  // Session D-1: phone added as optional contact channel
+  phone               String?    @db.VarChar(20)
+  passwordHash        String     @db.VarChar(255)
+  role                LegacyRole
   // Phase 8 (5-A): FK to new roles table; nullable during migration; legacy role string kept until 5-C
-  roleId           Int?
-  isActive         Boolean  @default(true)
-  allowedStartTime String?  @db.VarChar(5) // "HH:MM" login window start (Phase 4)
-  allowedEndTime   String?  @db.VarChar(5) // "HH:MM" login window end
-  language            String @default("th")    @db.VarChar(5)  // personal preference (Phase 1.5-B)
-  defaultCalendarView String @default("week")  @db.VarChar(10) // day | week | month
-  theme               String @default("light") @db.VarChar(10) // light | dark (personal preference, 2026-06-13)
-  lastLoginAt      DateTime?
-  createdAt        DateTime @default(now())
+  roleId              Int?
+  isActive            Boolean    @default(true)
+  allowedStartTime    String?    @db.VarChar(5) // "HH:MM" login window start (Phase 4)
+  allowedEndTime      String?    @db.VarChar(5) // "HH:MM" login window end
+  language            String     @default("th") @db.VarChar(5) // personal preference (Phase 1.5-B)
+  defaultCalendarView String     @default("week") @db.VarChar(10) // day | week | month
+  theme               String     @default("light") @db.VarChar(10) // light | dark (personal preference, 2026-06-13)
+  lastLoginAt         DateTime?
+  createdAt           DateTime   @default(now())
 
-  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  branch       Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  tenant                Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch                Branch?            @relation(fields: [branchId], references: [id], onDelete: SetNull)
   // Phase 8 (5-A): primary role reference (display/fallback); effective perms come from userRoles union
-  roleRef      ClinicRole? @relation("UserPrimaryRole", fields: [roleId], references: [id])
-  userRoles    UserRole[]
-  appointments Appointment[]
-  medicalRecords MedicalRecord[]
+  roleRef               ClinicRole?        @relation("UserPrimaryRole", fields: [roleId], references: [id])
+  userRoles             UserRole[]
+  appointments          Appointment[]
+  medicalRecords        MedicalRecord[]
   // Phase 1.5 settings back-relations
   tenantSettingsUpdated TenantSettings[]   @relation("TenantSettingsUpdatedBy")
   systemSettingsUpdated SystemSettings[]   @relation("SystemSettingsUpdatedBy")
   settingsAuditChanges  SettingsAuditLog[] @relation("SettingsAuditChangedBy")
+  // Session D-3-01: payment history received by this user
+  paymentHistoryReceived PaymentHistory[]  @relation("ReceivedPayments")
 
-  @@unique([tenantId, email])
+  // Session D-1: unique on (tenantId, username); email uniqueness enforced in service layer
+  @@unique([tenantId, username])
   @@index([tenantId])
   @@index([tenantId, branchId])
   @@map("users")
@@ -151,13 +182,13 @@ enum LegacyRole {
 
 // Platform-global settings — NOT tenant-scoped; super-admin only (Phase 1.5)
 model SystemSettings {
-  key           String   @id @db.VarChar(100)
-  value         String
-  description   String?  @db.VarChar(500)
-  category      String   @default("platform") @db.VarChar(50) // 'smtp' | 'platform' | 'feature_flags'
-  isSecret      Boolean  @default(false)
-  updatedBy     Int?
-  updatedAt     DateTime @updatedAt
+  key         String   @id @db.VarChar(100)
+  value       String
+  description String?  @db.VarChar(500)
+  category    String   @default("platform") @db.VarChar(50) // 'smtp' | 'platform' | 'feature_flags'
+  isSecret    Boolean  @default(false)
+  updatedBy   Int?
+  updatedAt   DateTime @updatedAt
 
   updatedByUser User? @relation("SystemSettingsUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
 
@@ -168,14 +199,14 @@ model SystemSettings {
 // Field-level settings change trail (Phase 1.5).
 // tenantId NULL = system_settings change. No tenant FK — audit rows survive tenant deletion.
 model SettingsAuditLog {
-  id            Int      @id @default(autoincrement())
-  tenantId      Int?
-  changedBy     Int?
-  tableName     String   @db.VarChar(100) // 'tenant_settings' | 'system_settings'
-  fieldName     String   @db.VarChar(100)
-  oldValue      String?  // masked if secret
-  newValue      String?  // masked if secret
-  changedAt     DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  tenantId  Int?
+  changedBy Int?
+  tableName String   @db.VarChar(100) // 'tenant_settings' | 'system_settings'
+  fieldName String   @db.VarChar(100)
+  oldValue  String? // masked if secret
+  newValue  String? // masked if secret
+  changedAt DateTime @default(now())
 
   changedByUser User? @relation("SettingsAuditChangedBy", fields: [changedBy], references: [id], onDelete: SetNull)
 
@@ -193,13 +224,13 @@ model Owner {
   email          String?  @db.VarChar(255)
   lineId         String?  @db.VarChar(100)
   address        String?
-  isActive       Boolean  @default(true)   // Phase 4 soft-deactivation
-  loyaltyPoints  Int      @default(0)       // Phase 4 loyalty balance
+  isActive       Boolean  @default(true) // Phase 4 soft-deactivation
+  loyaltyPoints  Int      @default(0) // Phase 4 loyalty balance
   membershipTier String   @default("standard") @db.VarChar(50) // standard|silver|gold|platinum
   createdAt      DateTime @default(now())
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  pets   Pet[]
+  tenant              Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pets                Pet[]
   loyaltyTransactions LoyaltyTransaction[]
 
   @@index([tenantId])
@@ -225,12 +256,12 @@ model Pet {
   isActive             Boolean   @default(true)
   createdAt            DateTime  @default(now())
 
-  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  owner          Owner           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  appointments   Appointment[]
-  medicalRecords MedicalRecord[]
-  vaccinations   Vaccination[]
-  invoices       Invoice[]
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  owner             Owner              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  appointments      Appointment[]
+  medicalRecords    MedicalRecord[]
+  vaccinations      Vaccination[]
+  invoices          Invoice[]
   // Phase 4
   hospitalizations  Hospitalization[]
   groomingBookings  GroomingBooking[]
@@ -303,10 +334,10 @@ model MedicalRecord {
   anatomyAnnotation Json?
   createdAt         DateTime @default(now())
 
-  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  pet           Pet           @relation(fields: [petId], references: [id], onDelete: Cascade)
-  appointment   Appointment?  @relation(fields: [appointmentId], references: [id])
-  doctor        User          @relation(fields: [doctorId], references: [id])
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pet           Pet            @relation(fields: [petId], references: [id], onDelete: Cascade)
+  appointment   Appointment?   @relation(fields: [appointmentId], references: [id])
+  doctor        User           @relation(fields: [doctorId], references: [id])
   prescriptions Prescription[]
   attachments   Attachment[]
   invoices      Invoice[]
@@ -317,14 +348,14 @@ model MedicalRecord {
 }
 
 model Prescription {
-  id               Int      @id @default(autoincrement())
-  tenantId         Int
-  medicalRecordId  Int
-  drugId           Int
-  quantity         Decimal  @db.Decimal(8, 2)
-  unit             String?  @db.VarChar(50)
+  id                Int      @id @default(autoincrement())
+  tenantId          Int
+  medicalRecordId   Int
+  drugId            Int
+  quantity          Decimal  @db.Decimal(8, 2)
+  unit              String?  @db.VarChar(50)
   dosageInstruction String?
-  createdAt        DateTime @default(now())
+  createdAt         DateTime @default(now())
 
   tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   medicalRecord MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
@@ -337,16 +368,16 @@ model Prescription {
 
 // Product catalog (Phase 4: stock moved to BranchInventory — this is now definition-only).
 model InventoryItem {
-  id            Int      @id @default(autoincrement())
-  tenantId      Int
-  name          String   @db.VarChar(255)
-  category      String?  @db.VarChar(100)
-  barcode       String?  @db.VarChar(100)
-  unit          String?  @db.VarChar(50)
-  unitCost      Decimal? @db.Decimal(10, 2)
-  unitPrice     Decimal? @db.Decimal(10, 2)
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  tenantId  Int
+  name      String   @db.VarChar(255)
+  category  String?  @db.VarChar(100)
+  barcode   String?  @db.VarChar(100)
+  unit      String?  @db.VarChar(50)
+  unitCost  Decimal? @db.Decimal(10, 2)
+  unitPrice Decimal? @db.Decimal(10, 2)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
 
   tenant          Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   prescriptions   Prescription[]
@@ -403,31 +434,33 @@ model StockMovement {
 }
 
 model Invoice {
-  id              Int            @id @default(autoincrement())
+  id              Int           @id @default(autoincrement())
   tenantId        Int
   branchId        Int?
   petId           Int?
   medicalRecordId Int?
-  invoiceNo       String         @db.VarChar(100)
-  issuedAt        DateTime       @default(now())
-  subtotal        Decimal        @default(0) @db.Decimal(10, 2)
-  discount        Decimal        @default(0) @db.Decimal(10, 2)
+  invoiceNo       String        @db.VarChar(100)
+  issuedAt        DateTime      @default(now())
+  subtotal        Decimal       @default(0) @db.Decimal(10, 2)
+  discount        Decimal       @default(0) @db.Decimal(10, 2)
   discountReason  String?
-  taxRate         Decimal        @default(7) @db.Decimal(5, 2)
-  taxAmount       Decimal        @default(0) @db.Decimal(10, 2)
-  totalAmount     Decimal        @db.Decimal(10, 2)
-  paymentStatus   PaymentStatus  @default(pending)
-  paymentMethod   String?        @db.VarChar(50)
+  taxRate         Decimal       @default(7) @db.Decimal(5, 2)
+  taxAmount       Decimal       @default(0) @db.Decimal(10, 2)
+  totalAmount     Decimal       @db.Decimal(10, 2)
+  paymentStatus   PaymentStatus @default(pending)
+  paymentMethod   String?       @db.VarChar(50)
   paidAt          DateTime?
   notes           String?
   createdBy       Int?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  pet           Pet?           @relation(fields: [petId], references: [id])
-  medicalRecord MedicalRecord? @relation(fields: [medicalRecordId], references: [id])
-  items         InvoiceItem[]
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pet            Pet?            @relation(fields: [petId], references: [id])
+  medicalRecord  MedicalRecord?  @relation(fields: [medicalRecordId], references: [id])
+  items          InvoiceItem[]
+  // Session D-3-01: payment history back-relation
+  paymentHistory PaymentHistory[]
 
   @@unique([tenantId, invoiceNo])
   @@index([tenantId, petId])
@@ -444,14 +477,14 @@ enum PaymentStatus {
 }
 
 model InvoiceItem {
-  id          Int      @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   tenantId    Int
   invoiceId   Int
-  description String   @db.VarChar(255)
-  quantity    Decimal  @db.Decimal(8, 2)
-  unitPrice   Decimal  @db.Decimal(10, 2)
-  totalPrice  Decimal  @db.Decimal(10, 2)
-  itemType    String?  @db.VarChar(50)
+  description String  @db.VarChar(255)
+  quantity    Decimal @db.Decimal(8, 2)
+  unitPrice   Decimal @db.Decimal(10, 2)
+  totalPrice  Decimal @db.Decimal(10, 2)
+  itemType    String? @db.VarChar(50)
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
@@ -511,6 +544,8 @@ model Branch {
   tenant          Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   users           User[]
   branchInventory BranchInventory[]
+  // Session D-3-01: payment history back-relation
+  paymentHistory  PaymentHistory[]
 
   @@unique([tenantId, name])
   @@index([tenantId, isActive])
@@ -522,7 +557,7 @@ model DoctorShift {
   tenantId  Int
   branchId  Int
   doctorId  Int
-  dayOfWeek Int      // 0=Sun … 6=Sat
+  dayOfWeek Int // 0=Sun … 6=Sat
   startTime String   @db.VarChar(5) // "HH:MM"
   endTime   String   @db.VarChar(5)
   createdAt DateTime @default(now())
@@ -562,18 +597,18 @@ model Hospitalization {
 }
 
 model DailyInpatientCare {
-  id                 Int      @id @default(autoincrement())
-  tenantId           Int
-  hospitalizationId  Int
-  recordedAt         DateTime @default(now())
-  timeSlot           String   @db.VarChar(20) // 08:00|12:00|16:00|20:00
-  temperatureC       Decimal? @db.Decimal(4, 1)
-  heartRateBpm       Int?
-  respRateRpm        Int?
-  feedingStatus      String?  @db.VarChar(255)
-  medicationGiven    String?
-  notes              String?
-  performedBy        Int?
+  id                Int      @id @default(autoincrement())
+  tenantId          Int
+  hospitalizationId Int
+  recordedAt        DateTime @default(now())
+  timeSlot          String   @db.VarChar(20) // 08:00|12:00|16:00|20:00
+  temperatureC      Decimal? @db.Decimal(4, 1)
+  heartRateBpm      Int?
+  respRateRpm       Int?
+  feedingStatus     String?  @db.VarChar(255)
+  medicationGiven   String?
+  notes             String?
+  performedBy       Int?
 
   tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   hospitalization Hospitalization @relation(fields: [hospitalizationId], references: [id], onDelete: Cascade)
@@ -629,14 +664,14 @@ model BloodDonor {
 }
 
 model BloodDonation {
-  id          Int       @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   tenantId    Int
   donorId     Int
-  volumeMl    Decimal   @db.Decimal(10, 2)
-  collectedAt DateTime  @default(now())
+  volumeMl    Decimal  @db.Decimal(10, 2)
+  collectedAt DateTime @default(now())
   collectedBy Int?
-  expiryDate  DateTime  @db.Date
-  status      String    @default("available") @db.VarChar(20) // available|used|expired|discarded
+  expiryDate  DateTime @db.Date
+  status      String   @default("available") @db.VarChar(20) // available|used|expired|discarded
   notes       String?
 
   tenant Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -685,16 +720,16 @@ model LoyaltyTransaction {
 
 // ─── Phase 4: Audit (write-once) ─────────────────────────────────────────────
 model AuditLog {
-  id         Int      @id @default(autoincrement())
-  tenantId   Int
-  userId     Int?
-  action     String   @db.VarChar(255)
-  tableName  String?  @db.VarChar(100)
-  recordId   Int?
-  details    Json?
-  ipAddress  String?  @db.VarChar(50)
-  userAgent  String?  @db.VarChar(500)
-  createdAt  DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  tenantId  Int
+  userId    Int?
+  action    String   @db.VarChar(255)
+  tableName String?  @db.VarChar(100)
+  recordId  Int?
+  details   Json?
+  ipAddress String?  @db.VarChar(50)
+  userAgent String?  @db.VarChar(500)
+  createdAt DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -729,10 +764,10 @@ model PetReminder {
 // Permission catalogue — global, no tenant_id
 // Seeded once; not tenant-scoped; never filtered by tenantId
 model Permission {
-  code        String           @id @db.VarChar(80)
-  module      String           @db.VarChar(50)
-  action      String           @db.VarChar(30)
-  description String?          @db.VarChar(255)
+  code        String  @id @db.VarChar(80)
+  module      String  @db.VarChar(50)
+  action      String  @db.VarChar(30)
+  description String? @db.VarChar(255)
 
   roles RolePermission[]
 
@@ -744,18 +779,18 @@ model Permission {
 // System roles (tenantId=NULL) are visible to all tenants (no filter on list of system roles)
 model ClinicRole {
   id          Int      @id @default(autoincrement())
-  tenantId    Int?     // NULL = system template; SET = tenant-scoped custom role
+  tenantId    Int? // NULL = system template; SET = tenant-scoped custom role
   name        String   @db.VarChar(80)
   key         String   @db.VarChar(50)
   isSystem    Boolean  @default(false)
   description String?  @db.VarChar(255)
-  permVersion Int      @default(1)  // bumped on permission change -> busts Redis/JWT cache
+  permVersion Int      @default(1) // bumped on permission change -> busts Redis/JWT cache
   createdAt   DateTime @default(now())
 
-  tenant      Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  permissions RolePermission[]
-  userRoles   UserRole[]
-  primaryUsers User[]          @relation("UserPrimaryRole")
+  tenant       Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  permissions  RolePermission[]
+  userRoles    UserRole[]
+  primaryUsers User[]           @relation("UserPrimaryRole")
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -779,7 +814,7 @@ model RolePermission {
 model UserRole {
   userId   Int
   roleId   Int
-  tenantId Int  // denormalized for isolation — must match user's tenantId
+  tenantId Int // denormalized for isolation — must match user's tenantId
 
   user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   role   ClinicRole @relation(fields: [roleId], references: [id], onDelete: Restrict)
@@ -803,7 +838,7 @@ model PlatformUser {
   createdAt    DateTime     @default(now())
 
   // Phase 8 (5-D): platform audit back-relation
-  platformAuditLogs PlatformAuditLog[]
+  platformAuditLogs   PlatformAuditLog[]
   // Phase 8 (5-D): provisioning records updated by this platform user
   provisioningUpdates TenantProvisioning[] @relation("ProvisioningUpdatedBy")
 
@@ -819,15 +854,15 @@ enum PlatformRole {
 
 // Subscription plans / packages
 model Plan {
-  id          Int      @id @default(autoincrement())
-  key         String   @unique @db.VarChar(50)  // 'starter'|'professional'|'clinic_plus'
-  name        String   @db.VarChar(100)
-  priceMonth  Decimal  @default(0) @db.Decimal(10, 2)
-  maxBranches Int      @default(1)
-  maxUsers    Int      @default(5)
-  maxOwners   Int?     // NULL = unlimited
-  features    Json     @default("{}")
-  isActive    Boolean  @default(true)
+  id          Int     @id @default(autoincrement())
+  key         String  @unique @db.VarChar(50) // 'starter'|'professional'|'clinic_plus'
+  name        String  @db.VarChar(100)
+  priceMonth  Decimal @default(0) @db.Decimal(10, 2)
+  maxBranches Int     @default(1)
+  maxUsers    Int     @default(5)
+  maxOwners   Int? // NULL = unlimited
+  features    Json    @default("{}")
+  isActive    Boolean @default(true)
 
   tenants Tenant[]
 
@@ -841,7 +876,7 @@ model TenantQuota {
   maxBranches Int?
   maxUsers    Int?
   maxOwners   Int?
-  updatedById Int?     // platform_users.id (cross-plane FK intentionally not enforced at DB level)
+  updatedById Int? // platform_users.id (cross-plane FK intentionally not enforced at DB level)
   updatedAt   DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -853,17 +888,17 @@ model TenantQuota {
 // targetTenantId is nullable so platform-level actions (e.g. plan changes) can be logged
 // without a specific tenant target.
 model PlatformAuditLog {
-  id                       Int       @id @default(autoincrement())
-  action                   String    @db.VarChar(255)
-  targetTenantId           Int?
+  id                        Int      @id @default(autoincrement())
+  action                    String   @db.VarChar(255)
+  targetTenantId            Int?
   performedByPlatformUserId Int
-  plane                    String    @default("platform") @db.VarChar(20)
-  details                  Json?
-  ipAddress                String?   @db.VarChar(50)
-  createdAt                DateTime  @default(now())
+  plane                     String   @default("platform") @db.VarChar(20)
+  details                   Json?
+  ipAddress                 String?  @db.VarChar(50)
+  createdAt                 DateTime @default(now())
 
-  targetTenant   Tenant?       @relation(fields: [targetTenantId], references: [id], onDelete: SetNull)
-  performedBy    PlatformUser  @relation(fields: [performedByPlatformUserId], references: [id])
+  targetTenant Tenant?      @relation(fields: [targetTenantId], references: [id], onDelete: SetNull)
+  performedBy  PlatformUser @relation(fields: [performedByPlatformUserId], references: [id])
 
   @@index([performedByPlatformUserId, createdAt(sort: Desc)])
   @@index([targetTenantId, createdAt(sort: Desc)])
@@ -910,9 +945,9 @@ model RefreshToken {
   id             String    @id @default(cuid())
   tokenHash      String    @unique
   familyId       String
-  userId         Int?      // clinic users (users.id); NULL for platform tokens
-  platformUserId Int?      // platform users (platform_users.id); NULL for clinic tokens
-  tenantId       Int?      // clinic plane only; NULL for platform plane
+  userId         Int? // clinic users (users.id); NULL for platform tokens
+  platformUserId Int? // platform users (platform_users.id); NULL for clinic tokens
+  tenantId       Int? // clinic plane only; NULL for platform plane
   plane          String    @db.VarChar(20) // 'clinic' | 'platform'
   expiresAt      DateTime
   rotatedAt      DateTime? // set when consumed by a successful refresh
@@ -923,4 +958,30 @@ model RefreshToken {
   @@index([userId, tenantId])
   @@index([expiresAt])
   @@map("refresh_tokens")
+}
+
+// ─── Session D-3-01: Payment History ─────────────────────────────────────────
+// Records each payment event against an invoice; supports partial/split payments.
+// Tenant-scoped: every query MUST include WHERE tenantId = :tenantId.
+// Branch-scoped: also filter AND branchId = :branchId when accessing per-branch views.
+model PaymentHistory {
+  id           Int      @id @default(autoincrement())
+  tenantId     Int
+  branchId     Int
+  invoiceId    Int
+  amount       Decimal  @db.Decimal(10, 2)
+  method       String   @db.VarChar(50)   // cash | card | transfer | other
+  receivedById Int
+  note         String?
+  paidAt       DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  tenant     Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch     Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  invoice    Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  receivedBy User    @relation("ReceivedPayments", fields: [receivedById], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, branchId])
+  @@index([tenantId, paidAt])
+  @@map("payment_history")
 }

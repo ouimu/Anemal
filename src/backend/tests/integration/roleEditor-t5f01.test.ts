@@ -38,10 +38,10 @@ let adminUserIdA = 0
 let adminRoleId = 0
 let staffRoleId = 0
 
-async function login(sub: string, email: string): Promise<string> {
+async function login(sub: string, username: string): Promise<string> {
   const res = await request(server)
     .post('/auth/login')
-    .send({ subdomain: sub, email, password: PASSWORD })
+    .send({ subdomain: sub, username, password: PASSWORD })
   expect(res.status).toBe(200)
   return res.body.data.token
 }
@@ -72,13 +72,13 @@ beforeAll(async () => {
 
   const [uAdminA, uStaffA, uAdminB] = await Promise.all([
     prisma.user.create({
-      data: { tenantId: tidA, branchId: a.branchId, name: 'Admin A', email: 'admin@a.test', passwordHash, role: 'admin', roleId: adminRole.id },
+      data: { tenantId: tidA, branchId: a.branchId, name: 'Admin A', username: 'admin_re_a', email: 'admin@a.test', passwordHash, role: 'admin', roleId: adminRole.id },
     }),
     prisma.user.create({
-      data: { tenantId: tidA, branchId: a.branchId, name: 'Staff A', email: 'staff@a.test', passwordHash, role: 'staff', roleId: staffRole.id },
+      data: { tenantId: tidA, branchId: a.branchId, name: 'Staff A', username: 'staff_re_a', email: 'staff@a.test', passwordHash, role: 'staff', roleId: staffRole.id },
     }),
     prisma.user.create({
-      data: { tenantId: tidB, branchId: b.branchId, name: 'Admin B', email: 'admin@b.test', passwordHash, role: 'admin', roleId: adminRole.id },
+      data: { tenantId: tidB, branchId: b.branchId, name: 'Admin B', username: 'admin_re_b', email: 'admin@b.test', passwordHash, role: 'admin', roleId: adminRole.id },
     }),
   ])
   adminUserIdA = uAdminA.id
@@ -92,9 +92,9 @@ beforeAll(async () => {
     skipDuplicates: true,
   })
 
-  adminToken  = await login(SUB_A, 'admin@a.test')
-  staffToken  = await login(SUB_A, 'staff@a.test')
-  adminBToken = await login(SUB_B, 'admin@b.test')
+  adminToken  = await login(SUB_A, 'admin_re_a')
+  staffToken  = await login(SUB_A, 'staff_re_a')
+  adminBToken = await login(SUB_B, 'admin_re_b')
 })
 
 afterAll(async () => {

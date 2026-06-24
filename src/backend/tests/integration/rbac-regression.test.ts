@@ -35,8 +35,8 @@ let admin2Token = ''
 let petId = 0
 let pet2Id = 0
 
-async function login(subdomain: string, email: string): Promise<string> {
-  const res = await request(server).post('/auth/login').send({ subdomain, email, password: PASSWORD })
+async function login(subdomain: string, username: string): Promise<string> {
+  const res = await request(server).post('/auth/login').send({ subdomain, username, password: PASSWORD })
   expect(res.status).toBe(200)
   return res.body.data.token
 }
@@ -69,10 +69,10 @@ beforeAll(async () => {
   const passwordHash = await bcrypt.hash(PASSWORD, 4)
   await prisma.user.createMany({
     data: [
-      { tenantId: tid,  branchId: branch1.id, name: 'Admin RG',  email: 'admin@rg.test',  passwordHash, role: 'admin',  roleId: adminRoleId },
-      { tenantId: tid,  branchId: branch1.id, name: 'Doctor RG', email: 'doctor@rg.test', passwordHash, role: 'doctor', roleId: doctorRoleId },
-      { tenantId: tid,  branchId: branch1.id, name: 'Staff RG',  email: 'staff@rg.test',  passwordHash, role: 'staff',  roleId: staffRoleId },
-      { tenantId: tid2, branchId: branch2.id, name: 'Admin RG2', email: 'admin@rg2.test', passwordHash, role: 'admin',  roleId: adminRoleId },
+      { tenantId: tid,  branchId: branch1.id, name: 'Admin RG',  username: 'admin_rg',  email: 'admin@rg.test',  passwordHash, role: 'admin',  roleId: adminRoleId },
+      { tenantId: tid,  branchId: branch1.id, name: 'Doctor RG', username: 'doctor_rg', email: 'doctor@rg.test', passwordHash, role: 'doctor', roleId: doctorRoleId },
+      { tenantId: tid,  branchId: branch1.id, name: 'Staff RG',  username: 'staff_rg',  email: 'staff@rg.test',  passwordHash, role: 'staff',  roleId: staffRoleId },
+      { tenantId: tid2, branchId: branch2.id, name: 'Admin RG2', username: 'admin_rg2', email: 'admin@rg2.test', passwordHash, role: 'admin',  roleId: adminRoleId },
     ],
   })
 
@@ -84,10 +84,10 @@ beforeAll(async () => {
     prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } }),
   ])
   const [uAdmin, uDoctor, uStaff, uAdmin2] = await Promise.all([
-    prisma.user.findFirstOrThrow({ where: { tenantId: tid,  email: 'admin@rg.test'  } }),
-    prisma.user.findFirstOrThrow({ where: { tenantId: tid,  email: 'doctor@rg.test' } }),
-    prisma.user.findFirstOrThrow({ where: { tenantId: tid,  email: 'staff@rg.test'  } }),
-    prisma.user.findFirstOrThrow({ where: { tenantId: tid2, email: 'admin@rg2.test' } }),
+    prisma.user.findFirstOrThrow({ where: { tenantId: tid,  username: 'admin_rg'  } }),
+    prisma.user.findFirstOrThrow({ where: { tenantId: tid,  username: 'doctor_rg' } }),
+    prisma.user.findFirstOrThrow({ where: { tenantId: tid,  username: 'staff_rg'  } }),
+    prisma.user.findFirstOrThrow({ where: { tenantId: tid2, username: 'admin_rg2' } }),
   ])
   await prisma.userRole.createMany({
     data: [
@@ -99,10 +99,10 @@ beforeAll(async () => {
     skipDuplicates: true,
   })
 
-  adminToken  = await login(SUB,  'admin@rg.test')
-  doctorToken = await login(SUB,  'doctor@rg.test')
-  staffToken  = await login(SUB,  'staff@rg.test')
-  admin2Token = await login(SUB2, 'admin@rg2.test')
+  adminToken  = await login(SUB,  'admin_rg')
+  doctorToken = await login(SUB,  'doctor_rg')
+  staffToken  = await login(SUB,  'staff_rg')
+  admin2Token = await login(SUB2, 'admin_rg2')
 
   // Seed one owner+pet per tenant via the API (so EMR list has a valid petId and the
   // isolation test has at least one own-tenant pet to compare). Uses admin tokens.

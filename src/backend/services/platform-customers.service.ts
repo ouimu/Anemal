@@ -10,6 +10,7 @@
 
 import { AppError } from '../utils/errors'
 import * as customersRepo from '../models/platform-customers.repository'
+import * as companyTypeRepo from '../models/company-type.repository'
 import type {
   CreateTenantData,
   UpdateTenantData,
@@ -48,13 +49,15 @@ export interface CustomerListItem {
 
 /** Normalized detail item returned to the API. */
 export interface CustomerDetail extends CustomerListItem {
-  maxBranches: number | null
-  maxUsers:    number | null
-  maxOwners:   number | null
-  email:       string | null
-  phone:       string | null
-  address:     string | null
-  logoUrl:     string | null
+  maxBranches:  number | null
+  maxUsers:     number | null
+  maxOwners:    number | null
+  email:        string | null
+  phone:        string | null
+  address:      string | null
+  logoUrl:      string | null
+  // D-2-06: company type detail (null if not assigned)
+  companyType:  { id: number; key: string; nameEn: string; nameTh: string } | null
 }
 
 function toListItem(row: TenantListRow): CustomerListItem {
@@ -92,6 +95,8 @@ function toDetailItem(row: TenantWithPlanAndQuota): CustomerDetail {
     phone:       row.settings?.phone   ?? null,
     address:     row.settings?.address ?? null,
     logoUrl:     row.settings?.logoUrl ?? null,
+    // D-2-06: company type detail
+    companyType: row.companyType ?? null,
   }
 }
 
@@ -111,16 +116,27 @@ export class SubdomainConflictError extends AppError {
 
 /** Input for creating a customer (tenant). */
 export interface CreateCustomerInput {
-  name: string
-  subdomain: string
-  planId?: number | null
+  name:          string
+  subdomain:     string
+  planId?:       number | null
+  // D-2-06: optional company type assignment
+  companyTypeId?: number
 }
 
 /** Input for updating a customer (tenant). */
 export interface UpdateCustomerInput {
-  name?: string
-  subdomain?: string
-  planId?: number | null
+  name?:          string
+  subdomain?:     string
+  planId?:        number | null
+  // D-2-06: optional company type update (null to clear)
+  companyTypeId?: number | null
+}
+
+/** Thrown when the provided companyTypeId is not active or does not exist. */
+export class CompanyTypeNotFoundError extends AppError {
+  constructor() {
+    super(422, 'Company type not found or is inactive', 'COMPANY_TYPE_NOT_FOUND')
+  }
 }
 
 /**
@@ -157,10 +173,17 @@ export async function createCustomer(data: CreateCustomerInput, performedById: n
   })
   if (existing) throw new SubdomainConflictError()
 
+  // D-2-06: validate companyTypeId when provided
+  if (data.companyTypeId !== undefined) {
+    const ct = await companyTypeRepo.findCompanyTypeById(data.companyTypeId)
+    if (!ct || !ct.isActive) throw new CompanyTypeNotFoundError()
+  }
+
   const createData: CreateTenantData = {
-    name: data.name,
-    subdomain: data.subdomain,
-    planId: data.planId ?? null,
+    name:          data.name,
+    subdomain:     data.subdomain,
+    planId:        data.planId ?? null,
+    companyTypeId: data.companyTypeId,
   }
   const tenant = await customersRepo.createTenant(createData)
 
@@ -196,10 +219,17 @@ export async function updateCustomer(id: number, data: UpdateCustomerInput, perf
     if (existing) throw new SubdomainConflictError()
   }
 
+  // D-2-06: validate companyTypeId when provided (null is allowed to clear the assignment)
+  if (data.companyTypeId !== undefined && data.companyTypeId !== null) {
+    const ct = await companyTypeRepo.findCompanyTypeById(data.companyTypeId)
+    if (!ct || !ct.isActive) throw new CompanyTypeNotFoundError()
+  }
+
   const updateData: UpdateTenantData = {
-    name: data.name,
-    subdomain: data.subdomain,
-    planId: data.planId,
+    name:          data.name,
+    subdomain:     data.subdomain,
+    planId:        data.planId,
+    companyTypeId: data.companyTypeId,
   }
   const updated = await customersRepo.updateTenant(id, updateData)
 

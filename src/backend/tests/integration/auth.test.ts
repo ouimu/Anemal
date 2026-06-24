@@ -7,8 +7,8 @@ import app from '../../app'
 // NOTE: These tests assume the seed has been run (npm run db:seed)
 // Run with: DATABASE_URL=<test-db-url> npm test
 
-const TENANT_A = { subdomain: 'dev-clinic', email: 'admin@dev-clinic.com', password: 'AdminPass1!' }
-const TENANT_B = { subdomain: 'test-clinic', email: 'admin@test-clinic.com', password: 'AdminPass2!' }
+const TENANT_A = { subdomain: 'dev-clinic', username: 'admin_a', password: 'AdminPass1!' }
+const TENANT_B = { subdomain: 'test-clinic', username: 'admin_b', password: 'AdminPass2!' }
 
 let server: Server
 
@@ -60,7 +60,7 @@ describe('POST /auth/login', () => {
     expect(res.status).toBe(401)
   })
 
-  it('❌ returns 400 for missing email field', async () => {
+  it('❌ returns 400 for missing username field', async () => {
     const res = await request(server).post('/auth/login').send({ subdomain: 'dev-clinic', password: 'pass' })
     expect(res.status).toBe(400)
   })
@@ -78,7 +78,7 @@ describe('GET /auth/me', () => {
     const res = await request(server).get('/auth/me').set('Authorization', `Bearer ${token}`)
     expect(res.status).toBe(200)
     expect(res.body.success).toBe(true)
-    expect(res.body.data.email).toBe(TENANT_A.email)
+    expect(res.body.data.username).toBe(TENANT_A.username)
     expect(res.body.data.tenantId).toBeDefined()
     expect(Array.isArray(res.body.data.roleIds)).toBe(true)
     expect(Array.isArray(res.body.data.permissions)).toBe(true)

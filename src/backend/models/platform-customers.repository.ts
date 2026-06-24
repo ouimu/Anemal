@@ -13,12 +13,14 @@ import prisma from '../config/db'
 
 /** Lightweight tenant row returned for list views. */
 export type TenantRow = {
-  id: number
-  name: string
-  subdomain: string
-  isActive: boolean
-  planId: number | null
-  createdAt: Date
+  id:            number
+  name:          string
+  subdomain:     string
+  isActive:      boolean
+  planId:        number | null
+  // D-2-06: company type FK
+  companyTypeId: number | null
+  createdAt:     Date
 }
 
 /** Extended list row with fields needed by the Platform Console list view. */
@@ -28,7 +30,7 @@ export type TenantListRow = TenantRow & {
   trialEndsAt: Date | null
 }
 
-/** Full tenant row with plan + quota included. */
+/** Full tenant row with plan + quota + company type included. */
 export type TenantWithPlanAndQuota = TenantRow & {
   plan: {
     id: number
@@ -52,31 +54,44 @@ export type TenantWithPlanAndQuota = TenantRow & {
     address: string | null
     logoUrl: string | null
   } | null
+  // D-2-06: company type detail (null if not assigned)
+  companyType: {
+    id:     number
+    key:    string
+    nameEn: string
+    nameTh: string
+  } | null
   userCount:   number
   trialEndsAt: Date | null
 }
 
 /** Input shape for creating a new tenant. */
 export interface CreateTenantData {
-  name: string
-  subdomain: string
-  planId?: number | null
+  name:           string
+  subdomain:      string
+  planId?:        number | null
+  // D-2-06: optional company type assignment
+  companyTypeId?: number
 }
 
 /** Input shape for updating a tenant. */
 export interface UpdateTenantData {
-  name?: string
-  subdomain?: string
-  planId?: number | null
+  name?:          string
+  subdomain?:     string
+  planId?:        number | null
+  // D-2-06: optional company type update (null to clear)
+  companyTypeId?: number | null
 }
 
 const TENANT_SELECT = {
-  id: true,
-  name: true,
-  subdomain: true,
-  isActive: true,
-  planId: true,
-  createdAt: true,
+  id:            true,
+  name:          true,
+  subdomain:     true,
+  isActive:      true,
+  planId:        true,
+  // D-2-06: include companyTypeId in all tenant selects
+  companyTypeId: true,
+  createdAt:     true,
 } as const
 
 /**
@@ -94,15 +109,16 @@ export async function listTenants(): Promise<TenantListRow[]> {
   })
 
   return rows.map((r) => ({
-    id:          r.id,
-    name:        r.name,
-    subdomain:   r.subdomain,
-    isActive:    r.isActive,
-    planId:      r.planId,
-    createdAt:   r.createdAt,
-    planName:    r.plan?.name ?? null,
-    userCount:   r._count.users,
-    trialEndsAt: null,
+    id:            r.id,
+    name:          r.name,
+    subdomain:     r.subdomain,
+    isActive:      r.isActive,
+    planId:        r.planId,
+    companyTypeId: r.companyTypeId,
+    createdAt:     r.createdAt,
+    planName:      r.plan?.name ?? null,
+    userCount:     r._count.users,
+    trialEndsAt:   null,
   }))
 }
 
@@ -127,9 +143,11 @@ export function getTenantById(id: number): Promise<TenantRow | null> {
 export function createTenant(data: CreateTenantData): Promise<TenantRow> {
   return prisma.tenant.create({
     data: {
-      name: data.name,
-      subdomain: data.subdomain,
-      planId: data.planId ?? null,
+      name:          data.name,
+      subdomain:     data.subdomain,
+      planId:        data.planId ?? null,
+      // D-2-06: optional company type assignment
+      companyTypeId: data.companyTypeId ?? null,
     },
     select: TENANT_SELECT,
   })
@@ -200,6 +218,15 @@ export async function getTenantWithPlanAndQuota(id: number): Promise<TenantWithP
           logoUrl: true,
         },
       },
+      // D-2-06: include company type detail in tenant get
+      companyType: {
+        select: {
+          id:     true,
+          key:    true,
+          nameEn: true,
+          nameTh: true,
+        },
+      },
       _count: { select: { users: true } },
     },
   })
@@ -207,14 +234,15 @@ export async function getTenantWithPlanAndQuota(id: number): Promise<TenantWithP
   if (!row) return null
 
   return {
-    id:          row.id,
-    name:        row.name,
-    subdomain:   row.subdomain,
-    isActive:    row.isActive,
-    planId:      row.planId,
-    createdAt:   row.createdAt,
-    plan:        row.plan,
-    quota:       row.quota,
+    id:            row.id,
+    name:          row.name,
+    subdomain:     row.subdomain,
+    isActive:      row.isActive,
+    planId:        row.planId,
+    companyTypeId: row.companyTypeId,
+    createdAt:     row.createdAt,
+    plan:          row.plan,
+    quota:         row.quota,
     settings:    row.settings
       ? {
           email:   row.settings.email   ?? null,
@@ -223,7 +251,8 @@ export async function getTenantWithPlanAndQuota(id: number): Promise<TenantWithP
           logoUrl: row.settings.logoUrl ?? null,
         }
       : null,
-    userCount:   row._count.users,
-    trialEndsAt: null,
+    companyType:   row.companyType ?? null,
+    userCount:     row._count.users,
+    trialEndsAt:   null,
   }
 }

@@ -6,7 +6,7 @@ import request from 'supertest'
 import { Server } from 'http'
 import app from '../../app'
 
-const CLINIC_CREDS = { subdomain: 'dev-clinic', email: 'admin@dev-clinic.com', password: 'AdminPass1!' }
+const CLINIC_CREDS = { subdomain: 'dev-clinic', username: 'admin_a', password: 'AdminPass1!' }
 const PLATFORM_EMAIL    = process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.co'
 const PLATFORM_PASSWORD = process.env.PLATFORM_ADMIN_PASSWORD || 'PlatformAdmin1!'
 

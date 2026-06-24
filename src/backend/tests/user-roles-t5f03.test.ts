@@ -48,10 +48,10 @@ let assignableStaffRoleId = 0 // custom clone of clinic_staff (subset of admin p
 let tidB = 0
 let userBId = 0
 
-async function login(subdomain: string, email: string): Promise<string> {
+async function login(subdomain: string, username: string): Promise<string> {
   const res = await request(server)
     .post('/auth/login')
-    .send({ subdomain, email, password: PASSWORD })
+    .send({ subdomain, username, password: PASSWORD })
   expect(res.status).toBe(200)
   return res.body.data.token
 }
@@ -77,9 +77,9 @@ beforeAll(async () => {
   staffRoleId = staffRole.id
 
   const [uAdmin, uDoctor, uStaff] = await Promise.all([
-    prisma.user.create({ data: { tenantId: tidA, branchId: branchA.id, name: 'Admin A', email: 'admin@a.test', passwordHash, role: 'admin',  roleId: adminRoleId  } }),
-    prisma.user.create({ data: { tenantId: tidA, branchId: branchA.id, name: 'Doc A',   email: 'doc@a.test',   passwordHash, role: 'doctor', roleId: doctorRoleId } }),
-    prisma.user.create({ data: { tenantId: tidA, branchId: branchA.id, name: 'Staff A', email: 'staff@a.test', passwordHash, role: 'staff',  roleId: staffRoleId  } }),
+    prisma.user.create({ data: { tenantId: tidA, branchId: branchA.id, name: 'Admin A', username: 'admin_t5f03a',  email: 'admin@a.test', passwordHash, role: 'admin',  roleId: adminRoleId  } }),
+    prisma.user.create({ data: { tenantId: tidA, branchId: branchA.id, name: 'Doc A',   username: 'doctor_t5f03a', email: 'doc@a.test',   passwordHash, role: 'doctor', roleId: doctorRoleId } }),
+    prisma.user.create({ data: { tenantId: tidA, branchId: branchA.id, name: 'Staff A', username: 'staff_t5f03a',  email: 'staff@a.test', passwordHash, role: 'staff',  roleId: staffRoleId  } }),
   ])
   adminUserId = uAdmin.id
   doctorUserId = uDoctor.id
@@ -99,13 +99,13 @@ beforeAll(async () => {
   tidB = tenantB.id
   const branchB = await prisma.branch.create({ data: { tenantId: tidB, name: 'Main B' } })
   const uB = await prisma.user.create({
-    data: { tenantId: tidB, branchId: branchB.id, name: 'User B', email: 'user@b.test', passwordHash, role: 'staff', roleId: staffRoleId },
+    data: { tenantId: tidB, branchId: branchB.id, name: 'User B', username: 'user_t5f03b', email: 'user@b.test', passwordHash, role: 'staff', roleId: staffRoleId },
   })
   userBId = uB.id
   await prisma.userRole.create({ data: { userId: userBId, roleId: staffRoleId, tenantId: tidB } })
 
-  adminToken = await login(SUB_A, 'admin@a.test')
-  doctorToken = await login(SUB_A, 'doc@a.test')
+  adminToken = await login(SUB_A, 'admin_t5f03a')
+  doctorToken = await login(SUB_A, 'doctor_t5f03a')
 
   // Custom assignable role = clone of clinic_staff (every perm is a subset of admin's)
   const cloneRes = await request(server)

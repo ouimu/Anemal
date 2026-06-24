@@ -50,7 +50,7 @@ async function getPlatformToken(): Promise<string> {
 async function getClinicToken(): Promise<string> {
   const res = await request(server)
     .post('/auth/login')
-    .send({ subdomain: 'dev-clinic', email: 'admin@dev-clinic.com', password: 'AdminPass1!' })
+    .send({ subdomain: 'dev-clinic', username: 'admin_a', password: 'AdminPass1!' })
   return res.body.data?.token
 }
 
@@ -175,7 +175,7 @@ describe('T-5F-02 / AC2 — customer usage endpoint', () => {
       { tenantId, name: 'B2', isActive: true },
     ] })
     await prisma.user.create({ data: {
-      tenantId, name: 'U1', email: `u1-${SFX}@x.test`, passwordHash: 'x', role: 'staff', isActive: true,
+      tenantId, name: 'U1', username: `u1_${SFX}`, email: `u1-${SFX}@x.test`, passwordHash: 'x', role: 'staff', isActive: true,
     } })
     await prisma.owner.createMany({ data: [
       { tenantId, firstName: 'O', lastName: '1', phone: '0810000001' },
@@ -300,6 +300,7 @@ describe('T-5F-02 / AC4 — plane isolation on usage route', () => {
 describe('T-5F-02 / AC5 — suspend blocks clinic /auth/me', () => {
   let tenantId: number
   let clinicSubdomain: string
+  let clinicUsername: string
   const clinicEmail = `owner-${SFX}@suspendme.test`
   const clinicPassword = 'SuspendPass1!'
   let liveClinicToken: string
@@ -313,16 +314,17 @@ describe('T-5F-02 / AC5 — suspend blocks clinic /auth/me', () => {
     const bcrypt = (await import('bcrypt')).default
     const passwordHash = await bcrypt.hash(clinicPassword, 4)
     const branch = await prisma.branch.create({ data: { tenantId, name: 'Main', isActive: true } })
+    clinicUsername = `sadm_${SFX.slice(-10)}`
     await prisma.user.create({
       data: {
         tenantId, branchId: branch.id, name: 'Susp Admin',
-        email: clinicEmail, passwordHash, role: 'admin', isActive: true,
+        username: clinicUsername, email: clinicEmail, passwordHash, role: 'admin', isActive: true,
       },
     })
 
     const login = await request(server)
       .post('/auth/login')
-      .send({ subdomain: clinicSubdomain, email: clinicEmail, password: clinicPassword })
+      .send({ subdomain: clinicSubdomain, username: clinicUsername, password: clinicPassword })
     expect(login.status).toBe(200)
     liveClinicToken = login.body.data.token
   })
@@ -354,7 +356,7 @@ describe('T-5F-02 / AC5 — suspend blocks clinic /auth/me', () => {
   it('❌ after suspend: a fresh /auth/login for that tenant is also rejected', async () => {
     const res = await request(server)
       .post('/auth/login')
-      .send({ subdomain: clinicSubdomain, email: clinicEmail, password: clinicPassword })
+      .send({ subdomain: clinicSubdomain, username: clinicUsername, password: clinicPassword })
     expect(res.status).toBeGreaterThanOrEqual(401)
     expect(res.status).toBeLessThan(500)
   })

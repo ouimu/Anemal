@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { validate } from '../middlewares/validate.middleware'
 import { authMiddleware } from '../middlewares/auth.middleware'
-import { requirePlane } from '../middlewares/permission.middleware'
+import { requirePlane, requirePermission } from '../middlewares/permission.middleware'
 import { loginRateLimiter } from '../middlewares/rate-limit.middleware'
 import { handleLogin, loginSchema, handleSwitchBranch, switchBranchSchema, handleMe, handleRefresh, refreshSchema, handleLogout, logoutSchema } from '../controllers/auth.controller'
 
@@ -20,7 +20,7 @@ router.post('/logout', validate(logoutSchema), handleLogout)
 router.get('/me', authMiddleware, requirePlane('clinic'), handleMe)
 
 // POST /auth/switch-branch — re-issue token scoped to another branch (Phase 4)
-// requirePlane('clinic') only — no permission code needed (any authenticated clinic user may switch branch)
-router.post('/switch-branch', authMiddleware, requirePlane('clinic'), validate(switchBranchSchema), handleSwitchBranch)
+// D-2-03: only users with staff.assign_branch permission may switch branches
+router.post('/switch-branch', authMiddleware, requirePlane('clinic'), requirePermission('staff.assign_branch'), validate(switchBranchSchema), handleSwitchBranch)
 
 export default router

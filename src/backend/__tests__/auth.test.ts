@@ -3,6 +3,7 @@
  * @qa-agent | Protocol: qa-protocols.md §1 + §3 + §4
  *
  * Tests POST /auth/login — credential validation, JWT payload, role embed.
+ * D-2: login now uses username (not email). /platform/auth/login still uses email.
  *
  * Run: npx jest --testPathPattern=auth.test
  */
@@ -17,9 +18,9 @@ import { config } from '../config/env'
 // ── Fixture ───────────────────────────────────────────────────────────────────
 let server: Server
 let tenantId: number
-let adminEmail: string
-let doctorEmail: string
-let staffEmail: string
+let adminUsername: string
+let doctorUsername: string
+let staffUsername: string
 const SUBDOMAIN = `auth-test-${Date.now()}`
 
 beforeAll(async () => {
@@ -31,16 +32,16 @@ beforeAll(async () => {
   })
   tenantId = tenant.id
 
-  const ts = Date.now()
-  adminEmail  = `admin-${ts}@auth-test.local`
-  doctorEmail = `doctor-${ts}@auth-test.local`
-  staffEmail  = `staff-${ts}@auth-test.local`
+  const ts = Date.now() % 100000
+  adminUsername  = `admin_${ts}`
+  doctorUsername = `doctor_${ts}`
+  staffUsername  = `staff_${ts}`
 
   await prisma.user.createMany({
     data: [
-      { tenantId, name: 'Auth Admin',  email: adminEmail,  passwordHash: hash, role: 'admin' },
-      { tenantId, name: 'Auth Doctor', email: doctorEmail, passwordHash: hash, role: 'doctor' },
-      { tenantId, name: 'Auth Staff',  email: staffEmail,  passwordHash: hash, role: 'staff' },
+      { tenantId, name: 'Auth Admin',  username: adminUsername,  email: `admin-${ts}@auth-test.local`,  passwordHash: hash, role: 'admin' },
+      { tenantId, name: 'Auth Doctor', username: doctorUsername, email: `doctor-${ts}@auth-test.local`, passwordHash: hash, role: 'doctor' },
+      { tenantId, name: 'Auth Staff',  username: staffUsername,  email: `staff-${ts}@auth-test.local`,  passwordHash: hash, role: 'staff' },
     ],
   })
 })
@@ -59,12 +60,12 @@ describe('auth-1.2 — POST /auth/login', () => {
 
   test('auth-01: Admin login returns signed JWT with tenantId and role', async () => {
     // Given: valid admin credentials
-    // When:  POST /auth/login
+    // When:  POST /auth/login with username
     // Then:  200 + token + correct payload
     // Type:  happy_path
     const res = await request(server)
       .post('/auth/login')
-      .send({ subdomain: SUBDOMAIN, email: adminEmail, password: 'ValidPass1!' })
+      .send({ subdomain: SUBDOMAIN, username: adminUsername, password: 'ValidPass1!' })
       .expect(200)
 
     expect(res.body.success).toBe(true)
@@ -84,7 +85,7 @@ describe('auth-1.2 — POST /auth/login', () => {
     // Type: happy_path
     const res = await request(server)
       .post('/auth/login')
-      .send({ subdomain: SUBDOMAIN, email: doctorEmail, password: 'ValidPass1!' })
+      .send({ subdomain: SUBDOMAIN, username: doctorUsername, password: 'ValidPass1!' })
       .expect(200)
 
     expect(res.body.data.role).toBe('doctor')
@@ -96,7 +97,7 @@ describe('auth-1.2 — POST /auth/login', () => {
     // Type: happy_path
     const res = await request(server)
       .post('/auth/login')
-      .send({ subdomain: SUBDOMAIN, email: staffEmail, password: 'ValidPass1!' })
+      .send({ subdomain: SUBDOMAIN, username: staffUsername, password: 'ValidPass1!' })
       .expect(200)
 
     expect(res.body.data.role).toBe('staff')
@@ -108,7 +109,7 @@ describe('auth-1.2 — POST /auth/login', () => {
     // Type:  happy_path
     const res = await request(server)
       .post('/auth/login')
-      .send({ subdomain: SUBDOMAIN, email: adminEmail, password: 'ValidPass1!' })
+      .send({ subdomain: SUBDOMAIN, username: adminUsername, password: 'ValidPass1!' })
       .expect(200)
 
     const decoded = jwt.decode(res.body.data.token) as { iat: number; exp: number }
@@ -122,19 +123,19 @@ describe('auth-1.2 — POST /auth/login', () => {
     // Type: edge_case / security
     const res = await request(server)
       .post('/auth/login')
-      .send({ subdomain: SUBDOMAIN, email: adminEmail, password: 'WrongPass!' })
+      .send({ subdomain: SUBDOMAIN, username: adminUsername, password: 'WrongPass!' })
       .expect(401)
 
     expect(res.body.success).toBe(false)
-    // SECURITY: must not reveal whether the email or password is wrong
+    // SECURITY: must not reveal whether the username or password is wrong
     expect(res.body.error).toMatch(/invalid credentials/i)
   })
 
-  test('auth-06: Non-existent email → 401 (not 404)', async () => {
+  test('auth-06: Non-existent username → 401 (not 404)', async () => {
     // Type: security (no user enumeration)
     await request(server)
       .post('/auth/login')
-      .send({ subdomain: SUBDOMAIN, email: 'nobody@nope.com', password: 'ValidPass1!' })
+      .send({ subdomain: SUBDOMAIN, username: 'nobody_user', password: 'ValidPass1!' })
       .expect(401)
   })
 
@@ -142,7 +143,7 @@ describe('auth-1.2 — POST /auth/login', () => {
     // Type: security
     await request(server)
       .post('/auth/login')
-      .send({ subdomain: 'clinic-does-not-exist', email: adminEmail, password: 'ValidPass1!' })
+      .send({ subdomain: 'clinic-does-not-exist', username: adminUsername, password: 'ValidPass1!' })
       .expect(401)
   })
 
@@ -152,21 +153,21 @@ describe('auth-1.2 — POST /auth/login', () => {
     // Then:  401
     // Type:  edge_case
     const hash = await bcrypt.hash('ValidPass1!', 10)
-    const ts = Date.now()
-    const inactiveEmail = `inactive-${ts}@auth-test.local`
+    const ts = Date.now() % 100000
+    const inactiveUsername = `inactive_${ts}`
     await prisma.user.create({
-      data: { tenantId, name: 'Inactive', email: inactiveEmail, passwordHash: hash, role: 'staff', isActive: false },
+      data: { tenantId, name: 'Inactive', username: inactiveUsername, email: `inactive-${ts}@auth-test.local`, passwordHash: hash, role: 'staff', isActive: false },
     })
 
     await request(server)
       .post('/auth/login')
-      .send({ subdomain: SUBDOMAIN, email: inactiveEmail, password: 'ValidPass1!' })
+      .send({ subdomain: SUBDOMAIN, username: inactiveUsername, password: 'ValidPass1!' })
       .expect(401)
   })
 
   // ── Input validation ──────────────────────────────────────────────────────
 
-  test('auth-09: Missing email field → 400', async () => {
+  test('auth-09: Missing username field → 400', async () => {
     // Type: edge_case
     await request(server)
       .post('/auth/login')
@@ -178,15 +179,15 @@ describe('auth-1.2 — POST /auth/login', () => {
     // Type: edge_case
     await request(server)
       .post('/auth/login')
-      .send({ subdomain: SUBDOMAIN, email: adminEmail })
+      .send({ subdomain: SUBDOMAIN, username: adminUsername })
       .expect(400)
   })
 
-  test('auth-11: Malformed email → 400', async () => {
-    // Type: edge_case
+  test('auth-11: Username too short (< 3 chars) → 400', async () => {
+    // Type: edge_case — schema enforces min(3)
     await request(server)
       .post('/auth/login')
-      .send({ subdomain: SUBDOMAIN, email: 'not-an-email', password: 'ValidPass1!' })
+      .send({ subdomain: SUBDOMAIN, username: 'ab', password: 'ValidPass1!' })
       .expect(400)
   })
 
@@ -194,7 +195,7 @@ describe('auth-1.2 — POST /auth/login', () => {
     // Type: edge_case
     await request(server)
       .post('/auth/login')
-      .send({ email: adminEmail, password: 'ValidPass1!' })
+      .send({ username: adminUsername, password: 'ValidPass1!' })
       .expect(400)
   })
 
@@ -207,7 +208,7 @@ describe('auth-1.2 — POST /auth/login', () => {
 
     await request(server)
       .post('/auth/login')
-      .send({ subdomain: SUBDOMAIN, email: adminEmail, password: 'ValidPass1!' })
+      .send({ subdomain: SUBDOMAIN, username: adminUsername, password: 'ValidPass1!' })
       .expect(401)
 
     // Restore

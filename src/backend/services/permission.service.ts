@@ -30,6 +30,9 @@ const ALL_PLATFORM_PERMISSIONS: ReadonlyArray<string> = [
   'platform.users.manage',
   'platform.usage.view',
   'platform.audit.view',
+  // D-2-05: company type management
+  'platform.company_types.view',
+  'platform.company_types.manage',
 ]
 
 /** Read-only subset granted to platform_support. */
@@ -39,6 +42,8 @@ const PLATFORM_SUPPORT_PERMISSIONS: ReadonlyArray<string> = [
   'platform.settings.view',
   'platform.usage.view',
   'platform.audit.view',
+  // D-2-05: support can view but not manage company types
+  'platform.company_types.view',
 ]
 
 /** Static map from PlatformRole enum value to its permission set. */
