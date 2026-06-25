@@ -95,6 +95,21 @@ describe('POST /auth/select-branch — step 2: branch selection', () => {
     const res = await request(server).post('/auth/select-branch').send({ pendingToken })
     expect(res.status).toBe(400)
   })
+
+  it('✅ select-branch response includes companyName', async () => {
+    // Step 1: login to get pendingToken
+    const loginRes = await request(server).post('/auth/login').send(TENANT_A)
+    expect(loginRes.body.data.requiresBranchSelection).toBe(true)
+    const { pendingToken: pt, branches } = loginRes.body.data
+
+    // Step 2: select branch
+    const res = await request(server)
+      .post('/auth/select-branch')
+      .send({ pendingToken: pt, branchId: branches[0].id })
+    expect(res.status).toBe(200)
+    expect(typeof res.body.data.companyName).toBe('string')
+    expect(res.body.data.companyName.length).toBeGreaterThan(0)
+  })
 })
 
 describe('GET /auth/me', () => {

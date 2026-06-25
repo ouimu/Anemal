@@ -111,6 +111,9 @@ export async function selectBranch(
   const branch = await authRepo.findBranchById(tenantId, branchId)
   if (!branch) throw new AuthError('Branch not found or inactive.', 404)
 
+  const tenant = await authRepo.findTenantById(tenantId)
+  const companyName = tenant?.name ?? ''
+
   // Non-admin: verify branchId is in user_branches
   if (role !== 'admin') {
     const assignedBranches = await userRepo.getUserBranches(tenantId, userId)
@@ -142,17 +145,19 @@ export async function selectBranch(
     branchId,
     role:  user.role,
     name:  user.name,
+    companyName,
   }
 }
 
 /** Minimal response shape for branch-switch (no new refresh token issued). */
 interface SwitchBranchResponse {
-  token:    string
-  userId:   number
-  tenantId: number
-  branchId: number
-  role:     string
-  name:     string
+  token:       string
+  userId:      number
+  tenantId:    number
+  branchId:    number
+  role:        string
+  name:        string
+  companyName: string
 }
 
 // Re-issue a token scoped to a different branch within the same tenant.
@@ -173,9 +178,12 @@ export async function switchBranch(
     }
   }
 
+  const tenant = await authRepo.findTenantById(tenantId)
+  const companyName = tenant?.name ?? ''
+
   const permSetVersion = await computePermSetVersion(userId, tenantId)
   const token = signToken({ userId, tenantId, branchId: targetBranchId, plane: 'clinic', permSetVersion, role })
-  return { token, userId, tenantId, branchId: targetBranchId, role, name: user.name }
+  return { token, userId, tenantId, branchId: targetBranchId, role, name: user.name, companyName }
 }
 
 // Resolve the current clinic user's identity from their JWT context.
