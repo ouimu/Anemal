@@ -28,13 +28,13 @@ export function getBranchRevenue(tenantId: number, from?: Date, to?: Date) {
   return reportRepo.branchRevenue(tenantId, from, to)
 }
 
-export async function getSnapshot(tenantId: number, branchId: number) {
+export async function getSnapshot(tenantId: number, branchId: number | null) {
   const [revenueToday, revenueThisMonth, pendingInvoices, lowStock, expiringSoon] = await Promise.all([
     reportRepo.revenueTodayBranch(tenantId, branchId ?? null),
     reportRepo.revenueThisMonth(tenantId),
     reportRepo.countPendingInvoices(tenantId),
-    productRepo.findLowStock(tenantId, branchId),
-    productRepo.findExpiringSoon(tenantId, branchId, EXPIRY_WINDOW_DAYS),
+    branchId ? productRepo.findLowStock(tenantId, branchId) : Promise.resolve([]),
+    branchId ? productRepo.findExpiringSoon(tenantId, branchId, EXPIRY_WINDOW_DAYS) : Promise.resolve([]),
   ])
   return {
     revenueToday,

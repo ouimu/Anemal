@@ -1,7 +1,6 @@
 // Reports controller — thin HTTP handlers.
 import { Request, Response, NextFunction } from 'express'
 import * as reportService from '../services/report.service'
-import { requireBranchId } from '../utils/context'
 
 export async function getRevenue(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -36,7 +35,7 @@ export async function getBranchRevenue(req: Request, res: Response, next: NextFu
 
 export async function getSnapshot(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await reportService.getSnapshot(req.context!.tenantId, requireBranchId(req))
+    const data = await reportService.getSnapshot(req.context!.tenantId, req.context!.branchId ?? null)
     res.json({ success: true, data })
   } catch (err) { next(err) }
 }
