@@ -24,8 +24,11 @@ const ClinicPets         = lazy(() => import('./views/clinic/ClinicPets'))
 const ClinicEMR          = lazy(() => import('./views/clinic/ClinicEMR'))
 const ClinicInventory    = lazy(() => import('./views/clinic/ClinicInventory'))
 const ClinicBilling      = lazy(() => import('./views/clinic/ClinicBilling'))
-const ClinicInpatient    = lazy(() => import('./views/clinic/ClinicInpatient'))
-const ClinicGrooming     = lazy(() => import('./views/clinic/ClinicGrooming'))
+const ClinicInpatient          = lazy(() => import('./views/clinic/ClinicInpatient'))
+const ClinicGrooming           = lazy(() => import('./views/clinic/ClinicGrooming'))
+const ClinicTransactions       = lazy(() => import('./views/clinic/ClinicTransactions'))
+const ClinicVaccinationsDue    = lazy(() => import('./views/clinic/ClinicVaccinationsDue'))
+const ClinicRecordVaccination  = lazy(() => import('./views/clinic/ClinicRecordVaccination'))
 
 // ── T-5F-01: Clinic Role Editor ──────────────────────────────────────────────
 const RoleEditorView = lazy(() => import('./views/clinic/RoleEditorView'))
@@ -136,7 +139,10 @@ export default function App() {
           <Route path="emr"          element={<RequirePermission perm="emr.view"><ClinicEMR/></RequirePermission>}/>
           <Route path="inventory"    element={<RequirePermission perm="inventory.view"><ClinicInventory/></RequirePermission>}/>
           {/* Doctor has no billing/POS access — gate on billing.create which doctor role lacks */}
-          <Route path="billing"      element={<RequirePermission perm="billing.create"><ClinicBilling/></RequirePermission>}/>
+          <Route path="billing"              element={<RequirePermission perm="billing.create"><ClinicBilling/></RequirePermission>}/>
+          <Route path="transactions"         element={<RequirePermission perm="billing.view"><ClinicTransactions/></RequirePermission>}/>
+          <Route path="vaccinations-due"     element={<RequirePermission perm="emr.view"><ClinicVaccinationsDue/></RequirePermission>}/>
+          <Route path="vaccinations-due/record" element={<RequirePermission perm="emr.create"><ClinicRecordVaccination/></RequirePermission>}/>
           <Route path="inpatient"    element={<RequirePermission perm="inpatient.view"><ClinicInpatient/></RequirePermission>}/>
           {/* Doctor has no grooming access — gate on grooming.view which doctor role lacks */}
           <Route path="grooming"     element={<RequirePermission perm="grooming.view"><ClinicGrooming/></RequirePermission>}/>
