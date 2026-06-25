@@ -3,9 +3,11 @@ import { authMiddleware } from '../middlewares/auth.middleware'
 import { requirePlane, requirePermission, requireAnyPermission } from '../middlewares/permission.middleware'
 import { getClinicSummary } from '../services/usage.service'
 import { listPermissions } from '../controllers/role.controller'
+import transactionRoutes from './transaction.routes'
 
 const router = Router()
 router.use(authMiddleware)
+router.use('/transactions', transactionRoutes)
 
 router.get('/usage', requirePlane('clinic'), requirePermission('clinic.profile.view'), async (req, res, next) => {
   try {
