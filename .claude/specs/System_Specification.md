@@ -4,7 +4,7 @@
 
 ## 1. Introduction
 
-**Project:** Anemal Clinic Management SaaS (Anemal)
+**Project:** Anemal Management SaaS (Anemal)
 
 **Version:** 1.1 (2026-05-30)
 
