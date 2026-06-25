@@ -17,7 +17,12 @@ vi.mock('react-router-dom', () => ({
 }))
 
 vi.mock('../hooks/useAuth', () => ({
-  useLogin: () => ({ mutate: vi.fn(), isPending: false, error: null }),
+  useLogin: () => ({
+    branchSelection: null,
+    loginMutation: { mutate: vi.fn(), isPending: false, error: null },
+    selectBranchMutation: { mutate: vi.fn(), isPending: false, isError: false },
+    resetBranchSelection: vi.fn(),
+  }),
 }))
 
 import LoginView from '../views/LoginView'
@@ -31,8 +36,8 @@ describe('LoginView — Thai i18n', () => {
     render(<LoginView />)
     expect(screen.getByRole('button', { name: /เข้าสู่ระบบ/i })).toBeInTheDocument()
   })
-  it('renders Thai email label', () => {
+  it('renders Thai username label', () => {
     render(<LoginView />)
-    expect(screen.getByText(/อีเมล/i)).toBeInTheDocument()
+    expect(screen.getByText(/ชื่อผู้ใช้/i)).toBeInTheDocument()
   })
 })

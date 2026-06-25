@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import api from '../utils/api'
@@ -5,85 +6,111 @@ import { useAuthStore, AuthData } from '../store/authStore'
 
 interface LoginPayload { subdomain: string; username: string; password: string; remember: boolean }
 
-/** Response shape from POST /auth/login */
-interface LoginResponse {
-  token:    string
-  userId:   number
-  tenantId: number
-  branchId?: number | null
-  role:     string
-  name:     string
+interface LoginStep1Response {
+  requiresBranchSelection: true
+  pendingToken: string
+  branches:     { id: number; name: string }[]
 }
 
-/** Response shape from GET /auth/me */
+interface LoginStep2Response {
+  requiresBranchSelection: false
+  token:        string
+  refreshToken: string
+  userId:       number
+  tenantId:     number
+  branchId:     number
+  role:         string
+  name:         string
+}
+
 interface MeResponse {
-  userId:         number
-  tenantId:       number
-  branchId?:      number | null
-  name:           string
-  email:          string
-  roleIds:        number[]
-  permissions:    string[]
+  userId:          number
+  tenantId:        number
+  branchId?:       number | null
+  name:            string
+  email:           string
+  roleIds:         number[]
+  permissions:     string[]
   permSetVersion?: number
 }
 
-/**
- * Fetches /auth/me with the supplied token.
- * Returns null on network/auth error so the caller can fall back to defaults.
- */
+export interface BranchSelectionState {
+  pendingToken: string
+  branches:     { id: number; name: string }[]
+}
+
 async function fetchMe(token: string): Promise<MeResponse | null> {
   try {
-    const res = await fetch('/auth/me', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    const res = await fetch('/auth/me', { headers: { Authorization: `Bearer ${token}` } })
     if (!res.ok) return null
     const json = await res.json()
     return (json.data ?? json) as MeResponse
-  } catch {
-    return null
-  }
+  } catch { return null }
+}
+
+async function applyLogin(
+  login: LoginStep2Response,
+  remember: boolean,
+  setAuth: (data: AuthData, remember: boolean) => void,
+): Promise<void> {
+  const me = await fetchMe(login.token)
+  setAuth({
+    token:          login.token,
+    plane:          'clinic',
+    userId:         login.userId,
+    tenantId:       login.tenantId,
+    branchId:       me?.branchId ?? login.branchId ?? null,
+    roleIds:        me?.roleIds  ?? [],
+    role:           login.role,
+    permissions:    me?.permissions    ?? [],
+    permSetVersion: me?.permSetVersion ?? 0,
+    name:           login.name,
+  }, remember)
+  try { await useAuthStore.getState().refreshPermissions() } catch { /* server enforces */ }
 }
 
 export function useLogin() {
-  const setAuth  = useAuthStore((s) => s.setAuth)
-  const navigate = useNavigate()
+  const [branchSelection, setBranchSelection] = useState<BranchSelectionState | null>(null)
+  const [remember, setRemember]               = useState(false)
+  const setAuth   = useAuthStore((s) => s.setAuth)
+  const navigate  = useNavigate()
 
-  return useMutation({
-    mutationFn: ({ remember: _remember, ...credentials }: LoginPayload) =>
-      api.post<{ success: boolean; data: LoginResponse }>('/auth/login', credentials),
+  const loginMutation = useMutation({
+    mutationFn: ({ remember: _rem, ...creds }: LoginPayload) =>
+      api.post<{ success: boolean; data: LoginStep1Response | LoginStep2Response }>('/auth/login', creds),
 
-    onSuccess: async (res, variables) => {
-      const login = res.data.data
-      const me    = await fetchMe(login.token)
-
-      const authData: AuthData = {
-        token:          login.token,
-        plane:          'clinic',
-        userId:         login.userId,
-        tenantId:       login.tenantId,
-        branchId:       me?.branchId   ?? login.branchId ?? null,
-        roleIds:        me?.roleIds    ?? [],
-        role:           login.role,
-        permissions:    me?.permissions    ?? [],
-        permSetVersion: me?.permSetVersion ?? 0,
-        name:           login.name,
+    onSuccess: (res, vars) => {
+      setRemember(vars.remember)
+      const data = res.data.data
+      if (data.requiresBranchSelection) {
+        setBranchSelection({ pendingToken: data.pendingToken, branches: data.branches })
+      } else {
+        // fallback (shouldn't happen with current backend)
+        void applyLogin(data, vars.remember, setAuth).then(() =>
+          navigate(data.role === 'admin' ? '/clinic-admin/dashboard' : '/clinic/dashboard')
+        )
       }
-
-      setAuth(authData, variables.remember)
-
-      // Populate permissionsLoaded before navigating so RequirePermission does
-      // not flash to /403 on the first render. Fail open on network error —
-      // the server is the enforcement boundary.
-      try {
-        await useAuthStore.getState().refreshPermissions()
-      } catch { /* network error — proceed; server enforces permissions */ }
-
-      navigate(
-        login.role === 'admin'      ? '/clinic-admin/dashboard' :
-        '/clinic/dashboard'
-      )
     },
   })
+
+  const selectBranchMutation = useMutation({
+    mutationFn: ({ pendingToken, branchId }: { pendingToken: string; branchId: number }) =>
+      api.post<{ success: boolean; data: LoginStep2Response }>('/auth/select-branch', { pendingToken, branchId }),
+
+    onSuccess: async (res) => {
+      const data = res.data.data
+      setBranchSelection(null)
+      await applyLogin(data, remember, setAuth)
+      navigate(data.role === 'admin' ? '/clinic-admin/dashboard' : '/clinic/dashboard')
+    },
+  })
+
+  return {
+    branchSelection,
+    loginMutation,
+    selectBranchMutation,
+    resetBranchSelection: () => setBranchSelection(null),
+  }
 }
 
 export function useLogout() {

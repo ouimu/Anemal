@@ -23,7 +23,7 @@ export default function LoginView() {
   const [form, setForm]       = useState({ subdomain: detectedSubdomain, username: '', password: '' })
   const [showPass, setShowPass] = useState(false)
   const [remember, setRemember] = useState(false)
-  const login = useLogin()
+  const { branchSelection, loginMutation: login, selectBranchMutation, resetBranchSelection } = useLogin()
 
   if (isAuthenticated) {
     return <Navigate to={
@@ -97,6 +97,53 @@ export default function LoginView() {
               </p>
             </div>
 
+            {branchSelection ? (
+            <div className="flex flex-col gap-lg">
+              <div>
+                <h2 className="text-headline-sm font-headline font-bold text-on-surface mb-xs">
+                  {t('login.selectBranch')}
+                </h2>
+                <p className="text-body-md text-on-surface-variant">
+                  {t('login.selectBranchHint')}
+                </p>
+              </div>
+              <div className="flex flex-col gap-sm">
+                {branchSelection.branches.map(branch => (
+                  <button
+                    key={branch.id}
+                    className="w-full text-left px-md py-md rounded-xl border border-outline-variant hover:bg-surface-container active:bg-surface-container-high transition-colors min-h-[52px] flex items-center gap-sm disabled:opacity-50"
+                    onClick={() => selectBranchMutation.mutate({
+                      pendingToken: branchSelection.pendingToken,
+                      branchId:     branch.id,
+                    })}
+                    disabled={selectBranchMutation.isPending}
+                  >
+                    <span className="material-symbols-outlined text-secondary flex-shrink-0" style={{ fontSize: '20px' }}>
+                      store
+                    </span>
+                    <span className="text-body-lg text-on-surface font-medium">{branch.name}</span>
+                    {selectBranchMutation.isPending && (
+                      <span className="ml-auto w-4 h-4 border-2 border-outline/40 border-t-secondary rounded-full animate-spin" />
+                    )}
+                  </button>
+                ))}
+              </div>
+              {selectBranchMutation.isError && (
+                <div className="flex items-start gap-sm bg-error-container/30 border border-error/30 rounded-lg px-md py-sm">
+                  <span className="material-symbols-outlined text-error flex-shrink-0 mt-0.5" style={{ fontSize: '18px' }}>error_outline</span>
+                  <p className="text-body-md text-error">{t('login.selectBranchError')}</p>
+                </div>
+              )}
+              <button
+                type="button"
+                className="text-label-md text-on-surface-variant underline hover:text-on-surface transition-colors"
+                onClick={resetBranchSelection}
+              >
+                {t('login.backToLogin')}
+              </button>
+            </div>
+            ) : (
+            <>
             {/* Form */}
             <form className="space-y-lg" onSubmit={handleSubmit}>
 
@@ -224,6 +271,8 @@ export default function LoginView() {
                 <a href="#" className="text-secondary font-bold hover:underline">{t('login.contactSupport')}</a>
               </p>
             </div>
+            </>
+            )}
           </div>
         </section>
       </main>

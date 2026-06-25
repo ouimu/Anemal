@@ -119,6 +119,10 @@ const en: Dict = {
   'login.signingIn': 'Signing in…',
   'login.invalidCredentials': 'Invalid credentials. Please try again.',
   'login.contactSupport': 'Contact System Support',
+  'login.selectBranch': 'Select Branch',
+  'login.selectBranchHint': 'Please select the branch you want to log into.',
+  'login.selectBranchError': 'Could not select branch. Please try again.',
+  'login.backToLogin': 'Back to login',
   'login.privacy': 'Privacy Policy',
   'login.terms': 'Terms of Service',
 
@@ -403,6 +407,10 @@ const th: Dict = {
   'login.signingIn': 'กำลังเข้าสู่ระบบ…',
   'login.invalidCredentials': 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',
   'login.contactSupport': 'ติดต่อฝ่ายสนับสนุนระบบ',
+  'login.selectBranch': 'เลือกสาขา',
+  'login.selectBranchHint': 'กรุณาเลือกสาขาที่ต้องการเข้าใช้งาน',
+  'login.selectBranchError': 'ไม่สามารถเลือกสาขาได้ กรุณาลองใหม่อีกครั้ง',
+  'login.backToLogin': 'กลับหน้าเข้าสู่ระบบ',
   'login.privacy': 'นโยบายความเป็นส่วนตัว',
   'login.terms': 'ข้อกำหนดการใช้บริการ',
 
