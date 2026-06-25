@@ -420,7 +420,7 @@
   <!-- ── Stats ── -->
   <div class="stat-row">
     <div class="stat"><div class="n" style="color:#16a34a">9/11</div><div class="l">Phases Done</div></div>
-    <div class="stat"><div class="n" style="color:#16a34a">~489</div><div class="l">Tests Passing</div></div>
+    <div class="stat"><div class="n" style="color:#16a34a">~542</div><div class="l">Tests Passing</div></div>
     <div class="stat"><div class="n">28</div><div class="l">DB Tables</div></div>
     <div class="stat"><div class="n">13</div><div class="l">API Modules</div></div>
     <div class="stat"><div class="n">8</div><div class="l">Screen Prototypes</div></div>
@@ -441,6 +441,7 @@
       <tr><td><strong>Phase 7</strong> <span style="font-size:11px;color:#6b7280">(redesign)</span></td><td>UI Redesign completion &amp; sign-off — Compassionate Care closeout/verification of Appointments, Pets, EMR (presentational only)</td><td>226</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
       <tr style="opacity:0.5"><td><strong>Phase 8</strong> <span style="font-size:11px;color:#6b7280">(was Phase 5)</span></td><td>RBAC, Platform Console &amp; Restructure — two-plane authz, configurable roles, plan quotas, IA cleanup. <strong>5-A/B/C ✅ · T-5D-02/03/04/05 ✅ · T-5E ✅ · PRE-1..6 ✅ · <span style="color:#16a34a">T-5F ✅</span></strong> — Role Editor (<code>/clinic-admin/roles</code>), Platform Console UI (<code>/platform/*</code>), Multi-Role Assignment. Complete 2026-06-17. ~394 tests.</td><td>~394</td><td><span style="color:#16a34a;font-weight:700">✅ Complete</span></td></tr>
       <tr><td><strong>Phase 9</strong></td><td>i18n Rollout — 260+ EN/TH key pairs; 16 clinic screens translated; custom lightweight i18n; language toggle via Zustand; Platform Console excluded</td><td>95 (frontend)</td><td><span style="color:#16a34a;font-weight:700">✅ Complete (2026-06-18)</span></td></tr>
+      <tr><td><strong>D-1–D-5</strong> <span style="font-size:11px;color:#6b7280">(product decisions)</span></td><td>Username login (replace email), company types table (EN/TH), payment history API + tab, user management username+branch, owner-first pet browse flow in ClinicPets</td><td>447 backend</td><td><span style="color:#16a34a;font-weight:700">✅ Complete (2026-06-24)</span></td></tr>
       <tr style="opacity:0.7"><td><strong>Phase 10</strong> <span style="font-size:11px;color:#6b7280">(was Session F)</span></td><td>Payment Gateway &amp; Subscription Billing — Omise/Stripe, webhooks, SaaS billing + cron</td><td>—</td><td><span style="color:#6b7280;font-weight:700">⏸ Postponed (Omise + SMTP)</span></td></tr>
       <tr style="opacity:0.7"><td><strong>Phase 11</strong> <span style="font-size:11px;color:#6b7280">(was Session G)</span></td><td>LINE/SMS Real Dispatch — wire reminder worker to LINE + Twilio</td><td>—</td><td><span style="color:#6b7280;font-weight:700">⏸ Postponed (LINE + Twilio)</span></td></tr>
     </tbody>
@@ -486,8 +487,8 @@
     </div>
     <div class="card" onclick="show('roadmap-upcoming')" style="border-color:#16a34a44;background:linear-gradient(135deg,#fff 0%,#f0fdf8 100%)">
       <div class="card-icon">✅</div>
-      <div class="card-title">Phase 9 Complete <span style="font-size:11px;background:#dcfce7;color:#006c4a;padding:2px 6px;border-radius:4px;font-weight:700">DONE</span></div>
-      <div class="card-desc">i18n rollout shipped — 260+ EN/TH keys, 16 screens, 95 frontend tests. Next: Phase 10 Payment Gateway.</div>
+      <div class="card-title">D-Series Complete <span style="font-size:11px;background:#dcfce7;color:#006c4a;padding:2px 6px;border-radius:4px;font-weight:700">DONE</span></div>
+      <div class="card-desc">D-1–D-5 shipped — username login, company types, payment history, owner-first browse. 447 backend tests. Next: Phase 10 Payment Gateway.</div>
     </div>
     <div class="card" onclick="show('roadmap-upcoming')">
       <div class="card-icon">🔜</div>
@@ -906,7 +907,7 @@ CREATE INDEX idx_pet_reminders_pet          ON pet_reminders(tenant_id, pet_id);
   </ul>
 
   <h2>Current Backlog Owner</h2>
-  <div class="callout ok" style="margin-bottom:8px"><span class="callout-icon">✅</span><span><strong>Phases 1–9 complete (~394 backend + 95 frontend tests).</strong> Phase 9 COMPLETE 2026-06-18 — i18n rollout shipped: 260+ EN/TH key pairs, 16 clinic screens translated, custom lightweight i18n (no library), language toggle via Zustand <code>uiStore.language</code>, Platform Console excluded. 95/95 frontend tests passing, 0 missing TH keys. Phase 10/11 postponed (credential-gated). See <a onclick="show('roadmap-upcoming')" href="javascript:void(0)">Upcoming Work →</a></span></div>
+  <div class="callout ok" style="margin-bottom:8px"><span class="callout-icon">✅</span><span><strong>Phases 1–9 + D-1–D-5 complete (~542 tests: 447 backend + 95 frontend).</strong> D-series COMPLETE 2026-06-24 — username login, company types, payment history, owner-first browse. Phase 9 COMPLETE 2026-06-18 — i18n rollout: 260+ EN/TH key pairs, 16 screens, 95/95 tests. Phase 10/11 postponed (credential-gated). See <a onclick="show('roadmap-upcoming')" href="javascript:void(0)">Upcoming Work →</a></span></div>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Phase</th><th>Scope</th><th>Est. Token Cost</th></tr></thead>
     <tbody>
@@ -916,6 +917,7 @@ CREATE INDEX idx_pet_reminders_pet          ON pet_reminders(tenant_id, pet_id);
       <tr style="opacity:0.55"><td><strong>✅ Phase 7</strong></td><td><s>UI Redesign completion &amp; sign-off — verify Appointments/Pets/EMR against Compassionate Care specs + 44px audit</s> — Done 2026-06-14 · 226 tests</td><td>~20%</td></tr>
       <tr style="opacity:0.55"><td><strong>✅ Phase 8</strong> <span style="font-size:11px;color:#6b7280">(was Phase 5)</span></td><td>RBAC, Platform Console &amp; Restructure — <strong>5-A ✅ · 5-B ✅ · 5-C ✅ · T-5D-02/03/04/05 ✅ · T-5E ✅ · PRE-1..6 ✅ · T-5F ✅</strong> (~394 tests). T-5F: Role Editor, Platform Console UI (6 views), Multi-Role Assignment. Complete 2026-06-17.</td><td>multi-session</td></tr>
       <tr style="opacity:0.55"><td><strong>✅ Phase 9</strong></td><td><s>i18n Rollout — 260+ EN/TH key pairs; 16 screens translated; custom lightweight i18n; language toggle; Platform Console excluded</s> — Done 2026-06-18 · 95 frontend tests</td><td>~20%</td></tr>
+      <tr style="opacity:0.55"><td><strong>✅ D-1–D-5</strong></td><td><s>Username login, company types, payment history API + tab, user mgmt username+branch, owner-first pet browse</s> — Done 2026-06-24 · 447 backend tests</td><td>—</td></tr>
       <tr style="opacity:0.7"><td><strong>⏸ Phase 10</strong> <span style="font-size:11px;color:#6b7280">(was F)</span></td><td>Payment gateway (Omise/Stripe, webhooks, subscription billing) — postponed</td><td>~55% + credentials</td></tr>
       <tr style="opacity:0.7"><td><strong>⏸ Phase 11</strong> <span style="font-size:11px;color:#6b7280">(was G)</span></td><td>LINE/SMS real dispatch — postponed</td><td>~35% + credentials</td></tr>
     </tbody>
@@ -1223,8 +1225,9 @@ Resubmit when: [concrete step to fix]</code></pre>
 
 <!-- ══════════════════ ROADMAP HISTORY ══════════════════ -->
 <div class="page" id="page-roadmap-history">
-  <h1>📜 Roadmap History — Completed Phases (1–9)</h1>
-  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>Phases 1–9 complete. ~394 backend + 95 frontend tests passing.</strong> Phase 9 finished 2026-06-18: full EN/TH i18n rollout — 260+ key pairs, 16 clinic screens, 95/95 tests, 0 missing TH keys. Phase 8 (RBAC + Platform Console) completed 2026-06-17 with T-5F: Role Editor, Platform Console UI, Multi-Role Assignment.</span></div>
+  <h1>📜 Roadmap History — Completed Phases (1–9 + D-series)</h1>
+  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>Phases 1–9 + D-1–D-5 complete. 447 backend + 95 frontend tests passing (~542 total).</strong> D-series finished 2026-06-24: username login, company types, payment history, owner-first pet browse. Phase 9 finished 2026-06-18: full EN/TH i18n rollout — 260+ key pairs, 16 clinic screens, 95/95 tests. Phase 8 (RBAC + Platform Console) completed 2026-06-17 with T-5F: Role Editor, Platform Console UI, Multi-Role Assignment.</span></div>
+  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>2026-06-24 — D-1–D-5 complete · product decision implementations.</strong> <strong>D-1</strong>: username-based login — <code>users.username NOT NULL</code>, unique index <code>tenantId_username</code>, login form migrated from email to username field. <strong>D-2</strong>: <code>company_types</code> reference table with EN/TH names + sort order; company type picker in registration. <strong>D-3</strong>: payment history — <code>invoices.paidAt</code> written on payment; <code>GET /api/invoices/payment-history</code>; Payment History tab in ClinicBilling. <strong>D-4</strong>: UserManagementTab shows username + branch; company type picker wired. <strong>D-5</strong>: owner-first pet browse flow in ClinicPets (<code>Array.at()</code> tsconfig fix). Commits: <code>cd10b93</code> · <code>8f044c9</code> · <code>45d8736</code> · <code>efdd4cf</code> · <code>6b69b97</code>. <strong>Total: 447 backend tests passing.</strong></span></div>
   <div class="callout info"><span class="callout-icon">🔄</span><span><strong>2026-06-13 — Full clean re-sequence.</strong> Backlog flattened to linear Phase 1–10+. <code>1.5→5</code> · Sessions <code>A–E→6</code> · Redesign closeout <code>→7</code> · RBAC/Platform <code>Phase 5→8</code> · Payment Gateway <code>→9</code> (postponed) · LINE/SMS <code>→10</code> (postponed). Stable IDs kept: <code>SPEC-RBAC-PLATFORM-01</code>, <code>phase5-rbac-platform-tasks.md</code>, sub-tasks <code>5-A…5-G</code>. Full map: <code>PHASE-RESEQUENCE.md</code>.</span></div>
   <div class="callout info"><span class="callout-icon">🔄</span><span><strong>2026-06-14 — Phase reorder (i18n promotion).</strong> i18n Rollout promoted from Phase 11 → <strong>Phase 9</strong> (no credential dependency, can follow Phase 8 immediately). Payment Gateway shifted <code>9→10</code>; LINE/SMS shifted <code>10→11</code>. Stable IDs unchanged.</span></div>
   <div class="callout ok"><span class="callout-icon">✅</span><span><strong>2026-06-14 — Phase 8 kickoff · 5-A DB foundation + T-5B-00 regression guard committed.</strong> 7 new Prisma models added (<code>permissions</code>, <code>clinic_roles</code>, <code>role_permissions</code>, <code>user_roles</code>, <code>platform_users</code>, <code>plans</code>, <code>tenant_quotas</code>). 49-permission catalogue + 3 system roles seeded. All non-superadmin users backfilled with <code>roleId</code> (T-5A-06/07). T-5B-00 regression guard (16 tests) + 3 new tenant isolation tests committed. Total: <strong>245 tests passing</strong>.</span></div>
@@ -1459,6 +1462,23 @@ Resubmit when: [concrete step to fix]</code></pre>
     <div style="font-size:11px;color:#6b7280">Branch <code>refactor/coding-rules-alignment</code> → merged to <code>main</code> (fast-forward, commit <code>78672d5</code>) · 10 commits (T-9-01 through T-9-08)</div>
   </div>
 
+  <!-- ── D-1–D-5 — COMPLETE ── -->
+  <div style="border-left:4px solid #16a34a;background:#fff;border-radius:8px;padding:16px;margin-bottom:16px;opacity:0.85">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <h2 style="margin:0">✅ D-1–D-5 — Product Decision Implementations</h2>
+      <span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:700">COMPLETE 2026-06-24</span>
+    </div>
+    <p style="margin:0 0 8px;color:#6b7280;font-size:13px">Five product decisions implemented post-Phase 9. 447 backend tests passing (+53 since Phase 9).</p>
+    <ul style="margin:0;padding-left:18px;color:#374151;line-height:1.8;font-size:13px">
+      <li><strong>D-1</strong> — Username login: <code>users.username NOT NULL</code>, unique index <code>tenantId_username</code>, login form migrated from email → username</li>
+      <li><strong>D-2</strong> — Company types: <code>company_types</code> reference table (EN/TH names, sort order); picker in registration</li>
+      <li><strong>D-3</strong> — Payment history: <code>invoices.paidAt</code> written on payment; <code>GET /api/invoices/payment-history</code>; Payment History tab in ClinicBilling</li>
+      <li><strong>D-4</strong> — User management: UserManagementTab shows username + branch; company type picker wired</li>
+      <li><strong>D-5</strong> — Owner-first pet browse flow in ClinicPets; <code>Array.at()</code> tsconfig ES2022 fix</li>
+    </ul>
+    <div style="font-size:11px;color:#6b7280;margin-top:8px">Commits: <code>cd10b93</code> · <code>8f044c9</code> · <code>45d8736</code> · <code>efdd4cf</code> · <code>6b69b97</code> · <code>9a7a1f2</code> — all on <code>main</code></div>
+  </div>
+
   <!-- ── Phase 10 — Postponed ── -->
   <div style="border-left:4px solid #e2e8f0;background:#fff;border-radius:8px;padding:16px;margin-bottom:16px;opacity:0.75">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
@@ -1486,13 +1506,14 @@ Resubmit when: [concrete step to fix]</code></pre>
       <tr style="opacity:0.5"><td><strong>1–7</strong></td><td>Foundation → UI redesign</td><td>✅ Complete (226 tests)</td><td>—</td></tr>
       <tr style="opacity:0.5"><td><strong>8</strong></td><td>RBAC + Platform Console + IA restructure</td><td>✅ Complete 2026-06-17 (~394 tests)</td><td>5-A/B/C + T-5D-02/03/04/05 + T-5E + T-5F ✅</td></tr>
       <tr style="opacity:0.5"><td><strong>9</strong></td><td>i18n full rollout (EN/TH)</td><td>✅ Complete 2026-06-18 (95 frontend tests)</td><td>After Phase 8 ✅</td></tr>
+      <tr style="opacity:0.5"><td><strong>D-1–D-5</strong></td><td>Username login, company types, payment history, owner-first browse</td><td>✅ Complete 2026-06-24 (447 backend tests)</td><td>After Phase 9 ✅</td></tr>
       <tr style="opacity:0.7"><td><strong>10</strong></td><td>Payment Gateway (Omise/Stripe + SaaS billing)</td><td>⏸ Postponed</td><td>Omise + SMTP keys</td></tr>
       <tr style="opacity:0.7"><td><strong>11</strong></td><td>LINE / SMS real dispatch</td><td>⏸ Postponed</td><td>LINE token + Twilio SID</td></tr>
     </tbody>
   </table></div>
 
-  <h2>Phase 9 Complete — Next: Phase 10 (Payment Gateway) ✅</h2>
-  <div class="callout ok" style="margin-bottom:12px"><span class="callout-icon">✅</span><span><strong>Phase 9 COMPLETE 2026-06-18 · 95/95 frontend tests green.</strong> i18n rollout shipped: 260+ EN/TH key pairs, 16 clinic screens, custom lightweight i18n (no library), 0 missing TH keys, language toggle via Zustand <code>uiStore.language</code>. Platform Console excluded. Merged to <code>main</code> at commit <code>78672d5</code>. <strong>Phase 10 (Payment Gateway)</strong> is next but credential-gated (requires Omise API keys + SMTP).</span></div>
+  <h2>D-1–D-5 Complete — Next: Phase 10 (Payment Gateway)</h2>
+  <div class="callout ok" style="margin-bottom:12px"><span class="callout-icon">✅</span><span><strong>D-1–D-5 COMPLETE 2026-06-24 · 447 backend tests green.</strong> Username login (D-1), company types (D-2), payment history (D-3), user management (D-4), owner-first pet browse (D-5). Phase 9 i18n also complete (2026-06-18, 95 frontend tests). <strong>Phase 10 (Payment Gateway)</strong> is next but credential-gated (requires Omise API keys + SMTP).</span></div>
 
   <h3>Delegate to Agents (copy/paste into Claude Code)</h3>
   <pre><code># Phase 8 — sub-task 5-A: RBAC schema + migration
@@ -3070,26 +3091,27 @@ npm run db:studio
     <p>The seed script populates two isolated clinic tenants and one platform super-admin. Use these credentials in development and in automated tests.</p>
 
     <h3>Clinic Plane — Dev Clinic (<code>dev-clinic</code>)</h3>
+    <p>Login field is <strong>Username</strong> (not email) since D-1. Clinic ID: <code>dev-clinic</code>.</p>
     <table>
-      <thead><tr><th>Role</th><th>System Key</th><th>Email</th><th>Password</th><th>Permissions snapshot</th></tr></thead>
+      <thead><tr><th>Role</th><th>Username</th><th>Email</th><th>Password</th><th>Permissions snapshot</th></tr></thead>
       <tbody>
         <tr>
           <td><strong>Clinic Admin</strong></td>
-          <td><code>clinic_admin</code></td>
+          <td><code>admin_a</code></td>
           <td><code>admin@dev-clinic.com</code></td>
           <td><code>AdminPass1!</code></td>
           <td>Full access: settings, staff, roles, billing, reports, inventory, audit</td>
         </tr>
         <tr>
           <td><strong>Doctor</strong></td>
-          <td><code>doctor</code></td>
+          <td><code>doctor_a</code></td>
           <td><code>doctor@dev-clinic.com</code></td>
           <td><code>DoctorPass1!</code></td>
           <td>EMR, SOAP notes, prescriptions, lab attachments, inpatient</td>
         </tr>
         <tr>
           <td><strong>Clinic Staff</strong></td>
-          <td><code>clinic_staff</code></td>
+          <td><code>staff_a</code></td>
           <td><code>staff@dev-clinic.com</code></td>
           <td><code>StaffPass1!</code></td>
           <td>Appointments, CRM, billing/POS, inventory, dispensing, grooming, loyalty</td>
@@ -3100,23 +3122,23 @@ npm run db:studio
     <h3>Clinic Plane — Test Clinic (<code>test-clinic</code>)</h3>
     <p>Used by the QA suite for tenant-isolation tests. Data is fully isolated from Dev Clinic.</p>
     <table>
-      <thead><tr><th>Role</th><th>System Key</th><th>Email</th><th>Password</th></tr></thead>
+      <thead><tr><th>Role</th><th>Username</th><th>Email</th><th>Password</th></tr></thead>
       <tbody>
         <tr>
           <td><strong>Clinic Admin</strong></td>
-          <td><code>clinic_admin</code></td>
+          <td><code>admin_b</code></td>
           <td><code>admin@test-clinic.com</code></td>
           <td><code>AdminPass2!</code></td>
         </tr>
         <tr>
           <td><strong>Doctor</strong></td>
-          <td><code>doctor</code></td>
+          <td><code>doctor_b</code></td>
           <td><code>doctor@test-clinic.com</code></td>
           <td><code>DoctorPass2!</code></td>
         </tr>
         <tr>
           <td><strong>Clinic Staff</strong></td>
-          <td><code>clinic_staff</code></td>
+          <td><code>staff_b</code></td>
           <td><code>staff@test-clinic.com</code></td>
           <td><code>StaffPass2!</code></td>
         </tr>

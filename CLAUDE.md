@@ -1,56 +1,73 @@
 # CLAUDE.md — Anemal Project Orchestration
 
-**Anemal**: Multi-tenant vet clinic SaaS. Tablet (touch-first) + Web. 6-agent collaboration model.
+**Anemal**: Multi-tenant vet clinic SaaS. Tablet (touch-first) + Web.
 
 ---
 
-## Agent Router — Who Does What
+## Agent Router
 
-| Task | Agent | Model |
-|------|-------|-------|
-| Requirements, authorization design, gap analysis, writing plan | `@ba-agent` | opus |
-| Scope controllers, task breakdown, Orchestration, Coordinator, docs owner ( All HTML pages in `docs/`, CLAUDE.md, HistoryLog) | `@pm-agent` | sonnet |
-| Screen/component design, Figma specs | `@uiux-agent` | sonnet |
-| Schema, migration, query safety, tenant isolation | `@db-agent` | sonnet |
-| Backend/frontend implementation | `@dev-agent` | sonnet |
-| Simplicity gate: over-engineering, scope, dependencies, duplication | `@ponytail-agent` | opus |
-| Tests, edge cases, isolation/RBAC verification | `@qa-agent` | opus |
+| Task | Agent | Model | Superpowers Skills | Sequence |
+|------|-------|-------|--------------------|----------|
+| Requirements, authorization design, gap analysis | `@ba-agent` | opus | `/brainstorm` | Step 2 |
+| Scope, task breakdown, coordination, docs owner | `@pm-agent` | sonnet | `/brainstorm`, `/write-plan`, `/execute-plan` | Step 1, 3, 5 |
+| Screen/component design | `@uiux-agent` | sonnet | `/brainstorm` | Step 4∥ |
+| Schema, migration, query safety, tenant isolation | `@db-agent` | sonnet | `/migrate` | Step 4∥ |
+| Backend/frontend implementation | `@dev-agent` | sonnet | `/tdd`, `/debug`, `/optimize` | Step 4∥ |
+| Stress-test design before plan (MANDATORY) | (human-driven) | opus | `/grilling` (`/grill-me`) | Step 3.5 gate |
+| Simplicity gate | `@ponytail-agent` | opus | — (project gate, not Superpowers) | Step 5 gate |
+| Tests, edge cases, isolation/RBAC verification | `@qa-agent` | opus | `/tdd`, `/audit` | Step 6 |
 
-**RULE:** 
-- Delegate first (except trivial one-liners). Agents run in isolated context. Each delegation must: (a) agents name, (b) name task, (c) cite specs/skills, (d) say where to write output.
-- Each agent must:
-	- Perform only its assigned scope.
-	- Produce a final report.
-	- Return the report to the coordinator.
-	- Terminate after report submission.
-  Coordinator must:
-	- Wait for all reports.
-	- Aggregate results.
-	- Confirm all agents completed.
-	- End the workflow.
-- Context > 70%, Consider to Auto-Compact
+**Rules:** Delegate first (except trivial one-liners). Each delegation must include: agent name, task, specs/skills cited, output path. Context > 70% → Auto-Compact.
+
 ---
 
 ## Standard Pipeline
 
 ```
-@pm-agent (Coordinator + tasks + AC)
-  → @ba-agent (validate + design)
-     → @db-agent (schema) ∥ @uiux-agent (screens) ∥ @dev-agent (code)
-        → @ponytail-agent (simplicity gate)
-           ↓
-        [Check 7 criteria]
-           ├─ YES (any flag) → REJECT + return to agents with feedback
-           └─ NO (all clear) → APPROVE → proceed
-              → @qa-agent (test + sign-off)
-				→ @pm-agent (Update Status, Document)
+STEP 1 — /superpowers:brainstorm          [@pm-agent + @ba-agent]
+          Clarify scope, confirm requirements, design sign-off.
+          ⛔ NO code, NO plan until human approves brainstorm output.
+          ↓
+STEP 2 — @pm-agent (tasks + AC)
+          Translate brainstorm output into acceptance criteria & task list.
+          ↓
+STEP 3 — @ba-agent (validate + design)
+          Validate requirements, authorization design, gap analysis.
+          ⛔ NO write-plan until BA sign-off.
+          ↓
+STEP 3.5 — /grilling (/grill-me)          [human-driven, MANDATORY]
+          Stress-test the validated design. Interview until
+          assumptions, edge cases, failure modes exposed & resolved.
+          ⛔ MANDATORY — CANNOT be skipped. /write-plan is BLOCKED
+             until grilling runs AND all findings are resolved.
+             No grill = pipeline violation, restart from Step 3.5.
+          ↓
+STEP 4 — /superpowers:write-plan          [@pm-agent owns]
+          Break into 2–5 min tasks with exact file paths, interfaces, tests.
+          Save to: docs/superpowers/plans/YYYY-MM-DD-<feature>.md
+          ⛔ Must run AFTER @ba-agent sign-off. NEVER before brainstorm.
+          ↓
+STEP 5 — @ponytail-agent (ANY flag → REJECT, all clear → APPROVE)
+          Reviews write-plan output against 7 criteria before any execution.
+          ⛔ /execute-plan is BLOCKED until Ponytail approves.
+          ↓
+STEP 6 — /superpowers:execute-plan        [@dev-agent ∥ @db-agent ∥ @uiux-agent]
+          Subagents implement task-by-task with /tdd or /migrate per agent.
+          Two-stage review after each task (spec compliance → code quality).
+          ⛔ NO skipping tasks. NO merging steps. Checkboxes must be tracked.
+          ↓
+STEP 7 — @qa-agent (sign-off)             [/audit if RBAC-related]
+          ↓
+STEP 8 — @pm-agent (update docs)
 ```
 
-**Enforcement:** 
-- @db-agent reviews all DB changes
-- @ponytail-agent blocks over-engineering/scope creep/duplication BEFORE @qa-agent (early feedback loop)
-- @qa-agent approves before "done"
-- @pm-agent updates docs/HistoryLog at end of each task
+Each agent: performs only assigned scope → produces report → returns to coordinator → terminates.
+
+> **Hard rules — no exceptions:**
+> - `/grilling` (`/grill-me`) is MANDATORY after `@ba-agent` sign-off and CANNOT be skipped under any circumstance
+> - `/write-plan` requires `/brainstorm` output + `@ba-agent` sign-off + `/grilling` run with all findings resolved
+> - `/execute-plan` requires `@ponytail-agent` APPROVE as gate
+> - Skipping any step is a pipeline violation — restart from the violated step
 
 ---
 
@@ -62,146 +79,99 @@
 
 ---
 
-## Ponytail Gate — Simplicity Enforcement
+## Ponytail Gate — 7 Criteria
 
-**Status:** ✅ LIVE (Enforced from June 23, 2026)  
-**Scope:** ALL tasks (feature work, refactors, schema changes, docs) — no exemptions  
-**When:** After @ba-agent, @db-agent, @uiux-agent, @dev-agent finalize, BEFORE @qa-agent  
-**Owner:** @ponytail-agent (Opus, independent review)  
-**Trigger:** Any deliverable claiming to be "done"
+ANY yes = REJECT. All no = APPROVE. See `.claude/agents/ponytail-agent/SKILL.md` for templates.
 
-**The 7-Point Check:**
+> **Superpowers override:** Ponytail Gate has HIGHEST authority. Any plan approved by Superpowers `/execute-plan` must still pass all 7 criteria before implementation proceeds. Superpowers plan approval does NOT equal Ponytail approval.
 
-| # | Criterion | Rejection Signal |
-|---|-----------|------------------|
-| 1 | Over-engineering? | Complex solution where simple exists; premature abstractions; unnecessary patterns |
-| 2 | Duplicate work? | Reimplements existing feature/utility/schema; violates DRY principle |
-| 3 | Existing solution available? | 3rd-party lib/tool already solves this; rebuild vs. integrate cost analysis missing |
-| 4 | Scope too large? | Affects >3 major subsystems; requires >10 files changed; >500 LOC in single PR |
-| 5 | Too many dependencies? | New external libs without justification; circular imports; > 5 new transitive deps |
-| 6 | Too many files? | >15 new files created; refactor scope sprawl (should be 1–2 cohesive commits) |
-| 7 | Too many APIs? | >3 new endpoints/hooks/mutations in single task; scope creep signal |
-
-**Decision Logic:**
-- **Any YES:** REJECT. Return to originating agent with specific feedback. Agent iterates + resubmits.
-- **All NO:** APPROVE. Proceed to @qa-agent review.
-
-**Rejection Feedback Format:**
-```
-@[agent] — Ponytail gate flagged: [criterion #N] [brief reason]
-Suggest: [specific simplification]
-Resubmit when: [concrete step to fix]
-```
-
-**Examples:**
-- ✗ 5 new API endpoints → ✓ 2 endpoints (split 3 others into Phase 9)
-- ✗ 12 new files → ✓ 6 files (extract common utilities into existing `utils/`)
-- ✗ 3 new npm packages → ✓ 1 package + use native solution for other 2
+1. Over-engineering? (simpler solution exists)
+2. Duplicate work? (reimplements existing code)
+3. Existing solution? (lib/framework covers it)
+4. Scope too large? (>3 subsystems / >10 files / >500 LOC)
+5. Too many dependencies? (>5 new transitive deps)
+6. Too many files? (>15 new files)
+7. Too many APIs? (>3 new endpoints/hooks/mutations)
 
 ---
 
 ## Critical Rules
 
-### Multi-Tenancy (ABSOLUTE)
-Every `SELECT`, `INSERT`, `UPDATE`, `DELETE` must include `WHERE tenant_id = <current_tenant_id>`. Enforced via: (1) JWT middleware extracts `tenant_id` → request context, (2) all repo/service functions receive `tenantId` as explicit param, (3) `@db-agent` reviews all DB changes.
+**Multi-tenancy (ABSOLUTE):** Every query must include `WHERE tenant_id = :tenantId`. JWT middleware extracts `tenant_id` → explicit param on every repo function. `@db-agent` reviews all DB changes.
 
-### Authorization — Two Planes (Phase 8 COMPLETE — T-5F: Role Editor + Platform Console UI + Multi-Role Assignment)
-**Clinic plane** (`/clinic/*`): `{ userId, tenantId, branchId, roleId }` + system roles `clinic_admin`/`doctor`/`clinic_staff` + custom roles  
-**Platform plane** (`/platform/*`): `{ platformUserId, plane:'platform', roleId }` (no tenant_id), operates SaaS, never touches PII  
-**Enforcement:** `requirePlane('clinic'|'platform')` → `requirePermission('<module>.<action>')` on every route. Deny-by-default. Server is security boundary.
+**Two planes:**
+- Clinic (`/clinic/*`): `{ userId, tenantId, branchId, roleId }` — roles: `clinic_admin`/`doctor`/`clinic_staff` + custom
+- Platform (`/platform/*`): `{ platformUserId, plane:'platform', roleId }` — no `tenant_id`, never touches PII
+- Every route: `requirePlane(...)` → `requirePermission('module.action')`. Deny-by-default.
 
-See `RBAC_Platform_Restructure_Spec.md` (spec), `anemal-rbac-matrix` (routes), `phase5-rbac-platform-tasks.md` (tasks).
+See `anemal-rbac-matrix` skill and `.claude/specs/RBAC_Platform_Restructure_Spec.md`.
 
 ---
 
 ## Project Structure
 
 ```
-stitch_vet_clinic_design_system/   # Compassionate Care UI (read-only)
-  DESIGN.md, login_page/, dashboard_overview_1024x768/, ...
+design_prototype/        # Compassionate Care UI (read-only)
 .claude/
-  agents/<name>/SKILL.md           # ba, pm, uiux, db, dev, ponytail, qa
-  skills/
-    anemal-{coding-rules, design-system, screen-specs, functional-reqs, db-context, rbac-matrix, platform-console, ba-toolkit}/
-  specs/
-    RBAC_Platform_Restructure_Spec.md, database-schema.sql
-  roadmap/
-    phase5-rbac-platform-tasks.md, qa-protocols.md
+  agents/<name>.md + <name>/SKILL.md   # ba, pm, uiux, db, dev, ponytail, qa
+  skills/anemal-{coding-rules,design-system,screen-specs,functional-reqs,
+                 db-context,rbac-matrix,platform-console,ba-toolkit}/
+  specs/RBAC_Platform_Restructure_Spec.md, database-schema.sql
+  roadmap/phase5-rbac-platform-tasks.md, qa-protocols.md
 src/
-  backend/
-    {config, controllers, middlewares, models, services, routes}/
-  frontend/
-    index.html, tailwind.config.js
-    src/{components, views, hooks, utils, store}/
+  backend/{config,controllers,middlewares,models,services,routes}/
+  frontend/src/{components,views,hooks,utils,store}/
 ```
+
+**Skill priority (highest → lowest):**
+1. `.claude/agents/<name>/SKILL.md` — project-specific agent skills
+2. `.claude/skills/anemal-*/` — project domain skills
+3. `~/.claude/plugins/cache/Superpowers/skills/` — Superpowers methodology skills
+4. Default Claude behavior
 
 ---
 
-## Phases (Linear 1–11)
+## Phases
 
 | Phase | Focus | Status |
 |-------|-------|--------|
-| 1–7 | Foundation through UI redesign sign-off | ✅ (226 tests) |
-| **8** | **RBAC + Platform Console + restructure** — 5-A/B/C + T-5D-02/03/04/05 + T-5E + **T-5F done** (Role Editor, Platform Console UI, Multi-Role Assignment) | **✅ Complete (~394 tests)** |
-| **9** | **i18n rollout (Thai/English)** — 260+ EN/TH key pairs, 16 clinic screens translated, custom lightweight i18n (no library), language toggle via Zustand `uiStore.language`, Platform Console excluded | **✅ Complete (95 frontend tests)** |
-| 10 | Payment gateway + SaaS billing | ⏸ (needs credentials) |
-| 11 | LINE/SMS dispatch | ⏸ (needs credentials) |
+| 1–7 | Foundation → UI redesign | ✅ 226 tests |
+| 8 | RBAC + Platform Console | ✅ ~394 backend tests |
+| 9 | i18n Thai/English (16 screens, no library) | ✅ 95 frontend tests |
+| D-1–D-5 | Username login, company types, payment history, owner-first browse | ✅ 447 backend tests |
+| 10 | Payment gateway + SaaS billing | ⏸ needs credentials |
+| 11 | LINE/SMS dispatch | ⏸ needs credentials |
 
 See `.claude/roadmap/remaining-tasks.md` for sub-tasks.
 
 ---
 
-## Design System — Compassionate Care
-
-**Must use** `stitch_vet_clinic_design_system/compassionate_care_system/DESIGN.md` + `design-alignment-plan.md`
-
-### Key Tokens
-| Token | Value | Class |
-|---|---|---|
-| Primary | `#000000` | `text-primary` / `bg-primary` |
-| Secondary | `#006c4a` | `text-secondary` / `bg-secondary` |
-| Error | `#EF4444` | `text-error` |
-| Success | `#22C55E` | `text-success` |
-| Fonts | Plus Jakarta Sans (headline), DM Sans (body), Fira Code (code) | `font-headline`, `font-sans`, `font-code` |
-| Icons | Material Symbols Outlined | No emoji in nav |
-
-**Sidebar:** `bg-surface shadow-sm` white, active item has `border-r-4 border-primary`  
-**Top nav:** Fixed `h-16`, `bg-surface`, content offset `pt-16 pl-56`
-
-**Rule:** Before implementing any screen, copy exact Tailwind from the corresponding `code.html` prototype. Never modify `stitch_vet_clinic_design_system/`.
-
----
-
-## Tablet Rules (@uiux-agent enforced)
-
-- All interactive ≥ 44×44px (`min-h-[44px]`)
-- Prefer dropdowns/toggles/pickers over text input
-- Sidebar collapsible, left/right-hand mode support
-- Test on 768px (portrait) + 1024px (landscape)
-- **No raw hex in components** — use token names only
-- **No emoji** — use Material Symbols Outlined
-
----
-
-## Agent Skills — Load Before Work
-
-| Skill | Agents |
-|-------|--------|
-| `anemal-coding-rules` | @dev-agent, @qa-agent |
-| `anemal-design-system` | @uiux-agent, @dev-agent |
-| `anemal-screen-specs` | @uiux-agent, @dev-agent |
-| `anemal-functional-reqs` | @pm-agent, @ba-agent |
-| `anemal-db-context` | @db-agent |
-| `anemal-rbac-matrix` | @ba-agent, @dev-agent, @qa-agent, @db-agent |
-| `anemal-platform-console` | @ba-agent, @pm-agent, @dev-agent, @db-agent |
-| `anemal-ba-toolkit` | @ba-agent, @pm-agent |
-| `anemal-ponytail-gate` | @ponytail-agent |
-
----
-
 ## Tracking & Documentation
 
-- **@pm-agent documents owner:** **LAST** (every task end): Phase status, test count, How to Run, Upcoming Work (✅/next pointer), Roadmap History, `CLAUDE.md`, `HistoryLog` 
-- **@ba-agent provides content** for `docs/functional_spec_detailed.html` (functional reqs, API endpoints, architecture), `@pm-agent` commits
-- **Run QA protocol** at end of each task: `.claude/roadmap/qa-protocols.md`
-- **Interrupted work:** save resume state to file (delete after complete)
+- `@pm-agent` documents LAST on every task: phase status, test count, all HTML in docs/(Dashboard, How to Run, HistoryLog, etc), CLAUDE.md
+- `@ba-agent` provides content for `docs/functional_spec_detailed.html`, update all specification documents in .claude/specs/ ; `@pm-agent` commits
+- Run QA protocol at end of every task: `.claude/roadmap/qa-protocols.md`
+- Interrupted work: save resume state to file, show prompt to continue, delete when complete
+
+---
+
+## Superpowers Integration
+
+Superpowers is installed as a Claude Code plugin and provides methodology skills (brainstorming, TDD, debug, migrate, audit, optimize). It works **alongside** this project's Agent Router — it does NOT replace it.
+
+**Mandatory skill sequence — enforced, no skipping:**
+
+```
+/brainstorm → @ba-agent sign-off → /grilling (/grill-me, MANDATORY) → /write-plan → [Ponytail Gate] → /execute-plan
+```
+
+**Coexistence rules:**
+
+1. **Brainstorming hook:** When Superpowers auto-triggers `/brainstorm` at session start, treat the output as pre-input to `@pm-agent`. It does NOT replace the Standard Pipeline — it feeds Step 1.
+2. **write-plan sequence:** `/write-plan` must run AFTER `@ba-agent` sign-off (Step 3) AND after `/grilling` (Step 3.5). Running it before brainstorm, before BA validates, or before grilling is a pipeline violation.
+2a. **Grilling gate (MANDATORY):** `/grilling` (`/grill-me`) runs at Step 3.5 after BA sign-off and is non-skippable. `/write-plan` is BLOCKED until grilling has run and every grill finding is resolved. Skipping it = pipeline violation; restart from Step 3.5. This skill stress-tests the design — no exception, even for "small" features.
+3. **execute-plan gate:** `/execute-plan` is BLOCKED until `@ponytail-agent` APPROVE (Step 5). Superpowers plan approval ≠ Ponytail approval. Both are required.
+4. **No step skipping:** Running `/execute-plan` directly without `/write-plan` output as input is not allowed. Restart from `/write-plan` if plan is missing.
+5. **Skill precedence:** Project skills (`.claude/agents/*/SKILL.md`, `.claude/skills/anemal-*/`) always win over Superpowers skills when they cover the same topic.
+6. **TDD scope:** Superpowers `/tdd` applies to `@dev-agent` implementation tasks inside `/execute-plan` only. `@qa-agent` retains ownership of RBAC, isolation, and edge-case verification per `.claude/roadmap/qa-protocols.md`.
+7. **No routing override:** Superpowers subagent routing suggestions are advisory only. Final agent delegation follows the Agent Router table above.

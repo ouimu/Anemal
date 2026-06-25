@@ -1,6 +1,6 @@
 # DESIGN.md — Compassionate Care System
 > Single source of truth for Anemal design tokens, component rules, and layout constraints.  
-> **Stitch prototypes are read-only reference:** `stitch_vet_clinic_design_system/<screen>/code.html`  
+> **Stitch prototypes are read-only reference:** `design_prototype/<screen>/code.html`  
 > **Full token cheat-sheet:** `.claude/specs/design-system-tokens.md`  
 > Last updated: 2026-06-04
 

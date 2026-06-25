@@ -1,8 +1,8 @@
 # Design Alignment Plan — Compassionate Care System
 > **Status:** PLAN ONLY — Do not implement until approved  
 > **Created:** 2026-06-04  
-> **Source designs:** `stitch_vet_clinic_design_system/` (8 screens, read-only)  
-> **Design tokens:** `stitch_vet_clinic_design_system/compassionate_care_system/DESIGN.md`
+> **Source designs:** `design_prototype/` (8 screens, read-only)  
+> **Design tokens:** `design_prototype/compassionate_care_system/DESIGN.md`
 
 ---
 

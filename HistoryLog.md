@@ -2,6 +2,44 @@
 
 ---
 
+## D-1 through D-5 — Product Decision Implementations (2026-06-24)
+
+**Status:** Complete  
+**Tests:** 447 backend (Jest) passing. +53 since Phase 9 baseline (~394).
+
+### Summary
+
+Five product decisions implemented after Phase 8+9, addressing real-world clinic UX gaps discovered during QA walkthroughs and the Codex review (ReviewbyCodex.md).
+
+| Decision | Description | Commits |
+|---|---|---|
+| D-1 | Username-based login (replace email); `users.username` NOT NULL; unique index `tenantId_username` | `cd10b93` |
+| D-2 | Company type reference table (`company_types`) with EN/TH names + sort order; picker in registration | `cd10b93` |
+| D-3 | Payment history — `invoice.paidAt` written on payment; `GET /api/invoices/payment-history`; Payment History tab in ClinicBilling | `cd10b93`, `8f044c9`, `45d8736` |
+| D-4 | Username login form migration (email → username field); UserManagementTab shows username + branch; company type picker wired | `efdd4cf` |
+| D-5 | Owner-first pet browse flow in ClinicPets: select owner → see their pets; `Array.at()` tsconfig fix | `6b69b97`, `9a7a1f2` |
+
+### Schema Changes
+- `users.username VARCHAR NOT NULL UNIQUE (tenantId)` — unique index `tenantId_username`
+- `company_types` table — `key`, `nameEn`, `nameTh`, `sortOrder`
+- `invoices.paidAt TIMESTAMP` — written by payment handler
+- Seed: 6 company types (animal_hospital, animal_clinic, pet_hotel, animal_health_center, other); username seeded for all dev users (`admin_a`, `doctor_a`, `staff_a`, etc.)
+
+### Login Credentials (post D-1)
+| Username | Password | Role | Tenant |
+|---|---|---|---|
+| `admin_a` | `AdminPass1!` | admin | dev-clinic |
+| `doctor_a` | `DoctorPass1!` | doctor | dev-clinic |
+| `staff_a` | `StaffPass1!` | staff | dev-clinic |
+| Platform: `admin@anemal.co` | `PlatformAdmin1!` | superadmin | platform |
+
+### Test Count
+- Backend (Jest): 447 / 447
+- Frontend (Vitest): 95 (unchanged)
+- Total: ~542
+
+---
+
 ## Phase 9 — i18n Rollout (EN/TH) (2026-06-18)
 
 **Status:** Complete
