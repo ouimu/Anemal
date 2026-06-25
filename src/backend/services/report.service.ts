@@ -30,7 +30,7 @@ export function getBranchRevenue(tenantId: number, from?: Date, to?: Date) {
 
 export async function getSnapshot(tenantId: number, branchId: number) {
   const [revenueToday, revenueThisMonth, pendingInvoices, lowStock, expiringSoon] = await Promise.all([
-    reportRepo.revenueToday(tenantId),
+    reportRepo.revenueTodayBranch(tenantId, branchId ?? null),
     reportRepo.revenueThisMonth(tenantId),
     reportRepo.countPendingInvoices(tenantId),
     productRepo.findLowStock(tenantId, branchId),

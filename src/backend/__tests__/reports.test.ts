@@ -39,9 +39,21 @@ beforeAll(async () => {
   ])
 
   // Tenant A: one PAID invoice of 500 today. Tenant B: nothing.
-  await prisma.invoice.create({
-    data: { tenantId: tidA, invoiceNo: `INV-TEST-${ts}`, subtotal: 500, taxAmount: 0, totalAmount: 500, paymentStatus: 'paid',
+  const inv = await prisma.invoice.create({
+    data: { tenantId: tidA, branchId: bA.id, invoiceNo: `INV-TEST-${ts}`, subtotal: 500, taxAmount: 0, totalAmount: 500, paymentStatus: 'paid',
       items: { create: [{ tenantId: tidA, description: 'Consult', itemType: 'service', quantity: 1, unitPrice: 500, totalPrice: 500 }] } },
+  })
+  // Create payment_history record for the paid invoice
+  await prisma.paymentHistory.create({
+    data: {
+      tenantId: tidA,
+      branchId: bA.id,
+      invoiceId: inv.id,
+      amount: 500,
+      method: 'cash',
+      receivedById: uA.id,
+      note: 'Test payment',
+    },
   })
 })
 
@@ -49,6 +61,7 @@ afterAll(async () => {
   server.closeAllConnections()
   await new Promise<void>((resolve) => server.close(() => resolve()))
   await cleanupUserRoles(prisma, [tidA, tidB])
+  await prisma.paymentHistory.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.invoiceItem.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.invoice.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
   await prisma.branch.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })

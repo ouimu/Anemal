@@ -117,3 +117,65 @@ export function branchRevenue(tenantId: number, from?: Date, to?: Date): Promise
     WHERE b."tenantId" = ${tenantId} AND b."isActive" = true
     GROUP BY b.id, b.name ORDER BY total DESC`
 }
+
+// ─── Branch-scoped, payment-received basis (2026-06-25) ──────────────────────
+// Uses payment_history.paidAt + amount. Old invoice-based functions above are
+// preserved for admin-dashboard consumers — do NOT delete them.
+
+export async function revenueTodayBranch(tenantId: number, branchId: number | null): Promise<number> {
+  const start = new Date(); start.setHours(0, 0, 0, 0)
+  const end   = new Date(start); end.setDate(end.getDate() + 1)
+  if (branchId) {
+    const rows = await prisma.$queryRaw<{ value: number }[]>`
+      SELECT COALESCE(SUM(amount), 0)::float8 AS value FROM payment_history
+      WHERE "tenantId" = ${tenantId} AND "branchId" = ${branchId}
+        AND "paidAt" >= ${start} AND "paidAt" < ${end}`
+    return Number(rows[0]?.value ?? 0)
+  }
+  const rows = await prisma.$queryRaw<{ value: number }[]>`
+    SELECT COALESCE(SUM(amount), 0)::float8 AS value FROM payment_history
+    WHERE "tenantId" = ${tenantId} AND "paidAt" >= ${start} AND "paidAt" < ${end}`
+  return Number(rows[0]?.value ?? 0)
+}
+
+export function revenueSeriesBranch(
+  tenantId: number,
+  branchId: number | null,
+  period:   'daily' | 'monthly',
+  n:        number,
+): Promise<SeriesPoint[]> {
+  if (period === 'daily') {
+    const since = new Date(); since.setHours(0, 0, 0, 0); since.setDate(since.getDate() - (n - 1))
+    if (branchId) {
+      return prisma.$queryRaw<SeriesPoint[]>`
+        SELECT to_char(date_trunc('day', "paidAt"), 'YYYY-MM-DD') AS label,
+               COALESCE(SUM(amount), 0)::float8 AS revenue
+        FROM payment_history
+        WHERE "tenantId" = ${tenantId} AND "branchId" = ${branchId} AND "paidAt" >= ${since}
+        GROUP BY 1 ORDER BY 1`
+    }
+    return prisma.$queryRaw<SeriesPoint[]>`
+      SELECT to_char(date_trunc('day', "paidAt"), 'YYYY-MM-DD') AS label,
+             COALESCE(SUM(amount), 0)::float8 AS revenue
+      FROM payment_history
+      WHERE "tenantId" = ${tenantId} AND "paidAt" >= ${since}
+      GROUP BY 1 ORDER BY 1`
+  }
+  // monthly
+  const now   = new Date()
+  const since = new Date(now.getFullYear(), now.getMonth() - (n - 1), 1)
+  if (branchId) {
+    return prisma.$queryRaw<SeriesPoint[]>`
+      SELECT to_char(date_trunc('month', "paidAt"), 'YYYY-MM') AS label,
+             COALESCE(SUM(amount), 0)::float8 AS revenue
+      FROM payment_history
+      WHERE "tenantId" = ${tenantId} AND "branchId" = ${branchId} AND "paidAt" >= ${since}
+      GROUP BY 1 ORDER BY 1`
+  }
+  return prisma.$queryRaw<SeriesPoint[]>`
+    SELECT to_char(date_trunc('month', "paidAt"), 'YYYY-MM') AS label,
+           COALESCE(SUM(amount), 0)::float8 AS revenue
+    FROM payment_history
+    WHERE "tenantId" = ${tenantId} AND "paidAt" >= ${since}
+    GROUP BY 1 ORDER BY 1`
+}
