@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VetClinic Pro - Admin Management</title>
+<script type="text/javascript" nonce="96ec1d9f2f154a5aa0f41c2d539" src="//local.adguard.org?ts=1780562057294&amp;type=content-script&amp;dmn=contribution.usercontent.google.com&amp;url=https%3A%2F%2Fcontribution.usercontent.google.com%2Fdownload%3Fc%3DCgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sXzdlYjY1NDg3ODQwYjRjNzY5ZDdmMThhZjg0MTcwYjZlEgsSBxCJ8v-vlxYYAZIBIwoKcHJvamVjdF9pZBIVQhM3NTU0OTYyNjE5OTg1OTYwMDgx%26filename%3D%26opi%3D89354086&amp;app=msedge.exe&amp;css=3&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1&amp;stealth=1&amp;st-dnt"></script><script type="text/javascript" nonce="96ec1d9f2f154a5aa0f41c2d539" src="//local.adguard.org?ts=1780562057294&amp;name=AdGuard%20Assistant%20%28Beta%29&amp;name=AdGuard%20Extra%20%28Beta%29&amp;type=user-script"></script><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=DM+Sans:wght@400;500;700&amp;family=Fira+Code&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "success": "#22C55E",
+                    "surface-container": "#eceef0",
+                    "on-primary": "#ffffff",
+                    "tertiary-container": "#0b1c30",
+                    "surface-container-low": "#f2f4f6",
+                    "tertiary-fixed": "#d3e4fe",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-container": "#00714e",
+                    "surface-dim": "#d8dadc",
+                    "sage-light": "#DCF2EA",
+                    "surface-tint": "#565e74",
+                    "on-background": "#191c1e",
+                    "info": "#0EA5E9",
+                    "primary": "#000000",
+                    "on-surface": "#191c1e",
+                    "on-primary-container": "#7c839b",
+                    "on-secondary-fixed": "#002114",
+                    "surface-container-lowest": "#ffffff",
+                    "inverse-surface": "#2d3133",
+                    "tertiary-fixed-dim": "#b7c8e1",
+                    "on-primary-fixed": "#131b2e",
+                    "on-secondary-fixed-variant": "#005137",
+                    "warning": "#EAB308",
+                    "surface-container-high": "#e6e8ea",
+                    "primary-container": "#131b2e",
+                    "inverse-on-surface": "#eff1f3",
+                    "surface-variant": "#e0e3e5",
+                    "secondary-fixed": "#85f8c4",
+                    "tertiary": "#000000",
+                    "secondary-container": "#82f5c1",
+                    "surface": "#FFFFFF",
+                    "on-surface-variant": "#45464d",
+                    "primary-fixed-dim": "#bec6e0",
+                    "on-tertiary-fixed": "#0b1c30",
+                    "error-container": "#ffdad6",
+                    "inverse-primary": "#bec6e0",
+                    "on-tertiary-fixed-variant": "#38485d",
+                    "outline-variant": "#c6c6cd",
+                    "surface-container-highest": "#e0e3e5",
+                    "secondary-fixed-dim": "#68dba9",
+                    "primary-fixed": "#dae2fd",
+                    "outline": "#76777d",
+                    "secondary": "#006c4a",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary-container": "#75859d",
+                    "on-primary-fixed-variant": "#3f465c",
+                    "surface-bright": "#f7f9fb",
+                    "on-error-container": "#93000a",
+                    "error": "#EF4444",
+                    "background": "#f7f9fb",
+                    "on-error": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "2xl": "48px",
+                    "3xl": "64px",
+                    "margin-mobile": "16px",
+                    "base": "8px",
+                    "sm": "8px",
+                    "gutter": "16px",
+                    "md": "16px",
+                    "margin-desktop": "32px",
+                    "xl": "32px",
+                    "lg": "24px",
+                    "xs": "4px"
+            },
+            "fontFamily": {
+                    "headline-sm": ["Plus Jakarta Sans"],
+                    "body-sm": ["DM Sans"],
+                    "headline-xs": ["Plus Jakarta Sans"],
+                    "headline-lg-mobile": ["Plus Jakarta Sans"],
+                    "label-md": ["DM Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "body-md": ["DM Sans"],
+                    "body-lg": ["DM Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "code": ["Fira Code"],
+                    "display": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "headline-sm": ["20px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "headline-xs": ["16px", {"lineHeight": "1.35", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "label-md": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.5px", "fontWeight": "500"}],
+                    "headline-md": ["24px", {"lineHeight": "1.25", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "code": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "display": ["40px", {"lineHeight": "1.15", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-pill {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        body {
+            background-color: #f7f9fb;
+            color: #191c1e;
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md overflow-x-hidden">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-surface dark:bg-surface-container-low shadow-sm flex flex-col py-lg z-50">
+<div class="px-lg mb-3xl">
+<h1 class="font-headline-sm text-headline-sm text-primary dark:text-inverse-primary font-bold">VetClinic Pro</h1>
+<p class="font-label-md text-label-md text-on-surface-variant">Downtown Branch</p>
+</div>
+<nav class="flex-1 space-y-xs px-md">
+<a class="flex items-center gap-md px-md py-base rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-md py-base rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="pets">pets</span>
+<span class="font-body-md">Pets</span>
+</a>
+<a class="flex items-center gap-md px-md py-base rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span class="font-body-md">Schedule</span>
+</a>
+<a class="flex items-center gap-md px-md py-base rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="medical_services">medical_services</span>
+<span class="font-body-md">EMR</span>
+</a>
+<a class="flex items-center gap-md px-md py-base rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-body-md">Inventory</span>
+</a>
+<a class="flex items-center gap-md px-md py-base rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-body-md">Billing</span>
+</a>
+<a class="flex items-center gap-md px-md py-base rounded-lg text-primary font-bold border-r-4 border-primary dark:text-inverse-primary dark:border-inverse-primary bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-body-md">Admin</span>
+</a>
+</nav>
+<div class="px-md mt-auto">
+<div class="flex items-center gap-md p-md bg-surface-container-low rounded-xl">
+<img alt="User Avatar" class="w-10 h-10 rounded-full bg-primary-fixed" data-alt="A clean, professional headshot of a friendly veterinary administrator wearing a dark navy scrub top. The background is a soft-focus clinical setting with warm, ambient lighting. The aesthetic is modern and trustworthy, consistent with a high-end medical professional profile image." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDA4ewwwukxSsaGOyw7dqm180aJ_fKE4lWziE9FtIQbQfQlPf3GP-UEUJJ_SoWY0q6t9QA6eT3eQapjeIumwsz98PGqLBE3Y8P3uzo3jZ3Ao8a4V5QloYHgayyqG40Qm1Pn5Mod_zzt9IeuJh9ll5GQsxfDEH_8dng-btAR7imK4Qbggaiv8-ELVSc33roWI65PE2j_7AsP3P5bx2ExPSW6e-h5A6dElEpW2Hp6nJ7N8vTpPeI4Ter1BsUkYbotMjXrx0MV0IYWK-U"/>
+<div>
+<p class="font-label-md text-on-surface font-bold">Dr. Sarah Chen</p>
+<p class="font-label-md text-on-surface-variant">Administrator</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 left-64 h-16 bg-surface dark:bg-surface-container-low shadow-sm flex justify-between items-center px-margin-desktop z-40">
+<div class="flex items-center flex-1">
+<div class="relative w-96">
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="w-full pl-xl pr-md py-xs bg-surface-container rounded-full border-none focus:ring-2 focus:ring-primary text-body-sm" placeholder="Search clinic records..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-lg">
+<button class="hover:bg-surface-container dark:hover:bg-surface-container-high rounded-full p-2 transition-transform scale-95 active:scale-100">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
+</button>
+<button class="hover:bg-surface-container dark:hover:bg-surface-container-high rounded-full p-2 transition-transform scale-95 active:scale-100">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="help">help</span>
+</button>
+</div>
+</header>
+<div class="pt-16 p-margin-desktop space-y-xl">
+<!-- Header Section -->
+<div class="flex justify-between items-end">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-primary">Clinic Administration</h2>
+<p class="font-body-md text-on-surface-variant">Manage your staff, configuration, and system modules.</p>
+</div>
+<div class="flex gap-md">
+<button class="px-lg py-base bg-surface border border-outline text-primary font-bold rounded-lg hover:bg-surface-container transition-colors flex items-center gap-xs">
+<span class="material-symbols-outlined text-[20px]" data-icon="cloud_download">cloud_download</span>
+                        Export Data
+                    </button>
+<button class="px-lg py-base bg-primary text-on-primary font-bold rounded-lg shadow-sm hover:opacity-90 transition-opacity flex items-center gap-xs">
+<span class="material-symbols-outlined text-[20px]" data-icon="add">add</span>
+                        Add New Staff
+                    </button>
+</div>
+</div>
+<!-- Bento Grid Layout for Admin Sections -->
+<div class="grid grid-cols-12 gap-gutter">
+<!-- Tabbed Main Panel (User Management) -->
+<div class="col-span-8 bg-surface rounded-xl shadow-sm border border-outline-variant overflow-hidden">
+<div class="flex border-b border-outline-variant bg-surface-container-lowest">
+<button class="px-xl py-lg font-bold text-primary border-b-2 border-primary active-pill" id="tab-users" onclick="switchTab('users')">User Management</button>
+<button class="px-xl py-lg font-medium text-on-surface-variant hover:text-primary transition-colors" id="tab-settings" onclick="switchTab('settings')">Clinic Settings</button>
+<button class="px-xl py-lg font-medium text-on-surface-variant hover:text-primary transition-colors" id="tab-modules" onclick="switchTab('modules')">Module Management</button>
+</div>
+<div class="p-lg" id="content-users">
+<table class="w-full text-left">
+<thead>
+<tr class="text-label-md text-on-surface-variant border-b border-outline-variant">
+<th class="pb-md font-bold uppercase tracking-wider">Staff Member</th>
+<th class="pb-md font-bold uppercase tracking-wider">Role</th>
+<th class="pb-md font-bold uppercase tracking-wider">Status</th>
+<th class="pb-md font-bold uppercase tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-md flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-secondary font-bold">JM</div>
+<div>
+<p class="font-bold">Dr. James Miller</p>
+<p class="text-body-sm text-on-surface-variant">james.m@vetpro.com</p>
+</div>
+</td>
+<td class="py-md">
+<span class="px-md py-xs bg-surface-container-high rounded-full text-label-md font-bold">Senior Surgeon</span>
+</td>
+<td class="py-md">
+<span class="px-md py-xs bg-sage-light text-on-secondary-container rounded-full text-label-md font-bold flex items-center w-fit gap-xs">
+<span class="w-2 h-2 bg-success rounded-full"></span>
+                                            Active
+                                        </span>
+</td>
+<td class="py-md text-right">
+<button class="text-primary font-bold hover:underline">Edit</button>
+<span class="mx-xs text-outline">|</span>
+<button class="text-error font-bold hover:underline">Deactivate</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-md flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-tertiary-fixed flex items-center justify-center text-tertiary font-bold">AW</div>
+<div>
+<p class="font-bold">Alice Wong</p>
+<p class="text-body-sm text-on-surface-variant">alice.w@vetpro.com</p>
+</div>
+</td>
+<td class="py-md">
+<span class="px-md py-xs bg-surface-container-high rounded-full text-label-md font-bold">Receptionist</span>
+</td>
+<td class="py-md">
+<span class="px-md py-xs bg-sage-light text-on-secondary-container rounded-full text-label-md font-bold flex items-center w-fit gap-xs">
+<span class="w-2 h-2 bg-success rounded-full"></span>
+                                            Active
+                                        </span>
+</td>
+<td class="py-md text-right">
+<button class="text-primary font-bold hover:underline">Edit</button>
+<span class="mx-xs text-outline">|</span>
+<button class="text-error font-bold hover:underline">Deactivate</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-md flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-primary-fixed-dim flex items-center justify-center text-primary font-bold">RK</div>
+<div>
+<p class="font-bold">Robert Klein</p>
+<p class="text-body-sm text-on-surface-variant">robert.k@vetpro.com</p>
+</div>
+</td>
+<td class="py-md">
+<span class="px-md py-xs bg-surface-container-high rounded-full text-label-md font-bold">Administrator</span>
+</td>
+<td class="py-md">
+<span class="px-md py-xs bg-surface-variant text-on-surface-variant rounded-full text-label-md font-bold flex items-center w-fit gap-xs">
+<span class="w-2 h-2 bg-outline rounded-full"></span>
+                                            On Leave
+                                        </span>
+</td>
+<td class="py-md text-right">
+<button class="text-primary font-bold hover:underline">Edit</button>
+<span class="mx-xs text-outline">|</span>
+<button class="text-error font-bold hover:underline">Deactivate</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="hidden p-lg space-y-lg" id="content-settings">
+<div class="grid grid-cols-2 gap-lg">
+<div class="space-y-xs">
+<label class="font-label-md text-primary font-bold">Clinic Display Name</label>
+<input class="w-full px-md py-base border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" type="text" value="VetClinic Pro - Downtown Branch"/>
+</div>
+<div class="space-y-xs">
+<label class="font-label-md text-primary font-bold">Subdomain</label>
+<div class="flex">
+<input class="flex-1 px-md py-base border border-outline-variant rounded-l-lg focus:ring-2 focus:ring-primary focus:border-transparent" type="text" value="downtown-branch"/>
+<span class="px-md py-base bg-surface-container-high border-y border-r border-outline-variant rounded-r-lg text-on-surface-variant">.vetpro.com</span>
+</div>
+</div>
+</div>
+<div class="pt-md border-t border-outline-variant">
+<h4 class="font-headline-xs text-headline-xs mb-md">Business Hours</h4>
+<div class="space-y-sm">
+<div class="flex justify-between items-center bg-surface-container-low p-md rounded-lg">
+<span class="font-bold">Monday - Friday</span>
+<div class="flex items-center gap-md">
+<input class="border-outline-variant rounded p-xs" type="time" value="08:00"/>
+<span>to</span>
+<input class="border-outline-variant rounded p-xs" type="time" value="20:00"/>
+</div>
+</div>
+<div class="flex justify-between items-center bg-surface-container-low p-md rounded-lg">
+<span class="font-bold">Saturday</span>
+<div class="flex items-center gap-md">
+<input class="border-outline-variant rounded p-xs" type="time" value="09:00"/>
+<span>to</span>
+<input class="border-outline-variant rounded p-xs" type="time" value="16:00"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="hidden p-lg" id="content-modules">
+<div class="space-y-md">
+<div class="flex items-center justify-between p-lg bg-surface-container-low rounded-xl">
+<div class="flex items-center gap-lg">
+<div class="p-md bg-white rounded-lg shadow-sm">
+<span class="material-symbols-outlined text-primary" data-icon="inventory_2">inventory_2</span>
+</div>
+<div>
+<p class="font-bold">Inventory Management</p>
+<p class="text-body-sm text-on-surface-variant">Track medication stock, medical supplies, and auto-restock alerts.</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+<div class="flex items-center justify-between p-lg bg-surface-container-low rounded-xl">
+<div class="flex items-center gap-lg">
+<div class="p-md bg-white rounded-lg shadow-sm">
+<span class="material-symbols-outlined text-primary" data-icon="medical_services">medical_services</span>
+</div>
+<div>
+<p class="font-bold">Electronic Medical Records (EMR)</p>
+<p class="text-body-sm text-on-surface-variant">Digital patient charts, surgical history, and vaccination tracking.</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+<div class="flex items-center justify-between p-lg bg-surface-container-low rounded-xl">
+<div class="flex items-center gap-lg">
+<div class="p-md bg-white rounded-lg shadow-sm">
+<span class="material-symbols-outlined text-primary" data-icon="videocam">videocam</span>
+</div>
+<div>
+<p class="font-bold">Tele-Health Consultations</p>
+<p class="text-body-sm text-on-surface-variant">Enable remote video consultations for post-op checkups.</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+</div>
+</div>
+</div>
+<!-- Subscription Sidebar -->
+<div class="col-span-4 space-y-gutter">
+<!-- Subscription Card -->
+<div class="bg-primary-container text-on-primary rounded-xl p-lg shadow-lg relative overflow-hidden">
+<div class="absolute -right-4 -top-4 opacity-10">
+<span class="material-symbols-outlined text-[120px]" data-icon="workspace_premium" style="font-variation-settings: 'FILL' 1;">workspace_premium</span>
+</div>
+<div class="relative z-10">
+<span class="px-md py-xs bg-on-primary text-primary font-bold rounded-full text-label-md mb-lg inline-block">PREMIUM PLAN</span>
+<h3 class="font-headline-md text-headline-md text-white">Elite Veterinary Pro</h3>
+<p class="text-on-primary-container mb-xl">Renews on Oct 12, 2024</p>
+<div class="space-y-md mb-2xl">
+<div class="flex justify-between items-center text-body-sm">
+<span>Clinic Users</span>
+<span class="font-bold">12 / 20</span>
+</div>
+<div class="w-full bg-tertiary-container h-2 rounded-full overflow-hidden">
+<div class="bg-secondary h-full" style="width: 60%"></div>
+</div>
+<div class="flex justify-between items-center text-body-sm">
+<span>Cloud Storage</span>
+<span class="font-bold">45.2 GB / 100 GB</span>
+</div>
+<div class="w-full bg-tertiary-container h-2 rounded-full overflow-hidden">
+<div class="bg-secondary h-full" style="width: 45%"></div>
+</div>
+</div>
+<button class="w-full py-base bg-secondary text-white font-bold rounded-lg hover:opacity-90 transition-opacity">
+                                Manage Subscription
+                            </button>
+</div>
+</div>
+<!-- Usage Statistics Card -->
+<div class="bg-surface border border-outline-variant rounded-xl p-lg shadow-sm">
+<h4 class="font-headline-xs text-headline-xs mb-lg">Monthly Overview</h4>
+<div class="space-y-md">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 bg-sage-light flex items-center justify-center rounded-lg">
+<span class="material-symbols-outlined text-secondary" data-icon="assignment_turned_in">assignment_turned_in</span>
+</div>
+<div>
+<p class="text-label-md text-on-surface-variant font-bold">Appointments</p>
+<p class="font-headline-sm text-headline-sm">1,284</p>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 bg-surface-container-high flex items-center justify-center rounded-lg">
+<span class="material-symbols-outlined text-primary" data-icon="trending_up">trending_up</span>
+</div>
+<div>
+<p class="text-label-md text-on-surface-variant font-bold">Revenue Growth</p>
+<p class="font-headline-sm text-headline-sm text-secondary">+12.4%</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Support Card -->
+<div class="bg-surface border border-outline-variant rounded-xl p-lg shadow-sm relative group overflow-hidden">
+<img alt="Support Specialist" class="absolute inset-0 w-full h-full object-cover opacity-10 group-hover:opacity-20 transition-opacity" data-alt="A background image showing a clean, high-tech modern office space with soft lighting and professional vibes. The composition is artistic and minimalist, using a cool blue and gray color palette to suggest a world-class customer support and technology center environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtbYUpwd3V_9ZzSbj3BhmElQ00J5QDJM621_2k2A9Iv-HWTHhN8YPBiEhSuFQZ9zkcCBEObOPojrglk_azclyA60dUFQoY-xQKaVRoCOEA_ZvCESayHxyb7-211tGauUlmpVOooM-TLOONFK06Fh2C5DdGw0X6vTS34ajY7HsuIut0PMvKkq8jXcxY6uqLkHqPv6oFLnEeItssIPsya8J01hnXF8utaRbBT9lYS52gC2I_C6jEL2miGReBsjA9WX8pBSummPBd1yg"/>
+<div class="relative z-10">
+<h4 class="font-bold text-primary mb-xs">Need technical help?</h4>
+<p class="text-body-sm text-on-surface-variant mb-md">Your dedicated Account Manager is available 24/7 for high-priority support.</p>
+<button class="flex items-center gap-xs text-primary font-bold hover:gap-md transition-all">
+                                Contact Specialist <span class="material-symbols-outlined text-body-md" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        function switchTab(tab) {
+            // Content Toggle
+            const contents = ['users', 'settings', 'modules'];
+            contents.forEach(c => {
+                document.getElementById(`content-${c}`).classList.add('hidden');
+                const tabEl = document.getElementById(`tab-${c}`);
+                tabEl.classList.remove('text-primary', 'font-bold', 'border-b-2', 'border-primary');
+                tabEl.classList.add('text-on-surface-variant', 'font-medium');
+            });
+
+            document.getElementById(`content-${tab}`).classList.remove('hidden');
+            const activeTab = document.getElementById(`tab-${tab}`);
+            activeTab.classList.add('text-primary', 'font-bold', 'border-b-2', 'border-primary');
+            activeTab.classList.remove('text-on-surface-variant', 'font-medium');
+        }
+
+        // Initialize micro-interactions
+        document.querySelectorAll('button, a').forEach(el => {
+            el.addEventListener('click', (e) => {
+                const ripple = document.createElement('span');
+                ripple.className = 'absolute bg-white/20 rounded-full animate-ping pointer-events-none';
+                ripple.style.width = '20px';
+                ripple.style.height = '20px';
+                ripple.style.left = `${e.clientX - el.offsetLeft - 10}px`;
+                ripple.style.top = `${e.clientY - el.offsetTop - 10}px`;
+                el.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 500);
+            });
+        });
+    </script>
+</body></html>
