@@ -1,4 +1,5 @@
-﻿import React, { useState } from 'react'
+﻿import React, { useState, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
@@ -53,6 +54,23 @@ function weekDays(from: Date) {
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i).filter(h => h >= 8 && h <= 20)
+
+function generateMonthGrid(ref: Date): Date[] {
+  const year  = ref.getFullYear()
+  const month = ref.getMonth()
+  const first = new Date(year, month, 1)
+  const last  = new Date(year, month + 1, 0)
+  const startDow  = first.getDay() === 0 ? 7 : first.getDay()
+  const gridStart = new Date(first)
+  gridStart.setDate(1 - (startDow - 1))
+  const endDow  = last.getDay() === 0 ? 7 : last.getDay()
+  const gridEnd = new Date(last)
+  gridEnd.setDate(last.getDate() + (7 - endDow))
+  const days: Date[] = []
+  const cur = new Date(gridStart)
+  while (cur <= gridEnd) { days.push(new Date(cur)); cur.setDate(cur.getDate() + 1) }
+  return days
+}
 
 // ─── Booking form ─────────────────────────────────────────────────────────────
 function BookingForm({ selectedDate, selectedHour, doctors, onClose, onSaved }: {
@@ -220,12 +238,23 @@ function AppointmentDetail({ appt, onClose, onStatusChange }: {
 export default function ClinicAppointments() {
   const t = useT()
   const qc = useQueryClient()
-  const [viewMode, setViewMode]         = useState<'day' | 'week'>('day')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [viewMode, setViewMode]         = useState<'day' | 'week' | 'month'>(
+    (searchParams.get('view') as 'day' | 'week' | 'month') ?? 'day'
+  )
   const [currentDate, setCurrentDate]   = useState(new Date())
+  const [monthRef, setMonthRef]         = useState(() => {
+    const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0); return d
+  })
   const [filterDoctorId, setFilterDoc]  = useState<number | null>(null)
   const [showForm, setShowForm]         = useState(false)
   const [selectedHour, setSelectedHour] = useState<number | undefined>()
   const [detailAppt, setDetailAppt]     = useState<Appointment | null>(null)
+
+  const changeView = (v: 'day' | 'week' | 'month') => {
+    setViewMode(v)
+    setSearchParams(v === 'day' ? {} : { view: v })
+  }
 
   const queryDate = viewMode === 'day' ? dateStr(currentDate) : dateStr(currentDate)
 
@@ -242,6 +271,24 @@ export default function ClinicAppointments() {
     queryFn: () => api.get('/users').then(r => r.data.data as Doctor[]),
     staleTime: 300_000,
   })
+
+  const { data: monthAppts } = useQuery({
+    queryKey: ['appointments', 'month', monthRef.toISOString().slice(0, 7)],
+    queryFn: () =>
+      api.get(`/api/appointments?view=month&date=${monthRef.toISOString().slice(0, 10)}`)
+         .then(r => r.data.data as Appointment[]),
+    enabled: viewMode === 'month',
+  })
+
+  const monthCountMap = useMemo(() => {
+    const map: Record<string, number> = {}
+    if (!monthAppts) return map
+    for (const a of monthAppts) {
+      const key = new Date(a.scheduledAt).toISOString().slice(0, 10)
+      map[key] = (map[key] ?? 0) + 1
+    }
+    return map
+  }, [monthAppts])
 
   const appointments = apptData ?? []
   const doctors = (usersData ?? []).filter((u: Doctor) => u.role === 'doctor')
@@ -287,8 +334,8 @@ export default function ClinicAppointments() {
 
         {/* View toggle */}
         <div className="flex rounded-lg overflow-hidden border border-outline-variant">
-          {(['day', 'week'] as const).map(m => (
-            <button key={m} onClick={() => setViewMode(m)}
+          {(['day', 'week', 'month'] as const).map(m => (
+            <button key={m} onClick={() => changeView(m)}
               className={`px-lg py-sm min-h-[44px] text-body-sm font-medium capitalize transition-colors ${viewMode === m ? 'bg-primary text-primary-on' : 'hover:bg-surface-container-low'}`}>
               {m}
             </button>
@@ -316,8 +363,8 @@ export default function ClinicAppointments() {
 
       {/* ── Content ── */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Calendar grid */}
-        <div className="flex-1 overflow-auto">
+        {/* Calendar grid (day/week only) */}
+        {viewMode !== 'month' && <div className="flex-1 overflow-auto">
           {isLoading ? (
             <div className="flex items-center justify-center h-full text-on-surface-variant">Loading…</div>
           ) : (
@@ -369,7 +416,49 @@ export default function ClinicAppointments() {
               ))}
             </div>
           )}
-        </div>
+        </div>}
+
+        {/* Month calendar */}
+        {viewMode === 'month' && (
+          <div className="flex-1 overflow-auto p-md">
+            <div className="flex items-center justify-between mb-md">
+              <button onClick={() => setMonthRef(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
+                      className="min-h-[44px] px-md flex items-center gap-xs text-on-surface-variant hover:bg-surface-container rounded-lg">
+                <MaterialIcon name="chevron_left" size={20} /> Prev
+              </button>
+              <span className="text-headline-xs font-headline font-semibold text-on-surface">
+                {monthRef.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </span>
+              <button onClick={() => setMonthRef(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
+                      className="min-h-[44px] px-md flex items-center gap-xs text-on-surface-variant hover:bg-surface-container rounded-lg">
+                Next <MaterialIcon name="chevron_right" size={20} />
+              </button>
+            </div>
+            <div className="grid grid-cols-7 gap-xs mb-xs">
+              {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => (
+                <div key={d} className="text-center text-label-md text-on-surface-variant font-medium py-xs">{d}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-xs">
+              {generateMonthGrid(monthRef).map((date, i) => {
+                const key   = date.toISOString().slice(0, 10)
+                const count = monthCountMap[key] ?? 0
+                const isCurrentMonth = date.getMonth() === monthRef.getMonth()
+                const isToday = date.toDateString() === new Date().toDateString()
+                return (
+                  <button key={i} onClick={() => { setCurrentDate(new Date(date)); changeView('day') }}
+                          className={`min-h-[56px] rounded-lg flex flex-col items-center justify-center gap-xs border transition-colors hover:bg-surface-container
+                            ${isCurrentMonth ? 'border-outline-variant' : 'border-transparent text-on-surface-variant/40'}`}>
+                    <span className={`text-body-sm ${isToday ? 'text-primary font-bold' : ''}`}>{date.getDate()}</span>
+                    {count > 0 && (
+                      <span className="bg-primary text-primary-on text-label-md rounded-full px-xs min-w-[20px] text-center leading-5">{count}</span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Booking form panel */}
         {showForm && (
