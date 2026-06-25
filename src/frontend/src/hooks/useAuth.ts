@@ -21,6 +21,7 @@ interface LoginStep2Response {
   branchId:     number
   role:         string
   name:         string
+  companyName:  string
 }
 
 interface MeResponse {
@@ -52,6 +53,7 @@ async function applyLogin(
   login: LoginStep2Response,
   remember: boolean,
   setAuth: (data: AuthData, remember: boolean) => void,
+  branchName = '',
 ): Promise<void> {
   const me = await fetchMe(login.token)
   setAuth({
@@ -65,6 +67,8 @@ async function applyLogin(
     permissions:    me?.permissions    ?? [],
     permSetVersion: me?.permSetVersion ?? 0,
     name:           login.name,
+    companyName:    login.companyName ?? '',
+    branchName,
   }, remember)
   try { await useAuthStore.getState().refreshPermissions() } catch { /* server enforces */ }
 }
@@ -97,10 +101,11 @@ export function useLogin() {
     mutationFn: ({ pendingToken, branchId }: { pendingToken: string; branchId: number }) =>
       api.post<{ success: boolean; data: LoginStep2Response }>('/auth/select-branch', { pendingToken, branchId }),
 
-    onSuccess: async (res) => {
+    onSuccess: async (res, vars) => {
       const data = res.data.data
+      const selectedBranch = branchSelection?.branches.find(b => b.id === vars.branchId)
       setBranchSelection(null)
-      await applyLogin(data, remember, setAuth)
+      await applyLogin(data, remember, setAuth, selectedBranch?.name ?? '')
       navigate(data.role === 'admin' ? '/clinic-admin/dashboard' : '/clinic/dashboard')
     },
   })

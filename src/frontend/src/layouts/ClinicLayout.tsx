@@ -21,6 +21,8 @@ const NAV = [
 export default function ClinicLayout() {
   const role          = useAuthStore(s => s.role)
   const name          = useAuthStore(s => s.name)
+  const companyName   = useAuthStore(s => s.companyName)
+  const branchName    = useAuthStore(s => s.branchName)
   const hasPermission = useAuthStore(s => s.hasPermission)
   const logout = useLogout()
   const t      = useT()
@@ -53,9 +55,11 @@ export default function ClinicLayout() {
           {sidebarOpen && (
             <div className="pl-sm min-w-0">
               <p className="text-headline-sm font-headline font-bold text-primary leading-tight truncate">
-                Anemal
+                {companyName || 'Anemal'}
               </p>
-              <p className="text-label-md text-on-surface-variant mt-0.5">{t('nav.clinicPortal')}</p>
+              {branchName && (
+                <p className="text-label-md text-on-surface-variant mt-0.5 truncate">{branchName}</p>
+              )}
             </div>
           )}
           <button
