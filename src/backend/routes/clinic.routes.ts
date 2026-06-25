@@ -9,7 +9,7 @@ router.use(authMiddleware)
 
 router.get('/usage', requirePlane('clinic'), requirePermission('clinic.profile.view'), async (req, res, next) => {
   try {
-    const data = await getClinicSummary(req.context!.tenantId)
+    const data = await getClinicSummary(req.context!.tenantId, req.context!.branchId)
     res.json({ success: true, data })
   } catch (err) { next(err) }
 })

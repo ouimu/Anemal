@@ -70,7 +70,7 @@ export async function getClinicUsage(tenantId: number) {
   }
 }
 
-export async function getClinicSummary(tenantId: number) {
+export async function getClinicSummary(tenantId: number, branchId?: number | null) {
   const now      = new Date()
   const start    = new Date(now.getFullYear(), now.getMonth(), 1)
   const today    = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -78,11 +78,11 @@ export async function getClinicSummary(tenantId: number) {
   const in7days  = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
 
   const [appointmentsToday, appointmentsThisMonth, totalPets, invoicesThisMonth, vaccinationsDueSoon] = await Promise.all([
-    usageRepo.countAppointmentsBetween(tenantId, today, tomorrow),
-    usageRepo.countAppointmentsSince(tenantId, start),
+    usageRepo.countAppointmentsBetween(tenantId, today, tomorrow, branchId),
+    usageRepo.countAppointmentsSince(tenantId, start, branchId),
     usageRepo.countActivePets(tenantId),
     usageRepo.countInvoicesSince(tenantId, start),
-    usageRepo.countVaccinationsBetween(tenantId, now, in7days),
+    usageRepo.countVaccinationsBetween(tenantId, now, in7days, branchId),
   ])
 
   return { appointmentsToday, appointmentsThisMonth, totalPets, invoicesThisMonth, vaccinationsDueSoon }
