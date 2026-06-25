@@ -2,11 +2,38 @@ import { Request, Response, NextFunction } from 'express'
 import {
   listAppointments, getAppointment, createAppointment, createWalkIn, updateStatus,
 } from '../services/appointment.service'
+import { findInRange } from '../models/appointment.repository'
 
 function branchOf(req: Request): number | null { return req.context?.branchId ?? null }
 
 export async function handleListAppointments(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    const view = req.query.view as string | undefined
+
+    if (view === 'month') {
+      const dateStr = (req.query.date as string) ?? new Date().toISOString().slice(0, 10)
+      const ref = new Date(dateStr + 'T00:00:00')
+      ref.setDate(1)
+
+      // Grid start: Monday on or before the 1st
+      const startDow = ref.getDay() === 0 ? 7 : ref.getDay()
+      const gridStart = new Date(ref)
+      gridStart.setDate(1 - (startDow - 1))
+      gridStart.setHours(0, 0, 0, 0)
+
+      // Grid end: day after the Sunday that closes the last week of the month
+      const lastDay = new Date(ref.getFullYear(), ref.getMonth() + 1, 0)
+      const lastDow = lastDay.getDay() === 0 ? 7 : lastDay.getDay()
+      const gridEnd = new Date(lastDay)
+      gridEnd.setDate(lastDay.getDate() + (7 - lastDow) + 1)
+      gridEnd.setHours(0, 0, 0, 0)
+
+      const { tenantId, branchId } = req.context!
+      const data = await findInRange(tenantId, branchId, gridStart, gridEnd)
+      res.json({ success: true, data })
+      return
+    }
+
     const date     = req.query.date     as string | undefined
     const doctorId = req.query.doctorId ? parseInt(String(req.query.doctorId)) : undefined
     const week     = req.query.week === 'true'
