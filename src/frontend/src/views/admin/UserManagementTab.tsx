@@ -1,5 +1,5 @@
 ﻿// @uiux-agent spec: user list, role badges, add/edit/deactivate modal — 44px tap targets
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import { useAuthStore } from '../../store/authStore'
@@ -36,19 +36,24 @@ function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; o
   const [form, setForm] = useState({
     name: user.name ?? '', username: user.username ?? '', email: user.email ?? '',
     role: user.role ?? 'staff', password: '', isActive: user.isActive ?? true,
-    branchId: user.branchId ?? null as number | null,
+    branchIds: [] as number[],
   })
+
+  // Load the user's currently assigned branches when editing
+  useEffect(() => {
+    if (isNew || !user.id) { setForm(p => ({ ...p, branchIds: [] })); return }
+    api.get<{ success: boolean; data: Branch[] }>(`/users/${user.id}/branches`)
+      .then(res => setForm(p => ({ ...p, branchIds: res.data.data.map(b => b.id) })))
+      .catch(() => {})
+  }, [user.id, isNew])
 
   const save = useMutation({
     mutationFn: () => isNew
       ? api.post('/users', { name: form.name, username: form.username, email: form.email || undefined, password: form.password, role: form.role })
       : api.put(`/users/${user.id}`, { name: form.name, role: form.role, isActive: form.isActive }),
     onSuccess: async (res) => {
-      // Assign branch for new users if selected
-      if (isNew && form.branchId != null) {
-        const uid = (res.data as { data: { id: number } }).data.id
-        await api.put(`/users/${uid}/branch`, { branchId: form.branchId }).catch(() => {})
-      }
+      const uid = isNew ? (res.data as { data: { id: number } }).data.id : user.id!
+      await api.patch(`/users/${uid}/branch`, { branchIds: form.branchIds }).catch(() => {})
       qc.invalidateQueries({ queryKey: ['admin', 'users'] }); onClose()
     },
   })
@@ -79,14 +84,6 @@ function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; o
                 <label className="text-xs text-on-surface-variant">{t('admin.users.password')}</label>
                 <input type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} className={inputCls} />
               </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-xs text-on-surface-variant">Branch (optional)</label>
-                <select value={form.branchId ?? ''} onChange={e => setForm(p => ({ ...p, branchId: e.target.value ? Number(e.target.value) : null }))}
-                  className={`${inputCls} bg-surface`}>
-                  <option value="">— All branches (admin) —</option>
-                  {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              </div>
             </>
           )}
           <div className="flex flex-col gap-1">
@@ -97,6 +94,32 @@ function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; o
               <option value="staff">{t('admin.users.staff')}</option>
               {!isNew && <option value="admin">{t('admin.users.admin')}</option>}
             </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-on-surface-variant">
+              {t('admin.users.assignedBranches')}<span className="text-error"> *</span>
+            </label>
+            <div className="flex flex-col gap-1 max-h-40 overflow-y-auto border border-outline-variant rounded-lg p-2">
+              {branches.map(b => (
+                <label key={b.id} className="flex items-center gap-2 min-h-[44px] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.branchIds.includes(b.id)}
+                    onChange={e => setForm(p => ({
+                      ...p,
+                      branchIds: e.target.checked
+                        ? [...p.branchIds, b.id]
+                        : p.branchIds.filter(id => id !== b.id),
+                    }))}
+                    className="w-4 h-4 accent-primary"
+                  />
+                  <span className="text-sm text-on-surface">{b.name}</span>
+                </label>
+              ))}
+            </div>
+            {form.branchIds.length === 0 && (
+              <p className="text-xs text-error-on-container">{t('admin.users.branchRequired')}</p>
+            )}
           </div>
           {!isNew && (
             <label className="flex items-center gap-2 min-h-[44px] cursor-pointer">
