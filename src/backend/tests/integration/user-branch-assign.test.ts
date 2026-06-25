@@ -210,4 +210,26 @@ describe('PATCH /users/:userId/branch — multi-branch assignment', () => {
 
     expect(res.status).toBe(403)
   })
+
+  it('GET /users/:id/branches returns the user\'s assigned branches', async () => {
+    await request(server)
+      .patch(`/users/${staffUserId}/branch`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ branchIds: [branch1Id] })
+
+    const res = await request(server)
+      .get(`/users/${staffUserId}/branches`)
+      .set('Authorization', `Bearer ${adminToken}`)
+    expect(res.status).toBe(200)
+    expect(Array.isArray(res.body.data)).toBe(true)
+    const ids = (res.body.data as { id: number }[]).map(b => b.id)
+    expect(ids).toContain(branch1Id)
+  })
+
+  it('GET /users/:id/branches returns 403 for non-admin', async () => {
+    const res = await request(server)
+      .get(`/users/${staffUserId}/branches`)
+      .set('Authorization', `Bearer ${staffToken}`)
+    expect(res.status).toBe(403)
+  })
 })

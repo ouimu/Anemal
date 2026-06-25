@@ -134,6 +134,13 @@ export async function getUserRoles(tenantId: number, userId: number): Promise<Us
   }))
 }
 
+/** Return the branches assigned to a user (for the admin assignment UI). */
+export async function getUserBranches(tenantId: number, userId: number): Promise<{ id: number; name: string }[]> {
+  const existing = await userRepo.findUserById(tenantId, userId)
+  if (!existing) throw new UserError('User not found', 404)
+  return userRepo.getUserBranches(tenantId, userId)
+}
+
 /**
  * Assign (or clear) the branch for a staff or doctor user.
  *

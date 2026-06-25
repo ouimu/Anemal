@@ -14,6 +14,7 @@ router.get('/:id',           requirePlane('clinic'), requirePermission('staff.vi
 router.post('/',      requirePlane('clinic'), requirePermission('staff.manage'), validate(createUserSchema), userController.createUser)
 router.put('/:id',    requirePlane('clinic'), requirePermission('staff.manage'), validate(updateUserSchema), userController.updateUser)
 router.delete('/:id',              requirePlane('clinic'), requirePermission('staff.manage'),        userController.deactivateUser)
+router.get('/:userId/branches',    requirePlane('clinic'), requirePermission('staff.assign_branch'), userController.handleGetUserBranches)
 router.patch('/:userId/branch',    requirePlane('clinic'), requirePermission('staff.assign_branch'), validate(assignBranchSchema), userController.handleAssignBranch)
 
 export default router

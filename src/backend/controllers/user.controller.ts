@@ -93,6 +93,18 @@ export async function handleAssignBranch(req: Request, res: Response, next: Next
   } catch (err) { next(err) }
 }
 
+/**
+ * GET /users/:userId/branches
+ * Returns the branches assigned to a user. Guarded by staff.assign_branch.
+ */
+export async function handleGetUserBranches(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId   = Number(req.params.userId)
+    const branches = await userService.getUserBranches(req.context!.tenantId, userId)
+    res.json({ success: true, data: branches })
+  } catch (err) { next(err) }
+}
+
 export async function deactivateUser(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     await userService.deactivateUser(req.context!.tenantId, Number(req.params.id))
