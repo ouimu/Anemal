@@ -7,10 +7,16 @@
 ALTER TABLE "pets" ADD COLUMN IF NOT EXISTS "branchId" INTEGER;
 
 -- AddForeignKey pets.branchId -> branches.id (SET NULL on branch delete)
-ALTER TABLE "pets"
-  ADD CONSTRAINT "pets_branchId_fkey"
-    FOREIGN KEY ("branchId") REFERENCES "branches"("id")
-    ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'pets_branchId_fkey'
+  ) THEN
+    ALTER TABLE "pets"
+      ADD CONSTRAINT "pets_branchId_fkey"
+        FOREIGN KEY ("branchId") REFERENCES "branches"("id")
+        ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
 
 -- CreateIndex: composite index for branch-scoped pet queries
 CREATE INDEX IF NOT EXISTS "pets_tenantId_branchId_idx" ON "pets"("tenantId", "branchId");
@@ -32,7 +38,7 @@ SET "branchId" = COALESCE(
   (
     SELECT b.id
     FROM branches b
-    WHERE b."tenantId" = p."tenantId" AND b."isActive" = true
+    WHERE b."tenantId" = p."tenantId"
     ORDER BY b.id ASC
     LIMIT 1
   )
