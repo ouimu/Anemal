@@ -3,12 +3,13 @@ import { AppError } from '../utils/errors'
 import * as vaccinationRepo from '../models/vaccination.repository'
 
 export const createVaccinationSchema = z.object({
-  petId:          z.number().int().positive(),
-  vaccineName:    z.string().min(1).max(100),
-  administeredAt: z.string(),
-  nextDueAt:      z.string().optional().nullable(),
-  batchNo:        z.string().max(50).optional().nullable(),
-  notes:          z.string().optional().nullable(),
+  petId:                  z.number().int().positive(),
+  vaccineName:            z.string().min(1).max(100),
+  administeredAt:         z.string(),
+  nextDueAt:              z.string().optional().nullable(),
+  batchNo:                z.string().max(50).optional().nullable(),
+  notes:                  z.string().optional().nullable(),
+  administeredExternally: z.boolean().optional().default(false),
 })
 
 export type CreateVaccinationInput = z.infer<typeof createVaccinationSchema>

@@ -11,8 +11,9 @@ const SUBDOMAIN = 'vax-worklist-test'
 const PASSWORD  = 'TestPass1!'
 
 let server: Server
-let tid    = 0
-let token  = ''           // admin token with emr.view
+let tid         = 0
+let token       = ''      // admin token with emr.view
+let doctorToken = ''      // doctor token with emr.create
 let noPermToken = ''      // token for user with no permissions (no role_permissions rows)
 
 async function login(username: string): Promise<string> {
@@ -42,6 +43,14 @@ beforeAll(async () => {
   })
   await prisma.userRole.create({ data: { userId: adminUser.id, roleId: adminRole.id, tenantId: tid } })
 
+  // Doctor role (has emr.create)
+  const doctorRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
+  const doctorUser = await prisma.user.create({
+    data: { tenantId: tid, branchId: branch.id, name: 'Doctor WL', username: 'doctor_wl', email: 'doctor@wl.test', passwordHash, role: 'doctor', roleId: doctorRole.id },
+  })
+  await prisma.userRole.create({ data: { userId: doctorUser.id, roleId: doctorRole.id, tenantId: tid } })
+  await prisma.userBranch.create({ data: { userId: doctorUser.id, branchId: branch.id, tenantId: tid } })
+
   // No-perm user: create a custom role with zero permissions, assign it
   const emptyRole = await prisma.clinicRole.create({
     data: { tenantId: tid, name: 'No Perm Role', key: 'no_perm_wl', permVersion: 1 },
@@ -54,6 +63,7 @@ beforeAll(async () => {
   await prisma.userBranch.create({ data: { userId: noPermUser.id, branchId: branch.id, tenantId: tid } })
 
   token       = await login('admin_wl')
+  doctorToken = await login('doctor_wl')
   noPermToken = await login('noperm_wl')
 })
 
@@ -72,6 +82,25 @@ afterAll(async () => {
 
   server.closeAllConnections()
   await new Promise<void>(resolve => server.close(() => resolve()))
+})
+
+describe('POST /api/vaccinations with administeredExternally', () => {
+  it('accepts administeredExternally flag without validation error', async () => {
+    const res = await request(server)
+      .post('/api/vaccinations')
+      .set('Authorization', `Bearer ${doctorToken}`)
+      .send({
+        petId: 1,
+        vaccineName: 'Rabies',
+        administeredAt: new Date().toISOString(),
+        nextDueAt: null,
+        batchNo: null,
+        notes: null,
+        administeredExternally: true,
+      })
+    // 201 = success, 404 = petId not in seed — either is not a validation error
+    expect([201, 404]).toContain(res.status)
+  })
 })
 
 describe('GET /api/vaccinations/due-worklist', () => {
