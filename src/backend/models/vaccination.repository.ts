@@ -31,3 +31,76 @@ export function findDueSoon(tenantId: number, from: Date, to: Date) {
     orderBy: { nextDueAt: 'asc' },
   })
 }
+
+export interface WorklistRow {
+  petId:       number
+  petName:     string
+  species:     string
+  breed:       string | null
+  ownerName:   string
+  ownerPhone:  string | null
+  vaccineName: string
+  nextDueAt:   Date
+  daysDue:     number   // negative = overdue
+}
+
+// ponytail: raw SQL for latest-per-(pet, normalised vaccineName) dedup.
+// normalised = LOWER(TRIM(vaccineName)). NULL-branch pets appear in every branch list.
+export function findDueSoonWorklist(
+  tenantId: number,
+  branchId: number | null,
+  cutoff:   Date,    // today + 7 days
+): Promise<WorklistRow[]> {
+  if (branchId) {
+    return prisma.$queryRaw<WorklistRow[]>`
+      WITH ranked AS (
+        SELECT v.id, v."petId", v."vaccineName", v."nextDueAt",
+               ROW_NUMBER() OVER (
+                 PARTITION BY v."petId", LOWER(TRIM(v."vaccineName"))
+                 ORDER BY v."administeredAt" DESC, v.id DESC
+               ) AS rn
+        FROM vaccinations v
+        JOIN pets p ON p.id = v."petId"
+        WHERE v."tenantId" = ${tenantId}
+          AND v."nextDueAt" IS NOT NULL
+          AND v."nextDueAt" <= ${cutoff}
+          AND (p."branchId" = ${branchId} OR p."branchId" IS NULL)
+      )
+      SELECT r."petId", p.name AS "petName", p.species, p.breed,
+             CONCAT(o."firstName", ' ', o."lastName") AS "ownerName",
+             o.phone AS "ownerPhone",
+             r."vaccineName",
+             r."nextDueAt",
+             EXTRACT(DAY FROM r."nextDueAt" - NOW())::int AS "daysDue"
+      FROM ranked r
+      JOIN pets p ON p.id = r."petId"
+      JOIN owners o ON o.id = p."ownerId"
+      WHERE r.rn = 1
+      ORDER BY r."nextDueAt" ASC
+    `
+  }
+  return prisma.$queryRaw<WorklistRow[]>`
+    WITH ranked AS (
+      SELECT v.id, v."petId", v."vaccineName", v."nextDueAt",
+             ROW_NUMBER() OVER (
+               PARTITION BY v."petId", LOWER(TRIM(v."vaccineName"))
+               ORDER BY v."administeredAt" DESC, v.id DESC
+             ) AS rn
+      FROM vaccinations v
+      WHERE v."tenantId" = ${tenantId}
+        AND v."nextDueAt" IS NOT NULL
+        AND v."nextDueAt" <= ${cutoff}
+    )
+    SELECT r."petId", p.name AS "petName", p.species, p.breed,
+           CONCAT(o."firstName", ' ', o."lastName") AS "ownerName",
+           o.phone AS "ownerPhone",
+           r."vaccineName",
+           r."nextDueAt",
+           EXTRACT(DAY FROM r."nextDueAt" - NOW())::int AS "daysDue"
+    FROM ranked r
+    JOIN pets p ON p.id = r."petId"
+    JOIN owners o ON o.id = p."ownerId"
+    WHERE r.rn = 1
+    ORDER BY r."nextDueAt" ASC
+  `
+}

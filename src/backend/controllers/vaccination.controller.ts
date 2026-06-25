@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { ValidationError } from '../utils/errors'
-import { listVaccinations, createVaccination, getDueSoon } from '../services/vaccination.service'
+import { listVaccinations, createVaccination, getDueSoon, getDueSoonWorklist } from '../services/vaccination.service'
 
 export async function handleListVaccinations(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -22,6 +22,14 @@ export async function handleGetDueSoon(req: Request, res: Response, next: NextFu
   try {
     const days = parseInt(String(req.query.days ?? '30'))
     const data = await getDueSoon(req.context!.tenantId, days)
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export async function handleGetWorklist(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { tenantId, branchId } = req.context!
+    const data = await getDueSoonWorklist(tenantId, branchId ?? null)
     res.json({ success: true, data })
   } catch (err) { next(err) }
 }

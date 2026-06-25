@@ -37,3 +37,9 @@ export async function getDueSoon(tenantId: number, days = 30) {
   to.setDate(to.getDate() + days)
   return vaccinationRepo.findDueSoon(tenantId, from, to)
 }
+
+export async function getDueSoonWorklist(tenantId: number, branchId: number | null) {
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() + 7)
+  return vaccinationRepo.findDueSoonWorklist(tenantId, branchId, cutoff)
+}
