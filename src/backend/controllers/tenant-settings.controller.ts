@@ -15,6 +15,7 @@ export const updateSettingsSchema = z.object({
   workEndTime:          z.string().regex(/^\d{2}:\d{2}$/).optional(),
   smsRemindersEnabled:  z.boolean().optional(),
   lineRemindersEnabled: z.boolean().optional(),
+  idleTimeoutMinutes:   z.number().int().min(5).max(120).optional(),
 }).strict()
 
 export async function getSettings(req: Request, res: Response, next: NextFunction): Promise<void> {

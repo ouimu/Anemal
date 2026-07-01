@@ -78,6 +78,16 @@ describe('admin-1.4 — GET /admin/settings', () => {
     expect(res.body.data.planTier).toBe('starter')      // default
   })
 
+  test('settings-01b: Default idleTimeoutMinutes is 15', async () => {
+    // Type: happy_path
+    const res = await request(server)
+      .get('/admin/settings')
+      .set('Authorization', adminToken())
+      .expect(200)
+
+    expect(res.body.data.idleTimeoutMinutes).toBe(15)
+  })
+
   test('settings-02: Response includes tenant name and subdomain', async () => {
     // Type: happy_path
     const res = await request(server)
@@ -158,6 +168,35 @@ describe('admin-1.4 — PUT /admin/settings', () => {
       .expect(200)
 
     expect(res.body.data.lineRemindersEnabled).toBe(false)
+  })
+
+  test('settings-08b: Update idle timeout minutes', async () => {
+    // Type: happy_path
+    const res = await request(server)
+      .put('/admin/settings')
+      .set('Authorization', adminToken())
+      .send({ idleTimeoutMinutes: 30 })
+      .expect(200)
+
+    expect(res.body.data.idleTimeoutMinutes).toBe(30)
+  })
+
+  test('settings-08c: Idle timeout below 5 → 400', async () => {
+    // Type: edge_case / input validation
+    await request(server)
+      .put('/admin/settings')
+      .set('Authorization', adminToken())
+      .send({ idleTimeoutMinutes: 4 })
+      .expect(400)
+  })
+
+  test('settings-08d: Idle timeout above 120 → 400', async () => {
+    // Type: edge_case / input validation
+    await request(server)
+      .put('/admin/settings')
+      .set('Authorization', adminToken())
+      .send({ idleTimeoutMinutes: 121 })
+      .expect(400)
   })
 
   test('settings-09: Invalid slot duration (too small) → 400', async () => {
