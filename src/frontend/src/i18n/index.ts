@@ -126,6 +126,7 @@ const en: Dict = {
   'login.backToLogin': 'Back to login',
   'login.privacy': 'Privacy Policy',
   'login.terms': 'Terms of Service',
+  'login.idleLogoutMessage': 'You were logged out due to inactivity.',
 
   // Clinic dashboard
   'clinic.dashboard.title': 'Clinic Overview',
@@ -417,6 +418,7 @@ const th: Dict = {
   'login.backToLogin': 'กลับหน้าเข้าสู่ระบบ',
   'login.privacy': 'นโยบายความเป็นส่วนตัว',
   'login.terms': 'ข้อกำหนดการใช้บริการ',
+  'login.idleLogoutMessage': 'คุณถูกออกจากระบบเนื่องจากไม่มีการใช้งาน',
 
   // Clinic dashboard
   'clinic.dashboard.title': 'ภาพรวมคลินิก',

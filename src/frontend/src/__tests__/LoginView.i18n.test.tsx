@@ -40,4 +40,12 @@ describe('LoginView — Thai i18n', () => {
     render(<LoginView />)
     expect(screen.getByText(/ชื่อผู้ใช้/i)).toBeInTheDocument()
   })
+
+  it('shows the idle-logout banner when ?reason=idle is present', () => {
+    // This suite mocks language: 'th' (see top of file), so the banner
+    // renders the Thai translation, not the English source string.
+    window.history.pushState({}, '', '/login?reason=idle')
+    render(<LoginView />)
+    expect(screen.getByText(/ออกจากระบบเนื่องจากไม่มีการใช้งาน/)).toBeInTheDocument()
+  })
 })

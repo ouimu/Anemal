@@ -22,6 +22,7 @@ export default function PlatformLoginView() {
   const [showPw,   setShowPw]   = useState(false)
   const setAuth  = usePlatformAuthStore((s) => s.setAuth)
   const navigate = useNavigate()
+  const showIdleBanner = new URLSearchParams(window.location.search).get('reason') === 'idle'
 
   const mutation = useMutation({
     mutationFn: (payload: LoginPayload) =>
@@ -46,6 +47,13 @@ export default function PlatformLoginView() {
           <p className="text-headline-sm font-headline font-bold text-on-surface">Platform Console</p>
           <p className="text-body-sm text-on-surface-variant mt-xs">Anemal SaaS Operations</p>
         </div>
+
+        {showIdleBanner && (
+          <div className="mb-md flex items-start gap-sm bg-secondary-container/30 border border-secondary/30 rounded-lg px-md py-sm">
+            <MaterialIcon name="info" size={18} />
+            <p className="text-body-sm text-on-surface">You were logged out due to inactivity.</p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-md">
           <div>
