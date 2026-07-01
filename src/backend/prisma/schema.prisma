@@ -102,6 +102,8 @@ model TenantSettings {
   lineRemindersEnabled Boolean  @default(true)
   // Subscription
   planTier             String   @default("starter") @db.VarChar(50)
+  // Phase idle-logout — client-side auto-logout threshold, admin-configurable
+  idleTimeoutMinutes   Int      @default(15)
   // Phase 1.5 — operating hours per day: { mon:{open:"08:00",close:"18:00"}, sun:null, ... }
   operatingHours       Json?
   // Phase 1.5 — LINE OA (token AES-256-GCM encrypted, enc:v1 format)
