@@ -1,12 +1,15 @@
 ﻿// Admin-only shell — redirects non-admins to /clinic/dashboard
+import { useState } from 'react'
 import { NavLink, Outlet, Navigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../store/authStore'
-import { useLogout } from '../hooks/useAuth'
+import { useLogout, useSwitchBranch } from '../hooks/useAuth'
 import { useUiStore } from '../store/uiStore'
 import { useAdminSettings } from '../hooks/useAdmin'
 import { useT } from '../i18n'
 import MaterialIcon from '../components/MaterialIcon'
 import TopNav from '../components/TopNav'
+import api from '../utils/api'
 
 const NAV = [
   { to: '/clinic-admin/dashboard',    icon: 'dashboard',    label: 'nav.overview' },
@@ -22,12 +25,31 @@ const NAV = [
 ]
 
 export default function AdminLayout() {
-  const role   = useAuthStore(s => s.role)
-  const name   = useAuthStore(s => s.name)
-  const logout = useLogout()
-  const t      = useT()
+  const role     = useAuthStore(s => s.role)
+  const name     = useAuthStore(s => s.name)
+  const branchId = useAuthStore(s => s.branchId)
+  const logout   = useLogout()
+  const t        = useT()
   const { sidebarOpen, toggleSidebar } = useUiStore()
   const { data } = useAdminSettings()
+  const switchMutation = useSwitchBranch()
+  const [popoverOpen, setPopoverOpen] = useState(false)
+
+  interface Branch { id: number; name: string; isActive: boolean }
+  const { data: branches = [] } = useQuery<Branch[]>({
+    queryKey: ['branches'],
+    queryFn:  () => api.get('/api/branches').then(r => r.data.data),
+  })
+
+  const allBranchesLabel = t('nav.allBranches')
+  const currentLabel = branchId === null
+    ? allBranchesLabel
+    : (branches.find(b => b.id === branchId)?.name ?? allBranchesLabel)
+
+  function handleSwitch(id: number | null, nm: string) {
+    switchMutation.mutate({ branchId: id, branchName: nm })
+    setPopoverOpen(false)
+  }
 
   if (role !== 'admin') return <Navigate to="/clinic/dashboard" replace />
 
@@ -68,6 +90,62 @@ export default function AdminLayout() {
           >
             <MaterialIcon name={sidebarOpen ? 'menu_open' : 'menu'} size={22} />
           </button>
+        </div>
+
+        {/* Branch switcher */}
+        <div className="border-b border-outline-variant flex-shrink-0 px-sm py-xs">
+          {sidebarOpen ? (
+            <select
+              value={branchId === null ? 'null' : String(branchId)}
+              onChange={e => {
+                const raw = e.target.value
+                const id  = raw === 'null' ? null : Number(raw)
+                const nm  = raw === 'null'
+                  ? allBranchesLabel
+                  : (branches.find(b => b.id === id)?.name ?? allBranchesLabel)
+                handleSwitch(id, nm)
+              }}
+              disabled={switchMutation.isPending}
+              className="w-full text-label-md text-on-surface-variant bg-surface-container rounded-lg px-sm py-xs border border-outline-variant focus:outline-none focus:border-secondary disabled:opacity-50 truncate"
+            >
+              <option value="null">{allBranchesLabel}</option>
+              {branches.map(b => (
+                <option key={b.id} value={String(b.id)}>{b.name}</option>
+              ))}
+            </select>
+          ) : (
+            <div className="relative flex justify-center">
+              <button
+                onClick={() => setPopoverOpen(p => !p)}
+                title={currentLabel}
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-surface-container text-on-surface-variant transition-colors"
+              >
+                <MaterialIcon name="apartment" size={22} />
+              </button>
+              {popoverOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setPopoverOpen(false)} />
+                  <div className="absolute left-full top-0 ml-xs z-50 bg-surface border border-outline-variant rounded-lg shadow-md min-w-[160px] py-xs">
+                    <button
+                      onClick={() => handleSwitch(null, allBranchesLabel)}
+                      className={`w-full text-left px-md py-sm text-body-sm transition-colors hover:bg-surface-container ${branchId === null ? 'text-primary font-medium' : 'text-on-surface'}`}
+                    >
+                      {allBranchesLabel}
+                    </button>
+                    {branches.map(b => (
+                      <button
+                        key={b.id}
+                        onClick={() => handleSwitch(b.id, b.name)}
+                        className={`w-full text-left px-md py-sm text-body-sm transition-colors hover:bg-surface-container ${branchId === b.id ? 'text-primary font-medium' : 'text-on-surface'}`}
+                      >
+                        {b.name}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Nav */}
