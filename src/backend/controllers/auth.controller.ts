@@ -9,7 +9,7 @@ export const loginSchema = z.object({
 }).strict()
 
 export const switchBranchSchema = z.object({
-  branchId: z.number().int().positive(),
+  branchId: z.number().int().positive().nullable(),
 }).strict()
 
 export async function handleLogin(req: Request, res: Response, next: NextFunction): Promise<void> {

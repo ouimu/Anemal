@@ -59,17 +59,47 @@ export async function login(body: LoginRequest): Promise<LoginResponse> {
 
   await authRepo.touchLastLogin(user.id)
 
-  // 5. All users go through two-step: issue pending token + branch list
+  // 5. Compute permission version and check role
   const permSetVersion = await computePermSetVersion(user.id, tenant.id)
   const isAdmin = user.role === 'admin'
 
-  // admin: all active branches for tenant; staff/doctor: assigned branches only
-  const branches = isAdmin
-    ? await authRepo.findActiveBranchesByTenant(tenant.id)
-    : await userRepo.getUserBranches(tenant.id, user.id)
+  // Admin bypass — skip branch selection, issue full JWT immediately
+  if (isAdmin) {
+    const token = signToken({
+      userId:         user.id,
+      tenantId:       tenant.id,
+      branchId:       undefined,   // null in JWT = all-branches scope
+      plane:          'clinic',
+      permSetVersion,
+      role:           user.role,
+    })
+    const rawRefreshToken = crypto.randomBytes(32).toString('hex')
+    const familyId        = crypto.randomUUID()
+    await refreshTokenRepo.create({
+      tokenHash: refreshTokenRepo.hashToken(rawRefreshToken),
+      familyId,
+      userId:    user.id,
+      tenantId:  tenant.id,
+      branchId:  null,
+      plane:     'clinic',
+      expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+    })
+    return {
+      requiresBranchSelection: false as const,
+      token,
+      refreshToken: rawRefreshToken,
+      userId:       user.id,
+      tenantId:     tenant.id,
+      branchId:     null,
+      role:         user.role,
+      name:         user.name,
+      companyName:  tenant.name,
+    }
+  }
 
-  // Non-admin with zero assigned branches cannot log in
-  if (!isAdmin && branches.length === 0) {
+  // Non-admin: two-step flow — assigned branches only
+  const branches = await userRepo.getUserBranches(tenant.id, user.id)
+  if (branches.length === 0) {
     throw new AuthError('You are not assigned to any branch. Contact your administrator.', 403)
   }
 
@@ -154,18 +184,28 @@ interface SwitchBranchResponse {
   token:       string
   userId:      number
   tenantId:    number
-  branchId:    number
+  branchId:    number | null
   role:        string
   name:        string
   companyName: string
 }
 
-// Re-issue a token scoped to a different branch within the same tenant.
+// Re-issue a token scoped to a different branch (or null = all-branches for admins).
 export async function switchBranch(
-  tenantId: number, userId: number, role: JwtPayload['role'], targetBranchId: number,
+  tenantId: number, userId: number, role: JwtPayload['role'], targetBranchId: number | null,
 ): Promise<SwitchBranchResponse> {
   const user = await authRepo.findUserById(tenantId, userId)
   if (!user || !user.isActive) throw new AuthError('User not found', 404)
+
+  // null = reset to all-branches (admin only)
+  if (targetBranchId === null) {
+    if (role !== 'admin') throw new AuthError('Only admins may switch to all-branches scope.', 403)
+    const tenant = await authRepo.findTenantById(tenantId)
+    const companyName = tenant?.name ?? ''
+    const permSetVersion = await computePermSetVersion(userId, tenantId)
+    const token = signToken({ userId, tenantId, branchId: undefined, plane: 'clinic', permSetVersion, role })
+    return { token, userId, tenantId, branchId: null, role: user.role, name: user.name, companyName }
+  }
 
   const branch = await authRepo.findBranchById(tenantId, targetBranchId)
   if (!branch) throw new AuthError('Branch not found', 404)
