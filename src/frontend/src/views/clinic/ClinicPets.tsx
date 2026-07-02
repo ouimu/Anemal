@@ -247,7 +247,7 @@ function AddVaccinationModal({ petId, onClose, onSuccess }: { petId: number; onC
 const TABS = ['Overview', 'Medical', 'Vaccinations'] as const
 type Tab = typeof TABS[number]
 
-function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVaccination: () => void }) {
+export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVaccination: () => void }) {
   const [tab, setTab] = useState<Tab>('Overview')
 
   const { data, isLoading } = useQuery<{ data: Pet }>({
@@ -314,9 +314,15 @@ function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVaccinatio
       {tab === 'Overview' && (
         <div className="flex flex-col gap-md">
           {[
+            { label: 'Species', value: pet.species ?? '—' },
+            { label: 'Breed', value: pet.breed ?? '—' },
+            { label: 'Gender', value: pet.gender ?? '—' },
+            { label: 'Date of birth', value: pet.birthDate ? new Date(pet.birthDate).toLocaleDateString() : '—' },
             { label: 'Weight', value: pet.weightKg ? `${pet.weightKg} kg` : '—' },
             { label: 'Color', value: pet.color ?? '—' },
-            { label: 'Date of birth', value: pet.birthDate ? new Date(pet.birthDate).toLocaleDateString() : '—' },
+            { label: 'Microchip ID', value: pet.microchipId ?? '—' },
+            { label: 'Allergies', value: pet.allergies ?? '—' },
+            { label: 'Underlying conditions', value: pet.underlyingConditions ?? '—' },
           ].map(r => (
             <div key={r.label} className="flex justify-between items-center min-h-[48px] border-b border-outline-variant/50 py-sm">
               <span className="text-body-sm text-on-surface-variant">{r.label}</span>
