@@ -12,6 +12,7 @@ beforeAll(async () => {
   server.keepAliveTimeout = 0
 
   const step1 = await request(server).post('/auth/login').send(TENANT_A)
+  if (step1.body.data.requiresBranchSelection === false) return step1.body.data.token as string
   const { pendingToken, branches } = step1.body.data
   const step2 = await request(server).post('/auth/select-branch').send({ pendingToken, branchId: branches[0].id })
   token = step2.body.data.token

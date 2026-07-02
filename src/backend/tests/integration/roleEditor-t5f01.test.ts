@@ -41,6 +41,7 @@ let staffRoleId = 0
 async function login(sub: string, username: string): Promise<string> {
   const step1 = await request(server).post('/auth/login').send({ subdomain: sub, username, password: PASSWORD })
   expect(step1.status).toBe(200)
+  if (step1.body.data.requiresBranchSelection === false) return step1.body.data.token as string
   const { pendingToken, branches } = step1.body.data
   const step2 = await request(server).post('/auth/select-branch').send({ pendingToken, branchId: branches[0].id })
   expect(step2.status).toBe(200)

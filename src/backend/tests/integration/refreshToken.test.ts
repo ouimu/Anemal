@@ -14,6 +14,7 @@ let server: Server
 
 async function clinicLogin(): Promise<{ token: string; refreshToken: string }> {
   const step1 = await request(server).post('/auth/login').send(CLINIC_CREDS)
+  if (step1.body.data.requiresBranchSelection === false) return step1.body.data as { token: string; refreshToken: string }
   const { pendingToken, branches } = step1.body.data
   const step2 = await request(server).post('/auth/select-branch').send({ pendingToken, branchId: branches[0].id })
   return step2.body.data as { token: string; refreshToken: string }

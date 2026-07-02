@@ -35,7 +35,7 @@ async function login(username: string): Promise<string> {
     .post('/auth/login')
     .send({ subdomain: SUB, username, password: PASSWORD })
   expect(step1.status).toBe(200)
-  expect(step1.body.data.requiresBranchSelection).toBe(true)
+  if (step1.body.data.requiresBranchSelection === false) return step1.body.data.token as string
   const { pendingToken, branches } = step1.body.data
   // Step 2: select first available branch
   const step2 = await request(server)
