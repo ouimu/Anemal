@@ -36,6 +36,7 @@ Columns are the three **system clinic roles**. Custom roles start as a clone of 
 | `emr.create` | EMR / Clinical | - | E | - |
 | `emr.edit` | EMR / Clinical | - | E | - |
 | `emr.attach` | EMR (lab/X-ray files) | - | E | V |
+| `vaccination.create` | EMR / Clinical (vaccination only) | - | E | E |
 | `prescriptions.view` | Prescriptions | V | V | V |
 | `prescriptions.create` | Prescriptions (write Rx) | - | E | - |
 | `prescriptions.dispense` | Prescriptions (hand out + deduct) | - | E | E |
@@ -78,6 +79,10 @@ Columns are the three **system clinic roles**. Custom roles start as a clone of 
   `emr.attach` (upload lab/X-ray) and `prescriptions.dispense` (hand out what the doctor ordered).
 - **Only clinic_admin** edits clinic config, manages staff/roles, sees revenue & cost reports, audit.
 - **Doctor sees inventory (read)** to check stock when prescribing, but does not adjust it.
+- **Vaccination administration uses its own `vaccination.create` code**, separate from
+  `emr.create` (full SOAP-note/medical-record creation). `clinic_staff` holds
+  `vaccination.create` (vet techs administer vaccines under doctor supervision) but NOT
+  `emr.create` — they cannot write medical-record/SOAP notes.
 
 ## 3. Route -> permission map
 
@@ -96,6 +101,8 @@ Columns are the three **system clinic roles**. Custom roles start as a clone of 
 | `medical-record.routes` | GET | `emr.view` |
 | | POST `/` , PUT `/:id` | `emr.create` / `emr.edit` |
 | | POST `/:id/attachments` | `emr.attach` |
+| `vaccination.routes` | GET | `emr.view` |
+| | POST `/` | `vaccination.create` |
 | `prescription.routes` | GET | `prescriptions.view` |
 | | POST (write) | `prescriptions.create` |
 | | POST `/dispense` | `prescriptions.dispense` |
@@ -157,3 +164,26 @@ New permission code (add to the catalogue):
 Runtime rule: assigning a role requires `staff.assign_role` + `roles.view`, and the assigned role's
 permissions must be ⊆ the assigner's effective permissions (no escalation). A user must retain ≥ 1 role.
 Route map: `POST/DELETE /users/:id/roles` → `staff.assign_role`.
+
+## 6. Applying seed-rbac.ts changes to production
+
+`seedRbac()` (`src/backend/prisma/seed-rbac.ts`) has NO automatic trigger in this repo — no
+Dockerfile, CI/CD workflow, or app-boot hook runs it. After any change to `PERMISSIONS` or
+`SYSTEM_ROLES`, an operator must manually run `npm run db:seed` against the target database.
+
+**Before running in production**, diff current system-role grants against the updated seed
+file to catch any permission that was manually granted outside the seed (re-running
+`seedRbac()` deletes any `RolePermission` row on a system role whose code is not in the
+current seed definition — see `seed-rbac.ts:228-236`):
+
+```sql
+SELECT cr.key AS role, rp."permissionCode"
+FROM "role_permissions" rp
+JOIN "clinic_roles" cr ON cr.id = rp."roleId"
+WHERE cr."isSystem" = true
+ORDER BY cr.key, rp."permissionCode";
+```
+
+Compare the output against `SYSTEM_ROLES` in `seed-rbac.ts`. Any code present in prod but
+absent from the seed file will be revoked on the next `npm run db:seed` run — confirm that's
+intended before proceeding.
