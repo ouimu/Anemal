@@ -49,6 +49,7 @@ async function getPlatformToken(): Promise<string> {
 
 async function getClinicToken(): Promise<string> {
   const step1 = await request(server).post('/auth/login').send({ subdomain: 'dev-clinic', username: 'admin_a', password: 'AdminPass1!' })
+  if (step1.body.data.requiresBranchSelection === false) return step1.body.data.token
   const { pendingToken, branches } = step1.body.data
   const step2 = await request(server).post('/auth/select-branch').send({ pendingToken, branchId: branches[0].id })
   return step2.body.data?.token
@@ -324,10 +325,14 @@ describe('T-5F-02 / AC5 — suspend blocks clinic /auth/me', () => {
 
     const step1 = await request(server).post('/auth/login').send({ subdomain: clinicSubdomain, username: clinicUsername, password: clinicPassword })
     expect(step1.status).toBe(200)
-    const { pendingToken, branches } = step1.body.data
-    const step2 = await request(server).post('/auth/select-branch').send({ pendingToken, branchId: branches[0].id })
-    expect(step2.status).toBe(200)
-    liveClinicToken = step2.body.data.token
+    if (step1.body.data.requiresBranchSelection === false) {
+      liveClinicToken = step1.body.data.token
+    } else {
+      const { pendingToken, branches } = step1.body.data
+      const step2 = await request(server).post('/auth/select-branch').send({ pendingToken, branchId: branches[0].id })
+      expect(step2.status).toBe(200)
+      liveClinicToken = step2.body.data.token
+    }
   })
 
   it('✅ before suspend: GET /auth/me with the clinic token → 200', async () => {

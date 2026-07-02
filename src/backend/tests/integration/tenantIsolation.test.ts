@@ -20,6 +20,7 @@ afterAll(async () => {
 
 async function getToken(subdomain: string, username: string, password: string): Promise<string> {
   const step1 = await request(server).post('/auth/login').send({ subdomain, username, password })
+  if (step1.body.data.requiresBranchSelection === false) return step1.body.data.token as string
   const { pendingToken, branches } = step1.body.data
   const step2 = await request(server).post('/auth/select-branch').send({ pendingToken, branchId: branches[0].id })
   return step2.body.data?.token
