@@ -102,6 +102,8 @@ model TenantSettings {
   lineRemindersEnabled Boolean  @default(true)
   // Subscription
   planTier             String   @default("starter") @db.VarChar(50)
+  // Phase idle-logout — client-side auto-logout threshold, admin-configurable
+  idleTimeoutMinutes   Int      @default(15)
   // Phase 1.5 — operating hours per day: { mon:{open:"08:00",close:"18:00"}, sun:null, ... }
   operatingHours       Json?
   // Phase 1.5 — LINE OA (token AES-256-GCM encrypted, enc:v1 format)
@@ -258,6 +260,9 @@ model Pet {
   isActive             Boolean   @default(true)
   createdAt            DateTime  @default(now())
 
+  branchId             Int?
+  branch               Branch?            @relation(fields: [branchId], references: [id])
+
   tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   owner             Owner              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   appointments      Appointment[]
@@ -272,6 +277,7 @@ model Pet {
   petReminders      PetReminder[]
 
   @@index([tenantId])
+  @@index([tenantId, branchId])
   @@index([tenantId, ownerId])
   @@index([tenantId, microchipId])
   @@index([tenantId, name])
@@ -502,9 +508,10 @@ model Vaccination {
   vaccineName    String    @db.VarChar(100)
   administeredAt DateTime  @db.Date
   nextDueAt      DateTime? @db.Date
-  batchNo        String?   @db.VarChar(50)
-  notes          String?
-  createdAt      DateTime  @default(now())
+  batchNo                String?   @db.VarChar(50)
+  notes                  String?
+  administeredExternally Boolean   @default(false)
+  createdAt              DateTime  @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   pet    Pet    @relation(fields: [petId], references: [id], onDelete: Cascade)
@@ -545,6 +552,7 @@ model Branch {
 
   tenant          Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   users           User[]
+  pets            Pet[]
   branchInventory BranchInventory[]
   // Session D-3-01: payment history back-relation
   paymentHistory  PaymentHistory[]

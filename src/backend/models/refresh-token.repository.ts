@@ -23,7 +23,7 @@ export interface CreateRefreshTokenData {
   userId?:         number
   platformUserId?: number
   tenantId?:       number
-  branchId?:       number   // clinic plane only; NULL for platform tokens
+  branchId?:       number | null   // clinic plane only; NULL for platform tokens or admin all-branches
   plane:           string
   expiresAt:       Date
 }

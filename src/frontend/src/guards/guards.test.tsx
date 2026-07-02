@@ -15,6 +15,7 @@ interface MockStoreState {
   hasPermission: (code: string) => boolean
   permissions: string[]
   permissionsLoaded: boolean
+  clearAuth: () => void
 }
 
 // ── Hoist the mock ref so it is defined before vi.mock factories run ───────
@@ -24,6 +25,7 @@ const mockStoreState: MockStoreState = vi.hoisted(() => ({
   hasPermission: (_code: string): boolean => false,
   permissions: [] as string[],
   permissionsLoaded: true,
+  clearAuth: (): void => {},
 }))
 
 // ── Mock react-router-dom ──────────────────────────────────────────────────
@@ -36,6 +38,14 @@ vi.mock('react-router-dom', () => ({
 vi.mock('../store/authStore', () => ({
   useAuthStore: (selector: (s: MockStoreState) => unknown) =>
     selector(mockStoreState),
+}))
+
+// ── Mock idle-logout dependencies used by RequireAuth ──────────────────────
+vi.mock('../hooks/useAdmin', () => ({
+  useAdminSettings: () => ({ data: { idleTimeoutMinutes: 15 } }),
+}))
+vi.mock('../hooks/useIdleLogout', () => ({
+  useIdleLogout: () => ({ warning: false, secondsLeft: 30, stayLoggedIn: vi.fn() }),
 }))
 
 import { RequireAuth }       from './RequireAuth'
@@ -51,6 +61,7 @@ function setStore(overrides: Partial<MockStoreState>): void {
   mockStoreState.hasPermission    = (_code: string): boolean => false
   mockStoreState.permissions      = []
   mockStoreState.permissionsLoaded = true
+  mockStoreState.clearAuth        = (): void => {}
   Object.assign(mockStoreState, overrides)
 }
 

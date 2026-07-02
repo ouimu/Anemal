@@ -76,10 +76,24 @@ afterAll(async () => {
 })
 
 describe('auth-1.2 — POST /auth/login (step 1)', () => {
-  test('auth-01: Login step 1 returns requiresBranchSelection=true + pendingToken', async () => {
+  test('auth-01: Admin login bypasses branch selection — returns full JWT directly', async () => {
     const res = await request(server)
       .post('/auth/login')
       .send({ subdomain: SUBDOMAIN, username: adminUsername, password: 'ValidPass1!' })
+      .expect(200)
+
+    expect(res.body.success).toBe(true)
+    expect(res.body.data.requiresBranchSelection).toBe(false)
+    expect(res.body.data.token).toBeTruthy()
+    expect(res.body.data.refreshToken).toBeTruthy()
+    expect(res.body.data.branchId).toBeNull()
+    expect(res.body.data.pendingToken).toBeUndefined()
+  })
+
+  test('auth-01b: Staff login step 1 returns requiresBranchSelection=true + pendingToken', async () => {
+    const res = await request(server)
+      .post('/auth/login')
+      .send({ subdomain: SUBDOMAIN, username: staffUsername, password: 'ValidPass1!' })
       .expect(200)
 
     expect(res.body.success).toBe(true)
@@ -110,17 +124,17 @@ describe('auth-1.2 — POST /auth/login (step 1)', () => {
   })
 
   test('auth-04: Full JWT after select-branch has correct payload', async () => {
-    const { token } = await fullLogin(adminUsername)
+    const { token } = await fullLogin(doctorUsername)
     const decoded = jwt.verify(token, config.jwtSecret) as Record<string, unknown>
     expect(decoded.tenantId).toBe(tenantId)
-    expect(decoded.role).toBe('admin')
+    expect(decoded.role).toBe('doctor')
     expect(decoded.branchId).toBe(branchId)
     expect(decoded.scope).toBeUndefined()   // scope only on pending tokens
     expect(decoded.exp).toBeDefined()
   })
 
   test('auth-05: Full JWT expires in ~8 hours', async () => {
-    const { token } = await fullLogin(adminUsername)
+    const { token } = await fullLogin(doctorUsername)
     const decoded = jwt.decode(token) as { iat: number; exp: number }
     const diffHours = (decoded.exp - decoded.iat) / 3600
     expect(diffHours).toBeCloseTo(8, 0)

@@ -16,13 +16,15 @@ export interface TenantSettings {
   smsRemindersEnabled: boolean
   lineRemindersEnabled:boolean
   planTier:            string
+  idleTimeoutMinutes:  number
   tenant: { name: string; subdomain: string }
 }
 
-export function useAdminSettings() {
+export function useAdminSettings(enabled = true) {
   return useQuery<TenantSettings>({
     queryKey: ['admin', 'settings'],
     queryFn: () => api.get('/admin/settings').then(r => r.data.data),
+    enabled,
   })
 }
 

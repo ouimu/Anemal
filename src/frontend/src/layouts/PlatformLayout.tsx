@@ -7,6 +7,8 @@ import { NavLink, Outlet, Navigate } from 'react-router-dom'
 import { usePlatformAuthStore } from '../store/platformAuthStore'
 import { useUiStore } from '../store/uiStore'
 import MaterialIcon from '../components/MaterialIcon'
+import { useIdleLogout } from '../hooks/useIdleLogout'
+import IdleLogoutModal from '../components/IdleLogoutModal'
 
 const NAV = [
   { to: '/platform/customers', icon: 'business',        label: 'Customers' },
@@ -14,6 +16,8 @@ const NAV = [
   { to: '/platform/settings',  icon: 'settings',        label: 'Settings' },
   { to: '/platform/audit',     icon: 'manage_search',   label: 'Audit Log' },
 ]
+
+const PLATFORM_IDLE_MINUTES = Number(import.meta.env.VITE_PLATFORM_IDLE_TIMEOUT_MINUTES) || 30
 
 /** Simple logout for platform plane. */
 function usePlatformLogout() {
@@ -25,10 +29,20 @@ function usePlatformLogout() {
 }
 
 export default function PlatformLayout() {
-  const isAuth = usePlatformAuthStore((s) => s.isAuthenticated())
-  const name   = usePlatformAuthStore((s) => s.name)
+  const isAuth   = usePlatformAuthStore((s) => s.isAuthenticated())
+  const name     = usePlatformAuthStore((s) => s.name)
+  const clearAuth = usePlatformAuthStore((s) => s.clearAuth)
   const { sidebarOpen, toggleSidebar } = useUiStore()
   const logout = usePlatformLogout()
+
+  const { warning, secondsLeft, stayLoggedIn } = useIdleLogout({
+    timeoutMinutes: PLATFORM_IDLE_MINUTES,
+    enabled: isAuth,
+    onLogout: () => {
+      clearAuth()
+      window.location.href = '/platform/login?reason=idle'
+    },
+  })
 
   if (!isAuth) return <Navigate to="/platform/login" replace />
 
@@ -47,6 +61,7 @@ export default function PlatformLayout() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-background">
       {/* ── Sidebar (fixed) ─────────────────────────────────────────────── */}
       <aside
@@ -124,5 +139,7 @@ export default function PlatformLayout() {
         <Outlet />
       </main>
     </div>
+    <IdleLogoutModal open={warning} secondsLeft={secondsLeft} onStay={stayLoggedIn} />
+    </>
   )
 }

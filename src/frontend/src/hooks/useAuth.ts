@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import api from '../utils/api'
 import { useAuthStore, AuthData } from '../store/authStore'
+import { useT } from '../i18n'
 
 interface LoginPayload { subdomain: string; username: string; password: string; remember: boolean }
 
@@ -18,9 +19,10 @@ interface LoginStep2Response {
   refreshToken: string
   userId:       number
   tenantId:     number
-  branchId:     number
+  branchId:     number | null   // null = all-branches scope (admin bypass)
   role:         string
   name:         string
+  companyName:  string
 }
 
 interface MeResponse {
@@ -52,6 +54,7 @@ async function applyLogin(
   login: LoginStep2Response,
   remember: boolean,
   setAuth: (data: AuthData, remember: boolean) => void,
+  branchName = '',
 ): Promise<void> {
   const me = await fetchMe(login.token)
   setAuth({
@@ -65,6 +68,8 @@ async function applyLogin(
     permissions:    me?.permissions    ?? [],
     permSetVersion: me?.permSetVersion ?? 0,
     name:           login.name,
+    companyName:    login.companyName ?? '',
+    branchName,
   }, remember)
   try { await useAuthStore.getState().refreshPermissions() } catch { /* server enforces */ }
 }
@@ -74,6 +79,7 @@ export function useLogin() {
   const [remember, setRemember]               = useState(false)
   const setAuth   = useAuthStore((s) => s.setAuth)
   const navigate  = useNavigate()
+  const t         = useT()
 
   const loginMutation = useMutation({
     mutationFn: ({ remember: _rem, ...creds }: LoginPayload) =>
@@ -85,8 +91,9 @@ export function useLogin() {
       if (data.requiresBranchSelection) {
         setBranchSelection({ pendingToken: data.pendingToken, branches: data.branches })
       } else {
-        // fallback (shouldn't happen with current backend)
-        void applyLogin(data, vars.remember, setAuth).then(() =>
+        // Admin bypass: branchId is null → use 'All Branches' label
+        const branchName = data.branchId === null ? t('nav.allBranches') : ''
+        void applyLogin(data, vars.remember, setAuth, branchName).then(() =>
           navigate(data.role === 'admin' ? '/clinic-admin/dashboard' : '/clinic/dashboard')
         )
       }
@@ -97,10 +104,11 @@ export function useLogin() {
     mutationFn: ({ pendingToken, branchId }: { pendingToken: string; branchId: number }) =>
       api.post<{ success: boolean; data: LoginStep2Response }>('/auth/select-branch', { pendingToken, branchId }),
 
-    onSuccess: async (res) => {
+    onSuccess: async (res, vars) => {
       const data = res.data.data
+      const selectedBranch = branchSelection?.branches.find(b => b.id === vars.branchId)
       setBranchSelection(null)
-      await applyLogin(data, remember, setAuth)
+      await applyLogin(data, remember, setAuth, selectedBranch?.name ?? '')
       navigate(data.role === 'admin' ? '/clinic-admin/dashboard' : '/clinic/dashboard')
     },
   })
@@ -117,4 +125,31 @@ export function useLogout() {
   const clearAuth = useAuthStore((s) => s.clearAuth)
   const navigate  = useNavigate()
   return () => { clearAuth(); navigate('/login') }
+}
+
+/** Updates the JWT to a specific branch (or null = all-branches for admins). */
+export function useSwitchBranch() {
+  return useMutation({
+    mutationFn: ({ branchId, branchName: _name }: { branchId: number | null; branchName: string }) =>
+      api.post<{ success: boolean; data: { token: string } }>('/auth/switch-branch', { branchId }),
+
+    onSuccess: (res, { branchId, branchName }) => {
+      const state   = useAuthStore.getState()
+      const remember = localStorage.getItem('vc_auth') !== null
+      state.setAuth({
+        token:          res.data.data.token,
+        plane:          state.plane,
+        userId:         state.userId,
+        tenantId:       state.tenantId,
+        branchId,
+        roleIds:        state.roleIds,
+        role:           state.role,
+        permissions:    state.permissions,
+        permSetVersion: state.permSetVersion,
+        name:           state.name,
+        companyName:    state.companyName,
+        branchName,
+      }, remember)
+    },
+  })
 }

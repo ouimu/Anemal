@@ -19,6 +19,8 @@ export interface AuthData {
   permissions:    string[]
   permSetVersion: number
   name:           string
+  companyName:    string
+  branchName:     string
 }
 
 interface AuthState extends AuthData {
@@ -52,6 +54,8 @@ const EMPTY: AuthData = {
   permissions:    [],
   permSetVersion: 0,
   name:           '',
+  companyName:    '',
+  branchName:     '',
 }
 
 /**
@@ -70,6 +74,8 @@ function normalise(raw: Partial<AuthData>): AuthData {
     permissions:    Array.isArray(raw.permissions) ? raw.permissions : [],
     permSetVersion: raw.permSetVersion ?? 0,
     name:           raw.name           ?? '',
+    companyName:    raw.companyName    ?? '',
+    branchName:     raw.branchName     ?? '',
   }
 }
 

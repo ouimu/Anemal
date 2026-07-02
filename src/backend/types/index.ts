@@ -64,6 +64,7 @@ export type LoginResponse =
       branchId:     number
       role:         string
       name:         string
+      companyName:  string
     }
 
 /** Alias for the full-token variant — return type of selectBranch(). */

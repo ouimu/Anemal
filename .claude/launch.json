@@ -9,6 +9,13 @@
       "port": 5173
     },
     {
+      "name": "backend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "src/backend",
+      "port": 4000
+    },
+    {
       "name": "docs-static",
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "8137", "-d", "docs"],

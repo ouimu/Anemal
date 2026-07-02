@@ -20,6 +20,7 @@ export interface TenantSettingsInput {
   workEndTime?:         string
   smsRemindersEnabled?: boolean
   lineRemindersEnabled?:boolean
+  idleTimeoutMinutes?:  number
   // Phase 1.5
   operatingHours?:      Record<string, { open: string; close: string } | null>
   lineOaToken?:         string

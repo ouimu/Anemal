@@ -8,6 +8,7 @@ export default function LoginView() {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated())
   const role = useAuthStore(s => s.role)
   const t = useT()
+  const showIdleBanner = new URLSearchParams(window.location.search).get('reason') === 'idle'
 
   const detectedSubdomain = (() => {
     const host = window.location.hostname
@@ -77,6 +78,15 @@ export default function LoginView() {
         {/* ── Right: Login form ─────────────────────────────────────────── */}
         <section className="flex-grow md:w-1/2 lg:w-2/5 flex flex-col justify-center items-center p-margin-mobile md:p-margin-desktop bg-surface">
           <div className="w-full max-w-[440px]">
+
+            {showIdleBanner && (
+              <div className="mb-lg flex items-start gap-sm bg-secondary-container/30 border border-secondary/30 rounded-lg px-md py-sm">
+                <span className="material-symbols-outlined text-secondary flex-shrink-0 mt-0.5" style={{ fontSize: '18px' }}>
+                  info
+                </span>
+                <p className="text-body-md text-on-surface">{t('login.idleLogoutMessage')}</p>
+              </div>
+            )}
 
             {/* Branding */}
             <div className="mb-xl text-center md:text-left">

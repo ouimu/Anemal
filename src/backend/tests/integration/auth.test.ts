@@ -3,10 +3,12 @@ import request from 'supertest'
 import { Server } from 'http'
 import app from '../../app'
 
-// These tests use seed users admin_a / admin_b who are clinic_admin (role='admin').
-// Admin sees ALL branches for tenant; both seed tenants must have at least one branch.
-const TENANT_A = { subdomain: 'dev-clinic',  username: 'admin_a', password: 'AdminPass1!' }
-const TENANT_B = { subdomain: 'test-clinic', username: 'admin_b', password: 'AdminPass2!' }
+// Admin users bypass branch selection and receive a full JWT directly.
+const ADMIN_A  = { subdomain: 'dev-clinic',  username: 'admin_a',  password: 'AdminPass1!' }
+const ADMIN_B  = { subdomain: 'test-clinic', username: 'admin_b',  password: 'AdminPass2!' }
+
+// Non-admin users still go through the two-step branch-selection flow.
+const STAFF_A  = { subdomain: 'dev-clinic',  username: 'staff_a',  password: 'StaffPass1!' }
 
 let server: Server
 
@@ -20,35 +22,38 @@ afterAll(async () => {
   await new Promise<void>(resolve => server.close(() => resolve()))
 })
 
-describe('POST /auth/login — step 1: credentials', () => {
-  it('✅ returns requiresBranchSelection=true + pendingToken + branches list', async () => {
-    const res = await request(server).post('/auth/login').send(TENANT_A)
+describe('POST /auth/login — admin bypass', () => {
+  it('✅ returns full JWT with branchId null for admin user', async () => {
+    const res = await request(server).post('/auth/login').send(ADMIN_A)
     expect(res.status).toBe(200)
     expect(res.body.success).toBe(true)
-    expect(res.body.data.requiresBranchSelection).toBe(true)
-    expect(res.body.data.pendingToken).toBeTruthy()
-    expect(Array.isArray(res.body.data.branches)).toBe(true)
-    expect(res.body.data.branches.length).toBeGreaterThan(0)
-    // No full token yet
-    expect(res.body.data.token).toBeUndefined()
+    expect(res.body.data.requiresBranchSelection).toBe(false)
+    expect(res.body.data.branchId).toBeNull()
+    expect(res.body.data.token).toBeTruthy()
+    expect(res.body.data.refreshToken).toBeTruthy()
+    expect(res.body.data.role).toBe('admin')
+    expect(res.body.data.companyName).toBeTruthy()
+    // No pending-token fields
+    expect(res.body.data.pendingToken).toBeUndefined()
+    expect(res.body.data.branches).toBeUndefined()
   })
 
-  it('✅ Tenant A and Tenant B get different pendingTokens (different tenant/user)', async () => {
+  it('✅ Tenant A and Tenant B admins get different tokens', async () => {
     const [resA, resB] = await Promise.all([
-      request(server).post('/auth/login').send(TENANT_A),
-      request(server).post('/auth/login').send(TENANT_B),
+      request(server).post('/auth/login').send(ADMIN_A),
+      request(server).post('/auth/login').send(ADMIN_B),
     ])
-    expect(resA.body.data.pendingToken).not.toBe(resB.body.data.pendingToken)
+    expect(resA.body.data.token).not.toBe(resB.body.data.token)
   })
 
   it('❌ returns 401 for wrong password', async () => {
-    const res = await request(server).post('/auth/login').send({ ...TENANT_A, password: 'wrong' })
+    const res = await request(server).post('/auth/login').send({ ...ADMIN_A, password: 'wrong' })
     expect(res.status).toBe(401)
     expect(res.body.success).toBe(false)
   })
 
   it('❌ returns 401 for unknown subdomain', async () => {
-    const res = await request(server).post('/auth/login').send({ ...TENANT_A, subdomain: 'ghost-clinic' })
+    const res = await request(server).post('/auth/login').send({ ...ADMIN_A, subdomain: 'ghost-clinic' })
     expect(res.status).toBe(401)
   })
 
@@ -58,12 +63,27 @@ describe('POST /auth/login — step 1: credentials', () => {
   })
 })
 
+describe('POST /auth/login — step 1: non-admin branch selection prompt', () => {
+  it('✅ returns requiresBranchSelection=true + pendingToken + branches list for staff', async () => {
+    const res = await request(server).post('/auth/login').send(STAFF_A)
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(true)
+    expect(res.body.data.requiresBranchSelection).toBe(true)
+    expect(res.body.data.pendingToken).toBeTruthy()
+    expect(Array.isArray(res.body.data.branches)).toBe(true)
+    expect(res.body.data.branches.length).toBeGreaterThan(0)
+    // No full token yet
+    expect(res.body.data.token).toBeUndefined()
+  })
+})
+
 describe('POST /auth/select-branch — step 2: branch selection', () => {
   let pendingToken: string
   let branchId:     number
 
   beforeAll(async () => {
-    const res = await request(server).post('/auth/login').send(TENANT_A)
+    // Staff user goes through two-step flow
+    const res = await request(server).post('/auth/login').send(STAFF_A)
     pendingToken = res.body.data.pendingToken
     branchId     = res.body.data.branches[0].id
   })
@@ -75,13 +95,13 @@ describe('POST /auth/select-branch — step 2: branch selection', () => {
     expect(res.body.data.token).toBeTruthy()
     expect(res.body.data.refreshToken).toBeTruthy()
     expect(res.body.data.branchId).toBe(branchId)
-    expect(res.body.data.role).toBe('admin')
+    expect(res.body.data.role).toBe('staff')
     // Verify JWT payload
     const [, b64] = (res.body.data.token as string).split('.')
     const payload = JSON.parse(Buffer.from(b64, 'base64').toString())
     expect(payload.tenantId).toBeDefined()
     expect(payload.branchId).toBe(branchId)
-    expect(payload.role).toBe('admin')
+    expect(payload.role).toBe('staff')
     expect(payload.exp).toBeDefined()
     expect(payload.scope).toBeUndefined()   // scope only on pending tokens
   })
@@ -95,26 +115,57 @@ describe('POST /auth/select-branch — step 2: branch selection', () => {
     const res = await request(server).post('/auth/select-branch').send({ pendingToken })
     expect(res.status).toBe(400)
   })
+
+  it('✅ select-branch response includes companyName', async () => {
+    // Step 1: login as staff to get pendingToken
+    const loginRes = await request(server).post('/auth/login').send(STAFF_A)
+    expect(loginRes.body.data.requiresBranchSelection).toBe(true)
+    const { pendingToken: pt, branches } = loginRes.body.data
+
+    // Step 2: select branch
+    const res = await request(server)
+      .post('/auth/select-branch')
+      .send({ pendingToken: pt, branchId: branches[0].id })
+    expect(res.status).toBe(200)
+    expect(typeof res.body.data.companyName).toBe('string')
+    expect(res.body.data.companyName.length).toBeGreaterThan(0)
+  })
 })
 
 describe('GET /auth/me', () => {
-  let token: string
+  let tokenAdmin: string
+  let tokenStaff: string
 
   beforeAll(async () => {
-    // Must complete both steps to get a real token
-    const step1 = await request(server).post('/auth/login').send(TENANT_A)
+    // Admin gets token directly from login
+    const adminRes = await request(server).post('/auth/login').send(ADMIN_A)
+    tokenAdmin = adminRes.body.data.token
+
+    // Staff must complete both steps to get a real token
+    const step1 = await request(server).post('/auth/login').send(STAFF_A)
     const { pendingToken, branches } = step1.body.data
     const step2 = await request(server)
       .post('/auth/select-branch')
       .send({ pendingToken, branchId: branches[0].id })
-    token = step2.body.data.token
+    tokenStaff = step2.body.data.token
   })
 
-  it('✅ returns current clinic identity with roleIds + permissions', async () => {
-    const res = await request(server).get('/auth/me').set('Authorization', `Bearer ${token}`)
+  it('✅ admin: returns current clinic identity with roleIds + permissions', async () => {
+    const res = await request(server).get('/auth/me').set('Authorization', `Bearer ${tokenAdmin}`)
     expect(res.status).toBe(200)
     expect(res.body.success).toBe(true)
-    expect(res.body.data.username).toBe(TENANT_A.username)
+    expect(res.body.data.username).toBe(ADMIN_A.username)
+    expect(res.body.data.tenantId).toBeDefined()
+    expect(Array.isArray(res.body.data.roleIds)).toBe(true)
+    expect(Array.isArray(res.body.data.permissions)).toBe(true)
+    expect(res.body.data.passwordHash).toBeUndefined()
+  })
+
+  it('✅ staff: returns current clinic identity with roleIds + permissions', async () => {
+    const res = await request(server).get('/auth/me').set('Authorization', `Bearer ${tokenStaff}`)
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(true)
+    expect(res.body.data.username).toBe(STAFF_A.username)
     expect(res.body.data.tenantId).toBeDefined()
     expect(Array.isArray(res.body.data.roleIds)).toBe(true)
     expect(Array.isArray(res.body.data.permissions)).toBe(true)
@@ -124,5 +175,42 @@ describe('GET /auth/me', () => {
   it('❌ returns 401 without a token', async () => {
     const res = await request(server).get('/auth/me')
     expect(res.status).toBe(401)
+  })
+})
+
+describe('POST /auth/switch-branch — null support', () => {
+  let adminToken: string
+  let staffToken: string
+
+  beforeAll(async () => {
+    const adminRes = await request(server).post('/auth/login').send(ADMIN_A)
+    adminToken = adminRes.body.data.token
+
+    const step1 = await request(server).post('/auth/login').send(STAFF_A)
+    const { pendingToken, branches } = step1.body.data
+    const step2 = await request(server)
+      .post('/auth/select-branch')
+      .send({ pendingToken, branchId: branches[0].id })
+    staffToken = step2.body.data.token
+  })
+
+  it('✅ allows admin to reset to all-branches (branchId: null)', async () => {
+    const res = await request(server)
+      .post('/auth/switch-branch')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ branchId: null })
+
+    expect(res.status).toBe(200)
+    expect(res.body.data.token).toBeTruthy()
+    expect(res.body.data.branchId).toBeNull()
+  })
+
+  it('❌ returns 403 when non-admin sends branchId: null', async () => {
+    const res = await request(server)
+      .post('/auth/switch-branch')
+      .set('Authorization', `Bearer ${staffToken}`)
+      .send({ branchId: null })
+
+    expect(res.status).toBe(403)
   })
 })

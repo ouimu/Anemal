@@ -3,12 +3,13 @@ import { AppError } from '../utils/errors'
 import * as vaccinationRepo from '../models/vaccination.repository'
 
 export const createVaccinationSchema = z.object({
-  petId:          z.number().int().positive(),
-  vaccineName:    z.string().min(1).max(100),
-  administeredAt: z.string(),
-  nextDueAt:      z.string().optional().nullable(),
-  batchNo:        z.string().max(50).optional().nullable(),
-  notes:          z.string().optional().nullable(),
+  petId:                  z.number().int().positive(),
+  vaccineName:            z.string().min(1).max(100),
+  administeredAt:         z.string(),
+  nextDueAt:              z.string().optional().nullable(),
+  batchNo:                z.string().max(50).optional().nullable(),
+  notes:                  z.string().optional().nullable(),
+  administeredExternally: z.boolean().optional().default(false),
 })
 
 export type CreateVaccinationInput = z.infer<typeof createVaccinationSchema>
@@ -36,4 +37,10 @@ export async function getDueSoon(tenantId: number, days = 30) {
   const to = new Date()
   to.setDate(to.getDate() + days)
   return vaccinationRepo.findDueSoon(tenantId, from, to)
+}
+
+export async function getDueSoonWorklist(tenantId: number, branchId: number | null) {
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() + 7)
+  return vaccinationRepo.findDueSoonWorklist(tenantId, branchId, cutoff)
 }
