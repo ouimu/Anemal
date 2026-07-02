@@ -61,7 +61,7 @@ export type LoginResponse =
       refreshToken: string
       userId:       number
       tenantId:     number
-      branchId:     number
+      branchId:     number | null
       role:         string
       name:         string
       companyName:  string
