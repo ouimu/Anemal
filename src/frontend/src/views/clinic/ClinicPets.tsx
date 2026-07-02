@@ -4,6 +4,7 @@ import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
 import { usePhotoUpload } from '../../hooks/usePhotoUpload'
 import { useT } from '../../i18n'
+import Can from '../../components/Can'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Owner { id: number; firstName: string; lastName: string; phone: string; email?: string; lineId?: string; address?: string; pets: Pet[] }
@@ -60,8 +61,8 @@ function AddOwnerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
         {error && <p className="text-error text-body-sm mb-md">{error}</p>}
         <form onSubmit={submit} className="flex flex-col gap-md">
           <div className="flex gap-md">
-            <input required className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.firstName')} value={form.firstName} onChange={set('firstName')} />
-            <input required className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.lastName')} value={form.lastName} onChange={set('lastName')} />
+            <input required className="flex-1 min-w-0 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.firstName')} value={form.firstName} onChange={set('firstName')} />
+            <input required className="flex-1 min-w-0 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.lastName')} value={form.lastName} onChange={set('lastName')} />
           </div>
           <input required className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.phone')} value={form.phone} onChange={set('phone')} />
           <input type="email" className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.emailOptional')} value={form.email} onChange={set('email')} />
@@ -77,9 +78,9 @@ function AddOwnerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
 }
 
 // ─── Modal: Add Pet ───────────────────────────────────────────────────────────
-function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerId: number; ownerName: string; onClose: () => void; onSuccess: () => void }) {
+export function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerId: number; ownerName: string; onClose: () => void; onSuccess: () => void }) {
   const t = useT()
-  const [form, setForm] = useState({ name: '', species: 'canine', breed: '', color: '', gender: '', birthDate: '', microchipId: '', allergies: '', underlyingConditions: '' })
+  const [form, setForm] = useState({ name: '', species: 'canine', breed: '', color: '', gender: '', birthDate: '', weightKg: '', microchipId: '', allergies: '', underlyingConditions: '' })
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const [photoFile, setPhotoFile]       = useState<File | null>(null)
@@ -114,6 +115,7 @@ function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerId: numb
         color: form.color || null,
         gender: form.gender || null,
         birthDate: form.birthDate || null,
+        weightKg: form.weightKg ? Number(form.weightKg) : null,
         microchipId: form.microchipId || null,
         allergies: form.allergies || null,
         underlyingConditions: form.underlyingConditions || null,
@@ -183,6 +185,7 @@ function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerId: numb
             <input className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.breedOptional')} value={form.breed} onChange={set('breed')} />
             <input className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.colorOptional')} value={form.color} onChange={set('color')} />
           </div>
+          <input type="number" step="0.01" min="0" className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.weightOptional')} value={form.weightKg} onChange={set('weightKg')} />
           <input type="date" className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.birthDate} onChange={set('birthDate')} />
           <input className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.microchipOptional')} value={form.microchipId} onChange={set('microchipId')} />
           <textarea className="bg-surface-container-low rounded-lg px-md py-sm min-h-[80px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary resize-none" placeholder={t('clinic.pets.allergiesOptional')} value={form.allergies} onChange={set('allergies')} />
@@ -245,7 +248,7 @@ function AddVaccinationModal({ petId, onClose, onSuccess }: { petId: number; onC
 const TABS = ['Overview', 'Medical', 'Vaccinations'] as const
 type Tab = typeof TABS[number]
 
-function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVaccination: () => void }) {
+export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVaccination: () => void }) {
   const [tab, setTab] = useState<Tab>('Overview')
 
   const { data, isLoading } = useQuery<{ data: Pet }>({
@@ -312,9 +315,15 @@ function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVaccinatio
       {tab === 'Overview' && (
         <div className="flex flex-col gap-md">
           {[
+            { label: 'Species', value: pet.species ?? '—' },
+            { label: 'Breed', value: pet.breed ?? '—' },
+            { label: 'Gender', value: pet.gender ?? '—' },
+            { label: 'Date of birth', value: pet.birthDate ? new Date(pet.birthDate).toLocaleDateString() : '—' },
             { label: 'Weight', value: pet.weightKg ? `${pet.weightKg} kg` : '—' },
             { label: 'Color', value: pet.color ?? '—' },
-            { label: 'Date of birth', value: pet.birthDate ? new Date(pet.birthDate).toLocaleDateString() : '—' },
+            { label: 'Microchip ID', value: pet.microchipId ?? '—' },
+            { label: 'Allergies', value: pet.allergies ?? '—' },
+            { label: 'Underlying conditions', value: pet.underlyingConditions ?? '—' },
           ].map(r => (
             <div key={r.label} className="flex justify-between items-center min-h-[48px] border-b border-outline-variant/50 py-sm">
               <span className="text-body-sm text-on-surface-variant">{r.label}</span>
@@ -338,9 +347,11 @@ function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVaccinatio
       {tab === 'Vaccinations' && (
         <div>
           <div className="flex justify-end mb-md">
-            <button onClick={onAddVaccination} className="flex items-center gap-sm bg-primary text-primary-on rounded-lg px-md py-sm min-h-[44px] text-body-sm font-semibold hover:bg-primary/90 transition-colors">
-              <MaterialIcon name="add" size={18} />Add Vaccination
-            </button>
+            <Can perm="vaccination.create">
+              <button onClick={onAddVaccination} className="flex items-center gap-sm bg-primary text-primary-on rounded-lg px-md py-sm min-h-[44px] text-body-sm font-semibold hover:bg-primary/90 transition-colors">
+                <MaterialIcon name="add" size={18} />Add Vaccination
+              </button>
+            </Can>
           </div>
           {pet.vaccinations?.length ? pet.vaccinations.map(v => (
             <div key={v.id} className="flex justify-between items-center min-h-[48px] border-b border-outline-variant/50 py-sm">

@@ -10,6 +10,6 @@ router.use(authMiddleware)
 
 router.get('/due-soon', requirePlane('clinic'), requirePermission('emr.view'),   handleGetDueSoon)
 router.get('/',         requirePlane('clinic'), requirePermission('emr.view'),   handleListVaccinations)
-router.post('/',        requirePlane('clinic'), requirePermission('emr.create'), validate(createVaccinationSchema), handleCreateVaccination)
+router.post('/',        requirePlane('clinic'), requirePermission('vaccination.create'), validate(createVaccinationSchema), handleCreateVaccination)
 
 export default router

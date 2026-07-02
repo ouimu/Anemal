@@ -23,4 +23,12 @@ describe('ClinicPets — Thai i18n', () => {
     await userEvent.click(screen.getByText(/เพิ่มเจ้าของใหม่/i))
     expect(screen.getByPlaceholderText(/เบอร์โทรศัพท์/i)).toBeInTheDocument()
   })
+  it('First and Last Name inputs allow shrinking below content width (no overflow)', async () => {
+    render(<ClinicPets />)
+    await userEvent.click(screen.getByText(/เพิ่มเจ้าของใหม่/i))
+    const firstName = screen.getByPlaceholderText(/^ชื่อ$/)
+    const lastName = screen.getByPlaceholderText(/นามสกุล/i)
+    expect(firstName.className).toContain('min-w-0')
+    expect(lastName.className).toContain('min-w-0')
+  })
 })
