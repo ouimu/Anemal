@@ -1,6 +1,7 @@
 // src/frontend/src/__tests__/PetOverview.test.tsx
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 
 const mockPet = {
   id: 1, ownerId: 1, name: 'Rex', species: 'canine', breed: 'Labrador', color: 'Golden',
@@ -8,8 +9,14 @@ const mockPet = {
   allergies: 'Pollen', underlyingConditions: 'None', isActive: true,
 }
 
+const state: { permissions: string[] } = { permissions: [] }
+
 vi.mock('@tanstack/react-query', () => ({
   useQuery: () => ({ data: { data: mockPet }, isLoading: false }),
+}))
+vi.mock('../store/authStore', () => ({
+  useAuthStore: (selector: (s: { hasPermission: (code: string) => boolean }) => unknown) =>
+    selector({ hasPermission: (code: string) => state.permissions.includes(code) }),
 }))
 
 import { PetDetail } from '../views/clinic/ClinicPets'
@@ -34,5 +41,22 @@ describe('PetDetail — Overview tab', () => {
     rowContains('Microchip ID', 'CHIP123')
     rowContains('Allergies', 'Pollen')
     rowContains('Underlying conditions', 'None')
+  })
+})
+
+describe('PetDetail — Add Vaccination button permission guard', () => {
+  beforeEach(() => { state.permissions = [] })
+
+  it('hides Add Vaccination button when user lacks vaccination.create', async () => {
+    render(<PetDetail petId={1} onAddVaccination={vi.fn()} />)
+    await userEvent.click(screen.getByText('Vaccinations'))
+    expect(screen.queryByText('Add Vaccination')).not.toBeInTheDocument()
+  })
+
+  it('shows Add Vaccination button when user has vaccination.create', async () => {
+    state.permissions = ['vaccination.create']
+    render(<PetDetail petId={1} onAddVaccination={vi.fn()} />)
+    await userEvent.click(screen.getByText('Vaccinations'))
+    expect(screen.getByText('Add Vaccination')).toBeInTheDocument()
   })
 })

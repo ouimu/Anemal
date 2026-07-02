@@ -4,6 +4,7 @@ import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
 import { usePhotoUpload } from '../../hooks/usePhotoUpload'
 import { useT } from '../../i18n'
+import Can from '../../components/Can'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Owner { id: number; firstName: string; lastName: string; phone: string; email?: string; lineId?: string; address?: string; pets: Pet[] }
@@ -346,9 +347,11 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
       {tab === 'Vaccinations' && (
         <div>
           <div className="flex justify-end mb-md">
-            <button onClick={onAddVaccination} className="flex items-center gap-sm bg-primary text-primary-on rounded-lg px-md py-sm min-h-[44px] text-body-sm font-semibold hover:bg-primary/90 transition-colors">
-              <MaterialIcon name="add" size={18} />Add Vaccination
-            </button>
+            <Can perm="vaccination.create">
+              <button onClick={onAddVaccination} className="flex items-center gap-sm bg-primary text-primary-on rounded-lg px-md py-sm min-h-[44px] text-body-sm font-semibold hover:bg-primary/90 transition-colors">
+                <MaterialIcon name="add" size={18} />Add Vaccination
+              </button>
+            </Can>
           </div>
           {pet.vaccinations?.length ? pet.vaccinations.map(v => (
             <div key={v.id} className="flex justify-between items-center min-h-[48px] border-b border-outline-variant/50 py-sm">
