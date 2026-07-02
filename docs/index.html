@@ -4156,6 +4156,7 @@ cd ../frontend &amp;&amp; rm -rf node_modules &amp;&amp; npm install</code></pre
         <tr><td><span class="badge phase">Phase 1–7</span></td><td>Foundation → UI redesign sign-off</td><td><span class="cl-status complete">Complete</span></td><td>226</td><td>2025</td></tr>
         <tr><td><span class="badge phase">Phase 8</span></td><td>RBAC + Platform Console</td><td><span class="cl-status complete">Complete</span></td><td>~394</td><td>2026-Q1</td></tr>
         <tr><td><span class="badge phase">Phase 9</span></td><td>i18n Thai/English rollout</td><td><span class="cl-status complete">Complete</span></td><td>95 frontend</td><td>2026-06</td></tr>
+        <tr><td><span class="badge phase">Bugfix</span></td><td>Pets &amp; Owner (3 bugs)</td><td><span class="cl-status complete">PR pending merge</span></td><td>470 backend / 98 frontend</td><td>2026-07-02</td></tr>
         <tr><td><span class="badge phase">Phase 10</span></td><td>Payment gateway + SaaS billing</td><td><span class="cl-status paused">Paused</span></td><td>—</td><td>Needs credentials</td></tr>
         <tr><td><span class="badge phase">Phase 11</span></td><td>LINE/SMS dispatch</td><td><span class="cl-status paused">Paused</span></td><td>—</td><td>Needs credentials</td></tr>
       </tbody>
@@ -4163,6 +4164,32 @@ cd ../frontend &amp;&amp; rm -rf node_modules &amp;&amp; npm install</code></pre
   </div>
 
   <hr/>
+
+  <!-- BUGFIX_PETS_OWNER_BLOCK -->
+  <div class="cl-phase-block" id="cl-bugfix-pets-owner">
+    <div class="cl-phase-header">
+      <div class="cl-phase-num">🔧</div>
+      <div>
+        <div class="cl-phase-title">Bugfix — Pets &amp; Owner</div>
+        <div class="cl-phase-subtitle">Branch <code>fix/pets-owner-bugs</code> · 3 reported bugs</div>
+      </div>
+      <div class="cl-phase-meta">
+        <div class="cl-phase-date">2026-07-02</div>
+        <span class="cl-status complete">PR pending merge</span>
+      </div>
+    </div>
+    <div class="cl-phase-body">
+      <p>Three user-reported bugs in the Pets &amp; Owner screen, fixed via full brainstorm → grill → BA-approved design → Ponytail-gated plan pipeline.</p>
+      <ul class="cl-deliverables">
+        <li>Add Owner form: Last Name input no longer overflows its card (missing <code>min-w-0</code> on flex children)</li>
+        <li>Pet Overview tab now shows all 9 captured fields (species, breed, gender, DOB, weight, color, microchip ID, allergies, underlying conditions) — previously only 3; added missing <code>weightKg</code> input to Add Pet form (backend already supported the field)</li>
+        <li>Fixed "Access denied: missing permission 'emr.create'" on vaccination save — introduced a narrower <code>vaccination.create</code> permission (granted to doctor + clinic_staff) instead of widening <code>emr.create</code>, which also gates full medical-record/SOAP-note creation. <code>clinic_admin</code> stays without either. "Add Vaccination" button now permission-guarded via <code>Can</code></li>
+        <li>RBAC matrix + route map + prod deploy runbook updated in <code>anemal-rbac-matrix</code> skill</li>
+      </ul>
+      <span class="cl-test-count">Backend 470/470 · Frontend 98/102 (4 pre-existing unrelated failures) · tsc clean · manual browser smoke test passed</span>
+    </div>
+  </div>
+  <!-- /BUGFIX_PETS_OWNER_BLOCK -->
 
   <!-- PHASE_9_BLOCK -->
   <div class="cl-phase-block" id="cl-phase-9">
