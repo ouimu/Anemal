@@ -24,7 +24,6 @@ jest.mock('../../services/permission.service', () => ({
 import prisma from '../../config/db'
 
 const mockTenant = { id: 1, subdomain: 'dev-clinic', isActive: true }
-const mockBranch = { id: 5, tenantId: 1, name: 'Main', isActive: true }
 
 async function makeUser(role = 'admin') {
   return {
@@ -38,19 +37,20 @@ async function makeUser(role = 'admin') {
 describe('authService.login — step 1 (credentials → pendingToken + branches)', () => {
   beforeEach(() => jest.clearAllMocks())
 
-  it('admin: returns pendingToken + all active branches for tenant', async () => {
+  it('admin: bypasses branch selection — issues a full token with branchId: null (all-branches scope)', async () => {
     const user = await makeUser('admin')
     ;(prisma.tenant.findUnique as jest.Mock).mockResolvedValue(mockTenant)
     ;(prisma.user.findUnique   as jest.Mock).mockResolvedValue(user)
-    ;(prisma.branch.findMany   as jest.Mock).mockResolvedValue([mockBranch])
 
     const result = await login({ subdomain: 'dev-clinic', username: 'admin_a', password: 'AdminPass1!' })
 
-    expect(result.requiresBranchSelection).toBe(true)
-    if (!result.requiresBranchSelection) throw new Error('Expected requiresBranchSelection=true')
-    expect(result.pendingToken).toBe('mock.pending.token')
-    expect(result.branches).toEqual([mockBranch])
-    // userBranch.findMany NOT called for admin
+    expect(result.requiresBranchSelection).toBe(false)
+    if (result.requiresBranchSelection) throw new Error('Expected requiresBranchSelection=false (admin bypass)')
+    expect(result.token).toBe('mock.jwt.token')
+    expect(result.branchId).toBeNull()
+    expect(result.role).toBe('admin')
+    // Admin bypass never looks up branches — it skips the selection step entirely.
+    expect((prisma.branch.findMany as jest.Mock)).not.toHaveBeenCalled()
     expect((prisma.userBranch.findMany as jest.Mock)).not.toHaveBeenCalled()
   })
 

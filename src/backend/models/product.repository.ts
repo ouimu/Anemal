@@ -20,25 +20,41 @@ function catalogWhere(tenantId: number, category?: string, search?: string) {
 }
 
 type ItemWithStock = { branchInventory?: { stockQty: unknown; minStockQty: unknown; expiryDate: Date | null; lotNo: string | null }[] }
-function flatten<T extends ItemWithStock>(item: T, branchId: number) {
-  const bi = item.branchInventory?.[0]
+
+// branchId === null (admin, all-branches scope): aggregate stock across every branch
+// instead of picking one row, so the catalog view still reports meaningful totals.
+function flatten<T extends ItemWithStock>(item: T, branchId: number | null) {
+  const rows = item.branchInventory ?? []
   const { branchInventory: _bi, ...rest } = item
+  if (branchId != null) {
+    const bi = rows[0]
+    return {
+      ...rest,
+      branchId,
+      stockQty:    bi ? Number(bi.stockQty) : 0,
+      minStockQty: bi ? Number(bi.minStockQty) : 0,
+      expiryDate:  bi?.expiryDate ?? null,
+      lotNo:       bi?.lotNo ?? null,
+    }
+  }
   return {
     ...rest,
-    branchId,
-    stockQty:    bi ? Number(bi.stockQty) : 0,
-    minStockQty: bi ? Number(bi.minStockQty) : 0,
-    expiryDate:  bi?.expiryDate ?? null,
-    lotNo:       bi?.lotNo ?? null,
+    branchId: null,
+    stockQty:    rows.reduce((sum, bi) => sum + Number(bi.stockQty), 0),
+    minStockQty: rows.reduce((sum, bi) => sum + Number(bi.minStockQty), 0),
+    expiryDate:  null,
+    lotNo:       null,
   }
 }
 
-export async function findProducts(tenantId: number, branchId: number, { skip, take, category, search }: ListParams) {
+export async function findProducts(
+  tenantId: number, branchId: number | null, { skip, take, category, search }: ListParams,
+) {
   const items = await prisma.inventoryItem.findMany({
     where: catalogWhere(tenantId, category, search),
     orderBy: { name: 'asc' },
     skip, take,
-    include: { branchInventory: { where: { branchId } } },
+    include: { branchInventory: branchId != null ? { where: { branchId } } : true },
   })
   return items.map((i) => flatten(i, branchId))
 }
@@ -47,10 +63,10 @@ export function countProducts(tenantId: number, category?: string, search?: stri
   return prisma.inventoryItem.count({ where: catalogWhere(tenantId, category, search) })
 }
 
-export async function findProductById(tenantId: number, branchId: number, id: number) {
+export async function findProductById(tenantId: number, branchId: number | null, id: number) {
   const item = await prisma.inventoryItem.findFirst({
     where: { id, tenantId },
-    include: { branchInventory: { where: { branchId } } },
+    include: { branchInventory: branchId != null ? { where: { branchId } } : true },
   })
   return item ? flatten(item, branchId) : null
 }
