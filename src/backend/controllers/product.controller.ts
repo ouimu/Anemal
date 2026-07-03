@@ -5,7 +5,9 @@ import { requireBranchId } from '../utils/context'
 
 export async function listProducts(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const branchId = requireBranchId(req)
+    // Admin token carries branchId: null (all-branches scope). Unlike the per-branch
+    // write ops below, listing is a read — scope by tenantId only when branchId is null.
+    const branchId = req.context?.branchId ?? null
     const page     = req.query.page ? Number(req.query.page) : 1
     const limit    = req.query.limit ? Number(req.query.limit) : 20
     const category = typeof req.query.category === 'string' ? req.query.category : undefined

@@ -46,7 +46,7 @@ export class ProductError extends AppError {
 }
 
 export async function listProducts(
-  tenantId: number, branchId: number, page = 1, limit = 20, category?: string, search?: string,
+  tenantId: number, branchId: number | null, page = 1, limit = 20, category?: string, search?: string,
 ) {
   const skip = (page - 1) * limit
   const [products, total] = await Promise.all([
