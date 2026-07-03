@@ -39,6 +39,18 @@ beforeAll(async () => {
   adminB = await getToken('test-clinic', 'admin_b', 'AdminPass2!')
   staffA = await getToken('dev-clinic',  'staff_a', 'StaffPass1!')
 
+  // Admin's token carries branchId: null (all-branches scope). Invoice-creating
+  // flows (loyalty payment, hospitalization discharge billing) need a concrete
+  // branch, so switch to one via the real switch-branch flow before using adminA
+  // for those calls — same mechanism the frontend branch switcher uses.
+  const branchRes = await request(server).get('/api/branches').set('Authorization', `Bearer ${adminA}`)
+  const branchId: number = branchRes.body.data[0].id
+  const switchRes = await request(server)
+    .post('/auth/switch-branch')
+    .set('Authorization', `Bearer ${adminA}`)
+    .send({ branchId })
+  adminA = switchRes.body.data.token
+
   // Each run creates its own owner + pet (unique microchip via timestamp) in Tenant A.
   const uniq = `${Date.now()}`
   const ownerRes = await request(server).post('/api/owners').set('Authorization', `Bearer ${adminA}`)

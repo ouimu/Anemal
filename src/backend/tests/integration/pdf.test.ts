@@ -42,15 +42,21 @@ beforeAll(async () => {
     .send({ firstName: 'PDF', lastName: `Tester${uniq}`, phone: `09${uniq.slice(-8)}` })
   const petRes = await request(server).post('/api/pets').set('Authorization', `Bearer ${adminA}`)
     .send({ ownerId: ownerRes.body.data.id, name: 'Fluffy', species: 'cat', microchipId: `PDFMC${uniq}` })
-  // Get a branch id for Tenant A (needed for invoice creation).
+  // Admin's token carries branchId: null (all-branches scope). Invoice creation
+  // needs a concrete branch, so switch to one via the real switch-branch flow
+  // (the same mechanism the frontend branch switcher uses) before creating it.
   const branchRes = await request(server).get('/api/branches').set('Authorization', `Bearer ${adminA}`)
   const branchId: number = branchRes.body.data[0].id
+  const switchRes = await request(server)
+    .post('/auth/switch-branch')
+    .set('Authorization', `Bearer ${adminA}`)
+    .send({ branchId })
+  const branchScopedAdminA: string = switchRes.body.data.token
 
   // Create invoice with a service line.
   const invRes = await request(server)
     .post('/api/invoices')
-    .set('Authorization', `Bearer ${adminA}`)
-    .set('x-branch-id', String(branchId))
+    .set('Authorization', `Bearer ${branchScopedAdminA}`)
     .send({
       petId: petRes.body.data.id,
       items: [{ description: 'Consultation', itemType: 'service', qty: 1, unitPrice: 500 }],
@@ -62,8 +68,7 @@ beforeAll(async () => {
   // Pay the invoice.
   await request(server)
     .put(`/api/invoices/${invoiceId}/payment`)
-    .set('Authorization', `Bearer ${adminA}`)
-    .set('x-branch-id', String(branchId))
+    .set('Authorization', `Bearer ${branchScopedAdminA}`)
     .send({ paymentMethod: 'cash' })
 
   // Create a medical record + prescription for Tenant A to test prescription PDF.
@@ -81,8 +86,7 @@ beforeAll(async () => {
   if (mrRes.status === 201 && drugRes) {
     const rxRes = await request(server)
       .post('/api/prescriptions')
-      .set('Authorization', `Bearer ${adminA}`)
-      .set('x-branch-id', String(branchId))
+      .set('Authorization', `Bearer ${branchScopedAdminA}`)
       .send({ medicalRecordId: mrRes.body.data.id, drugId: drugRes.id, quantity: 2, unit: 'tablet', dosageInstruction: '1 tab twice daily' })
     if (rxRes.status === 201) {
       prescriptionId = rxRes.body.data.id
