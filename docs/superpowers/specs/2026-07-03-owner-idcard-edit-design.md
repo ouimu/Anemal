@@ -23,6 +23,18 @@ Sub-projects 2 and 3 are out of scope for this spec and will get their own desig
 - `OwnerPanel` (ClinicPets.tsx) renders full owner info (name, phone, email, address) — this already works correctly.
 - `PetDetail`'s owner card (ClinicPets.tsx:286-297) renders **only** name, phone, email — missing address and (new) ID card.
 
+## Grilling Amendments (Step 3.5)
+
+Findings surfaced and resolved during mandatory design grilling, superseding/extending the sections below:
+
+1. **PII masking:** `PetDetail`'s owner card shows the ID card number masked (`•••••••••1234`, last 4 digits only). Full number remains visible/editable only in `OwnerPanel` and `EditOwnerModal`.
+2. **Uniqueness race condition:** the `idCardNumber` unique index is a real DB constraint (unlike `phone`, which only has a non-unique index). Service layer keeps the pre-check (fast, friendly error) **and** catches Prisma `P2002` on create/update as a fallback, mapping both to `409`.
+3. **Delete confirmation:** plain `confirm("Deactivate {name}?")`, matching the existing pattern in `ClinicInventory.tsx:136`. No new dialog component.
+4. **Reactivation added to scope** (was going to be deferred, brought back in): `updateOwnerSchema` gains an optional `isActive` field. Setting `isActive` (either direction) requires `crm.delete`, not `crm.edit` — the permission needed to undo a deactivation must match the permission needed to do it. Reuses `PUT /api/owners/:id`; no new endpoint.
+5. **"Show inactive" toggle:** `GET /api/owners` gains an optional `includeInactive` query param. Server-side, the param is only honored if the requester holds `crm.delete` (checked in the controller — never trust the client for this; a `crm.edit`-only user's `includeInactive=true` request must be silently ignored, not error, to avoid leaking existence of the param). Frontend: checkbox in the owner list, only rendered for `crm.delete` holders. When checked, inactive owners are **added** to the active list (not a replacing view), rendered with a muted style + "Inactive" badge. `OwnerPanel` shows a Reactivate button instead of Edit/Delete when the selected owner is inactive.
+6. **i18n:** new user-facing strings (card type labels, "Show inactive", "Inactive" badge, reactivate button, delete confirm text) need Thai/English keys added following the existing i18n convention (Phase 9).
+7. **Regression risk:** existing tests `AddPetModal.test.tsx`, `PetOverview.test.tsx`, `ClinicPets.i18n.test.tsx` may assert on modal markup that shifts once new fields are added — `@qa-agent` to re-run and update as needed during execute-plan, not a design change.
+
 ## Data Model
 
 ```prisma
