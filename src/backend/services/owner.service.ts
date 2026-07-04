@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 import { AppError } from '../utils/errors'
 import * as ownerRepo from '../models/owner.repository'
 import { assertCanAddOwner } from './subscription.service'
@@ -83,18 +84,44 @@ export async function getOwner(tenantId: number, id: number) {
 
 export async function createOwner(tenantId: number, data: CreateOwnerInput) {
   await assertCanAddOwner(tenantId)
-  const existing = await ownerRepo.findOwnerByPhone(tenantId, data.phone)
-  if (existing) throw new OwnerError('Phone number already registered in this clinic', 409)
-  return ownerRepo.createOwner(tenantId, data)
+  const existingPhone = await ownerRepo.findOwnerByPhone(tenantId, data.phone)
+  if (existingPhone) throw new OwnerError('Phone number already registered in this clinic', 409)
+  if (data.idCardNumber) {
+    const existingIdCard = await ownerRepo.findOwnerByIdCard(tenantId, data.idCardNumber)
+    if (existingIdCard) throw new OwnerError('ID card number already registered in this clinic', 409)
+  }
+  try {
+    return await ownerRepo.createOwner(tenantId, data)
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      throw new OwnerError('ID card number already registered in this clinic', 409)
+    }
+    throw err
+  }
 }
 
 export async function updateOwner(tenantId: number, id: number, data: UpdateOwnerInput) {
-  await getOwner(tenantId, id)
+  const existing = await getOwner(tenantId, id)
 
   if (data.phone) {
-    const existing = await ownerRepo.findOwnerByPhone(tenantId, data.phone, id)
-    if (existing) throw new OwnerError('Phone number already registered in this clinic', 409)
+    const existingPhone = await ownerRepo.findOwnerByPhone(tenantId, data.phone, id)
+    if (existingPhone) throw new OwnerError('Phone number already registered in this clinic', 409)
+  }
+  if (data.idCardNumber) {
+    const existingIdCard = await ownerRepo.findOwnerByIdCard(tenantId, data.idCardNumber, id)
+    if (existingIdCard) throw new OwnerError('ID card number already registered in this clinic', 409)
   }
 
-  return ownerRepo.updateOwner(tenantId, id, data)
+  if (data.isActive !== undefined && data.isActive !== existing.isActive) {
+    throw new OwnerError('Changing owner active status requires the crm.delete permission', 403)
+  }
+
+  try {
+    return await ownerRepo.updateOwner(tenantId, id, data)
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      throw new OwnerError('ID card number already registered in this clinic', 409)
+    }
+    throw err
+  }
 }

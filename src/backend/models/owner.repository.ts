@@ -41,6 +41,10 @@ export function findOwnerByPhone(tenantId: number, phone: string, excludeId?: nu
   return prisma.owner.findFirst({ where: { tenantId, phone, ...(excludeId ? { NOT: { id: excludeId } } : {}) } })
 }
 
+export function findOwnerByIdCard(tenantId: number, idCardNumber: string, excludeId?: number) {
+  return prisma.owner.findFirst({ where: { tenantId, idCardNumber, ...(excludeId ? { NOT: { id: excludeId } } : {}) } })
+}
+
 export function createOwner(tenantId: number, data: CreateOwnerInput) {
   return prisma.owner.create({ data: { ...data, tenantId } })
 }
