@@ -6,9 +6,10 @@ import type { CreateOwnerInput, UpdateOwnerInput } from '../services/owner.servi
 
 const listInclude = { pets: { where: { isActive: true }, select: { id: true, name: true, species: true } } }
 
-function buildWhere(tenantId: number, search?: string) {
+function buildWhere(tenantId: number, search?: string, includeInactive?: boolean) {
   return {
     tenantId,
+    ...(includeInactive ? {} : { isActive: true }),
     ...(search ? {
       OR: [
         { firstName: { contains: search, mode: 'insensitive' as const } },
@@ -19,9 +20,9 @@ function buildWhere(tenantId: number, search?: string) {
   }
 }
 
-export function findOwners(tenantId: number, opts: { skip: number; take: number; search?: string }) {
+export function findOwners(tenantId: number, opts: { skip: number; take: number; search?: string; includeInactive?: boolean }) {
   return prisma.owner.findMany({
-    where: buildWhere(tenantId, opts.search),
+    where: buildWhere(tenantId, opts.search, opts.includeInactive),
     skip: opts.skip,
     take: opts.take,
     orderBy: { createdAt: 'desc' },
@@ -29,8 +30,8 @@ export function findOwners(tenantId: number, opts: { skip: number; take: number;
   })
 }
 
-export function countOwners(tenantId: number, search?: string) {
-  return prisma.owner.count({ where: buildWhere(tenantId, search) })
+export function countOwners(tenantId: number, search?: string, includeInactive?: boolean) {
+  return prisma.owner.count({ where: buildWhere(tenantId, search, includeInactive) })
 }
 
 export function findOwnerById(tenantId: number, id: number) {
@@ -43,6 +44,14 @@ export function findOwnerByPhone(tenantId: number, phone: string, excludeId?: nu
 
 export function findOwnerByIdCard(tenantId: number, idCardNumber: string, excludeId?: number) {
   return prisma.owner.findFirst({ where: { tenantId, idCardNumber, ...(excludeId ? { NOT: { id: excludeId } } : {}) } })
+}
+
+export function deactivateOwner(tenantId: number, id: number) {
+  return prisma.owner.updateMany({ where: { id, tenantId }, data: { isActive: false } })
+}
+
+export function countActivePetsForOwner(tenantId: number, ownerId: number) {
+  return prisma.pet.count({ where: { tenantId, ownerId, isActive: true } })
 }
 
 export function createOwner(tenantId: number, data: CreateOwnerInput) {

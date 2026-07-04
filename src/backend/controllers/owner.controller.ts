@@ -6,7 +6,8 @@ export async function handleListOwners(req: Request, res: Response, next: NextFu
     const page   = parseInt(String(req.query.page  ?? '1'))
     const limit  = parseInt(String(req.query.limit ?? '20'))
     const search = req.query.q as string | undefined
-    const data   = await listOwners(req.context!.tenantId, page, limit, search)
+    const includeInactive = req.query.includeInactive === 'true'
+    const data   = await listOwners(req.context!.tenantId, req.context!.userId, page, limit, search, includeInactive)
     res.json({ success: true, data })
   } catch (err) { next(err) }
 }

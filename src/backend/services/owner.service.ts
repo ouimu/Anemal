@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client'
 import { AppError } from '../utils/errors'
 import * as ownerRepo from '../models/owner.repository'
 import { assertCanAddOwner } from './subscription.service'
+import { resolvePermissions } from './permission.service'
 
 /**
  * Validates a 13-digit Thai national ID using the standard mod-11 checksum.
@@ -67,11 +68,16 @@ export class OwnerError extends AppError {
   }
 }
 
-export async function listOwners(tenantId: number, page = 1, limit = 20, search?: string) {
+export async function listOwners(
+  tenantId: number, userId: number, page = 1, limit = 20, search?: string, includeInactive?: boolean,
+) {
+  const canSeeInactive = includeInactive
+    ? (await resolvePermissions(userId, tenantId)).has('crm.delete')
+    : false
   const skip = (page - 1) * limit
   const [owners, total] = await Promise.all([
-    ownerRepo.findOwners(tenantId, { skip, take: limit, search }),
-    ownerRepo.countOwners(tenantId, search),
+    ownerRepo.findOwners(tenantId, { skip, take: limit, search, includeInactive: canSeeInactive }),
+    ownerRepo.countOwners(tenantId, search, canSeeInactive),
   ])
   return { owners, total, page, limit }
 }
