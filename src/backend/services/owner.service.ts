@@ -3,6 +3,41 @@ import { AppError } from '../utils/errors'
 import * as ownerRepo from '../models/owner.repository'
 import { assertCanAddOwner } from './subscription.service'
 
+/**
+ * Validates a 13-digit Thai national ID using the standard mod-11 checksum.
+ * Weights 13..2 are applied to the first 12 digits; the resulting checksum
+ * must equal the 13th digit. Returns false for anything that isn't exactly
+ * 13 digits.
+ */
+export function isValidThaiId(id: string): boolean {
+  if (!/^\d{13}$/.test(id)) return false
+  let sum = 0
+  for (let i = 0; i < 12; i++) {
+    sum += Number(id[i]) * (13 - i)
+  }
+  const checkDigit = (11 - (sum % 11)) % 10
+  return checkDigit === Number(id[12])
+}
+
+const idCardShape = z.object({
+  idCardType:   z.enum(['thai_id', 'passport']).optional().nullable(),
+  idCardNumber: z.string().max(20).optional().nullable(),
+}).superRefine((val, ctx) => {
+  const hasType   = val.idCardType   != null
+  const hasNumber = val.idCardNumber != null && val.idCardNumber !== ''
+  if (hasType !== hasNumber) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'idCardType and idCardNumber must both be set or both be omitted', path: ['idCardNumber'] })
+    return
+  }
+  if (!hasType) return
+  if (val.idCardType === 'thai_id' && !isValidThaiId(val.idCardNumber!)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Invalid Thai national ID (13 digits, checksum failed)', path: ['idCardNumber'] })
+  }
+  if (val.idCardType === 'passport' && !/^[A-Za-z0-9]{6,20}$/.test(val.idCardNumber!)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Passport number must be 6-20 alphanumeric characters', path: ['idCardNumber'] })
+  }
+})
+
 export const createOwnerSchema = z.object({
   firstName: z.string().min(1).max(100),
   lastName:  z.string().min(1).max(100),
@@ -10,9 +45,17 @@ export const createOwnerSchema = z.object({
   email:     z.string().email().optional().nullable(),
   lineId:    z.string().max(100).optional().nullable(),
   address:   z.string().optional().nullable(),
-})
+}).and(idCardShape)
 
-export const updateOwnerSchema = createOwnerSchema.partial()
+export const updateOwnerSchema = z.object({
+  firstName: z.string().min(1).max(100).optional(),
+  lastName:  z.string().min(1).max(100).optional(),
+  phone:     z.string().min(1).max(50).optional(),
+  email:     z.string().email().optional().nullable(),
+  lineId:    z.string().max(100).optional().nullable(),
+  address:   z.string().optional().nullable(),
+  isActive:  z.boolean().optional(),
+}).and(idCardShape)
 
 export type CreateOwnerInput = z.infer<typeof createOwnerSchema>
 export type UpdateOwnerInput = z.infer<typeof updateOwnerSchema>
