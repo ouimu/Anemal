@@ -106,8 +106,15 @@ export async function createOwner(tenantId: number, data: CreateOwnerInput) {
   }
 }
 
-export async function updateOwner(tenantId: number, id: number, data: UpdateOwnerInput) {
+export async function updateOwner(tenantId: number, userId: number, id: number, data: UpdateOwnerInput) {
   const existing = await getOwner(tenantId, id)
+
+  if (data.isActive !== undefined && data.isActive !== existing.isActive) {
+    const perms = await resolvePermissions(userId, tenantId)
+    if (!perms.has('crm.delete')) {
+      throw new OwnerError('Changing owner active status requires the crm.delete permission', 403)
+    }
+  }
 
   if (data.phone) {
     const existingPhone = await ownerRepo.findOwnerByPhone(tenantId, data.phone, id)
@@ -116,10 +123,6 @@ export async function updateOwner(tenantId: number, id: number, data: UpdateOwne
   if (data.idCardNumber) {
     const existingIdCard = await ownerRepo.findOwnerByIdCard(tenantId, data.idCardNumber, id)
     if (existingIdCard) throw new OwnerError('ID card number already registered in this clinic', 409)
-  }
-
-  if (data.isActive !== undefined && data.isActive !== existing.isActive) {
-    throw new OwnerError('Changing owner active status requires the crm.delete permission', 403)
   }
 
   try {

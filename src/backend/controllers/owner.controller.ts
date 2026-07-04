@@ -28,7 +28,7 @@ export async function handleCreateOwner(req: Request, res: Response, next: NextF
 
 export async function handleUpdateOwner(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await updateOwner(req.context!.tenantId, parseInt(req.params.id), req.body)
+    const data = await updateOwner(req.context!.tenantId, req.context!.userId, parseInt(req.params.id), req.body)
     res.json({ success: true, data })
   } catch (err) { next(err) }
 }
