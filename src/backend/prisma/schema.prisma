@@ -228,6 +228,8 @@ model Owner {
   email          String?  @db.VarChar(255)
   lineId         String?  @db.VarChar(100)
   address        String?
+  idCardType     String?  @db.VarChar(10)  // 'thai_id' | 'passport'
+  idCardNumber   String?  @db.VarChar(20)
   isActive       Boolean  @default(true) // Phase 4 soft-deactivation
   loyaltyPoints  Int      @default(0) // Phase 4 loyalty balance
   membershipTier String   @default("standard") @db.VarChar(50) // standard|silver|gold|platinum
@@ -239,6 +241,7 @@ model Owner {
 
   @@index([tenantId])
   @@index([tenantId, phone])
+  @@unique([tenantId, idCardNumber])
   @@map("owners")
 }
 
