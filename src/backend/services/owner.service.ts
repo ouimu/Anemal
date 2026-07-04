@@ -131,3 +131,17 @@ export async function updateOwner(tenantId: number, id: number, data: UpdateOwne
     throw err
   }
 }
+
+/**
+ * Soft-deletes (deactivates) an owner within a tenant. Blocked with a 409
+ * if the owner still has active pets, since deactivating would orphan them
+ * from an active caregiver.
+ */
+export async function deleteOwner(tenantId: number, id: number): Promise<void> {
+  await getOwner(tenantId, id)
+  const activePets = await ownerRepo.countActivePetsForOwner(tenantId, id)
+  if (activePets > 0) {
+    throw new OwnerError('Cannot delete: owner has active pets', 409)
+  }
+  await ownerRepo.deactivateOwner(tenantId, id)
+}

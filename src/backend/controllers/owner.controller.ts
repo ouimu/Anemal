@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import { listOwners, getOwner, createOwner, updateOwner } from '../services/owner.service'
+import { listOwners, getOwner, createOwner, updateOwner, deleteOwner } from '../services/owner.service'
 
 export async function handleListOwners(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -30,5 +30,12 @@ export async function handleUpdateOwner(req: Request, res: Response, next: NextF
   try {
     const data = await updateOwner(req.context!.tenantId, parseInt(req.params.id), req.body)
     res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export async function handleDeleteOwner(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    await deleteOwner(req.context!.tenantId, parseInt(req.params.id))
+    res.json({ success: true, data: { message: 'Owner deactivated' } })
   } catch (err) { next(err) }
 }
