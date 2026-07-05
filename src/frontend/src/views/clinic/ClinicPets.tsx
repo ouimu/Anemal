@@ -7,7 +7,7 @@ import { useT } from '../../i18n'
 import Can from '../../components/Can'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-interface Owner { id: number; firstName: string; lastName: string; phone: string; email?: string; lineId?: string; address?: string; pets: Pet[] }
+interface Owner { id: number; firstName: string; lastName: string; phone: string; email?: string; lineId?: string; address?: string; idCardType?: string; idCardNumber?: string; isActive: boolean; pets: Pet[] }
 interface MedicalRecordSummary { id: number; createdAt: string; assessment?: string }
 interface Pet   { id: number; ownerId: number; name: string; species: string; breed?: string; color?: string; birthDate?: string; gender?: string; weightKg?: number; microchipId?: string; photoUrl?: string; allergies?: string; underlyingConditions?: string; isActive: boolean; owner?: Owner; vaccinations?: Vaccination[]; medicalRecords?: MedicalRecordSummary[] }
 interface Vaccination { id: number; vaccineName: string; administeredAt: string; nextDueAt?: string; batchNo?: string; notes?: string }
@@ -102,6 +102,92 @@ function AddOwnerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
           <div className="flex gap-md pt-sm">
             <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
             <button type="submit" disabled={saving} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? 'Saving…' : 'Save Owner'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Modal: Edit Owner ────────────────────────────────────────────────────────
+export function EditOwnerModal({ owner, onClose, onSuccess }: { owner: Owner; onClose: () => void; onSuccess: () => void }) {
+  const t = useT()
+  const [form, setForm] = useState({
+    firstName: owner.firstName,
+    lastName: owner.lastName,
+    phone: owner.phone,
+    email: owner.email ?? '',
+    address: owner.address ?? '',
+    lineId: owner.lineId ?? '',
+    idCardType: owner.idCardType ?? '',
+    idCardNumber: owner.idCardNumber ?? '',
+  })
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    setForm(f => ({ ...f, [k]: e.target.value }))
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    setError('')
+    try {
+      await api.put(`/api/owners/${owner.id}`, {
+        ...form,
+        email: form.email || null,
+        address: form.address || null,
+        lineId: form.lineId || null,
+        idCardType: form.idCardType || null,
+        idCardNumber: form.idCardType ? form.idCardNumber : null,
+      })
+      onSuccess()
+    } catch (err) {
+      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save')
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-lg">
+      <div className="bg-surface rounded-xl shadow-lg w-full max-w-md p-xl">
+        <h3 className="text-headline-sm font-headline font-bold text-primary mb-lg">{t('clinic.pets.editOwner')}</h3>
+        {error && <p className="text-error text-body-sm mb-md">{error}</p>}
+        <form onSubmit={submit} className="flex flex-col gap-md">
+          <div className="flex gap-md">
+            <input required className="flex-1 min-w-0 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.firstName')} value={form.firstName} onChange={set('firstName')} />
+            <input required className="flex-1 min-w-0 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.lastName')} value={form.lastName} onChange={set('lastName')} />
+          </div>
+          <input required className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.phone')} value={form.phone} onChange={set('phone')} />
+          <input type="email" className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.emailOptional')} value={form.email} onChange={set('email')} />
+          <input className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.addressOptional')} value={form.address} onChange={set('address')} />
+          <label className="text-body-sm text-on-surface-variant" htmlFor="edit-owner-idcard-type">{t('clinic.pets.idCardType')}</label>
+          <select id="edit-owner-idcard-type" aria-label={t('clinic.pets.idCardType')} className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.idCardType} onChange={set('idCardType')}>
+            <option value="">{t('clinic.pets.idCardTypeNone')}</option>
+            <option value="thai_id">{t('clinic.pets.idCardTypeThai')}</option>
+            <option value="passport">{t('clinic.pets.idCardTypePassport')}</option>
+          </select>
+          {form.idCardType === 'thai_id' && (
+            <input
+              className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder={t('clinic.pets.idCardNumberThai')}
+              value={form.idCardNumber}
+              onChange={set('idCardNumber')}
+              maxLength={13}
+              inputMode="numeric"
+            />
+          )}
+          {form.idCardType === 'passport' && (
+            <input
+              className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder={t('clinic.pets.idCardNumberPassport')}
+              value={form.idCardNumber}
+              onChange={set('idCardNumber')}
+              maxLength={20}
+            />
+          )}
+          <div className="flex gap-md pt-sm">
+            <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
+            <button type="submit" disabled={saving} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? 'Saving…' : t('clinic.pets.saveChanges')}</button>
           </div>
         </form>
       </div>
