@@ -5,6 +5,7 @@ import MaterialIcon from '../../components/MaterialIcon'
 import { usePhotoUpload } from '../../hooks/usePhotoUpload'
 import { useT } from '../../i18n'
 import Can from '../../components/Can'
+import { useAuthStore } from '../../store/authStore'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Owner { id: number; firstName: string; lastName: string; phone: string; email?: string; lineId?: string; address?: string; idCardType?: string; idCardNumber?: string; isActive: boolean; pets: Pet[] }
@@ -617,13 +618,15 @@ export default function ClinicPets() {
   const t = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
+  const [showInactive, setShowInactive] = useState(false)
+  const canSeeInactive = useAuthStore(s => s.hasPermission('crm.delete'))
   const [selectedOwnerId, setSelectedOwnerId] = useState<number | null>(null)
   const [selectedPetId, setSelectedPetId] = useState<number | null>(null)
   const [modal, setModal] = useState<'addOwner' | 'addPet' | 'addVaccination' | null>(null)
 
   const { data: ownersData, isLoading } = useQuery({
-    queryKey: ['owners', search],
-    queryFn: () => api.get('/api/owners', { params: { q: search || undefined, limit: 50 } }).then(r => r.data.data),
+    queryKey: ['owners', search, showInactive],
+    queryFn: () => api.get('/api/owners', { params: { q: search || undefined, limit: 50, includeInactive: showInactive || undefined } }).then(r => r.data.data),
     staleTime: 30_000,
   })
   const owners: Owner[] = ownersData?.owners ?? []
@@ -665,6 +668,13 @@ export default function ClinicPets() {
           </button>
         </div>
 
+        {canSeeInactive && (
+          <label className="flex items-center gap-sm px-md py-sm border-b border-outline-variant text-body-sm text-on-surface-variant cursor-pointer">
+            <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)} aria-label={t('clinic.pets.showInactive')} />
+            {t('clinic.pets.showInactive')}
+          </label>
+        )}
+
         <div className="flex-1 overflow-y-auto">
           {isLoading && <div className="p-lg text-body-sm text-on-surface-variant">Loading…</div>}
           {!isLoading && owners.length === 0 && <div className="p-lg text-body-sm text-on-surface-variant">No owners found.</div>}
@@ -672,13 +682,16 @@ export default function ClinicPets() {
             <button
               key={owner.id}
               onClick={() => { setSelectedOwnerId(owner.id); setSelectedPetId(null) }}
-              className={`w-full text-left flex items-center gap-md p-md border-b border-outline-variant/50 min-h-[72px] transition-colors ${selectedOwnerId === owner.id ? 'bg-surface-container-low border-l-4 border-primary' : 'hover:bg-surface-container-low border-l-4 border-transparent'}`}
+              className={`w-full text-left flex items-center gap-md p-md border-b border-outline-variant/50 min-h-[72px] transition-colors ${owner.isActive === false ? 'opacity-60' : ''} ${selectedOwnerId === owner.id ? 'bg-surface-container-low border-l-4 border-primary' : 'hover:bg-surface-container-low border-l-4 border-transparent'}`}
             >
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary font-bold text-label-md">
                 {initials(owner.firstName, owner.lastName)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-headline-xs font-bold truncate">{owner.firstName} {owner.lastName}</p>
+                <div className="flex items-center gap-xs">
+                  <p className="text-headline-xs font-bold truncate">{owner.firstName} {owner.lastName}</p>
+                  {owner.isActive === false && <span className="px-sm py-xs rounded-full bg-surface-container-high text-on-surface-variant text-label-md flex-shrink-0">{t('clinic.pets.inactiveBadge')}</span>}
+                </div>
                 <p className="text-body-sm text-on-surface-variant truncate">{owner.phone}</p>
                 <p className="text-label-md text-on-surface-variant">{owner.pets?.length ?? 0} pet{owner.pets?.length !== 1 ? 's' : ''}</p>
               </div>
