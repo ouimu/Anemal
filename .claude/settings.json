@@ -4,51 +4,40 @@
     "PORT": "4000",
     "FRONTEND_URL": "http://localhost:5173"
   },
-  "allowedTools": [
-    "Bash",
-    "Read",
-    "Write",
-    "Edit",
-    "Glob",
-    "Grep",
-    "WebSearch",
-    "WebFetch",
-    "mcp__postgres__*",
-    "mcp__filesystem__*",
-    "mcp__github__*",
-    "mcp__slack__*"
-  ],
-  "bash": {
-    "allowedCommands": [
-      "npm",
-      "npx",
-      "node",
-      "ts-node",
-      "prisma",
-      "git",
-      "curl",
-      "ls",
-      "cat",
-      "mkdir",
-      "cp",
-      "mv",
-      "rm",
-      "find",
-      "grep",
-      "echo",
-      "cd",
-      "pwd",
-      "docker",
-      "psql"
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "WebSearch",
+      "WebFetch",
+      "mcp__postgres__*",
+      "mcp__github__*",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(node *)",
+      "Bash(ts-node *)",
+      "Bash(prisma *)",
+      "Bash(git *)",
+      "Bash(curl *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "Bash(rm *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(echo *)",
+      "Bash(cd *)",
+      "Bash(pwd)",
+      "Bash(docker *)",
+      "Bash(psql *)"
     ]
   },
-  "_comment_agents": "Subagents are auto-discovered from .claude/agents/*.md (ba, pm, uiux, db, dev, qa) and run in isolated context. They do not need to be listed here.",
-  "contextPaths": [
-    "CLAUDE.md",
-    ".claude/roadmap/qa-protocols.md",
-    ".claude/specs/database-schema.sql"
-  ],
   "enabledPlugins": {
-    "frontend-design@claude-plugins-official": true
+    "frontend-design@claude-plugins-official": false
   }
 }
