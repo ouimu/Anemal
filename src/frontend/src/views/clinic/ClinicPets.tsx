@@ -32,6 +32,11 @@ function initials(firstName: string, lastName: string) {
   return `${firstName[0]}${lastName[0]}`.toUpperCase()
 }
 
+function maskIdCard(idCardNumber: string) {
+  const last4 = idCardNumber.slice(-4)
+  return '•'.repeat(Math.max(idCardNumber.length - 4, 0)) + last4
+}
+
 // ─── Modal: Add Owner ─────────────────────────────────────────────────────────
 function AddOwnerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const t = useT()
@@ -410,6 +415,8 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
             <p className="font-semibold text-body-md">{owner.firstName} {owner.lastName}</p>
             <p className="text-body-sm text-on-surface-variant">{owner.phone}</p>
             {owner.email && <p className="text-body-sm text-on-surface-variant">{owner.email}</p>}
+            <p className="text-body-sm text-on-surface-variant">{owner.address ?? '—'}</p>
+            {owner.idCardNumber && <p className="text-body-sm text-on-surface-variant">{maskIdCard(owner.idCardNumber)}</p>}
           </div>
         </div>
       )}
