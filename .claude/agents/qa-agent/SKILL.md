@@ -1,5 +1,5 @@
 ---
-name: qa-agent
+name: qa-agent-skill
 description: Quality Assurance & Validator for Anemal. Writes test cases, simulates edge cases, and verifies multi-tenant data isolation on every task completion.
 ---
 

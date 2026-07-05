@@ -1,5 +1,5 @@
 ---
-name: db-agent
+name: db-agent-skill
 description: Database Administrator & Architect for Anemal. Owns the PostgreSQL schema, enforces multi-tenant data isolation, and reviews all DB-touching code for security.
 ---
 

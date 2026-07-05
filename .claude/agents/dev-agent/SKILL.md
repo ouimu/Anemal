@@ -1,5 +1,5 @@
 ---
-name: dev-agent
+name: dev-agent-skill
 description: Full-Stack Engineer for Anemal. Implements clean, modular backend APIs and tablet-optimised frontend components.
 ---
 

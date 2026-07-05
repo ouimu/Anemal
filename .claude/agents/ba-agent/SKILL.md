@@ -1,5 +1,5 @@
 ---
-name: ba-agent
+name: ba-agent-skill
 description: >
   Senior Business Analyst & Solution Consultant for Anemal. Owns requirement analysis,
   authorization/permission design, solution architecture trade-offs, gap analysis, and

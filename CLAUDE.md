@@ -8,14 +8,14 @@
 
 | Task | Agent | Model | Superpowers Skills | Sequence |
 |------|-------|-------|--------------------|----------|
-| Requirements, authorization design, gap analysis | `@ba-agent` | opus | `/brainstorm` | Step 2 |
-| Scope, task breakdown, coordination, docs owner | `@pm-agent` | sonnet | `/brainstorm`, `/write-plan`, `/execute-plan` | Step 1, 3, 5 |
-| Screen/component design | `@uiux-agent` | sonnet | `/brainstorm` | Step 4∥ |
-| Schema, migration, query safety, tenant isolation | `@db-agent` | sonnet | `/migrate` | Step 4∥ |
-| Backend/frontend implementation | `@dev-agent` | sonnet | `/tdd`, `/debug`, `/optimize` | Step 4∥ |
-| Stress-test design before plan (MANDATORY) | (human-driven) | opus | `/grilling` (`/grill-me`) | Step 3.5 gate |
+| Requirements, authorization design, gap analysis | `@ba-agent` | fable | `/brainstorm` | Step 3 |
+| Scope, task breakdown, coordination, docs owner | `@pm-agent` | sonnet | `/brainstorm`, `/write-plan`, `/grill-with-docs`, `/execute-plan`, `/anemal-finish-branch` | Step 1, 2, 4, 8 |
+| Screen/component design | `@uiux-agent` | sonnet | `/brainstorm` | Step 6∥ |
+| Schema, migration, query safety, tenant isolation | `@db-agent` | sonnet | `/migrate` | Step 6∥ |
+| Backend/frontend implementation | `@dev-agent` | sonnet | `/tdd`, `/debug`, `/optimize` | Step 6∥ |
+| Stress-test design before plan (MANDATORY) | (human-driven) | opus | `/grill-with-docs` (invokes `grilling` + `domain-modeling` skills) | Step 3.5 gate |
 | Simplicity gate | `@ponytail-agent` | opus | — (project gate, not Superpowers) | Step 5 gate |
-| Tests, edge cases, isolation/RBAC verification | `@qa-agent` | opus | `/tdd`, `/audit` | Step 6 |
+| Tests, edge cases, isolation/RBAC verification | `@qa-agent` | fable | `/tdd`, `/audit` | Step 7 |
 
 **Rules:** Delegate first (except trivial one-liners). Each delegation must include: agent name, task, specs/skills cited, output path. Context > 70% → Auto-Compact.
 
@@ -35,7 +35,7 @@ STEP 3 — @ba-agent (validate + design)
           Validate requirements, authorization design, gap analysis.
           ⛔ NO write-plan until BA sign-off.
           ↓
-STEP 3.5 — /grilling (/grill-me)          [human-driven, MANDATORY]
+STEP 3.5 — /grill-with-docs   [human-driven + @ba-agent, MANDATORY]
           Stress-test the validated design. Interview until
           assumptions, edge cases, failure modes exposed & resolved.
           ⛔ MANDATORY — CANNOT be skipped. /write-plan is BLOCKED
@@ -45,7 +45,7 @@ STEP 3.5 — /grilling (/grill-me)          [human-driven, MANDATORY]
 STEP 4 — /superpowers:write-plan          [@pm-agent owns]
           Break into 2–5 min tasks with exact file paths, interfaces, tests.
           Save to: docs/superpowers/plans/YYYY-MM-DD-<feature>.md
-          ⛔ Must run AFTER @ba-agent sign-off. NEVER before brainstorm.
+          ⛔ Must run AFTER @ba-agent sign-off AND /grill-with-docs. NEVER before brainstorm.
           ↓
 STEP 5 — @ponytail-agent (ANY flag → REJECT, all clear → APPROVE)
           Reviews write-plan output against 7 criteria before any execution.
@@ -58,17 +58,25 @@ STEP 6 — /superpowers:execute-plan        [@dev-agent ∥ @db-agent ∥ @uiux-
           ↓
 STEP 7 — @qa-agent (sign-off)             [/audit if RBAC-related]
           ↓
-STEP 8 — @pm-agent (update docs)
+STEP 8 — /anemal-finish-branch           [@pm-agent ships the branch]
+		  Preflight gh auth → run tests → create PR → verify main stays green
+		  after merge → triggers /anemal-HTML-updater as its last act (update
+		  all markdown files, clearing finished/unused, update HTML document).
+		  ⛔ Must run everytime after STEP 7. Never call /anemal-HTML-updater
+		  directly — it is invoked by /anemal-finish-branch, not a standalone step.
+		  
 ```
 
 Each agent: performs only assigned scope → produces report → returns to coordinator → terminates.
 
 > **Hard rules — no exceptions:**
-> - `/grilling` (`/grill-me`) is MANDATORY after `@ba-agent` sign-off and CANNOT be skipped under any circumstance
-> - `/write-plan` requires `/brainstorm` output + `@ba-agent` sign-off + `/grilling` run with all findings resolved
+> - `/grill-with-docs` is MANDATORY after `@ba-agent` sign-off (Step 3) and CANNOT be skipped under any circumstance
+> - `/write-plan` requires `/brainstorm` output + `/grill-with-docs` + `@ba-agent` sign-off + run with all findings resolved
 > - `/execute-plan` requires `@ponytail-agent` APPROVE as gate
 > - Skipping any step is a pipeline violation — restart from the violated step
-
+> - `/anemal-finish-branch` requires `@pm-agent` APPROVE updating all documents (it invokes `/anemal-HTML-updater` internally as its last step — do not call `/anemal-HTML-updater` directly)
+> - Do not finish the workflow, if STEP 8 are not finished.
+ 
 ---
 
 ## Tech Stack
@@ -77,6 +85,8 @@ Each agent: performs only assigned scope → produces report → returns to coor
 **Frontend:** React 18 + Tailwind + Zustand + React Query + Vite  
 **Multi-tenancy:** Shared DB/schema, `tenant_id` on every table, enforced in middleware + repository layer
 
+**Shell dialect (Windows dev machine):** the Bash tool runs Git Bash (POSIX sh) — forward slashes, `$VAR`, `&&`; the PowerShell tool runs Windows PowerShell 5.1 — backslash or forward-slash paths, `$env:VAR`, no `&&`/`||`. Never mix dialects in one command (no `head`/`&&`/heredocs in PowerShell; no PowerShell cmdlets like `Get-Content` in Bash). This was the single largest tool-error class in the project's session history — pick the right tool for the syntax you're writing, don't guess.
+
 ---
 
 ## Ponytail Gate — 7 Criteria
@@ -84,6 +94,8 @@ Each agent: performs only assigned scope → produces report → returns to coor
 ANY yes = REJECT. All no = APPROVE. See `.claude/agents/ponytail-agent/SKILL.md` for templates.
 
 > **Superpowers override:** Ponytail Gate has HIGHEST authority. Any plan approved by Superpowers `/execute-plan` must still pass all 7 criteria before implementation proceeds. Superpowers plan approval does NOT equal Ponytail approval.
+
+> **Scope note:** The global `ponytail` persona ("build less, question every step, skip what YAGNI allows") governs *implementation and code-size decisions only* — it never authorizes skipping a pipeline gate (brainstorm, grill-with-docs, ba-agent sign-off, ponytail-agent review, QA sign-off, finish-branch). If ponytail's lazy-first instinct and a pipeline gate conflict, the gate wins; `@ponytail-agent` (the 7-point plan reviewer above) and the `ponytail` persona are different things and both stay mandatory.
 
 1. Over-engineering? (simpler solution exists)
 2. Duplicate work? (reimplements existing code)
@@ -148,7 +160,7 @@ See `.claude/roadmap/remaining-tasks.md` for sub-tasks.
 
 ## Tracking & Documentation
 
-- `@pm-agent` documents LAST on every task: phase status, test count, all HTML in docs/(Dashboard, How to Run, HistoryLog, etc), CLAUDE.md
+- `@pm-agent` documents LAST on every task: phase status, test count, HTML in docs/(index.html, functional_spec_detailed.html), CLAUDE.md
 - `@ba-agent` provides content for `docs/functional_spec_detailed.html`, update all specification documents in .claude/specs/ ; `@pm-agent` commits
 - Run QA protocol at end of every task: `.claude/roadmap/qa-protocols.md`
 - Interrupted work: save resume state to file, show prompt to continue, delete when complete
@@ -162,14 +174,14 @@ Superpowers is installed as a Claude Code plugin and provides methodology skills
 **Mandatory skill sequence — enforced, no skipping:**
 
 ```
-/brainstorm → @ba-agent sign-off → /grilling (/grill-me, MANDATORY) → /write-plan → [Ponytail Gate] → /execute-plan
+/brainstorm → @pm-agent → @ba-agent sign-off → /grill-with-docs, MANDATORY → /write-plan → [Ponytail Gate] → /execute-plan → @qa-agent → /anemal-finish-branch (→ /anemal-HTML-updater)
 ```
 
 **Coexistence rules:**
 
 1. **Brainstorming hook:** When Superpowers auto-triggers `/brainstorm` at session start, treat the output as pre-input to `@pm-agent`. It does NOT replace the Standard Pipeline — it feeds Step 1.
-2. **write-plan sequence:** `/write-plan` must run AFTER `@ba-agent` sign-off (Step 3) AND after `/grilling` (Step 3.5). Running it before brainstorm, before BA validates, or before grilling is a pipeline violation.
-2a. **Grilling gate (MANDATORY):** `/grilling` (`/grill-me`) runs at Step 3.5 after BA sign-off and is non-skippable. `/write-plan` is BLOCKED until grilling has run and every grill finding is resolved. Skipping it = pipeline violation; restart from Step 3.5. This skill stress-tests the design — no exception, even for "small" features.
+1a. **Grilling gate (MANDATORY):** `/grill-with-docs` (which invokes the `grilling` skill) runs at Step 3.5, after `@ba-agent` sign-off, and is non-skippable. `/write-plan` is BLOCKED until grilling has run and every grill finding is resolved. Skipping it = pipeline violation; restart from Step 3.5. This skill stress-tests the design — no exception, even for "small" features.
+2. **write-plan sequence:** `/write-plan` must run AFTER `@ba-agent` sign-off (Step 3) AND after `/grill-with-docs` (Step 3.5). Running it before brainstorm, before BA validates, or before grilling is a pipeline violation.
 3. **execute-plan gate:** `/execute-plan` is BLOCKED until `@ponytail-agent` APPROVE (Step 5). Superpowers plan approval ≠ Ponytail approval. Both are required.
 4. **No step skipping:** Running `/execute-plan` directly without `/write-plan` output as input is not allowed. Restart from `/write-plan` if plan is missing.
 5. **Skill precedence:** Project skills (`.claude/agents/*/SKILL.md`, `.claude/skills/anemal-*/`) always win over Superpowers skills when they cover the same topic.

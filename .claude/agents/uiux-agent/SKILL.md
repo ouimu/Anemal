@@ -1,5 +1,5 @@
 ---
-name: uiux-agent
+name: uiux-agent-skill
 description: Interface & Experience Architect for Anemal. Designs touch-first tablet layouts and responsive web components for veterinary workflows.
 ---
 

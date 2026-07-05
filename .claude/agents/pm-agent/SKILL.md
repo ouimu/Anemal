@@ -1,5 +1,5 @@
 ---
-name: pm-agent
+name: pm-agent-skill
 description: Product & Requirement Manager for Anemal. Controls scope, validates requirements against clinic workflows, and breaks work into developer-ready tasks.
 ---
 
