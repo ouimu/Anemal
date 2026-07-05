@@ -5,9 +5,10 @@ import MaterialIcon from '../../components/MaterialIcon'
 import { usePhotoUpload } from '../../hooks/usePhotoUpload'
 import { useT } from '../../i18n'
 import Can from '../../components/Can'
+import { useAuthStore } from '../../store/authStore'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-interface Owner { id: number; firstName: string; lastName: string; phone: string; email?: string; lineId?: string; address?: string; pets: Pet[] }
+interface Owner { id: number; firstName: string; lastName: string; phone: string; email?: string; lineId?: string; address?: string; idCardType?: string; idCardNumber?: string; isActive: boolean; pets: Pet[] }
 interface MedicalRecordSummary { id: number; createdAt: string; assessment?: string }
 interface Pet   { id: number; ownerId: number; name: string; species: string; breed?: string; color?: string; birthDate?: string; gender?: string; weightKg?: number; microchipId?: string; photoUrl?: string; allergies?: string; underlyingConditions?: string; isActive: boolean; owner?: Owner; vaccinations?: Vaccination[]; medicalRecords?: MedicalRecordSummary[] }
 interface Vaccination { id: number; vaccineName: string; administeredAt: string; nextDueAt?: string; batchNo?: string; notes?: string }
@@ -32,14 +33,19 @@ function initials(firstName: string, lastName: string) {
   return `${firstName[0]}${lastName[0]}`.toUpperCase()
 }
 
+function maskIdCard(idCardNumber: string) {
+  const last4 = idCardNumber.slice(-4)
+  return '•'.repeat(Math.max(idCardNumber.length - 4, 0)) + last4
+}
+
 // ─── Modal: Add Owner ─────────────────────────────────────────────────────────
 function AddOwnerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const t = useT()
-  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', email: '', address: '', lineId: '' })
+  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', email: '', address: '', lineId: '', idCardType: '', idCardNumber: '' })
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
 
   const submit = async (e: React.FormEvent) => {
@@ -47,7 +53,14 @@ function AddOwnerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
     setSaving(true)
     setError('')
     try {
-      await api.post('/api/owners', { ...form, email: form.email || null, address: form.address || null, lineId: form.lineId || null })
+      await api.post('/api/owners', {
+        ...form,
+        email: form.email || null,
+        address: form.address || null,
+        lineId: form.lineId || null,
+        idCardType: form.idCardType || null,
+        idCardNumber: form.idCardType ? form.idCardNumber : null,
+      })
       onSuccess()
     } catch (err) {
       setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save')
@@ -67,9 +80,120 @@ function AddOwnerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
           <input required className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.phone')} value={form.phone} onChange={set('phone')} />
           <input type="email" className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.emailOptional')} value={form.email} onChange={set('email')} />
           <input className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.addressOptional')} value={form.address} onChange={set('address')} />
+          <label className="text-body-sm text-on-surface-variant" htmlFor="add-owner-idcard-type">{t('clinic.pets.idCardType')}</label>
+          <select id="add-owner-idcard-type" aria-label={t('clinic.pets.idCardType')} className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.idCardType} onChange={set('idCardType')}>
+            <option value="">{t('clinic.pets.idCardTypeNone')}</option>
+            <option value="thai_id">{t('clinic.pets.idCardTypeThai')}</option>
+            <option value="passport">{t('clinic.pets.idCardTypePassport')}</option>
+          </select>
+          {form.idCardType === 'thai_id' && (
+            <input
+              className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder={t('clinic.pets.idCardNumberThai')}
+              value={form.idCardNumber}
+              onChange={set('idCardNumber')}
+              maxLength={13}
+              inputMode="numeric"
+            />
+          )}
+          {form.idCardType === 'passport' && (
+            <input
+              className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder={t('clinic.pets.idCardNumberPassport')}
+              value={form.idCardNumber}
+              onChange={set('idCardNumber')}
+              maxLength={20}
+            />
+          )}
           <div className="flex gap-md pt-sm">
             <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
             <button type="submit" disabled={saving} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? 'Saving…' : 'Save Owner'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Modal: Edit Owner ────────────────────────────────────────────────────────
+export function EditOwnerModal({ owner, onClose, onSuccess }: { owner: Owner; onClose: () => void; onSuccess: () => void }) {
+  const t = useT()
+  const [form, setForm] = useState({
+    firstName: owner.firstName,
+    lastName: owner.lastName,
+    phone: owner.phone,
+    email: owner.email ?? '',
+    address: owner.address ?? '',
+    lineId: owner.lineId ?? '',
+    idCardType: owner.idCardType ?? '',
+    idCardNumber: owner.idCardNumber ?? '',
+  })
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    setForm(f => ({ ...f, [k]: e.target.value }))
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    setError('')
+    try {
+      await api.put(`/api/owners/${owner.id}`, {
+        ...form,
+        email: form.email || null,
+        address: form.address || null,
+        lineId: form.lineId || null,
+        idCardType: form.idCardType || null,
+        idCardNumber: form.idCardType ? form.idCardNumber : null,
+      })
+      onSuccess()
+    } catch (err) {
+      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save')
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-lg">
+      <div className="bg-surface rounded-xl shadow-lg w-full max-w-md p-xl">
+        <h3 className="text-headline-sm font-headline font-bold text-primary mb-lg">{t('clinic.pets.editOwner')}</h3>
+        {error && <p className="text-error text-body-sm mb-md">{error}</p>}
+        <form onSubmit={submit} className="flex flex-col gap-md">
+          <div className="flex gap-md">
+            <input required className="flex-1 min-w-0 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.firstName')} value={form.firstName} onChange={set('firstName')} />
+            <input required className="flex-1 min-w-0 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.lastName')} value={form.lastName} onChange={set('lastName')} />
+          </div>
+          <input required className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.phone')} value={form.phone} onChange={set('phone')} />
+          <input type="email" className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.emailOptional')} value={form.email} onChange={set('email')} />
+          <input className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.addressOptional')} value={form.address} onChange={set('address')} />
+          <label className="text-body-sm text-on-surface-variant" htmlFor="edit-owner-idcard-type">{t('clinic.pets.idCardType')}</label>
+          <select id="edit-owner-idcard-type" aria-label={t('clinic.pets.idCardType')} className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.idCardType} onChange={set('idCardType')}>
+            <option value="">{t('clinic.pets.idCardTypeNone')}</option>
+            <option value="thai_id">{t('clinic.pets.idCardTypeThai')}</option>
+            <option value="passport">{t('clinic.pets.idCardTypePassport')}</option>
+          </select>
+          {form.idCardType === 'thai_id' && (
+            <input
+              className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder={t('clinic.pets.idCardNumberThai')}
+              value={form.idCardNumber}
+              onChange={set('idCardNumber')}
+              maxLength={13}
+              inputMode="numeric"
+            />
+          )}
+          {form.idCardType === 'passport' && (
+            <input
+              className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder={t('clinic.pets.idCardNumberPassport')}
+              value={form.idCardNumber}
+              onChange={set('idCardNumber')}
+              maxLength={20}
+            />
+          )}
+          <div className="flex gap-md pt-sm">
+            <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
+            <button type="submit" disabled={saving} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? 'Saving…' : t('clinic.pets.saveChanges')}</button>
           </div>
         </form>
       </div>
@@ -292,6 +416,8 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
             <p className="font-semibold text-body-md">{owner.firstName} {owner.lastName}</p>
             <p className="text-body-sm text-on-surface-variant">{owner.phone}</p>
             {owner.email && <p className="text-body-sm text-on-surface-variant">{owner.email}</p>}
+            <p className="text-body-sm text-on-surface-variant">{owner.address ?? '—'}</p>
+            {owner.idCardNumber && <p className="text-body-sm text-on-surface-variant">{maskIdCard(owner.idCardNumber)}</p>}
           </div>
         </div>
       )}
@@ -369,7 +495,12 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
 }
 
 // ─── Owner Panel ─────────────────────────────────────────────────────────────
-function OwnerPanel({ ownerId, onSelectPet, onAddPet }: { ownerId: number; onSelectPet: (petId: number) => void; onAddPet: () => void }) {
+export function OwnerPanel({ ownerId, onSelectPet, onAddPet, onDeleted }: { ownerId: number; onSelectPet: (petId: number) => void; onAddPet: () => void; onDeleted?: () => void }) {
+  const t = useT()
+  const qc = useQueryClient()
+  const [editing, setEditing] = useState(false)
+  const [actionError, setActionError] = useState('')
+
   const { data, isLoading } = useQuery<{ data: Owner }>({
     queryKey: ['owner', ownerId],
     queryFn: () => api.get(`/api/owners/${ownerId}`).then(r => r.data),
@@ -377,6 +508,33 @@ function OwnerPanel({ ownerId, onSelectPet, onAddPet }: { ownerId: number; onSel
   const owner = data?.data
   if (isLoading) return <div className="flex-1 flex items-center justify-center text-on-surface-variant text-body-sm">Loading…</div>
   if (!owner) return null
+
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['owner', ownerId] })
+    qc.invalidateQueries({ queryKey: ['owners'] })
+  }
+
+  const handleDelete = async () => {
+    setActionError('')
+    if (!confirm(`Deactivate ${owner.firstName} ${owner.lastName}?`)) return
+    try {
+      await api.delete(`/api/owners/${owner.id}`)
+      refresh()
+      onDeleted?.()
+    } catch (err) {
+      setActionError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to delete')
+    }
+  }
+
+  const handleReactivate = async () => {
+    setActionError('')
+    try {
+      await api.put(`/api/owners/${owner.id}`, { isActive: true })
+      refresh()
+    } catch (err) {
+      setActionError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to reactivate')
+    }
+  }
 
   return (
     <div className="flex-1 overflow-y-auto p-lg flex flex-col gap-lg">
@@ -386,12 +544,36 @@ function OwnerPanel({ ownerId, onSelectPet, onAddPet }: { ownerId: number; onSel
           {initials(owner.firstName, owner.lastName)}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-headline-sm font-headline font-bold text-on-surface">{owner.firstName} {owner.lastName}</h3>
+          <div className="flex items-center gap-sm">
+            <h3 className="text-headline-sm font-headline font-bold text-on-surface">{owner.firstName} {owner.lastName}</h3>
+            {!owner.isActive && <span className="px-sm py-xs rounded-full bg-surface-container-high text-on-surface-variant text-label-md">{t('clinic.pets.inactiveBadge')}</span>}
+          </div>
           <p className="text-body-sm text-on-surface-variant mt-xs">{owner.phone}</p>
           {owner.email && <p className="text-body-sm text-on-surface-variant">{owner.email}</p>}
           {owner.address && <p className="text-body-sm text-on-surface-variant truncate">{owner.address}</p>}
         </div>
+        {owner.isActive ? (
+          <div className="flex gap-xs flex-shrink-0">
+            <Can perm="crm.edit">
+              <button title="Edit" onClick={() => setEditing(true)} className="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-surface-container-low transition-colors">
+                <MaterialIcon name="edit" size={18} />
+              </button>
+            </Can>
+            <Can perm="crm.delete">
+              <button title="Delete" onClick={handleDelete} className="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-error-container transition-colors">
+                <MaterialIcon name="delete" size={18} className="text-error" />
+              </button>
+            </Can>
+          </div>
+        ) : (
+          <Can perm="crm.delete">
+            <button onClick={handleReactivate} className="flex items-center gap-xs bg-primary text-primary-on rounded-lg px-md py-sm min-h-[44px] text-body-sm font-semibold hover:bg-primary/90 transition-colors flex-shrink-0">
+              <MaterialIcon name="restore" size={18} />{t('clinic.pets.reactivateOwner')}
+            </button>
+          </Can>
+        )}
       </div>
+      {actionError && <p className="text-error text-body-sm">{actionError}</p>}
 
       {/* Pet cards */}
       <div>
@@ -424,6 +606,10 @@ function OwnerPanel({ ownerId, onSelectPet, onAddPet }: { ownerId: number; onSel
           </div>
         )}
       </div>
+
+      {editing && (
+        <EditOwnerModal owner={owner} onClose={() => setEditing(false)} onSuccess={() => { refresh(); setEditing(false) }} />
+      )}
     </div>
   )
 }
@@ -433,13 +619,15 @@ export default function ClinicPets() {
   const t = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
+  const [showInactive, setShowInactive] = useState(false)
+  const canSeeInactive = useAuthStore(s => s.hasPermission('crm.delete'))
   const [selectedOwnerId, setSelectedOwnerId] = useState<number | null>(null)
   const [selectedPetId, setSelectedPetId] = useState<number | null>(null)
   const [modal, setModal] = useState<'addOwner' | 'addPet' | 'addVaccination' | null>(null)
 
   const { data: ownersData, isLoading } = useQuery({
-    queryKey: ['owners', search],
-    queryFn: () => api.get('/api/owners', { params: { q: search || undefined, limit: 50 } }).then(r => r.data.data),
+    queryKey: ['owners', search, showInactive],
+    queryFn: () => api.get('/api/owners', { params: { q: search || undefined, limit: 50, includeInactive: showInactive || undefined } }).then(r => r.data.data),
     staleTime: 30_000,
   })
   const owners: Owner[] = ownersData?.owners ?? []
@@ -481,6 +669,13 @@ export default function ClinicPets() {
           </button>
         </div>
 
+        {canSeeInactive && (
+          <label className="flex items-center gap-sm px-md py-sm border-b border-outline-variant text-body-sm text-on-surface-variant cursor-pointer">
+            <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)} aria-label={t('clinic.pets.showInactive')} />
+            {t('clinic.pets.showInactive')}
+          </label>
+        )}
+
         <div className="flex-1 overflow-y-auto">
           {isLoading && <div className="p-lg text-body-sm text-on-surface-variant">Loading…</div>}
           {!isLoading && owners.length === 0 && <div className="p-lg text-body-sm text-on-surface-variant">No owners found.</div>}
@@ -488,13 +683,16 @@ export default function ClinicPets() {
             <button
               key={owner.id}
               onClick={() => { setSelectedOwnerId(owner.id); setSelectedPetId(null) }}
-              className={`w-full text-left flex items-center gap-md p-md border-b border-outline-variant/50 min-h-[72px] transition-colors ${selectedOwnerId === owner.id ? 'bg-surface-container-low border-l-4 border-primary' : 'hover:bg-surface-container-low border-l-4 border-transparent'}`}
+              className={`w-full text-left flex items-center gap-md p-md border-b border-outline-variant/50 min-h-[72px] transition-colors ${owner.isActive === false ? 'opacity-60' : ''} ${selectedOwnerId === owner.id ? 'bg-surface-container-low border-l-4 border-primary' : 'hover:bg-surface-container-low border-l-4 border-transparent'}`}
             >
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary font-bold text-label-md">
                 {initials(owner.firstName, owner.lastName)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-headline-xs font-bold truncate">{owner.firstName} {owner.lastName}</p>
+                <div className="flex items-center gap-xs">
+                  <p className="text-headline-xs font-bold truncate">{owner.firstName} {owner.lastName}</p>
+                  {owner.isActive === false && <span className="px-sm py-xs rounded-full bg-surface-container-high text-on-surface-variant text-label-md flex-shrink-0">{t('clinic.pets.inactiveBadge')}</span>}
+                </div>
                 <p className="text-body-sm text-on-surface-variant truncate">{owner.phone}</p>
                 <p className="text-label-md text-on-surface-variant">{owner.pets?.length ?? 0} pet{owner.pets?.length !== 1 ? 's' : ''}</p>
               </div>
@@ -521,6 +719,7 @@ export default function ClinicPets() {
             ownerId={selectedOwnerId}
             onSelectPet={setSelectedPetId}
             onAddPet={() => setModal('addPet')}
+            onDeleted={() => { setSelectedOwnerId(null); setSelectedPetId(null) }}
           />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-xl text-on-surface-variant">
