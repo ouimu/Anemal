@@ -9,6 +9,10 @@ vi.mock('../store/uiStore', () => ({
 vi.mock('@tanstack/react-query', () => ({
   useQuery: () => ({ data: undefined, isLoading: false }),
 }))
+vi.mock('../store/authStore', () => ({
+  useAuthStore: (selector: (s: { hasPermission: (code: string) => boolean }) => unknown) =>
+    selector({ hasPermission: () => true }),
+}))
 
 import ClinicDashboard from '../views/clinic/ClinicDashboard'
 

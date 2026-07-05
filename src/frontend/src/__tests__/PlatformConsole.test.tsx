@@ -30,6 +30,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, within } from '@testing-library/react'
 
+// CustomerDetailView's OverviewTab calls the raw `useQuery` (not a custom hook)
+// for the company-types picker — mock it so the view doesn't need a real
+// QueryClientProvider, matching the pattern used by Dashboard.i18n/OwnerPanel tests.
+vi.mock('@tanstack/react-query', () => ({
+  useQuery: () => ({ data: [], isLoading: false }),
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+}))
+
 // ── Hoisted mutation spies ──────────────────────────────────────────────────
 const h = vi.hoisted(() => ({
   createCustomer: vi.fn(),
