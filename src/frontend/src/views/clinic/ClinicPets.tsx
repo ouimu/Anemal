@@ -495,7 +495,7 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
 }
 
 // ─── Owner Panel ─────────────────────────────────────────────────────────────
-export function OwnerPanel({ ownerId, onSelectPet, onAddPet }: { ownerId: number; onSelectPet: (petId: number) => void; onAddPet: () => void }) {
+export function OwnerPanel({ ownerId, onSelectPet, onAddPet, onDeleted }: { ownerId: number; onSelectPet: (petId: number) => void; onAddPet: () => void; onDeleted?: () => void }) {
   const t = useT()
   const qc = useQueryClient()
   const [editing, setEditing] = useState(false)
@@ -520,6 +520,7 @@ export function OwnerPanel({ ownerId, onSelectPet, onAddPet }: { ownerId: number
     try {
       await api.delete(`/api/owners/${owner.id}`)
       refresh()
+      onDeleted?.()
     } catch (err) {
       setActionError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to delete')
     }
@@ -718,6 +719,7 @@ export default function ClinicPets() {
             ownerId={selectedOwnerId}
             onSelectPet={setSelectedPetId}
             onAddPet={() => setModal('addPet')}
+            onDeleted={() => { setSelectedOwnerId(null); setSelectedPetId(null) }}
           />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-xl text-on-surface-variant">
