@@ -487,7 +487,12 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
 }
 
 // ─── Owner Panel ─────────────────────────────────────────────────────────────
-function OwnerPanel({ ownerId, onSelectPet, onAddPet }: { ownerId: number; onSelectPet: (petId: number) => void; onAddPet: () => void }) {
+export function OwnerPanel({ ownerId, onSelectPet, onAddPet }: { ownerId: number; onSelectPet: (petId: number) => void; onAddPet: () => void }) {
+  const t = useT()
+  const qc = useQueryClient()
+  const [editing, setEditing] = useState(false)
+  const [actionError, setActionError] = useState('')
+
   const { data, isLoading } = useQuery<{ data: Owner }>({
     queryKey: ['owner', ownerId],
     queryFn: () => api.get(`/api/owners/${ownerId}`).then(r => r.data),
@@ -495,6 +500,32 @@ function OwnerPanel({ ownerId, onSelectPet, onAddPet }: { ownerId: number; onSel
   const owner = data?.data
   if (isLoading) return <div className="flex-1 flex items-center justify-center text-on-surface-variant text-body-sm">Loading…</div>
   if (!owner) return null
+
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['owner', ownerId] })
+    qc.invalidateQueries({ queryKey: ['owners'] })
+  }
+
+  const handleDelete = async () => {
+    setActionError('')
+    if (!confirm(`Deactivate ${owner.firstName} ${owner.lastName}?`)) return
+    try {
+      await api.delete(`/api/owners/${owner.id}`)
+      refresh()
+    } catch (err) {
+      setActionError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to delete')
+    }
+  }
+
+  const handleReactivate = async () => {
+    setActionError('')
+    try {
+      await api.put(`/api/owners/${owner.id}`, { isActive: true })
+      refresh()
+    } catch (err) {
+      setActionError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to reactivate')
+    }
+  }
 
   return (
     <div className="flex-1 overflow-y-auto p-lg flex flex-col gap-lg">
@@ -504,12 +535,36 @@ function OwnerPanel({ ownerId, onSelectPet, onAddPet }: { ownerId: number; onSel
           {initials(owner.firstName, owner.lastName)}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-headline-sm font-headline font-bold text-on-surface">{owner.firstName} {owner.lastName}</h3>
+          <div className="flex items-center gap-sm">
+            <h3 className="text-headline-sm font-headline font-bold text-on-surface">{owner.firstName} {owner.lastName}</h3>
+            {!owner.isActive && <span className="px-sm py-xs rounded-full bg-surface-container-high text-on-surface-variant text-label-md">{t('clinic.pets.inactiveBadge')}</span>}
+          </div>
           <p className="text-body-sm text-on-surface-variant mt-xs">{owner.phone}</p>
           {owner.email && <p className="text-body-sm text-on-surface-variant">{owner.email}</p>}
           {owner.address && <p className="text-body-sm text-on-surface-variant truncate">{owner.address}</p>}
         </div>
+        {owner.isActive ? (
+          <div className="flex gap-xs flex-shrink-0">
+            <Can perm="crm.edit">
+              <button title="Edit" onClick={() => setEditing(true)} className="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-surface-container-low transition-colors">
+                <MaterialIcon name="edit" size={18} />
+              </button>
+            </Can>
+            <Can perm="crm.delete">
+              <button title="Delete" onClick={handleDelete} className="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-error-container transition-colors">
+                <MaterialIcon name="delete" size={18} className="text-error" />
+              </button>
+            </Can>
+          </div>
+        ) : (
+          <Can perm="crm.delete">
+            <button onClick={handleReactivate} className="flex items-center gap-xs bg-primary text-primary-on rounded-lg px-md py-sm min-h-[44px] text-body-sm font-semibold hover:bg-primary/90 transition-colors flex-shrink-0">
+              <MaterialIcon name="restore" size={18} />{t('clinic.pets.reactivateOwner')}
+            </button>
+          </Can>
+        )}
       </div>
+      {actionError && <p className="text-error text-body-sm">{actionError}</p>}
 
       {/* Pet cards */}
       <div>
@@ -542,6 +597,10 @@ function OwnerPanel({ ownerId, onSelectPet, onAddPet }: { ownerId: number; onSel
           </div>
         )}
       </div>
+
+      {editing && (
+        <EditOwnerModal owner={owner} onClose={() => setEditing(false)} onSuccess={() => { refresh(); setEditing(false) }} />
+      )}
     </div>
   )
 }
