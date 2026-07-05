@@ -4156,7 +4156,8 @@ cd ../frontend &amp;&amp; rm -rf node_modules &amp;&amp; npm install</code></pre
         <tr><td><span class="badge phase">Phase 1–7</span></td><td>Foundation → UI redesign sign-off</td><td><span class="cl-status complete">Complete</span></td><td>226</td><td>2025</td></tr>
         <tr><td><span class="badge phase">Phase 8</span></td><td>RBAC + Platform Console</td><td><span class="cl-status complete">Complete</span></td><td>~394</td><td>2026-Q1</td></tr>
         <tr><td><span class="badge phase">Phase 9</span></td><td>i18n Thai/English rollout</td><td><span class="cl-status complete">Complete</span></td><td>95 frontend</td><td>2026-06</td></tr>
-        <tr><td><span class="badge phase">Bugfix</span></td><td>Pets &amp; Owner (3 bugs)</td><td><span class="cl-status complete">PR pending merge</span></td><td>470 backend / 98 frontend</td><td>2026-07-02</td></tr>
+        <tr><td><span class="badge phase">Bugfix</span></td><td>Pets &amp; Owner (3 bugs)</td><td><span class="cl-status complete">Complete</span></td><td>470 backend / 98 frontend</td><td>2026-07-02</td></tr>
+        <tr><td><span class="badge phase">Feature</span></td><td>Owner ID Card + Edit/Delete/Reactivate Owner</td><td><span class="cl-status complete">Complete</span></td><td>25 backend / 25 frontend (new)</td><td>2026-07-05</td></tr>
         <tr><td><span class="badge phase">Phase 10</span></td><td>Payment gateway + SaaS billing</td><td><span class="cl-status paused">Paused</span></td><td>—</td><td>Needs credentials</td></tr>
         <tr><td><span class="badge phase">Phase 11</span></td><td>LINE/SMS dispatch</td><td><span class="cl-status paused">Paused</span></td><td>—</td><td>Needs credentials</td></tr>
       </tbody>
@@ -4175,7 +4176,7 @@ cd ../frontend &amp;&amp; rm -rf node_modules &amp;&amp; npm install</code></pre
       </div>
       <div class="cl-phase-meta">
         <div class="cl-phase-date">2026-07-02</div>
-        <span class="cl-status complete">PR pending merge</span>
+        <span class="cl-status complete">Complete</span>
       </div>
     </div>
     <div class="cl-phase-body">
@@ -4190,6 +4191,35 @@ cd ../frontend &amp;&amp; rm -rf node_modules &amp;&amp; npm install</code></pre
     </div>
   </div>
   <!-- /BUGFIX_PETS_OWNER_BLOCK -->
+
+  <!-- FEATURE_OWNER_IDCARD_EDIT_BLOCK -->
+  <div class="cl-phase-block" id="cl-feature-owner-idcard-edit">
+    <div class="cl-phase-header">
+      <div class="cl-phase-num">🪪</div>
+      <div>
+        <div class="cl-phase-title">Owner ID Card + Edit/Delete/Reactivate Owner</div>
+        <div class="cl-phase-subtitle">Branch <code>feature/owner-idcard-edit</code> · PR #3 · 13 commits</div>
+      </div>
+      <div class="cl-phase-meta">
+        <div class="cl-phase-date">2026-07-05</div>
+        <span class="cl-status complete">Complete</span>
+      </div>
+    </div>
+    <div class="cl-phase-body">
+      <p>Optional Thai National ID / Passport on Owner, full Edit/Delete/Reactivate Owner workflow, and owner detail surfaced on the Pet Detail screen. Shipped via the full pipeline: brainstorm → BA sign-off → mandatory grilling → write-plan → Ponytail gate (APPROVE, all 7 criteria clear) → subagent-driven execution (14 tasks) → whole-branch review (opus, ready to merge) → QA sign-off (APPROVE).</p>
+      <ul class="cl-deliverables">
+        <li><code>idCardType</code> (<code>thai_id</code>|<code>passport</code>) + <code>idCardNumber</code> added to Owner, tenant-scoped unique index (<code>tenantId</code>, <code>idCardNumber</code>); Thai ID validated via mod-11 checksum, passport via 6–20 alphanumeric bounds; both-or-neither enforced by zod <code>superRefine</code></li>
+        <li>Uniqueness enforced with a pre-check <em>and</em> a Prisma P2002 catch (race-safe), both → <code>409</code>; cross-tenant duplicates explicitly allowed and tested</li>
+        <li><code>DELETE /api/owners/:id</code> — soft-deactivates (<code>isActive=false</code>), gated by <code>crm.delete</code>, blocked <code>409</code> if the owner has active pets</li>
+        <li>Reactivation and any <code>isActive</code> change via <code>PUT /api/owners/:id</code> requires <code>crm.delete</code> even though the route itself is <code>crm.edit</code>-gated (service-layer permission check via <code>resolvePermissions</code>)</li>
+        <li><code>GET /api/owners?includeInactive=true</code> honored server-side only for <code>crm.delete</code> holders; silently downgraded (200, not 403) for everyone else</li>
+        <li>Frontend: <code>EditOwnerModal</code> (new, prefilled/PUT-backed), Edit/Delete/Reactivate controls in <code>OwnerPanel</code>, "Show inactive" owner-list checkbox + muted styling/badge, masked ID card (<code>•••••••••1234</code>) + address on Pet Detail's owner card — all inside the existing <code>ClinicPets.tsx</code>, no new component files</li>
+        <li>16 new EN/TH i18n key pairs under <code>clinic.pets.*</code></li>
+      </ul>
+      <span class="cl-test-count">Backend 25/25 new (owner-idcard, owner-delete-reactivate) · Frontend 25/25 new (AddOwnerModal, EditOwnerModal, OwnerPanel, ClinicPetsOwnerList, PetOverview) · tsc clean both sides · main verified green post-merge</span>
+    </div>
+  </div>
+  <!-- /FEATURE_OWNER_IDCARD_EDIT_BLOCK -->
 
   <!-- PHASE_9_BLOCK -->
   <div class="cl-phase-block" id="cl-phase-9">
