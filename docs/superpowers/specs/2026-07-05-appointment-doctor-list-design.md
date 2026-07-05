@@ -1,7 +1,7 @@
 # Design: Fix Missing Doctor List in Appointment Booking
 
 **Date:** 2026-07-05
-**Status:** Approved (brainstorm), pending BA sign-off + grill-with-docs per CLAUDE.md pipeline
+**Status:** Grill complete, all findings resolved — ready for /write-plan (Step 4), pending Ponytail Gate (Step 5)
 
 ## Problem
 
@@ -31,36 +31,69 @@ be saved (doctor is required).
 
 ### New endpoint
 
-`GET /api/appointments/doctors?branchId=:branchId`
+`GET /api/appointments/doctors`
 
 - Permission: `appointments.view` (held by `clinic_admin`, `clinic_staff`,
   `doctor` — everyone who can open the booking form).
-- Returns bookable doctors for the given branch only.
+- **No `branchId` query param.** Branch scope comes solely from
+  `req.context.branchId` (same `branchOf(req)` helper already used by
+  `listAppointments`/`createAppointment` in `appointment.controller.ts`).
+  When `req.context.branchId` is `null` ("all-branches" admin token), the
+  repository applies no branch filter and returns doctors across every
+  branch in the tenant — identical fallback to the existing appointment-list
+  behavior. Client cannot request a different branch than its own token is
+  bound to (closes BA-1 and BA-2 in one move — no new logic, reuse of an
+  established pattern).
+- Returns bookable doctors for that resolved branch scope only.
 
 ### Doctor membership rule
 
 A user counts as a doctor if **any** of their assigned roles
 (`UserRole` → `ClinicRole`) resolves to the Doctor system role:
 
-- `ClinicRole.key === 'doctor'` (system role, or a custom role that happens to
-  reuse this key), OR
+- `ClinicRole.key === 'doctor'` (the system role only — custom roles are
+  always slugged `tenant_<id>_<slug>` by `createRole`, so this arm can never
+  match a custom role; confirmed during BA review), OR
 - `ClinicRole.sourceRoleId` points (directly) to the system Doctor role.
 
 Multi-role users qualify if any one of their roles satisfies this — no need
 for all roles to be Doctor-derived.
 
+Additional filters (resolved during grilling):
+- Exclude `User.isActive = false` — deactivated staff never appear.
+- Response fields: `{ id, name }` only — no email/phone/username exposed via
+  this `appointments.view`-gated path.
+- Legacy `User.role = 'doctor'` (pre-RBAC-migration accounts with no
+  qualifying `UserRole` row) is **not** matched by default. Gated on the DB-2
+  read-only check below: if it finds affected users, add a `UserRole`
+  backfill for them (preferred) rather than a permanent legacy-string
+  fallback in the query (avoid two competing sources of truth long-term).
+
 ### Branch scoping
 
 Filter via existing `UserBranch` join table (already populated today by
-admin's branch-assignment UI — no change to that assignment flow).
+admin's branch-assignment UI — no change to that assignment flow), keyed off
+`req.context.branchId` per above (never a client-supplied value).
+
+### Filter-by-doctor dropdown (calendar view)
+
+Reuses the same bookable-doctor list. If a doctor is later unassigned from
+a branch, they drop off this filter's options — past appointments they were
+on remain fully visible and correctly attributed via "All doctors"; only the
+ability to filter specifically by that doctor's name is lost. Accepted as-is
+(BA-6) — no broader "all doctors ever assigned" list is built for this.
 
 ### Schema change
 
 Add nullable `ClinicRole.sourceRoleId Int?` (self-referencing FK to
-`ClinicRole.id`). Set by `cloneRole` (`role.service.ts:77`) when cloning
-from the system "Doctor" role. One migration, no data backfill needed for
-existing clones (they simply won't retroactively count as doctor-derived
-until re-cloned or manually linked — acceptable, flagged as known gap below).
+`ClinicRole.id`, `ON DELETE SET NULL` — if a system role were ever deleted,
+dependent clones simply lose the lineage tag rather than being blocked or
+cascaded; system roles are seeded and not deleted in practice, so this is a
+belt-and-suspenders choice, not a real operational path). Set by `cloneRole`
+(`role.service.ts:77`) when cloning from the system "Doctor" role. One
+migration, no data backfill needed for existing clones (they simply won't
+retroactively count as doctor-derived until re-cloned or manually linked —
+acceptable, flagged as known gap below).
 
 ### Components touched
 
@@ -187,3 +220,19 @@ reviewed by @db-agent) — do not ship the endpoint while a known tenant stays
 broken. If **0** found (expected), the recurring check goes on the production
 launch checklist as backlog. DB-2 additionally absorbs the BA-3 legacy-role
 count (same read-only pass).
+
+## Grill (Step 3.5, 2026-07-05) — findings, all resolved
+
+| # | Question | Resolution |
+|---|----------|------------|
+| Q1 | Where does branch scope come from? | `req.context.branchId` only (server session), matching `branchOf(req)` already used elsewhere in `appointment.controller.ts`. No client-supplied `branchId` param. Closes BA-1 (null → all-branches fallback, same as existing behavior) and BA-2 (client cannot enumerate other branches) in one move. |
+| Q2 | Legacy `role='doctor'` fallback? | Deferred to DB-2 read-only check. 0 affected users → no fallback code (YAGNI). >0 → backfill `UserRole` rows for them, not a permanent legacy-string branch in the query. |
+| Q3 | Include deactivated users? | No — `isActive=false` always excluded. |
+| Q4 | Response fields? | `{ id, name }` only. No email/phone/username. |
+| Q5 | Doctor filter dropdown (calendar) when a doctor is reassigned off a branch? | Accept as-is (BA-6): they drop off the filter's options; past appointments remain fully visible/correct via "All doctors." No broader all-time-doctors list built. |
+| Q6 | `sourceRoleId` FK behavior if system Doctor role is ever deleted? | `ON DELETE SET NULL` — clone survives, just loses the lineage tag. System roles aren't deleted in practice; this is defensive, not a real path. |
+
+No unresolved findings remain. BA-1 and BA-2 (blockers) are closed by Q1.
+DB-2 (launch-gate check, not a design blocker) still executes as its own
+task (see task breakdown) before merge, per its existing conditional-trigger
+ruling above.
