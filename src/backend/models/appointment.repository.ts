@@ -52,6 +52,35 @@ export async function findDoctorsForBranch(tenantId: number, branchId: number | 
   })
 }
 
+/**
+ * Single doctor lookup for tenant-ownership validation before booking.
+ * Same doctor-role match as findDoctorsForBranch; no branch filter.
+ */
+export async function findDoctorById(tenantId: number, id: number) {
+  const doctorSystemRole = await prisma.clinicRole.findFirst({
+    where:  { key: 'doctor', tenantId: null, isSystem: true },
+    select: { id: true },
+  })
+  const doctorRoleMatch = doctorSystemRole
+    ? [{ key: 'doctor' }, { sourceRoleId: doctorSystemRole.id }]
+    : [{ key: 'doctor' }]
+
+  return prisma.user.findFirst({
+    where: {
+      id,
+      tenantId,
+      isActive: true,
+      userRoles: {
+        some: {
+          tenantId,
+          role: { OR: doctorRoleMatch },
+        },
+      },
+    },
+    select: { id: true, name: true },
+  })
+}
+
 export function findById(tenantId: number, branchId: number | null | undefined, id: number) {
   return prisma.appointment.findFirst({
     where: {
