@@ -9,7 +9,7 @@ import { Server } from 'http'
 import bcrypt from 'bcrypt'
 import app from '../../app'
 import prisma from '../../config/db'
-import { findDoctorsForBranch } from '../../models/appointment.repository'
+import { findDoctorsForBranch, findDoctorById } from '../../models/appointment.repository'
 
 const SUB = 'appt-doctors-test'
 const PASSWORD = 'TestPass1!'
@@ -173,6 +173,44 @@ describe('findDoctorsForBranch (repository)', () => {
     for (const d of result) {
       expect(Object.keys(d).sort()).toEqual(['id', 'name'])
     }
+  })
+})
+
+describe('findDoctorById (repository)', () => {
+  it('returns the doctor when tenant matches', async () => {
+    const doctorUser = await prisma.user.findFirstOrThrow({ where: { tenantId: tid, username: 'doctor_a' } })
+    const result = await findDoctorById(tid, doctorUser.id)
+    expect(result?.name).toBe('Dr. Branch A')
+  })
+
+  it('returns null for a doctor belonging to another tenant', async () => {
+    const otherBranch = await prisma.branch.create({ data: { tenantId: otherTid, name: 'Cross-Tenant Branch' } })
+    const passwordHash = await bcrypt.hash(PASSWORD, 10)
+    const otherDoctor = await prisma.user.create({
+      data: { tenantId: otherTid, username: 'doctor_crosscheck', name: 'Dr. Cross Tenant', passwordHash, role: 'doctor', isActive: true },
+    })
+    await prisma.userBranch.create({ data: { tenantId: otherTid, userId: otherDoctor.id, branchId: otherBranch.id } })
+    await prisma.userRole.create({ data: { tenantId: otherTid, userId: otherDoctor.id, roleId: doctorSystemRoleId } })
+
+    const result = await findDoctorById(tid, otherDoctor.id)
+    expect(result).toBeNull()
+  })
+
+  it('returns null for a non-doctor user in the same tenant', async () => {
+    const staffUser = await prisma.user.findFirstOrThrow({ where: { tenantId: tid, username: 'staff_a' } })
+    const result = await findDoctorById(tid, staffUser.id)
+    expect(result).toBeNull()
+  })
+
+  it('returns null for a deactivated doctor', async () => {
+    const passwordHash = await bcrypt.hash(PASSWORD, 10)
+    const inactiveDoctor = await prisma.user.create({
+      data: { tenantId: tid, username: 'doctor_inactive_byid', name: 'Dr. Inactive ById', passwordHash, role: 'doctor', branchId: branchAId, isActive: false },
+    })
+    await prisma.userRole.create({ data: { tenantId: tid, userId: inactiveDoctor.id, roleId: doctorSystemRoleId } })
+
+    const result = await findDoctorById(tid, inactiveDoctor.id)
+    expect(result).toBeNull()
   })
 })
 

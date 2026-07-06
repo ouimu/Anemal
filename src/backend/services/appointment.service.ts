@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { AppError } from '../utils/errors'
 import * as appointmentRepo from '../models/appointment.repository'
+import * as petRepo from '../models/pet.repository'
 import { shiftWarning } from './branch.service'
 
 export const createAppointmentSchema = z.object({
@@ -62,6 +63,12 @@ export async function getAppointment(tenantId: number, branchId: number | null |
 }
 
 export async function createAppointment(tenantId: number, branchId: number | null, data: CreateAppointmentInput) {
+  const pet = await petRepo.findPetById(tenantId, data.petId)
+  if (!pet) throw new AppointmentError('Pet not found', 404)
+
+  const doctor = await appointmentRepo.findDoctorById(tenantId, data.doctorId)
+  if (!doctor) throw new AppointmentError('Doctor not found', 404)
+
   const start = new Date(data.scheduledAt)
   const end   = new Date(start.getTime() + data.durationMin * 60_000)
 
@@ -78,6 +85,12 @@ export async function createAppointment(tenantId: number, branchId: number | nul
 }
 
 export async function createWalkIn(tenantId: number, branchId: number | null, petId: number, doctorId: number, reason?: string | null) {
+  const pet = await petRepo.findPetById(tenantId, petId)
+  if (!pet) throw new AppointmentError('Pet not found', 404)
+
+  const doctor = await appointmentRepo.findDoctorById(tenantId, doctorId)
+  if (!doctor) throw new AppointmentError('Doctor not found', 404)
+
   return appointmentRepo.createWalkIn(tenantId, branchId, petId, doctorId, reason)
 }
 
