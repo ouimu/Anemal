@@ -172,6 +172,14 @@
 
 ---
 
+## Pre-Launch Checklist (no session/credential prerequisite)
+
+| Task | Effort | Notes |
+|------|--------|-------|
+| Re-run Doctor-clone `sourceRoleId` lineage check before real production launch | Low | See `docs/superpowers/specs/2026-07-05-appointment-doctor-list-design.md` DB-2 ruling. `sourceRoleId` only started being recorded by `cloneRole` from that fix forward — 0 suspects found on dev DB 2026-07-06, but must re-check once real tenants exist so no clinic's customized "Doctor" role silently loses lineage. |
+
+---
+
 ## Priority Order
 1. ~~**Session A** — Screen specs~~ ✅ Done 2026-06-10
 2. ~~**Session B** — PDF receipts~~ ✅ Done 2026-06-10

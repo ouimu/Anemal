@@ -20,7 +20,7 @@ interface Appointment {
   doctor: { id: number; name: string }
 }
 
-interface Doctor { id: number; name: string; role: string }
+interface Doctor { id: number; name: string }
 interface SearchResult { petId: number; petName: string; species: string; ownerId: number; ownerName: string; phone: string }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -163,9 +163,13 @@ function BookingForm({ selectedDate, selectedHour, doctors, onClose, onSaved }: 
         {/* Doctor */}
         <div>
           <label className="text-body-sm font-medium text-on-surface-variant mb-xs block">{t('clinic.appointments.doctor')}</label>
-          <select className="w-full bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-sm border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={doctorId} onChange={e => setDoctorId(parseInt(e.target.value))}>
-            {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-          </select>
+          {doctors.length === 0 ? (
+            <p className="text-body-sm text-error px-md py-sm min-h-[44px] flex items-center">{t('clinic.appointments.noDoctorForBranch')}</p>
+          ) : (
+            <select className="w-full bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-sm border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={doctorId} onChange={e => setDoctorId(parseInt(e.target.value))}>
+              {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          )}
         </div>
 
         {/* Date & time */}
@@ -266,9 +270,9 @@ export default function ClinicAppointments() {
     staleTime: 30_000,
   })
 
-  const { data: usersData } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => api.get('/users').then(r => r.data.data as Doctor[]),
+  const { data: doctorsData } = useQuery({
+    queryKey: ['appointments', 'doctors'],
+    queryFn: () => api.get('/api/appointments/doctors').then(r => r.data.data as Doctor[]),
     staleTime: 300_000,
   })
 
@@ -291,7 +295,7 @@ export default function ClinicAppointments() {
   }, [monthAppts])
 
   const appointments = apptData ?? []
-  const doctors = (usersData ?? []).filter((u: Doctor) => u.role === 'doctor')
+  const doctors = doctorsData ?? []
 
   const mutateStatus = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) => api.put(`/api/appointments/${id}/status`, { status }),

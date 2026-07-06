@@ -809,16 +809,22 @@ model Permission {
 // ISOLATION: queries for clinic-custom roles must always filter WHERE tenant_id = :tenantId
 // System roles (tenantId=NULL) are visible to all tenants (no filter on list of system roles)
 model ClinicRole {
-  id          Int      @id @default(autoincrement())
-  tenantId    Int? // NULL = system template; SET = tenant-scoped custom role
-  name        String   @db.VarChar(80)
-  key         String   @db.VarChar(50)
-  isSystem    Boolean  @default(false)
-  description String?  @db.VarChar(255)
-  permVersion Int      @default(1) // bumped on permission change -> busts Redis/JWT cache
-  createdAt   DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  tenantId     Int? // NULL = system template; SET = tenant-scoped custom role
+  name         String   @db.VarChar(80)
+  key          String   @db.VarChar(50)
+  isSystem     Boolean  @default(false)
+  description  String?  @db.VarChar(255)
+  permVersion  Int      @default(1) // bumped on permission change -> busts Redis/JWT cache
+  // Role lineage (ADR-0002): direct pointer to the system role this row was
+  // cloned from, e.g. a custom "Vet" role cloned from system "Doctor". Not
+  // transitive — cloneRole only ever clones system roles today.
+  sourceRoleId Int?
+  createdAt    DateTime @default(now())
 
   tenant       Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sourceRole   ClinicRole?      @relation("RoleLineage", fields: [sourceRoleId], references: [id], onDelete: SetNull)
+  clonedRoles  ClinicRole[]     @relation("RoleLineage")
   permissions  RolePermission[]
   userRoles    UserRole[]
   primaryUsers User[]           @relation("UserPrimaryRole")

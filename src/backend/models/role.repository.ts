@@ -75,7 +75,12 @@ export function findSystemRoleByKey(key: string) {
  * @param name      - Display name for the role.
  * @param permCodes - Permission codes to assign immediately.
  */
-export async function createRole(tenantId: number, name: string, permCodes: string[]) {
+export async function createRole(
+  tenantId: number,
+  name: string,
+  permCodes: string[],
+  sourceRoleId?: number | null,
+) {
   // key is a slug: lowercase, spaces→underscores, non-alphanumeric stripped, prefixed with tenant id
   const key = `tenant_${tenantId}_${name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')}`
   return prisma.clinicRole.create({
@@ -83,8 +88,9 @@ export async function createRole(tenantId: number, name: string, permCodes: stri
       tenantId,
       key,
       name,
-      isSystem:    false,
-      permVersion: 1,
+      isSystem:     false,
+      permVersion:  1,
+      sourceRoleId: sourceRoleId ?? null,
       permissions: {
         create: permCodes.map(code => ({ permissionCode: code })),
       },

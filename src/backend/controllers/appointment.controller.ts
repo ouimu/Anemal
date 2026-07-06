@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import {
   listAppointments, getAppointment, createAppointment, createWalkIn, updateStatus,
+  listBookableDoctors,
 } from '../services/appointment.service'
 import { findInRange } from '../models/appointment.repository'
 
@@ -38,6 +39,13 @@ export async function handleListAppointments(req: Request, res: Response, next: 
     const doctorId = req.query.doctorId ? parseInt(String(req.query.doctorId)) : undefined
     const week     = req.query.week === 'true'
     const data     = await listAppointments(req.context!.tenantId, branchOf(req), date, doctorId, week)
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export async function handleListDoctors(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await listBookableDoctors(req.context!.tenantId, branchOf(req))
     res.json({ success: true, data })
   } catch (err) { next(err) }
 }

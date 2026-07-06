@@ -164,6 +164,7 @@ const en: Dict = {
   'clinic.appointments.booking': 'Booking…',
   'clinic.appointments.selectPet': 'Please select a pet',
   'clinic.appointments.selectDoctor': 'Please select a doctor',
+  'clinic.appointments.noDoctorForBranch': 'No doctor assigned to this branch — contact your admin',
   'clinic.appointments.failedToBook': 'Failed to book. Please try again.',
   'clinic.appointments.confirmBook': 'Book Appointment',
 
@@ -473,6 +474,7 @@ const th: Dict = {
   'clinic.appointments.booking': 'กำลังนัดหมาย…',
   'clinic.appointments.selectPet': 'กรุณาเลือกสัตว์เลี้ยง',
   'clinic.appointments.selectDoctor': 'กรุณาเลือกสัตวแพทย์',
+  'clinic.appointments.noDoctorForBranch': 'ไม่มีสัตวแพทย์ประจำสาขานี้ — กรุณาติดต่อผู้ดูแลระบบ',
   'clinic.appointments.failedToBook': 'การนัดหมายล้มเหลว กรุณาลองอีกครั้ง',
   'clinic.appointments.confirmBook': 'นัดหมาย',
 

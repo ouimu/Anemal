@@ -19,6 +19,39 @@ export function findInRange(tenantId: number, branchId: number | null | undefine
   })
 }
 
+/**
+ * Users bookable as a doctor for the given branch scope.
+ * branchId === null means "no branch filter" (all-branches session), matching
+ * the same convention findInRange already uses.
+ * Doctor membership: any assigned role is either the system 'doctor' role
+ * directly, or a custom role whose sourceRoleId traces back to it.
+ */
+export async function findDoctorsForBranch(tenantId: number, branchId: number | null) {
+  const doctorSystemRole = await prisma.clinicRole.findFirst({
+    where:  { key: 'doctor', tenantId: null, isSystem: true },
+    select: { id: true },
+  })
+  const doctorRoleMatch = doctorSystemRole
+    ? [{ key: 'doctor' }, { sourceRoleId: doctorSystemRole.id }]
+    : [{ key: 'doctor' }]
+
+  return prisma.user.findMany({
+    where: {
+      tenantId,
+      isActive: true,
+      ...(branchId != null ? { userBranches: { some: { tenantId, branchId } } } : {}),
+      userRoles: {
+        some: {
+          tenantId,
+          role: { OR: doctorRoleMatch },
+        },
+      },
+    },
+    select:  { id: true, name: true },
+    orderBy: { name: 'asc' },
+  })
+}
+
 export function findById(tenantId: number, branchId: number | null | undefined, id: number) {
   return prisma.appointment.findFirst({
     where: {
