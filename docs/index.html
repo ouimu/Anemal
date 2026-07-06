@@ -4158,6 +4158,8 @@ cd ../frontend &amp;&amp; rm -rf node_modules &amp;&amp; npm install</code></pre
         <tr><td><span class="badge phase">Phase 9</span></td><td>i18n Thai/English rollout</td><td><span class="cl-status complete">Complete</span></td><td>95 frontend</td><td>2026-06</td></tr>
         <tr><td><span class="badge phase">Bugfix</span></td><td>Pets &amp; Owner (3 bugs)</td><td><span class="cl-status complete">Complete</span></td><td>470 backend / 98 frontend</td><td>2026-07-02</td></tr>
         <tr><td><span class="badge phase">Feature</span></td><td>Owner ID Card + Edit/Delete/Reactivate Owner</td><td><span class="cl-status complete">Complete</span></td><td>25 backend / 25 frontend (new)</td><td>2026-07-05</td></tr>
+        <tr><td><span class="badge phase">Bugfix</span></td><td>Appointment doctor list not populating from branch</td><td><span class="cl-status complete">Complete</span></td><td>13 new (repo + endpoint)</td><td>2026-07-06</td></tr>
+        <tr><td><span class="badge phase">Security</span></td><td>Appointment tenant-ownership validation (doctorId/petId)</td><td><span class="cl-status complete">Complete</span></td><td>8 new · 539/539 full suite</td><td>2026-07-06</td></tr>
         <tr><td><span class="badge phase">Phase 10</span></td><td>Payment gateway + SaaS billing</td><td><span class="cl-status paused">Paused</span></td><td>—</td><td>Needs credentials</td></tr>
         <tr><td><span class="badge phase">Phase 11</span></td><td>LINE/SMS dispatch</td><td><span class="cl-status paused">Paused</span></td><td>—</td><td>Needs credentials</td></tr>
       </tbody>
@@ -4220,6 +4222,57 @@ cd ../frontend &amp;&amp; rm -rf node_modules &amp;&amp; npm install</code></pre
     </div>
   </div>
   <!-- /FEATURE_OWNER_IDCARD_EDIT_BLOCK -->
+
+  <!-- BUGFIX_APPOINTMENT_DOCTOR_LIST_BLOCK -->
+  <div class="cl-phase-block" id="cl-bugfix-appointment-doctor-list">
+    <div class="cl-phase-header">
+      <div class="cl-phase-num">🩺</div>
+      <div>
+        <div class="cl-phase-title">Appointment doctor list not populating from branch</div>
+        <div class="cl-phase-subtitle">Branch <code>fix/appointment-doctor-list</code> · PR #6 · 8 tasks</div>
+      </div>
+      <div class="cl-phase-meta">
+        <div class="cl-phase-date">2026-07-06</div>
+        <span class="cl-status complete">Complete</span>
+      </div>
+    </div>
+    <div class="cl-phase-body">
+      <p>Booking form's doctor dropdown came back empty for <code>clinic_staff</code>/<code>doctor</code> roles — the old lookup hit the admin-only <code>GET /users</code> endpoint (403 for non-admins), had no branch scoping, and didn't support role-lineage (cloned custom roles derived from the system Doctor role). Fixed via a dedicated bookable-doctors endpoint. Shipped via the full pipeline: BA sign-off (2 blocking gaps) → mandatory grilling (Q1–Q6 resolved) → Ponytail gate (APPROVE) → execution → QA sign-off.</p>
+      <ul class="cl-deliverables">
+        <li>New <code>findDoctorsForBranch(tenantId, branchId)</code> repository query — branch-scoped, active-only, matches the system <code>doctor</code> role or any custom role whose <code>sourceRoleId</code> traces back to it</li>
+        <li>New <code>ClinicRole.sourceRoleId</code> self-referential column (role-lineage tracking for cloned roles), <code>ON DELETE SET NULL</code></li>
+        <li>New <code>GET /api/appointments/doctors</code> endpoint, gated by existing <code>appointments.view</code> permission — branch comes from the session token only, a spoofed <code>?branchId=</code> query param is ignored</li>
+        <li>Frontend booking form swapped its doctor-list query to the new endpoint, added an empty-state message with EN/TH i18n keys</li>
+      </ul>
+      <span class="cl-test-count">Backend 531/531 (full suite) · Frontend 133/133 (full suite) · tsc clean</span>
+    </div>
+  </div>
+  <!-- /BUGFIX_APPOINTMENT_DOCTOR_LIST_BLOCK -->
+
+  <!-- SECURITY_APPOINTMENT_TENANT_OWNERSHIP_BLOCK -->
+  <div class="cl-phase-block" id="cl-security-appointment-tenant-ownership">
+    <div class="cl-phase-header">
+      <div class="cl-phase-num">🔒</div>
+      <div>
+        <div class="cl-phase-title">Appointment tenant-ownership validation (doctorId/petId)</div>
+        <div class="cl-phase-subtitle">Branch <code>fix/appointment-tenant-ownership</code> · PR #7 · 3 tasks</div>
+      </div>
+      <div class="cl-phase-meta">
+        <div class="cl-phase-date">2026-07-06</div>
+        <span class="cl-status complete">Complete</span>
+      </div>
+    </div>
+    <div class="cl-phase-body">
+      <p>Discovered during QA review of the appointment doctor-list fix above: <code>createAppointment</code>/<code>createWalkIn</code> passed client-supplied <code>doctorId</code>/<code>petId</code> straight to Prisma with no tenant check, letting a clinic user book with another tenant's doctor or pet. Closed via the full pipeline: brainstorm → BA-equivalent design → Ponytail gate (APPROVE, all 7 criteria clear) → subagent-driven execution (3 tasks) → whole-branch review (READY TO MERGE, no Critical/Important findings) → QA sign-off (APPROVE).</p>
+      <ul class="cl-deliverables">
+        <li>New <code>findDoctorById(tenantId, id)</code> repository query — tenant-scoped, active-only, doctor-role match (same OR-match pattern as <code>findDoctorsForBranch</code>)</li>
+        <li><code>createAppointment</code>/<code>createWalkIn</code> now verify pet (existing <code>petRepo.findPetById</code>) and doctor (new <code>findDoctorById</code>) belong to the caller's tenant before any write; <code>404</code> on mismatch, matching the existing <code>pet.service.ts</code> <code>findOwner</code> 404 convention</li>
+        <li>No schema change, no new endpoint</li>
+      </ul>
+      <span class="cl-test-count">4 new cross-tenant 404 tests + 4 new repo tests · full backend suite 47/47 suites, 539/539 tests · tsc clean</span>
+    </div>
+  </div>
+  <!-- /SECURITY_APPOINTMENT_TENANT_OWNERSHIP_BLOCK -->
 
   <!-- PHASE_9_BLOCK -->
   <div class="cl-phase-block" id="cl-phase-9">
