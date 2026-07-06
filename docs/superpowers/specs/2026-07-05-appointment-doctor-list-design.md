@@ -221,6 +221,14 @@ broken. If **0** found (expected), the recurring check goes on the production
 launch checklist as backlog. DB-2 additionally absorbs the BA-3 legacy-role
 count (same read-only pass).
 
+**DB-2 check executed (2026-07-06, dev DB `vetclinic_dev`):** 0 custom roles
+(`tenantId` set) with `sourceRoleId IS NULL`. Result: **0 suspects found**, as
+expected — matches BA's reasoning (no production tenants exist yet). No data
+fix needed; this plan's scope does not expand. Filed as a backlog item on
+`.claude/roadmap/remaining-tasks.md`: re-run this same check before any real
+production launch, since `sourceRoleId` lineage only starts getting recorded
+from this fix's `cloneRole` change forward.
+
 ## Grill (Step 3.5, 2026-07-05) — findings, all resolved
 
 | # | Question | Resolution |
