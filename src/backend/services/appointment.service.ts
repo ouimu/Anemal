@@ -51,6 +51,10 @@ export async function listAppointments(tenantId: number, branchId: number | null
   return appointmentRepo.findInRange(tenantId, branchId, startDate, endDate, doctorId)
 }
 
+export async function listBookableDoctors(tenantId: number, branchId: number | null) {
+  return appointmentRepo.findDoctorsForBranch(tenantId, branchId)
+}
+
 export async function getAppointment(tenantId: number, branchId: number | null | undefined, id: number) {
   const appt = await appointmentRepo.findById(tenantId, branchId, id)
   if (!appt) throw new AppointmentError('Appointment not found', 404)
