@@ -230,6 +230,24 @@ describe('POST /clinic/roles/clone', () => {
 
     expect(res.status).toBe(400)
   })
+
+  it('sets sourceRoleId on the created role, pointing at the cloned system role', async () => {
+    const doctorSystemRole = await prisma.clinicRole.findFirstOrThrow({
+      where: { key: 'doctor', tenantId: null },
+    })
+
+    const res = await request(server)
+      .post('/clinic/roles/clone')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ sourceRoleName: 'Doctor', newName: 'Custom Doctor Lineage Test' })
+
+    expect(res.status).toBe(201)
+
+    const created = await prisma.clinicRole.findFirstOrThrow({
+      where: { id: res.body.data.id },
+    })
+    expect(created.sourceRoleId).toBe(doctorSystemRole.id)
+  })
 })
 
 // ---------------------------------------------------------------------------

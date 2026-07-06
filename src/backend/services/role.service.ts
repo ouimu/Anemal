@@ -99,7 +99,7 @@ export async function cloneRole(
     .map(p => p.permissionCode)
     .filter(code => callerPerms.has(code))
 
-  const created = await roleRepo.createRole(tenantId, newName, allowedPerms)
+  const created = await roleRepo.createRole(tenantId, newName, allowedPerms, sourceRole.id)
   // createRole returns a ClinicRole with permissions included
   const createdWithPerms = await roleRepo.findRoleById(created.id)
   if (!createdWithPerms) {
