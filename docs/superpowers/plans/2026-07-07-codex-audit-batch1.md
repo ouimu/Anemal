@@ -667,11 +667,11 @@ git commit -m "fix(platform-customers): remove trialEndsAt from write payloads, 
 - Modifies: `CreatePlanPayload`/`UpdatePlanPayload` (the wire-shape sent to backend) change `price: number` → `priceMonth: number` and `features?: string[]` → `features?: Record<string, boolean>`. The UI-facing `Plan` (read type, `price: number`, `features: string[]`) is UNCHANGED — backend GET already translates `priceMonth` → `price` and `Record<string,boolean>` → `string[]` (ADR D3: this task mirrors that existing backend read-translation on the frontend write side).
 - Produces: a translation function in the hook, applied inside `mutationFn`, so `PlatformPlansView.tsx`'s form state keeps using the UI-friendly `price`/`features: string[]` shape and does not need to change its input handling — only the wire payload changes at the mutation boundary.
 
-- [ ] **Step 1: Confirm where the UI-facing form shape is assembled**
+- [x] **Step 1: Confirm where the UI-facing form shape is assembled**
 
 Read `src/frontend/src/views/platform/PlatformPlansView.tsx` in full (it's short, ~230 lines) to find the exact shape of `value`/form state passed into `useCreatePlatformPlan().mutate(...)` and `useUpdatePlatformPlan(id).mutate(...)`. Confirm whether the mutate() call passes a `CreatePlanPayload`-typed object directly (in which case only the hook types+translation need to change) or builds its own inline object (in which case this task also touches this file to match the new hook contract).
 
-- [ ] **Step 2: Add wire-level payload types + translation in the hook**
+- [x] **Step 2: Add wire-level payload types + translation in the hook**
 
 In `src/frontend/src/hooks/usePlatformPlans.ts`, replace:
 ```ts
@@ -732,7 +732,7 @@ function toWirePayload(payload: CreatePlanPayload | UpdatePlanPayload): PlanWire
 }
 ```
 
-- [ ] **Step 3: Apply the translation at the two mutation call sites**
+- [x] **Step 3: Apply the translation at the two mutation call sites**
 
 In the same file, change:
 ```ts
@@ -785,9 +785,9 @@ export function useUpdatePlatformPlan(id: number) {
 }
 ```
 
-- [ ] **Step 4: If Step 1 found `PlatformPlansView.tsx` builds its own inline payload**, update it to keep using the UI-facing `price`/`features: string[]` shape (do not have the view construct `priceMonth`/`Record` itself — that translation belongs solely in the hook per this task's interface contract). Otherwise, no changes needed to this file.
+- [x] **Step 4: If Step 1 found `PlatformPlansView.tsx` builds its own inline payload**, update it to keep using the UI-facing `price`/`features: string[]` shape (do not have the view construct `priceMonth`/`Record` itself — that translation belongs solely in the hook per this task's interface contract). Otherwise, no changes needed to this file.
 
-- [ ] **Step 5: Write a unit test for `toWirePayload`**
+- [x] **Step 5: Write a unit test for `toWirePayload`**
 
 Create `src/frontend/src/hooks/usePlatformPlans.test.ts` (export `toWirePayload` from the hook file for testability, or test indirectly by mocking `platformApi` — prefer exporting it since it's a pure function):
 ```ts
@@ -824,12 +824,12 @@ describe('toWirePayload (BUG-003)', () => {
 ```
 Add `export function toWirePayload` (change from unexported `function toWirePayload` to `export function toWirePayload`) in `usePlatformPlans.ts` to make it importable by the test.
 
-- [ ] **Step 6: Run tests**
+- [x] **Step 6: Run tests**
 
 Run: `npx vitest run usePlatformPlans PlatformPlansView`
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/frontend/src/hooks/usePlatformPlans.ts src/frontend/src/hooks/usePlatformPlans.test.ts
