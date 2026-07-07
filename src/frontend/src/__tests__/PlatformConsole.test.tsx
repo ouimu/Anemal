@@ -33,9 +33,25 @@ import { render, screen, fireEvent, within } from '@testing-library/react'
 // CustomerDetailView's OverviewTab calls the raw `useQuery` (not a custom hook)
 // for the company-types picker — mock it so the view doesn't need a real
 // QueryClientProvider, matching the pattern used by Dashboard.i18n/OwnerPanel tests.
+// The queryFn is captured (not invoked) so BUG-007's regression test can assert
+// which API client + path CustomerDetailView wires up, without needing a live
+// QueryClientProvider render.
+const queryFns = vi.hoisted(() => [] as Array<() => unknown>)
 vi.mock('@tanstack/react-query', () => ({
-  useQuery: () => ({ data: [], isLoading: false }),
+  useQuery: ({ queryFn }: { queryFn: () => unknown }) => {
+    queryFns.push(queryFn)
+    return { data: [], isLoading: false }
+  },
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+}))
+
+// Plane client separation (BUG-007): the clinic `api` client must never be used
+// for platform-plane calls — company-types must go through `platformApi`.
+vi.mock('../utils/api', () => ({
+  default: { get: vi.fn(() => Promise.reject(new Error('clinic api client must not be called from platform views'))) },
+}))
+vi.mock('../utils/platformApi', () => ({
+  default: { get: vi.fn(() => Promise.resolve({ data: { data: [] } })) },
 }))
 
 // ── Hoisted mutation spies ──────────────────────────────────────────────────
@@ -101,6 +117,7 @@ beforeEach(() => {
   state.customer  = null
   state.usage     = null
   state.audit     = []
+  queryFns.length = 0
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -219,6 +236,20 @@ describe('AC-F3 — CustomerDetailView tabs + usage', () => {
       render(<CustomerDetailView />)
       fireEvent.click(screen.getByRole('button', { name: 'Usage' }))
     }).toThrow() // TypeError: Cannot read properties of undefined (reading 'current')
+  })
+
+  it('fetches company-types via platformApi, never the clinic api client (BUG-007)', async () => {
+    const apiModule = await import('../utils/api')
+    const platformApiModule = await import('../utils/platformApi')
+    render(<CustomerDetailView />)
+
+    expect(queryFns.length).toBeGreaterThan(0)
+    // Invoke the captured company-types queryFn directly (mirrors how React
+    // Query itself would call it) and assert it resolves via platformApi.
+    await queryFns[queryFns.length - 1]()
+
+    expect(platformApiModule.default.get).toHaveBeenCalledWith('/platform/company-types')
+    expect(apiModule.default.get).not.toHaveBeenCalled()
   })
 })
 
