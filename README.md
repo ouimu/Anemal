@@ -34,7 +34,7 @@ AnimalClinic/
 │   ├── agents/               # System prompts (<name>.md) + skill bodies (<name>/SKILL.md)
 │   ├── skills/                # Project domain skills (anemal-coding-rules, anemal-design-system, etc.)
 │   ├── specs/                 # Functional requirements, DB schema, implementation-status-matrix.md
-│   │   ├── functional-reqs.md  # System functional requirements
+│   │   ├── System_Specification.md # System specification (functional reqs live in the anemal-functional-reqs skill)
 │   │   ├── database-schema.sql # PostgreSQL schema & RLS policies
 │   │   └── implementation-status-matrix.md # Canonical module-level status source
 │   └── roadmap/               # Phase task lists & QA protocols

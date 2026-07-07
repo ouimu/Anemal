@@ -313,42 +313,42 @@ git commit -m "docs(screen-specs): fix dead component ref, /clinic-admin route p
 
 ### Task 6: Final verification (docs-only proof + grep sweeps)
 
-- [ ] **Step 1: Run the full backend suite (regression proof — nothing executable changed)**
+- [x] **Step 1: Run the full backend suite (regression proof — nothing executable changed)**
 ```
 node node_modules/jest/bin/jest.js --runInBand --forceExit
 ```
 (from `src/backend`) — expect **832** tests passing, zero failures, zero new suites (this batch adds/modifies no test files).
 
-- [ ] **Step 2: Run the full frontend suite**
+- [x] **Step 2: Run the full frontend suite**
 ```
 npm test -- --run
 ```
 (from `src/frontend`) — expect **143** tests passing, zero failures.
 
-- [ ] **Step 3: Grep sweep — no stray `/admin/*` route strings remain in the edited screen-spec files**
+- [x] **Step 3: Grep sweep — no stray `/admin/*` route strings remain in the edited screen-spec files**
 ```
 grep -n "/admin/" .claude/skills/anemal-screen-specs/references/00-shared-layout.md .claude/skills/anemal-screen-specs/references/08-admin.md
 ```
 Expected: no output (all should now read `/clinic-admin/*`). If any legitimate reference to the legacy `/admin/*` redirect routes is intentionally retained (e.g. documenting the redirect itself), confirm it's clearly labeled as "legacy redirect," not presented as the current path.
 
-- [ ] **Step 4: Grep sweep — no email-based clinic login references remain in HOW-TO-RUN.md's credential/curl sections**
+- [x] **Step 4: Grep sweep — no email-based clinic login references remain in HOW-TO-RUN.md's credential/curl sections**
 ```
 grep -n "email" HOW-TO-RUN.md
 ```
 Expected: only the platform-admin email reference and the untouched seed-echo block (grill B5) should remain — no email appearing in a clinic login credential table or clinic curl body.
 
-- [ ] **Step 5: Confirm `RecomendByCodex/` and `.claude/roadmap/ACTIVE/*` were never staged**
+- [x] **Step 5: Confirm `RecomendByCodex/` and `.claude/roadmap/ACTIVE/*` were never staged**
 ```
 git log --stat docs/codex-audit-batch4-doc-repair -- RecomendByCodex .claude/roadmap/ACTIVE
 ```
 Expected: no output.
 
-- [ ] **Step 6: Confirm commit order and count**
+- [x] **Step 6: Confirm commit order and count**
 ```
 git log --oneline docs/codex-audit-batch4-doc-repair
 ```
 Expected: 5 commits (T1→T2→T3→T4→T5), with ADR-0006 and this plan file included in T1's diff (per the task brief: "First commit includes ADR-0006 + plan file").
 
-- [ ] **Step 7: Hand off**
+- [x] **Step 7: Hand off**
 
 Hand off to `@ponytail-agent` (Step 5 gate) before `/execute-plan`, then `@qa-agent` (Step 7) for sign-off — QA's role this batch is limited to confirming the two grep sweeps above and the full-suite regression run, since there is no new executable behavior to test. Then `/anemal-finish-branch` (Step 8, which invokes `/anemal-HTML-updater` as its last act) — this is the FINAL batch of the Codex audit remediation program; the finish-branch step should note in the PR description that this closes out Batches 1–4 (PRs #8/#9/#10 + this one).
