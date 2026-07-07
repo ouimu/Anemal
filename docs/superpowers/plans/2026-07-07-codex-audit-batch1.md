@@ -260,12 +260,12 @@ git commit -m "fix(audit): deep pattern-based secret redaction + one-time scrub 
 - Produces (script): `src/backend/scripts/deactivate-duplicate-test-users.ts` — sets `isActive=false` on tenant-2 duplicate users (`user4`, `user5`, `user6` — matched by `username`, not id, since ids are DB-instance-specific) and test artifacts (`user2072`, `intruder_b`). No hard delete (FK safety per ADR D5).
 - Test asserts: for every credential documented in `HOW-TO-RUN.md`, a full two-step login (`POST /auth/login` → `POST /auth/select-branch` if `requiresBranchSelection`) returns `200` with a JWT.
 
-- [ ] **Step 1: Re-run the seed against dev DB**
+- [x] **Step 1: Re-run the seed against dev DB**
 
 Run: `npx ts-node src/backend/prisma/seed.ts` (or the project's documented seed command from `HOW-TO-RUN.md`, e.g. `npm run seed` if defined in `package.json` — check `package.json` scripts first: `grep '"seed"' src/backend/package.json` or root `package.json`).
 Expected: completes without error; re-applies the `user_branches` upsert for `doctor_b`/`staff_b` (and all other seeded users) so branch assignment matches current seed intent.
 
-- [ ] **Step 2: Write the failing credential smoke test**
+- [x] **Step 2: Write the failing credential smoke test**
 
 Create `src/backend/tests/integration/seedCredentialSmoke.test.ts`:
 ```ts
@@ -326,12 +326,12 @@ describe('seeded credential smoke test — every HOW-TO-RUN credential logs in',
 ```
 Note for implementer: fill in the exact seeded username/password list by reading `src/backend/prisma/seed.ts` in full (lines around 61-83 shown in context already cover tenant A/B clinic users) plus the platform super-admin credential block (search seed.ts for `PlatformUser` create) and the exact HOW-TO-RUN.md credential values (`grep -n "Password\|password" HOW-TO-RUN.md`) before finalizing this array — do not guess passwords, copy them verbatim from seed.ts.
 
-- [ ] **Step 3: Run tests to verify current state (pre-cleanup)**
+- [x] **Step 3: Run tests to verify current state (pre-cleanup)**
 
 Run: `npx jest seedCredentialSmoke --runInBand`
 Expected: PASS for all rows once Step 1's seed re-run has landed (this validates D5's core claim: re-running seed alone fixes `doctor_b`/`staff_b` 403s). If any row still fails, investigate before proceeding — do not paper over with an `auth.service.ts` relaxation (explicitly forbidden by ADR D5).
 
-- [ ] **Step 4: Write the duplicate/artifact deactivation script**
+- [x] **Step 4: Write the duplicate/artifact deactivation script**
 
 Create `src/backend/scripts/deactivate-duplicate-test-users.ts`:
 ```ts
@@ -366,22 +366,22 @@ main()
   .finally(async () => { await prisma.$disconnect() })
 ```
 
-- [ ] **Step 5: Run the cleanup script against dev DB**
+- [x] **Step 5: Run the cleanup script against dev DB**
 
 Run: `npx ts-node src/backend/scripts/deactivate-duplicate-test-users.ts`
 Expected: prints `Deactivated N of 5 targeted users...`. Re-run immediately after — expected `Deactivated 0 of 5...` (idempotency check).
 
-- [ ] **Step 6: Re-run full smoke test to confirm no collateral damage**
+- [x] **Step 6: Re-run full smoke test to confirm no collateral damage**
 
 Run: `npx jest seedCredentialSmoke --runInBand`
 Expected: PASS — deactivating tenant-2 duplicates/artifacts must not affect any of the documented HOW-TO-RUN credentials (none of `user4/5/6/user2072/intruder_b` should be in the documented credential list; if one is, stop and flag to BA before deactivating).
 
-- [ ] **Step 7: Confirm auth.service.ts 403 behavior is untouched**
+- [x] **Step 7: Confirm auth.service.ts 403 behavior is untouched**
 
 Run: `git diff --stat src/backend/services/auth.service.ts`
 Expected: empty output (no changes to this file in this task — ADR D5 hard constraint).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/backend/scripts/deactivate-duplicate-test-users.ts src/backend/tests/integration/seedCredentialSmoke.test.ts
