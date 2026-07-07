@@ -105,6 +105,33 @@ describe('audit redaction — platform plane', () => {
   })
 })
 
+describe('audit redaction — third sink (settings_audit_log)', () => {
+  it('masks a changed system-settings secret as literal "••••••••" + last-4, and never stores the full sentinel', async () => {
+    // Unique per test run (Date.now() suffix) so a rerun always produces a genuinely
+    // changed value -- updateByKey() no-ops (and skips writing an audit row) when the
+    // incoming value equals the currently-stored plaintext.
+    const sentinel = `SENTINEL-SETTINGS-SECRET-${Date.now()}` // >=5 chars, exercises the slice(-4) branch
+    const res = await request(server)
+      .put('/platform/settings/smtp_password') // isSecret:true system_settings row, seeded in migration 20260610081405
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ value: sentinel })
+    expect(res.status).toBe(200)
+
+    const expectedMasked = `••••••••${sentinel.slice(-4)}`
+    const rows = await prisma.settingsAuditLog.findMany({
+      where: { tableName: 'system_settings', fieldName: 'smtp_password' },
+      orderBy: { changedAt: 'desc' },
+      take: 10,
+    })
+    for (const row of rows) {
+      expect(JSON.stringify(row)).not.toContain(sentinel)
+    }
+    // The row this test just created must show maskSecret's exact masked shape --
+    // oldValue/newValue are the repository's actual column names (settings-audit.repository.ts).
+    expect(rows[0]?.newValue).toBe(expectedMasked)
+  })
+})
+
 describe('audit redaction — clinic plane', () => {
   it('never stores a plaintext sentinel secret in audit_logs.details, at any nesting depth', async () => {
     const res = await request(server)

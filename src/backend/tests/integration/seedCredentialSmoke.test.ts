@@ -52,3 +52,19 @@ describe('seeded credential smoke test — every HOW-TO-RUN credential logs in',
     },
   )
 })
+
+describe('seeded credential smoke test — platform admin login', () => {
+  it('completes single-step platform login for the seeded platform admin', async () => {
+    const email    = process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.co'
+    const password = process.env.PLATFORM_ADMIN_PASSWORD || 'PlatformAdmin1!'
+
+    const res = await request(server)
+      .post('/platform/auth/login')
+      .send({ email, password })
+
+    expect(res.status).toBe(200)
+    expect(typeof res.body.data.token).toBe('string')
+    // No branch selection on the platform plane (ADR-0005 D1) — this is a single-step login.
+    expect(res.body.data.requiresBranchSelection).toBeUndefined()
+  })
+})

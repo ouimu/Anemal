@@ -2,7 +2,7 @@
 // Covers requirePlane (match/mismatch/no-context) and requirePermission
 // (present/absent/no-context/service-error/correct-args).
 import { Request, NextFunction } from 'express'
-import { requirePlane, requirePermission } from '../../middlewares/permission.middleware'
+import { requirePlane, requirePermission, requireAnyPermission } from '../../middlewares/permission.middleware'
 import * as permService from '../../services/permission.service'
 
 jest.mock('../../services/permission.service')
@@ -94,5 +94,19 @@ describe('requirePermission', () => {
     const res = mockRes()
     await requirePermission('emr.view')(req as Request, res as any, next)
     expect(mockResolve).toHaveBeenCalledWith(7, 42)
+  })
+})
+
+describe('guard annotations (ADR-0005 D2) — zero behavior change, metadata only', () => {
+  it('requirePermission attaches permissionCodes + mode:"all" to the returned closure', () => {
+    const handler = requirePermission('billing.view')
+    expect((handler as any).permissionCodes).toEqual(['billing.view'])
+    expect((handler as any).mode).toBe('all')
+  })
+
+  it('requireAnyPermission attaches permissionCodes + mode:"any" to the returned closure', () => {
+    const handler = requireAnyPermission(['roles.view', 'roles.manage'])
+    expect((handler as any).permissionCodes).toEqual(['roles.view', 'roles.manage'])
+    expect((handler as any).mode).toBe('any')
   })
 })

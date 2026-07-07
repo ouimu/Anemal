@@ -63,7 +63,7 @@ export function requirePlane(plane: 'clinic' | 'platform'): RequestHandler {
  * @returns Async Express RequestHandler that enforces the permission check.
  */
 export function requirePermission(permissionCode: string): RequestHandler {
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const handler: RequestHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     if (!req.context) {
       res.status(401).json({ success: false, error: 'Authentication required' })
       return
@@ -82,6 +82,11 @@ export function requirePermission(permissionCode: string): RequestHandler {
       next(err)
     }
   }
+  // Guard annotation (ADR-0005 D2) — metadata only, enables route introspection
+  // (roleRouteMatrix.test.ts) without changing runtime behavior.
+  ;(handler as RequestHandler & { permissionCodes: string[]; mode: 'all' | 'any' }).permissionCodes = [permissionCode]
+  ;(handler as RequestHandler & { permissionCodes: string[]; mode: 'all' | 'any' }).mode = 'all'
+  return handler
 }
 
 /**
@@ -99,7 +104,7 @@ export function requirePermission(permissionCode: string): RequestHandler {
  * @returns Async Express RequestHandler that enforces the OR permission check.
  */
 export function requireAnyPermission(permissionCodes: string[]): RequestHandler {
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const handler: RequestHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     if (!req.context) {
       res.status(401).json({ success: false, error: 'Authentication required' })
       return
@@ -119,6 +124,11 @@ export function requireAnyPermission(permissionCodes: string[]): RequestHandler 
       next(err)
     }
   }
+  // Guard annotation (ADR-0005 D2) — metadata only, enables route introspection
+  // (roleRouteMatrix.test.ts) without changing runtime behavior.
+  ;(handler as RequestHandler & { permissionCodes: string[]; mode: 'all' | 'any' }).permissionCodes = permissionCodes
+  ;(handler as RequestHandler & { permissionCodes: string[]; mode: 'all' | 'any' }).mode = 'any'
+  return handler
 }
 
 /**

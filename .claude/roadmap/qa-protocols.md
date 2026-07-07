@@ -146,6 +146,41 @@ npm run test:security
 
 ---
 
+## Protocol 5: Browser Smoke (Manual, Gated)
+
+**ทำโดย:** @qa-agent, via the `anemal-smoke-walkthrough` skill
+**ทริกเกอร์:** Step 7 (QA sign-off) for any release-bound branch touching frontend or auth code
+
+This is a deliberate manual gate, not deferred or skipped automation
+(ADR-0005 D5). No Playwright or other heavyweight E2E dependency is added
+this batch — the role×page walkthrough below is the release gate until
+automated browser E2E is revisited.
+
+### Requirement
+
+Any release-bound branch that touches frontend code or auth code (login,
+JWT handling, RBAC guards, route protection) MUST run the
+`anemal-smoke-walkthrough` skill before it can proceed past Step 7. The
+skill's output — a role × page status table — **is** the sign-off artifact:
+attach it to the PR description or the plan file. A branch cannot reach
+Step 8 (`/anemal-finish-branch`) without one attached.
+
+### What the walkthrough now covers (in addition to nav + console/network checks)
+
+For at least one role per plane, create or edit one representative record
+end-to-end (e.g. clinic: create an owner+pet, or edit a pet; platform:
+create or edit a customer). A pure nav-and-look pass can miss write-path
+regressions — validation errors, permission checks — that only surface on
+submit. See `.claude/skills/anemal-smoke-walkthrough/SKILL.md` step 5.
+
+### Backlog — automated E2E
+
+Automated browser E2E (Playwright or equivalent) is explicitly deferred to
+Phase 10/11 per ADR-0005 D5 — not a gap, a scoped decision (no new
+heavyweight dependency this batch).
+
+---
+
 ## QA Sign-off Template
 
 ใช้ template นี้ก่อน merge PR ที่สำคัญ:
