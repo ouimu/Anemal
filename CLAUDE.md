@@ -151,6 +151,7 @@ src/
 | 8 | RBAC + Platform Console | ✅ ~394 backend tests |
 | 9 | i18n Thai/English (16 screens, no library) | ✅ 95 frontend tests |
 | D-1–D-5 | Username login, company types, payment history, owner-first browse | ✅ 447 backend tests |
+| Codex Audit | Batches 1–4: stop-ship fixes, decision docs, QA automation, doc repair (PRs #8/#9/#10 + this batch) | ✅ 832 backend + 143 frontend tests |
 | 10 | Payment gateway + SaaS billing | ⏸ needs credentials |
 | 11 | LINE/SMS dispatch | ⏸ needs credentials |
 
@@ -161,6 +162,7 @@ See `.claude/roadmap/remaining-tasks.md` for sub-tasks.
 ## Tracking & Documentation
 
 - `@pm-agent` documents LAST on every task: phase status, test count, HTML in docs/(index.html, functional_spec_detailed.html), CLAUDE.md
+- `.claude/specs/implementation-status-matrix.md` is the canonical module-level implementation-status source; `@pm-agent` updates it LAST on every task, alongside the phase status/test count/HTML docs it already updates last.
 - `@ba-agent` provides content for `docs/functional_spec_detailed.html`, update all specification documents in .claude/specs/ ; `@pm-agent` commits
 - Run QA protocol at end of every task: `.claude/roadmap/qa-protocols.md`
 - Interrupted work: save resume state to file, show prompt to continue, delete when complete
