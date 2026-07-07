@@ -39,9 +39,21 @@ credentials).
    `preview_console_logs` (errors/warnings) and `preview_network` (failed
    requests) before moving to the next page. `preview_screenshot` only
    for pages where the console/network check doesn't tell the full story.
-5. Log out, move to next role.
+5. For at least one role per plane, create or edit one representative
+   record end-to-end (e.g. clinic: create an owner+pet or edit a pet;
+   platform: create or edit a customer). A pure nav-and-look pass can miss
+   write-path regressions — validation errors, permission checks — that
+   only surface on submit (ADR-0005 D5). Check console/network on submit
+   the same way as step 4.
+6. Log out, move to next role.
 
 ## Report format
 
 One table: role | page | status (OK / error) | detail. Only elaborate on
-rows that aren't OK — don't narrate the pages that worked.
+rows that aren't OK — don't narrate the pages that worked. Add an
+"action" column only if the create/edit step (5) needs one to note what
+was created/edited — don't restructure the table for it.
+
+This table is the sign-off artifact for Protocol 5 (Browser Smoke, Manual,
+Gated) in `.claude/roadmap/qa-protocols.md` — attach it to the PR or plan
+file for any release-bound branch touching frontend or auth code.

@@ -457,19 +457,19 @@ git commit -m "test(qa): strengthen third audit-sink (settings_audit_logs) to pi
 
 No tests — documentation-only task.
 
-- [ ] **Step 1: Add the "Browser smoke (manual, gated)" section to qa-protocols.md**
+- [x] **Step 1: Add the "Browser smoke (manual, gated)" section to qa-protocols.md**
 
 Insert a new numbered Protocol section (after the existing protocols — read the file's current numbering before choosing the next number) stating: required at Step 7 (QA sign-off) for any release-bound branch touching frontend or auth code; performed via the `anemal-smoke-walkthrough` skill; output is a role×page status table; that table **is** the sign-off artifact (attach to the PR or plan file) — a release-bound branch touching frontend/auth cannot reach Step 8 without one attached. State explicitly this is a deliberate manual gate, not deferred/skipped automation (D5 — no Playwright this batch; automated E2E revisited at Phase 10/11, tracked as a backlog entry, not a TODO left dangling).
 
-- [ ] **Step 2: Extend `anemal-smoke-walkthrough/SKILL.md` with a create/edit-one-record step**
+- [x] **Step 2: Extend `anemal-smoke-walkthrough/SKILL.md` with a create/edit-one-record step**
 
 In the "Steps per role" section, after the existing step 4 (nav-item walk + console/network check), add a new step: "For at least one role per plane, create or edit one representative record end-to-end (e.g. clinic: create an owner+pet or edit a pet; platform: create or edit a customer) — a pure nav-and-look pass can miss write-path regressions (validation, permission checks) that only surface on submit." Keep the existing report format (role | page | status | detail) — add "action" as an optional note column only if the create/edit step needs it, don't restructure the table.
 
-- [ ] **Step 3: Add the backlog note for automated E2E**
+- [x] **Step 3: Add the backlog note for automated E2E**
 
 In `qa-protocols.md`'s new section (or a "Backlog" subsection), add: "Automated browser E2E (Playwright or equivalent) is explicitly deferred to Phase 10/11 per ADR-0005 D5 — not a gap, a scoped decision (no new heavyweight dependency this batch)."
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 ```bash
 git add .claude/roadmap/qa-protocols.md .claude/skills/anemal-smoke-walkthrough/SKILL.md
 git commit -m "docs(qa): formalize manual browser-smoke as the release gate at Step 7; extend smoke-walkthrough with a create/edit step (ADR-0005 D5)"
