@@ -58,7 +58,7 @@ Left icon: MaterialIcon absolute left-md, size=18, text-on-surface-variant
 | Field | Icon | Type |
 |---|---|---|
 | Clinic ID | `business` | text + right suffix `.anemal.app` |
-| Email | `mail` | email |
+| Username | `person` | text |
 | Password | `lock` | password + eye toggle (visibility / visibility_off) |
 
 ### Error state

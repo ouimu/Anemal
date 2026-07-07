@@ -3,7 +3,9 @@
 > Component: `src/frontend/src/views/clinic/ClinicBilling.tsx`
 > Hooks: `src/frontend/src/hooks/useInvoices.ts` (+ inline search / medical-record queries)
 > API: `/api/invoices` (create, get, list, `/:id/payment`)
-> Status: **Implemented** (Phase 3) — browser-print receipt + placeholder PromptPay QR; gateway deferred to Phase 4
+> Status: **Implemented** — browser-print receipt + PDF invoice download; PromptPay QR generation
+> implemented but **credential-gated** (422 without a configured `promptpayId`); card gateway
+> (Omise/Stripe) deferred to Phase 10.
 
 ---
 
@@ -35,7 +37,7 @@ glass-card rounded-xl p-md:
   Method selector (grid-cols-3, min-h-[64px] each): Cash · PromptPay · Card
     active = border-primary bg-surface-container-low text-primary
   Cash      → tendered input + auto change (text-success / text-error if short)
-  PromptPay → placeholder QR panel (qr_code_2, "Scan to pay · ฿total", gateway = Phase 4)
+  PromptPay → live QR panel (qr_code_2, "Scan to pay · ฿total"; 422 if `promptpayId` not configured)
   Card      → "insert/tap on terminal" note
   "Confirm Payment · ฿total" CTA: bg-secondary text-secondary-on min-h-[56px]
 ```
@@ -55,8 +57,9 @@ print window with a styled HTML receipt) + **Done** (resets the screen).
 | Totals | subtotal − discount + 7% VAT, computed authoritatively on the server |
 | Print | Client opens a print window with the returned invoice; no PDF library (Phase 3 choice) |
 
-## Deferred to Phase 4
-Real PromptPay QR (node-qrcode/EMVCo), Omise/Stripe card gateway + webhooks, PDF (pdfkit) + email receipts.
+## Deferred to Phase 10
+Omise/Stripe card gateway + webhooks; email receipts (PDF receipt download itself is implemented —
+see `GET /api/invoices/:id/pdf`, `services/pdf.service.ts`).
 
 ## Touch / tokens
 All controls ≥ 44px (primary CTA 56px); rows ≥ 48px. No emoji, no raw hex — Compassionate Care tokens; Material Symbols Outlined throughout. Monetary values use `font-code` for numeric alignment.

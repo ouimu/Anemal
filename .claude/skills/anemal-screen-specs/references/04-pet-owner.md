@@ -160,6 +160,6 @@ After any save: invalidate `['pets']` (and `['pet', id]` when a pet is selected)
 
 ## Deferred items
 
-- Real S3 pre-signed photo upload (currently `photoUrl` display only — see remaining-tasks Session E)
+- S3 pre-signed photo upload is implemented but **credential-gated** (503 `STORAGE_NOT_CONFIGURED` without S3 env vars — see `services/upload.service.ts`); camera-barcode capture remains deferred (not built)
 - Owner edit / pet edit modals (create-only today)
 - LINE userId capture on the owner form (Session G dependency)

@@ -23,7 +23,27 @@ description: >
 | EMR | Implemented | `references/05-emr.md` | `views/clinic/ClinicEMR.tsx` |
 | Inventory | Implemented | `references/06-inventory.md` | `views/clinic/ClinicInventory.tsx` |
 | Billing / POS | Implemented | `references/07-billing-pos.md` | `views/clinic/ClinicBilling.tsx` |
-| Admin Control Center | Implemented | `references/08-admin.md` | `views/admin/AdminView.tsx` |
+| Admin Control Center | Implemented | `references/08-admin.md` | `views/admin/AdminDashboard.tsx` (+ AdminLayout) |
+
+## Coverage & deferrals
+
+The following routed, shipped screens have no spec in this skill yet — each gets a spec only
+when it is next modified (see rule below), not batched up front (ADR-0006 D4):
+
+| Screen | Route | Component |
+|---|---|---|
+| Branches | `/clinic-admin/branches` | `views/admin/AdminBranches.tsx` — not yet specced, write-on-next-touch |
+| Blood Bank | `/clinic-admin/blood-bank` | `views/admin/AdminBloodBank.tsx` — not yet specced, write-on-next-touch |
+| Audit | `/clinic-admin/audit` | `views/admin/AdminAudit.tsx` — not yet specced, write-on-next-touch |
+| Role Editor | `/clinic-admin/roles` | `views/clinic/RoleEditorView.tsx` — not yet specced, write-on-next-touch |
+| Platform — Customers | `/platform/customers`, `/platform/customers/:id` | `views/platform/CustomerListView.tsx`, `views/platform/CustomerDetailView.tsx` — not yet specced, write-on-next-touch |
+| Platform — Plans | `/platform/plans` | `views/platform/PlatformPlansView.tsx` — not yet specced, write-on-next-touch |
+| Platform — Settings | `/platform/settings` | `views/platform/PlatformSettingsView.tsx` — not yet specced, write-on-next-touch |
+| Platform — Audit | `/platform/audit` | `views/platform/PlatformAuditView.tsx` — not yet specced, write-on-next-touch |
+| Platform — Login | `/platform/login` | `views/platform/PlatformLoginView.tsx` — not yet specced, write-on-next-touch |
+
+**Write-on-next-touch rule:** an unspecced shipped screen gets a spec only when it is next
+modified — do not batch-write specs for screens no one is touching (ADR-0006 D4).
 
 ## How to use
 
