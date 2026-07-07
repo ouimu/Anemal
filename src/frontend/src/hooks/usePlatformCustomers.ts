@@ -33,13 +33,11 @@ export interface CreateCustomerPayload {
   name:         string
   subdomain:    string
   planId:       number
-  trialEndsAt?: string | null
 }
 
 export interface UpdateCustomerPayload {
   name?:          string
   planId?:        number
-  trialEndsAt?:   string | null
   companyTypeId?: number | null
 }
 

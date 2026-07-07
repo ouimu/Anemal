@@ -17,10 +17,9 @@ import MaterialIcon from '../../components/MaterialIcon'
 // ── Add Customer form state ───────────────────────────────────────────────────
 
 const EMPTY_FORM: CreateCustomerPayload = {
-  name:        '',
-  subdomain:   '',
-  planId:      0,
-  trialEndsAt: null,
+  name:      '',
+  subdomain: '',
+  planId:    0,
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -178,19 +177,6 @@ export default function CustomerListView() {
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
-          </div>
-
-          <div>
-            <label className="block text-label-md text-on-surface-variant mb-xs" htmlFor="cust-trial">
-              Trial Ends At (optional)
-            </label>
-            <input
-              id="cust-trial"
-              type="date"
-              value={form.trialEndsAt ?? ''}
-              onChange={(e) => setForm((f) => ({ ...f, trialEndsAt: e.target.value || null }))}
-              className="w-full min-h-[44px] px-md border border-outline-variant rounded text-body-md text-on-surface bg-surface focus:outline-none focus:border-secondary"
-            />
           </div>
 
           {createMutation.error && (

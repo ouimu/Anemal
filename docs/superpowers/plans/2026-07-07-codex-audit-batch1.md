@@ -559,12 +559,12 @@ git commit -m "fix(platform-audit): pure UTC date-filter bounds + Zod format val
 - Modifies: `CreateCustomerPayload` (drops `trialEndsAt?`), `UpdateCustomerPayload` (drops `trialEndsAt?`) in `usePlatformCustomers.ts`. `Customer`/`CustomerDetail` (read types) KEEP `trialEndsAt: string | null` — this is a display-only read field surfaced by an unchanged backend GET; only the write payloads change (ADR D2: no backend change).
 - Preserves: `companyTypeId` handling in `UpdateCustomerPayload` and `CustomerDetailView.tsx`'s save handler — untouched.
 
-- [ ] **Step 1: Check for existing frontend tests covering these components**
+- [x] **Step 1: Check for existing frontend tests covering these components**
 
 Run: `Get-ChildItem -Recurse -Filter "*Customer*.test.*" src/frontend/src` (PowerShell) or `find src/frontend/src -iname "*Customer*test*"` (Bash)
 Expected: note any existing test file path to update in Step 5; if none exists, Step 5 creates a minimal one.
 
-- [ ] **Step 2: Remove `trialEndsAt` from the write payload types**
+- [x] **Step 2: Remove `trialEndsAt` from the write payload types**
 
 In `src/frontend/src/hooks/usePlatformCustomers.ts`, change:
 ```ts
@@ -598,14 +598,14 @@ export interface UpdateCustomerPayload {
 ```
 Leave `Customer`/`CustomerDetail` (`trialEndsAt: string | null`) and all hook implementations (`useCreatePlatformCustomer`, `useUpdatePlatformCustomer`) untouched — they already just forward whatever payload type is passed.
 
-- [ ] **Step 3: Remove the trial input from `CustomerListView.tsx`**
+- [x] **Step 3: Remove the trial input from `CustomerListView.tsx`**
 
 In `src/frontend/src/views/platform/CustomerListView.tsx`:
 - Remove `trialEndsAt: null,` from `EMPTY_FORM` (line 23).
 - Remove the trial date input block (lines ~185-193, the block containing `value={form.trialEndsAt ?? ''}` and its `onChange`) and its enclosing label/wrapper JSX. Read the surrounding 15 lines first to remove the whole form-field block cleanly (label + input + any wrapper div), not just the two matched lines.
 - If the create-payload object built before calling `useCreatePlatformCustomer().mutate(...)` still spreads `form` directly (check for `mutate(form)` or similar), ensure it now only includes `name`, `subdomain`, `planId` — either destructure explicitly or confirm `CreateCustomerPayload`'s narrower type causes a TS error at the call site that surfaces exactly what to strip.
 
-- [ ] **Step 4: Remove/hide the trial editor in `CustomerDetailView.tsx`**
+- [x] **Step 4: Remove/hide the trial editor in `CustomerDetailView.tsx`**
 
 In `src/frontend/src/views/platform/CustomerDetailView.tsx`:
 - Remove the `editTrial` state initialization at line 61 (`setEditTrial(customer.trialEndsAt ? customer.trialEndsAt.slice(0, 10) : '')`) and its corresponding `useState` declaration (search for `const [editTrial, setEditTrial]` above line 61).
@@ -619,7 +619,7 @@ In `src/frontend/src/views/platform/CustomerDetailView.tsx`:
   ```
 - KEEP the read-only display block at lines 160-164 (`{customer.trialEndsAt && (...)}`) — this renders existing trial data for tenants that still have it set from before Phase 10; ADR D2 only removes the ability to set/edit it going forward, not the display of already-set values. If this block includes an editable input (not just display), remove/disable the input specifically but keep the label showing the read-only value.
 
-- [ ] **Step 5: Add/update a frontend test asserting the payload shape**
+- [x] **Step 5: Add/update a frontend test asserting the payload shape**
 
 If an existing test file was found in Step 1, add a test there; otherwise create `src/frontend/src/hooks/usePlatformCustomers.test.ts`:
 ```ts
@@ -643,12 +643,12 @@ describe('CreateCustomerPayload / UpdateCustomerPayload (BUG-002)', () => {
 })
 ```
 
-- [ ] **Step 6: Run the frontend test suite for this area**
+- [x] **Step 6: Run the frontend test suite for this area**
 
 Run: `npx vitest run usePlatformCustomers CustomerListView CustomerDetailView`
 Expected: PASS, including the two new `@ts-expect-error` compile-time checks (Vitest + `vite-plugin-checker`/`tsc` must actually type-check `@ts-expect-error` — if the project's Vitest config doesn't type-check test files, instead run `npx tsc --noEmit -p src/frontend` as an additional verification step to catch the `@ts-expect-error` assertions).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/frontend/src/hooks/usePlatformCustomers.ts src/frontend/src/views/platform/CustomerListView.tsx src/frontend/src/views/platform/CustomerDetailView.tsx

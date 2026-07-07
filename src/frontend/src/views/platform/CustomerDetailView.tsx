@@ -47,7 +47,6 @@ function OverviewTab({ id }: { id: number }) {
 
   const [editing,           setEditing]           = useState(false)
   const [editName,          setEditName]          = useState('')
-  const [editTrial,         setEditTrial]         = useState('')
   const [editCompanyTypeId, setEditCompanyTypeId] = useState<number | null>(null)
 
   if (isLoading || !customer) {
@@ -58,14 +57,13 @@ function OverviewTab({ id }: { id: number }) {
 
   const openEdit = () => {
     setEditName(customer.name)
-    setEditTrial(customer.trialEndsAt ? customer.trialEndsAt.slice(0, 10) : '')
     setEditCompanyTypeId((customer as { companyTypeId?: number | null }).companyTypeId ?? null)
     setEditing(true)
   }
 
   const saveEdit = () => {
     update.mutate(
-      { name: editName, trialEndsAt: editTrial || null, companyTypeId: editCompanyTypeId },
+      { name: editName, companyTypeId: editCompanyTypeId },
       { onSuccess: () => setEditing(false) },
     )
   }
@@ -93,15 +91,6 @@ function OverviewTab({ id }: { id: number }) {
               <input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="w-full min-h-[44px] px-md border border-outline-variant rounded text-body-md text-on-surface bg-surface focus:outline-none focus:border-secondary"
-              />
-            </div>
-            <div>
-              <label className="block text-label-md text-on-surface-variant mb-xs">Trial Ends (leave blank to clear)</label>
-              <input
-                type="date"
-                value={editTrial}
-                onChange={(e) => setEditTrial(e.target.value)}
                 className="w-full min-h-[44px] px-md border border-outline-variant rounded text-body-md text-on-surface bg-surface focus:outline-none focus:border-secondary"
               />
             </div>
