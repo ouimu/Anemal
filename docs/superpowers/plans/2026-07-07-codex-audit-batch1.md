@@ -1029,7 +1029,7 @@ git commit -m "fix(settings): accept null for optional SMTP fields to clear them
 
 ## Final verification (after all 6 tasks)
 
-- [ ] Run full backend suite: `npx jest --runInBand`
-- [ ] Run full frontend suite: `npx vitest run`
-- [ ] Run `git log --oneline fix/codex-audit-batch1-stopship` and confirm 6+ commits in the T1→T5→T6→T2→T3→T4 order
+- [x] Run full backend suite: `npx jest --runInBand` — 50 suites / 554 tests passed
+- [x] Run full frontend suite: `npx vitest run` — 22 files / 138 tests passed
+- [x] Run `git log --oneline fix/codex-audit-batch1-stopship` and confirm 6+ commits in the T1→T5→T6→T2→T3→T4 order — 7 commits (6 task commits + 1 BUG-008 follow-up fixing a stale mocked-timezone test discovered by the full-suite run)
 - [ ] Hand off to `@ponytail-agent` (Step 5 gate) before `/execute-plan`, then `@qa-agent` (Step 7) for RBAC/isolation sign-off, then `/anemal-finish-branch` (Step 8)
