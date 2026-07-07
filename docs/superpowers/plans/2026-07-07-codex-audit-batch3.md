@@ -43,7 +43,7 @@ Confirmed matching `PLATFORM_ADMIN_EMAIL`/`PLATFORM_ADMIN_PASSWORD` env var name
 
 **Verified response shape** (`services/platform-auth.service.ts:70-90`, `controllers/platform-auth.controller.ts:37`): `POST /platform/auth/login` returns `{ success: true, data: { token, refreshToken, user: {...} } }` directly — **no** `requiresBranchSelection` branch (that concept is clinic-plane only, from `auth.controller.ts`). Platform login is single-step.
 
-- [ ] **Step 1: Add the platform credential case (test-first is moot here — this is an additive `it.each`-style case, not a bug fix; write it directly)**
+- [x] **Step 1: Add the platform credential case (test-first is moot here — this is an additive `it.each`-style case, not a bug fix; write it directly)**
 
 In `src/backend/tests/integration/seedCredentialSmoke.test.ts`, after the existing `describe('seeded credential smoke test ...')` block, add:
 ```ts
@@ -65,12 +65,12 @@ describe('seeded credential smoke test — platform admin login', () => {
 ```
 Before finalizing, read `controllers/platform-auth.controller.ts` and `platformLoginSchema` to confirm the request body field name is `email` (not `username`) — platform users are keyed by email, unlike clinic users (subdomain+username). Verify by reading the schema definition, do not assume.
 
-- [ ] **Step 2: Run the test**
+- [x] **Step 2: Run the test**
 
 From `src/backend`: `node node_modules/jest/bin/jest.js --runInBand --forceExit --runTestsByPath tests/integration/seedCredentialSmoke.test.ts`
 Expected: PASS (this is additive coverage of an already-working path, not a bug fix — no red phase expected, but confirm the seeded platform admin actually exists in the dev/test DB the suite runs against; if 401, check the seed ran).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 ```bash
 git add src/backend/tests/integration/seedCredentialSmoke.test.ts
 git commit -m "test(qa): add platform login case to seed credential smoke suite (ADR-0005 D1)"
@@ -91,11 +91,11 @@ git commit -m "test(qa): add platform login case to seed credential smoke suite 
 
 TDD: write the failing unit test first, then implement.
 
-- [ ] **Step 1: Read the existing unit test file to match its conventions**
+- [x] **Step 1: Read the existing unit test file to match its conventions**
 
 Read `src/backend/tests/unit/permission.middleware.test.ts` in full — match its existing `req`/`res`/`next` mock helper pattern exactly (do not introduce a second mocking style in the same file).
 
-- [ ] **Step 2: Write the failing annotation assertions**
+- [x] **Step 2: Write the failing annotation assertions**
 
 Add to `permission.middleware.test.ts` (inside or alongside the existing describe blocks for each factory):
 ```ts
@@ -114,12 +114,12 @@ describe('guard annotations (ADR-0005 D2) — zero behavior change, metadata onl
 })
 ```
 
-- [ ] **Step 3: Run to verify failure**
+- [x] **Step 3: Run to verify failure**
 
 From `src/backend`: `node node_modules/jest/bin/jest.js --runInBand --forceExit --runTestsByPath tests/unit/permission.middleware.test.ts`
 Expected: FAIL — `permissionCodes`/`mode` are `undefined` on the current closures.
 
-- [ ] **Step 4: Implement the annotations**
+- [x] **Step 4: Implement the annotations**
 
 In `middlewares/permission.middleware.ts`, change `requirePermission`:
 ```ts
@@ -136,7 +136,7 @@ Apply the equivalent change to `requireAnyPermission`, setting `mode = 'any'` an
 
 Do not modify `requirePlatformPermission`.
 
-- [ ] **Step 5: Run to verify pass, then run the full unit suite as a zero-behavior-change regression check**
+- [x] **Step 5: Run to verify pass, then run the full unit suite as a zero-behavior-change regression check**
 
 ```
 node node_modules/jest/bin/jest.js --runInBand --forceExit --runTestsByPath tests/unit/permission.middleware.test.ts
@@ -144,7 +144,7 @@ node node_modules/jest/bin/jest.js --runInBand --forceExit --runTestsByPath test
 ```
 Expected: PASS — all pre-existing 401/403/next-call assertions in this file remain green (proves the annotation is additive, not behavior-changing).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 ```bash
 git add src/backend/middlewares/permission.middleware.ts src/backend/tests/unit/permission.middleware.test.ts
 git commit -m "feat(rbac): attach permissionCodes+mode guard annotations to requirePermission/requireAnyPermission (ADR-0005 D2)"
