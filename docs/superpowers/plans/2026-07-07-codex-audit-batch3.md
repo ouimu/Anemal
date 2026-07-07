@@ -347,7 +347,7 @@ git commit -m "test(qa): add CI-enforced role-route authorization matrix sweep (
 - `controllers/platform-plans.controller.ts`: `createPlanSchema`, `updatePlanSchema`.
 - `controllers/system-settings.controller.ts`: `updateAllSettingsSchema` (also `updateSystemSettingSchema` for the single-key `PUT /:key` route — include both).
 
-- [ ] **Step 1: Write the contract test file**
+- [x] **Step 1: Write the contract test file**
 
 ```ts
 /**
@@ -381,16 +381,16 @@ describe('platform contract — createCustomerSchema', () => {
 ```
 Implementer note: read each schema's actual `z.object({...})` field definitions (already located at the line numbers found during planning — `platform-customers.controller.ts:19,28,37,52`; `platform-plans.controller.ts:16,27`; `system-settings.controller.ts:9,29`) before writing the payload literals — do not guess field names or types. Each `it` block's payload literal gets a `// KEEP IN SYNC with <frontend file/hook>` comment naming the actual frontend call site (grep `src/frontend/src` for the matching `api.post`/`api.put` call to find it).
 
-- [ ] **Step 2: Run**
+- [x] **Step 2: Run**
 
 `node node_modules/jest/bin/jest.js --runInBand --forceExit --runTestsByPath tests/integration/platformContract.test.ts`
 Expected: PASS for all positive cases (proves the payload literals are currently valid per the live schema) and PASS for all negative cases (proves `safeParse` correctly rejects the incomplete payload — this is not a "should fail then be fixed" TDD step since there's no bug being fixed, just new coverage of an existing contract).
 
-- [ ] **Step 3 (optional, explicitly skippable per ADR D3): cross-tree import spike**
+- [x] **Step 3 (optional, explicitly skippable per ADR D3): cross-tree import spike**
 
 Attempt `import type { CreateCustomerPayload } from '../../../frontend/src/...'` in a scratch file; if `ts-jest`'s `rootDir` rejects it (expected), abandon — do not spend more than a few minutes here, and do not add `ts-jest` config changes to make it work (that is out of this batch's scope — ponytail-gate risk). Note the outcome in the commit message or PR description, do not leave partial scaffolding in the repo either way.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 ```bash
 git add src/backend/tests/integration/platformContract.test.ts
 git commit -m "test(qa): pin platform-console Zod contracts with payload-literal safeParse coverage (ADR-0005 D3)"
