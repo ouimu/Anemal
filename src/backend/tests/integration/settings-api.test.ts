@@ -421,6 +421,69 @@ describe('TC-S011 — PUT /platform/settings aggregate update', () => {
   })
 })
 
+describe('PUT /platform/settings — nullable optional SMTP fields (BUG-004)', () => {
+  afterAll(async () => {
+    // Restore seeded defaults so other tests are not affected
+    await prisma.systemSettings.update({ where: { key: 'smtp_host'      }, data: { value: '' } })
+    await prisma.systemSettings.update({ where: { key: 'smtp_port'      }, data: { value: '587' } })
+    await prisma.systemSettings.update({ where: { key: 'smtp_user'      }, data: { value: '' } })
+    await prisma.systemSettings.update({ where: { key: 'smtp_from_email'}, data: { value: '' } })
+    await prisma.settingsAuditLog.deleteMany({
+      where: { tableName: 'system_settings', fieldName: { in: ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_from_email'] } },
+    })
+  })
+
+  it('accepts null for smtpHost/smtpPort/smtpUser/smtpFrom and clears them', async () => {
+    const res = await request(server)
+      .put('/platform/settings')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ smtpHost: null, smtpPort: null, smtpUser: null, smtpFrom: null })
+    expect(res.status).toBe(200)
+
+    const getRes = await request(server)
+      .get('/platform/settings')
+      .set('Authorization', `Bearer ${platformToken}`)
+    expect(getRes.status).toBe(200)
+    expect(getRes.body.data.smtpHost).toBeNull()
+    expect(getRes.body.data.smtpPort).toBeNull()
+    expect(getRes.body.data.smtpUser).toBeNull()
+    expect(getRes.body.data.smtpFrom).toBeNull()
+  })
+
+  it('leaves smtpHost unchanged when omitted (undefined) from the payload', async () => {
+    await request(server)
+      .put('/platform/settings')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ smtpHost: 'smtp.example.com' })
+    const res = await request(server)
+      .put('/platform/settings')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ smtpUser: 'someone' }) // smtpHost omitted entirely
+    expect(res.status).toBe(200)
+
+    const getRes = await request(server)
+      .get('/platform/settings')
+      .set('Authorization', `Bearer ${platformToken}`)
+    expect(getRes.body.data.smtpHost).toBe('smtp.example.com') // unchanged, not cleared
+  })
+
+  it('still accepts a valid non-null smtpFrom value', async () => {
+    const res = await request(server)
+      .put('/platform/settings')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ smtpFrom: 'noreply@example.com' })
+    expect(res.status).toBe(200)
+  })
+
+  it('rejects an invalid non-null, non-email smtpFrom (still validated when present)', async () => {
+    const res = await request(server)
+      .put('/platform/settings')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ smtpFrom: 'not-an-email' })
+    expect(res.status).toBe(400)
+  })
+})
+
 describe('stateless connection tests (S2.1) — fetch mocked', () => {
   const realFetch = global.fetch
 

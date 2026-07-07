@@ -848,7 +848,7 @@ git commit -m "fix(platform-plans): translate price->priceMonth and features arr
 - Modifies: `updateAllSettingsSchema` — `smtpHost`, `smtpPort`, `smtpUser`, `smtpFrom` (and any other optional SMTP-shaped field in the schema) become `.nullable().optional()` instead of just `.optional()`. `appName`, `baseUrl`, `maintenanceMode`, `trialDays` stay as-is (ADR D4 scopes this to "optional SMTP fields" specifically — do not widen scope to non-SMTP fields or bundle `featureFlags`/audit-actor fixes, per explicit ADR exclusion).
 - Modifies: `updateAllSettings` handler's per-field loop — `null` now must be distinguished from `undefined`: `undefined` = unchanged (skip, as today), `null` = clear (call `coerceToString`-equivalent path that stores `''`), non-null = set (existing `coerceToString` path).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/backend/tests/integration/systemSettingsNullable.test.ts` (or extend an existing settings test file if `Get-ChildItem` / `find` in Step 0 below locates one):
 
@@ -931,12 +931,12 @@ describe('PUT /platform/settings — nullable optional SMTP fields (BUG-004)', (
 })
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `npx jest systemSettingsNullable --runInBand`
 Expected: FAIL on the first test with `400` (current `.strict()` schema rejects `null` for fields typed as `z.string().optional()` etc., since Zod's `.optional()` alone does not accept `null`).
 
-- [ ] **Step 3: Make optional SMTP fields nullable in the Zod schema**
+- [x] **Step 3: Make optional SMTP fields nullable in the Zod schema**
 
 In `src/backend/controllers/system-settings.controller.ts`, replace lines 29–39:
 ```ts
@@ -970,7 +970,7 @@ export const updateAllSettingsSchema = z.object({
 ```
 Note: `z.string().email()` validation still applies whenever `smtpFrom` is a non-null string — `.nullable()` only widens the type to also accept literal `null`, it does not weaken the email format check for non-null values (covered by Step 1's 4th test case).
 
-- [ ] **Step 4: Update the handler to distinguish null (clear) from undefined (unchanged)**
+- [x] **Step 4: Update the handler to distinguish null (clear) from undefined (unchanged)**
 
 In the same file, replace the `updateAllSettings` loop body (lines 140–148):
 ```ts
@@ -999,26 +999,26 @@ with:
     }
 ```
 
-- [ ] **Step 5: Type-check**
+- [x] **Step 5: Type-check**
 
 Run: `npx tsc --noEmit -p src/backend`
 Expected: no errors. (`coerceToString(raw: string | boolean | number)` — confirm this signature still compiles now that `raw`'s narrowed type at the call site excludes `null` via the ternary; if TS complains, narrow explicitly with `raw !== null ? coerceToString(raw) : ''` instead of relying on the ternary branch alone.)
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 Run: `npx jest systemSettingsNullable --runInBand`
 Expected: PASS, all 4 tests.
 
-- [ ] **Step 7: Run the full settings + platform-console suite to confirm no regressions**
+- [x] **Step 7: Run the full settings + platform-console suite to confirm no regressions**
 
 Run: `npx jest systemSettings platform-console --runInBand`
 Expected: PASS.
 
-- [ ] **Step 8: Confirm scope discipline — no featureFlags or audit-actor changes**
+- [x] **Step 8: Confirm scope discipline — no featureFlags or audit-actor changes**
 
 Run: `git diff --stat src/backend/controllers/system-settings.controller.ts` — confirm the diff touches only the 4 SMTP field schema lines and the loop body; `featureFlags` line and any audit-actor code (userId vs platformUserId) must show no changes (ADR D4 explicit exclusion).
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/backend/controllers/system-settings.controller.ts src/backend/tests/integration/systemSettingsNullable.test.ts
