@@ -149,7 +149,7 @@ export default function App() {
         </Route>
 
         {/* ── Settings section (/settings/*) ── auth-only, role filtered in layout */}
-        <Route path="/settings" element={<RequireAuth><SettingsLayout/></RequireAuth>}>
+        <Route path="/settings" element={<RequireAuth><RequirePlane plane="clinic"><SettingsLayout/></RequirePlane></RequireAuth>}>
           <Route index element={<Navigate to="/settings/clinic-profile" replace/>}/>
           <Route path="clinic-profile" element={<RequirePermission perm="clinic.profile.view"><ClinicProfilePage/></RequirePermission>}/>
           <Route path="hours"         element={<RequirePermission perm="clinic.hours.edit"><OperatingHoursPage/></RequirePermission>}/>
