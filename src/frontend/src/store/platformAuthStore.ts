@@ -19,11 +19,16 @@ export interface PlatformAuthState {
   isAuthenticated: () => boolean
 }
 
+/** Matches the real backend envelope from POST /platform/auth/login (and /platform/auth/me). */
 export interface PlatformAuthPayload {
-  token:          string
-  platformUserId: number
-  role:           string
-  name:           string
+  token:        string
+  refreshToken: string
+  user: {
+    id:    number
+    name:  string
+    email: string
+    role:  string
+  }
 }
 
 /** Storage key used in sessionStorage. */
@@ -38,12 +43,14 @@ export const usePlatformAuthStore = create<PlatformAuthState>()(
       name:           null,
       plane:          null,
 
+      // refreshToken is intentionally NOT stored — no silent-refresh interceptor
+      // exists in platformApi yet (ADR-0004 D3, deferred by design, not an oversight).
       setAuth: (data) =>
         set({
           token:          data.token,
-          platformUserId: data.platformUserId,
-          role:           data.role,
-          name:           data.name,
+          platformUserId: data.user.id,
+          role:           data.user.role,
+          name:           data.user.name,
           plane:          'platform',
         }),
 
