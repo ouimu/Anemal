@@ -50,6 +50,19 @@ npm run db:migrate
 npm run db:seed
 ```
 
+**Login credentials (clinic plane — username, not email):**
+
+| Tenant | Subdomain | Role | Username | Password |
+|---|---|---|---|---|
+| Tenant A | `dev-clinic` | admin | `admin_a` | `AdminPass1!` |
+| Tenant A | `dev-clinic` | doctor | `doctor_a` | `DoctorPass1!` |
+| Tenant A | `dev-clinic` | staff | `staff_a` | `StaffPass1!` |
+| Tenant B | `test-clinic` | admin | `admin_b` | `AdminPass2!` |
+| Tenant B | `test-clinic` | doctor | `doctor_b` | `DoctorPass2!` |
+| Tenant B | `test-clinic` | staff | `staff_b` | `StaffPass2!` |
+
+Login is two-step: `POST /auth/login` with `{"subdomain":"dev-clinic","username":"admin_a","password":"AdminPass1!"}`, then `POST /auth/select-branch` with the returned pending token.
+
 Expected seed output:
 ```
 🌱 Seeding database...
@@ -73,7 +86,7 @@ Expected seed output:
 npm test
 ```
 
-Expected: **8 tests pass** (5 auth unit tests + 3 RBAC unit tests).  
+Expected: **8 tests pass** at this early setup-verification point (5 auth unit tests + 3 RBAC unit tests, no DB required). The current full suite (Step 7, DB required) runs **832 backend + 143 frontend** tests — the 8-test figure above is historical, scoped to this unit-only checkpoint, not the authoritative total.
 Integration tests require the seeded DB and will be skipped if DB is unavailable.
 
 > **Phase 8 note:** After seeding you also have a platform super-admin user seeded for the Platform Console. Login at `/platform/login` with the platform credentials from the seed output.
@@ -94,10 +107,10 @@ Test it:
 # Health check
 curl http://localhost:4000/health
 
-# Login as Tenant A admin
+# Login as Tenant A admin (step 1 — returns a pending token requiring /auth/select-branch)
 curl -X POST http://localhost:4000/auth/login `
   -H "Content-Type: application/json" `
-  -d '{"subdomain":"dev-clinic","email":"admin@dev-clinic.com","password":"AdminPass1!"}'
+  -d '{"subdomain":"dev-clinic","username":"admin_a","password":"AdminPass1!"}'
 ```
 
 ---
@@ -118,25 +131,25 @@ npm run dev
 
 Frontend running at: `http://localhost:5173`
 
-**Login credentials:**
+**Login credentials (username, not email — see the table in Step 3):**
 
-> 🔑 **The "Clinic ID" field is required and case-sensitive.** It must match the tenant subdomain exactly.
+> 🔑 **The "Clinic ID" (subdomain) field is required and case-sensitive.** It must match the tenant subdomain exactly.
 > An empty/wrong Clinic ID makes **every** login (admin, doctor, and staff) fail with *"Invalid credentials. Please try again."*
 > On `localhost` the Clinic ID now auto-fills to `dev-clinic`; just type it manually if it's blank.
 
 **Dev Clinic — Clinic ID `dev-clinic`:**
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@dev-clinic.com | AdminPass1! |
-| Doctor | doctor@dev-clinic.com | DoctorPass1! |
-| Staff | staff@dev-clinic.com | StaffPass1! |
+| Role | Username | Password |
+|------|----------|----------|
+| Admin | `admin_a` | AdminPass1! |
+| Doctor | `doctor_a` | DoctorPass1! |
+| Staff | `staff_a` | StaffPass1! |
 
 **Test Clinic — Clinic ID `test-clinic`** (isolation testing; note the `Pass2!` suffix):
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@test-clinic.com | AdminPass2! |
-| Doctor | doctor@test-clinic.com | DoctorPass2! |
-| Staff | staff@test-clinic.com | StaffPass2! |
+| Role | Username | Password |
+|------|----------|----------|
+| Admin | `admin_b` | AdminPass2! |
+| Doctor | `doctor_b` | DoctorPass2! |
+| Staff | `staff_b` | StaffPass2! |
 
 ---
 
@@ -147,7 +160,7 @@ Frontend running at: `http://localhost:5173`
 npm test
 ```
 
-All tests should pass including cross-tenant isolation tests, RBAC permission matrix, and platform plane isolation. As of Phase 8 completion the full suite runs approximately 394 tests (backend + frontend vitest).
+All tests should pass including cross-tenant isolation tests, RBAC permission matrix, and platform plane isolation. As of Codex Audit Batch 4 the full suite runs **832 backend + 143 frontend** tests (the earlier "~394 backend" figure was as of Phase 8 completion and is historical).
 
 Run frontend tests separately:
 ```powershell
