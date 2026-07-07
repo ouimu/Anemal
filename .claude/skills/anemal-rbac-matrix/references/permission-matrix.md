@@ -3,6 +3,13 @@
 > Source of truth for permission codes, default role mappings, and route guards. Seed data and
 > enforcement applied per the route map below. Keep this file and the seed migration in sync.
 
+> **Audit correction (ADR-0004 D4):** a Codex audit batch 2 finding claiming
+> `vaccination.create` was "missing from the RBAC matrix" was FALSE — the audit tool read the
+> stale `.agents/skills/` duplicate tree (deleted as part of this same fix batch), not this file.
+> `vaccination.create` has been documented here since section 2's original authoring. Future
+> audits and agents should reference `.claude/skills/anemal-rbac-matrix/` exclusively — see
+> CLAUDE.md, which names only `.claude/skills/` as the project skill path.
+
 ## 1. Action vocabulary
 
 | Action | Meaning |
@@ -67,11 +74,18 @@ Columns are the three **system clinic roles**. Custom roles start as a clone of 
 | `clinic.hours.edit` | Operating hours | E | - | - |
 | `clinic.payment.edit` | PromptPay / QR | E | - | - |
 | `clinic.integrations.edit` | LINE / SMS / Lab keys | E | - | - |
+| `clinic.settings.manage` | Clinic settings | — reserved — | — reserved — | — reserved — |
 | `staff.view` | Staff / users | V | - | - |
 | `staff.manage` | Staff / users (CRUD) | E | - | - |
 | `roles.view` | Roles | V | - | - |
 | `roles.manage` | Roles (custom roles + assign perms) | E | - | - |
 | `audit.view` | Audit log | V | - | - |
+
+> **Reserved permission:** `clinic.settings.manage` is seeded but not yet enforced by any
+> route — no controller currently calls `requirePermission('clinic.settings.manage')`. It is
+> intentionally kept in the seed so future settings-consolidation work doesn't need a new
+> migration. Do not delete this code as "unused," and do not assume it is currently active on
+> any route (ADR-0004 D4).
 
 ### Notes on key business decisions
 - **Doctor has no billing/POS access** — clinical only. Billing is Staff/Admin.
@@ -164,6 +178,16 @@ New permission code (add to the catalogue):
 Runtime rule: assigning a role requires `staff.assign_role` + `roles.view`, and the assigned role's
 permissions must be ⊆ the assigner's effective permissions (no escalation). A user must retain ≥ 1 role.
 Route map: `POST/DELETE /users/:id/roles` → `staff.assign_role`.
+
+| `staff.assign_branch` | Staff / users | E | - | - |
+
+Runtime rule: assigning a branch requires `staff.assign_branch`. A user must retain ≥ 1 branch
+assignment on tenants where branch selection is required (`requiresBranchSelection`).
+Route map (verified against `src/backend/routes/auth.routes.ts` and
+`src/backend/routes/user.routes.ts`): `POST /auth/switch-branch` → `staff.assign_branch`
+(re-issuing a branch-scoped token is gated the same as assigning one — not self-service, contrary
+to an earlier draft of this note); `GET /users/:userId/branches` → `staff.assign_branch`;
+`PATCH /users/:userId/branch` → `staff.assign_branch`.
 
 ## 6. Applying seed-rbac.ts changes to production
 

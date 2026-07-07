@@ -142,14 +142,14 @@ export default function App() {
           <Route path="billing"              element={<RequirePermission perm="billing.create"><ClinicBilling/></RequirePermission>}/>
           <Route path="transactions"         element={<RequirePermission perm="billing.view"><ClinicTransactions/></RequirePermission>}/>
           <Route path="vaccinations-due"     element={<RequirePermission perm="emr.view"><ClinicVaccinationsDue/></RequirePermission>}/>
-          <Route path="vaccinations-due/record" element={<RequirePermission perm="emr.create"><ClinicRecordVaccination/></RequirePermission>}/>
+          <Route path="vaccinations-due/record" element={<RequirePermission perm="vaccination.create"><ClinicRecordVaccination/></RequirePermission>}/>
           <Route path="inpatient"    element={<RequirePermission perm="inpatient.view"><ClinicInpatient/></RequirePermission>}/>
           {/* Doctor has no grooming access — gate on grooming.view which doctor role lacks */}
           <Route path="grooming"     element={<RequirePermission perm="grooming.view"><ClinicGrooming/></RequirePermission>}/>
         </Route>
 
         {/* ── Settings section (/settings/*) ── auth-only, role filtered in layout */}
-        <Route path="/settings" element={<RequireAuth><SettingsLayout/></RequireAuth>}>
+        <Route path="/settings" element={<RequireAuth><RequirePlane plane="clinic"><SettingsLayout/></RequirePlane></RequireAuth>}>
           <Route index element={<Navigate to="/settings/clinic-profile" replace/>}/>
           <Route path="clinic-profile" element={<RequirePermission perm="clinic.profile.view"><ClinicProfilePage/></RequirePermission>}/>
           <Route path="hours"         element={<RequirePermission perm="clinic.hours.edit"><OperatingHoursPage/></RequirePermission>}/>

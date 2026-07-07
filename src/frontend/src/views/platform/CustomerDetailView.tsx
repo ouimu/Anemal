@@ -5,7 +5,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams, useNavigate } from 'react-router-dom'
-import api from '../../utils/api'
+import platformApi from '../../utils/platformApi'
 import {
   usePlatformCustomer,
   usePlatformCustomerUsage,
@@ -39,7 +39,7 @@ function OverviewTab({ id }: { id: number }) {
   const { data: customer, isLoading } = usePlatformCustomer(id)
   const { data: companyTypes = [] } = useQuery<CompanyType[]>({
     queryKey: ['platform', 'company-types'],
-    queryFn: () => api.get('/api/platform/company-types').then(r => r.data.data),
+    queryFn: () => platformApi.get('/platform/company-types').then(r => r.data.data),
   })
   const suspend    = useSuspendCustomer(id)
   const reactivate = useReactivateCustomer(id)
@@ -324,8 +324,10 @@ function ProvisioningTab() {
       <div className="flex items-center gap-sm text-on-surface-variant">
         <MaterialIcon name="construction" size={20} />
         <p className="text-body-sm">
-          Provisioning settings (S3, SMTP, base providers) are managed via Platform Settings
-          and will be per-tenant in a future release.
+          Per-tenant provisioning (S3, SMTP, base providers) has no dedicated UI yet.
+          Existing tenant-wide values are managed via Platform Settings
+          (<code>GET/PUT /platform/settings</code>); a per-customer provisioning screen
+          is tracked as a separate, not-yet-scheduled task.
         </p>
       </div>
     </div>

@@ -275,7 +275,7 @@ export default function ClinicGrooming() {
 
   const updateStatus = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) =>
-      api.put(`/api/grooming/bookings/${id}`, { status }),
+      api.put(`/api/grooming/bookings/${id}/status`, { status }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['grooming', dateKey] }),
   })
 
