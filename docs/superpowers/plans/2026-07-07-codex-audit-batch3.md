@@ -405,11 +405,11 @@ git commit -m "test(qa): pin platform-console Zod contracts with payload-literal
 
 **Verified:** `settings_audit_logs` rows are written by `models/settings-audit.repository.ts` and `models/tenant-settings.repository.ts:37` (via `prisma.settingsAuditLog.createMany`), triggered by `PUT /platform/settings` (system-settings routes, `requirePlatformPermission('platform.settings.edit')`) and by clinic tenant-settings updates. `maskSecret` (`utils/encryption.ts:52-54`) returns `'••••••••'` for values ≤ 4 chars, else `` `••••••••${value.slice(-4)}` `` — sentinel must be **≥ 5 chars** to exercise the `slice(-4)` branch, not just the full-mask branch.
 
-- [ ] **Step 1: Read the full existing file to place the new block consistently**
+- [x] **Step 1: Read the full existing file to place the new block consistently**
 
 Read `tests/integration/auditRedaction.test.ts` in full (already read during planning — reconfirm no drift) to match its existing `beforeAll`/`afterAll` fixture and login-helper conventions exactly; the new sub-test reuses `platformToken` already established in the existing `beforeAll`.
 
-- [ ] **Step 2: Write the failing (or newly-added, non-regression) sentinel-shape assertion**
+- [x] **Step 2: Write the failing (or newly-added, non-regression) sentinel-shape assertion**
 
 Add to the existing `describe('audit redaction — platform plane', ...)` block, or a new sibling describe:
 ```ts
@@ -436,12 +436,12 @@ describe('audit redaction — third sink (settings_audit_logs)', () => {
 ```
 Implementer note: read `models/settings-audit.repository.ts` and the `SettingsAuditLog` Prisma model (`prisma/schema.prisma:205` onward) in full before finalizing the route/body/column names above — this plan sketches the shape from what was verified during planning but the exact route path (`PUT /platform/settings/:key` vs `PUT /platform/settings` bulk) and the exact audit-log column name (`oldValue`/`newValue`/`changes` JSON) must be confirmed against the real schema, not assumed.
 
-- [ ] **Step 3: Run**
+- [x] **Step 3: Run**
 
 `node node_modules/jest/bin/jest.js --runInBand --forceExit --runTestsByPath tests/integration/auditRedaction.test.ts`
 Expected: PASS for all three sinks (existing two + new one).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 ```bash
 git add src/backend/tests/integration/auditRedaction.test.ts
 git commit -m "test(qa): strengthen third audit-sink (settings_audit_logs) to pin maskSecret's exact masked shape (ADR-0005 D4)"
