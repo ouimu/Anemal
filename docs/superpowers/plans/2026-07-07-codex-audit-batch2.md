@@ -1,6 +1,6 @@
 # Codex Audit Batch 2 — Wiring Fixes + Docs Correction Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Source of truth:** `docs/adr/0004-codex-audit-batch2-decisions.md` (D1–D6, authoritative). BA sign-off + grilling (Step 3.5) both complete — this plan only encodes already-resolved decisions, it does not re-litigate them.
 
@@ -31,12 +31,12 @@
 **Interfaces:**
 - Modifies: the `updateStatus` mutation's `mutationFn` inside `ClinicGrooming()` (currently `src/frontend/src/views/clinic/ClinicGrooming.tsx:278`) — URL changes from `` `/api/grooming/bookings/${id}` `` to `` `/api/grooming/bookings/${id}/status` ``. No other line in this mutation changes (method stays `PUT`, body stays `{ status }`).
 
-- [ ] **Step 1: Check for an existing test file covering this view**
+- [x] **Step 1: Check for an existing test file covering this view**
 
 Run: `Get-ChildItem -Recurse -Filter "*ClinicGrooming*" src/frontend/src` (PowerShell) or `find src/frontend/src -iname "*ClinicGrooming*"` (Bash).
 If found, add the new test into that file's existing structure (matching its mocking pattern for `api`/`useQuery`/`useMutation`). If not found, Step 2 creates a minimal new file.
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 Create (or extend) `src/frontend/src/views/clinic/__tests__/ClinicGrooming.test.tsx`:
 ```tsx
@@ -78,12 +78,12 @@ describe('ClinicGrooming — status update URL (BUG-006)', () => {
 ```
 Note for implementer: read `ClinicGrooming.tsx` in full to find the exact UI trigger for `updateStatus.mutate(...)` (status dropdown/button per booking card) and wire the `fireEvent` call precisely — do not guess a selector; grep the render output or existing modal/status-control JSX first.
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x] **Step 3: Run test to verify it fails**
 
 Run (from `src/frontend`): `npm test -- --run ClinicGrooming`
 Expected: FAIL — asserted URL does not match `/status` suffix (current code PUTs to the bare `/:id` URL).
 
-- [ ] **Step 4: Fix the URL**
+- [x] **Step 4: Fix the URL**
 
 In `src/frontend/src/views/clinic/ClinicGrooming.tsx`, change line 278:
 ```ts
@@ -94,12 +94,12 @@ to:
       api.put(`/api/grooming/bookings/${id}/status`, { status }),
 ```
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes**
 
 Run: `npm test -- --run ClinicGrooming`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/frontend/src/views/clinic/ClinicGrooming.tsx src/frontend/src/views/clinic/__tests__/ClinicGrooming.test.tsx
@@ -119,11 +119,11 @@ git commit -m "fix(grooming): PUT status updates to /:id/status, not the bare bo
 - Modifies: `OverviewTab`'s company-types `useQuery` (`src/frontend/src/views/platform/CustomerDetailView.tsx:42`) — `queryFn` changes from `api.get('/api/platform/company-types')` to `platformApi.get('/platform/company-types')`. Import swaps from `import api from '../../utils/api'` to `import platformApi from '../../utils/platformApi'` (verify `api` import isn't used elsewhere in this file before removing it — grep first).
 - Modifies: `ProvisioningTab` (same file, ~lines 321-333) placeholder copy — per ADR D6, states honest status naming the available backend endpoints instead of implying a generic "future release."
 
-- [ ] **Step 1: Confirm whether `api` (clinic client) is used elsewhere in this file**
+- [x] **Step 1: Confirm whether `api` (clinic client) is used elsewhere in this file**
 
 Run: `Grep -n "api\." src/frontend/src/views/platform/CustomerDetailView.tsx` (or equivalent) to confirm the only clinic-plane `api` usage is the company-types query. If other usages exist, keep the `api` import and add `platformApi` alongside it; if not, replace the import entirely.
 
-- [ ] **Step 2: Update the mock in `PlatformConsole.test.tsx` first (test-first)**
+- [x] **Step 2: Update the mock in `PlatformConsole.test.tsx` first (test-first)**
 
 In `src/frontend/src/__tests__/PlatformConsole.test.tsx`, the existing `vi.mock('@tanstack/react-query', ...)` (line 36) already stubs `useQuery` to return `{ data: [], isLoading: false }` regardless of caller — this does not need to change. Instead, add a new `vi.mock` for `platformApi` (if not already present in this file) asserting the company-types call goes through the platform client. Read the full mock block (lines 1-60) first to match existing hoisting conventions (`vi.hoisted`), then add:
 ```ts
@@ -133,7 +133,7 @@ vi.mock('../../utils/platformApi', () => ({
 ```
 Note: since `useQuery` itself is mocked to bypass the real `queryFn` call, this mock alone won't fail without an additional assertion. Add a targeted unit test instead (Step 3) that imports `CustomerDetailView`'s `queryFn` indirectly is not feasible without exporting it — prefer asserting via a lightweight source-inspection test or by checking `platformApi.get` was NOT called with the wrong path when `api.get` is also mocked and asserted as never called for `/company-types`. Simplest reliable approach: mock BOTH `api` and `platformApi` clients, render the view, and assert `api.get` was never called with a path containing `company-types` while `platformApi.get` WAS called with `/platform/company-types`.
 
-- [ ] **Step 3: Write/extend the failing test**
+- [x] **Step 3: Write/extend the failing test**
 
 In `PlatformConsole.test.tsx`, within the existing `CustomerDetailView` describe block, add:
 ```ts
@@ -149,12 +149,12 @@ it('fetches company-types via platformApi, never the clinic api client (BUG-007)
 ```
 Note for implementer: match this file's existing render/wrapper conventions exactly (check how other `CustomerDetailView` tests in this file render it — router mocks are already hoisted per the file header).
 
-- [ ] **Step 4: Run tests to verify they fail**
+- [x] **Step 4: Run tests to verify they fail**
 
 Run (from `src/frontend`): `npm test -- --run PlatformConsole`
 Expected: FAIL — `platformApi.get` was never called; `api.get` was called with the company-types path instead.
 
-- [ ] **Step 5: Fix the client + path, and update the provisioning placeholder text**
+- [x] **Step 5: Fix the client + path, and update the provisioning placeholder text**
 
 In `src/frontend/src/views/platform/CustomerDetailView.tsx`:
 - Add `import platformApi from '../../utils/platformApi'` near the top (alongside or replacing the `api` import per Step 1's finding).
@@ -183,12 +183,12 @@ In `src/frontend/src/views/platform/CustomerDetailView.tsx`:
         </p>
   ```
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 Run: `npm test -- --run PlatformConsole`
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/frontend/src/views/platform/CustomerDetailView.tsx src/frontend/src/__tests__/PlatformConsole.test.tsx
@@ -209,11 +209,11 @@ git commit -m "fix(platform-customers): fetch company-types via platformApi, cor
 - Modifies: `setAuth(data: PlatformAuthPayload)` (`platformAuthStore.ts:41-48`) — maps `data.user.id → platformUserId`, `data.user.role → role`, `data.user.name → name`. `refreshToken` is accepted in the payload type (for shape accuracy) but intentionally NOT stored in state — ADR D3 explicit: no silent-refresh interceptor in this batch, storing it would be dead state.
 - Modifies: `PlatformLoginView.tsx:30-33` — the mutation's `.then((r) => r.data.data)` return type annotation updates to match the new `PlatformAuthPayload` shape (no call-site logic change needed beyond the type import, since `setAuth(data)` already just forwards whatever the mutation resolves to).
 
-- [ ] **Step 1: Check for an existing platformAuthStore test file**
+- [x] **Step 1: Check for an existing platformAuthStore test file**
 
 Run: `Get-ChildItem -Recurse -Filter "*platformAuthStore*" src/frontend/src` (PowerShell) or `find src/frontend/src -iname "*platformAuthStore*"` (Bash).
 
-- [ ] **Step 2: Write the failing store test**
+- [x] **Step 2: Write the failing store test**
 
 Create (or extend) `src/frontend/src/store/__tests__/platformAuthStore.test.ts`:
 ```ts
@@ -256,12 +256,12 @@ describe('platformAuthStore.setAuth — nested user mapping (BUG-010)', () => {
 })
 ```
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x] **Step 3: Run test to verify it fails**
 
 Run (from `src/frontend`): `npm test -- --run platformAuthStore`
 Expected: FAIL — TypeScript shape mismatch and/or `platformUserId`/`role`/`name` end up `undefined` under the current flat-mapping `setAuth`.
 
-- [ ] **Step 4: Update the payload type and `setAuth` mapping**
+- [x] **Step 4: Update the payload type and `setAuth` mapping**
 
 In `src/frontend/src/store/platformAuthStore.ts`, replace lines 22-27:
 ```ts
@@ -311,21 +311,21 @@ with:
         }),
 ```
 
-- [ ] **Step 5: Update `PlatformLoginView.tsx`'s mutation type usage**
+- [x] **Step 5: Update `PlatformLoginView.tsx`'s mutation type usage**
 
 In `src/frontend/src/views/platform/PlatformLoginView.tsx`, the `type PlatformAuthPayload` import (line 11) and the mutation's `.then((r) => r.data.data)` (line 31) need no structural change — they already just pass through whatever shape `PlatformAuthPayload` resolves to. Confirm `npx tsc --noEmit -p src/frontend` (Step 7) reports no error at this call site now that the type is nested; if `LoginPayload`'s response typing elsewhere in the file destructures `data.platformUserId` directly (grep this file for `platformUserId`), update that specific reference to `data.user.id` — read the full file before finalizing to catch every reference, not just line 30-33.
 
-- [ ] **Step 6: Run test to verify it passes**
+- [x] **Step 6: Run test to verify it passes**
 
 Run: `npm test -- --run platformAuthStore`
 Expected: PASS.
 
-- [ ] **Step 7: Type-check the frontend**
+- [x] **Step 7: Type-check the frontend**
 
 Run: `npx tsc --noEmit -p src/frontend`
 Expected: no errors (catches any other call site still assuming the old flat `PlatformAuthPayload` shape — e.g. `PlatformLayout.tsx` if it reads `usePlatformAuthStore` fields, which are unchanged at the store-field level so should be unaffected).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/frontend/src/store/platformAuthStore.ts src/frontend/src/views/platform/PlatformLoginView.tsx src/frontend/src/store/__tests__/platformAuthStore.test.ts
@@ -343,11 +343,11 @@ git commit -m "fix(platform-auth): map nested user object from real login wire s
 **Interfaces:**
 - Modifies: `App.tsx:145` — the `vaccinations-due/record` route's `RequirePermission perm=` prop changes from `"emr.create"` to `"vaccination.create"`. No other route on this line or adjacent lines changes; `vaccinations-due` (list, line 144) stays on `emr.view` per ADR D4.
 
-- [ ] **Step 1: Confirm whether route-level guard wiring (as opposed to the `RequirePermission` component itself) is covered anywhere in the test suite**
+- [x] **Step 1: Confirm whether route-level guard wiring (as opposed to the `RequirePermission` component itself) is covered anywhere in the test suite**
 
 Run: `Grep -rn "vaccinations-due" src/frontend/src` to check for any existing route-table test. `guards.test.tsx` (read in full already) only tests `RequirePermission` in isolation with a mocked `perm` prop — it does not assert which permission string `App.tsx` passes for a given route. If no route-table test exists, this task's verification is: (a) the diff itself, (b) a manual smoke check via `anemal-smoke-walkthrough` is out of scope for this batch's automated verification — rely on the `npx tsc --noEmit` + full frontend suite pass, consistent with ADR D4's evidence base (backend tests + seed grants already prove `vaccination.create` is correct; this task only aligns the one outlier).
 
-- [ ] **Step 2: Make the one-line permission-code change**
+- [x] **Step 2: Make the one-line permission-code change**
 
 In `src/frontend/src/App.tsx`, change line 145:
 ```tsx
@@ -358,17 +358,17 @@ to:
           <Route path="vaccinations-due/record" element={<RequirePermission perm="vaccination.create"><ClinicRecordVaccination/></RequirePermission>}/>
 ```
 
-- [ ] **Step 3: Verify no other reference to the old guard exists**
+- [x] **Step 3: Verify no other reference to the old guard exists**
 
 Run: `Grep -n "emr.create" src/frontend/src/App.tsx`
 Expected: zero matches (this was the only route gated on `emr.create` in the clinic section per the file excerpt already read; if any other line matches, stop and confirm with the ADR before changing it — D4 scopes this fix to the vaccination-record route only).
 
-- [ ] **Step 4: Run the guards suite + type-check as regression check**
+- [x] **Step 4: Run the guards suite + type-check as regression check**
 
 Run (from `src/frontend`): `npm test -- --run guards` then `npx tsc --noEmit -p src/frontend`
 Expected: both PASS (this change doesn't touch `RequirePermission`'s implementation, so `guards.test.tsx` is unaffected; this step exists purely to confirm no collateral breakage).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/frontend/src/App.tsx
@@ -386,7 +386,7 @@ git commit -m "fix(rbac): gate vaccination recording on vaccination.create, not 
 **Interfaces:**
 - Modifies: `App.tsx:152` — the `/settings` route element changes from `<RequireAuth><SettingsLayout/></RequireAuth>` to `<RequireAuth><RequirePlane plane="clinic"><SettingsLayout/></RequirePlane></RequireAuth>`, matching the existing pattern at `App.tsx:96` (`/clinic-admin`) and `App.tsx:134` (`/clinic`). No child `<Route>` under `/settings` changes — `preferences` (line 159) stays permission-free for all clinic roles per ADR D5.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `src/frontend/src/guards/guards.test.tsx`, this specific route-composition isn't unit-testable in isolation from `App.tsx`'s router tree without a heavier integration test. Since `guards.test.tsx` already tests `RequirePlane` generically (lines 94-135, already covers "platform session redirected away from clinic plane"), the composition itself doesn't need a new guards.test.tsx case. Instead, add a route-table assertion. Create `src/frontend/src/__tests__/settingsPlaneGuard.test.tsx`:
 ```tsx
@@ -414,12 +414,12 @@ describe('App.tsx route wiring — /settings plane guard (BUG-011)', () => {
 ```
 Note: this is a source-inspection test (acceptable here since `App.tsx`'s router tree isn't rendered in isolation elsewhere in the suite) — prefer this over standing up a full `MemoryRouter` render if no existing test file already does that for `App.tsx`; check `Grep -rln "MemoryRouter" src/frontend/src/__tests__` first and use that pattern instead if one already exists and is a closer fit.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run (from `src/frontend`): `npm test -- --run settingsPlaneGuard`
 Expected: FAIL — current line has no `RequirePlane` wrapper.
 
-- [ ] **Step 3: Add the `RequirePlane` wrapper**
+- [x] **Step 3: Add the `RequirePlane` wrapper**
 
 In `src/frontend/src/App.tsx`, change line 152:
 ```tsx
@@ -430,17 +430,17 @@ to:
         <Route path="/settings" element={<RequireAuth><RequirePlane plane="clinic"><SettingsLayout/></RequirePlane></RequireAuth>}>
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npm test -- --run settingsPlaneGuard`
 Expected: PASS.
 
-- [ ] **Step 5: Run full guards + settings-adjacent suites as regression check**
+- [x] **Step 5: Run full guards + settings-adjacent suites as regression check**
 
 Run: `npm test -- --run guards settings`
 Expected: PASS — no existing Settings screen test assumes the absence of a plane guard (none should, since plane guards don't affect an already-clinic-authenticated session).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/frontend/src/App.tsx src/frontend/src/__tests__/settingsPlaneGuard.test.tsx
@@ -458,7 +458,7 @@ git commit -m "fix(rbac): wrap /settings in RequirePlane plane=clinic, matching 
 
 No tests — documentation-only task, per plan header convention (docs tasks need no tests).
 
-- [ ] **Step 1: Add `staff.assign_branch` row + route map entries to the permission matrix**
+- [x] **Step 1: Add `staff.assign_branch` row + route map entries to the permission matrix**
 
 In `.claude/skills/anemal-rbac-matrix/references/permission-matrix.md`, section "5. Multi-role addendum (CR-01)" (currently ends at line 166 with the `staff.assign_role` route map entry), add immediately after the existing `staff.assign_role` row/rule block:
 ```markdown
@@ -472,7 +472,7 @@ branch among branches already assigned, no elevated permission); `GET /users/:us
 ```
 Verify against the real route implementations in `src/backend/routes/auth.routes.ts` and `src/backend/routes/user.routes.ts` before finalizing wording — confirm `switch-branch` is genuinely self-service (no permission gate beyond authentication) versus admin-assigns-branch (`staff.assign_branch`), since these are two different operations (a user switching their OWN active branch vs. an admin assigning which branches a user belongs to). Read both route files' current middleware chains first; adjust the permission mapping above if the actual code differs from this draft.
 
-- [ ] **Step 2: Add the `clinic.settings.manage` reserved row**
+- [x] **Step 2: Add the `clinic.settings.manage` reserved row**
 
 In the same file, section "2. Permission catalogue + default grid" (the big table, lines 24-75), add a row after `clinic.integrations.edit` (line 69):
 ```markdown
@@ -487,7 +487,7 @@ Immediately below the table (before "### Notes on key business decisions"), add 
 > any route (ADR-0004 D4).
 ```
 
-- [ ] **Step 3: Add the audit-correction note to the matrix doc**
+- [x] **Step 3: Add the audit-correction note to the matrix doc**
 
 At the top of the file, after the existing header blockquote (after line 4), add:
 ```markdown
@@ -499,7 +499,7 @@ At the top of the file, after the existing header blockquote (after line 4), add
 > CLAUDE.md, which names only `.claude/skills/` as the project skill path.
 ```
 
-- [ ] **Step 4: Mark the four D6 deferrals in platform-domain.md**
+- [x] **Step 4: Mark the four D6 deferrals in platform-domain.md**
 
 In `.claude/skills/anemal-platform-console/references/platform-domain.md`, in the "Proposed API surface" table (lines 7-20), annotate the four deferred rows. Change:
 ```markdown
@@ -530,17 +530,17 @@ Add a new line for customer deletion (not currently in the table — insert afte
 | DELETE `/platform/customers/:id` | n/a | **NOT IMPLEMENTED — DEFERRED to Phase 10 (ADR-0004 D6):** suspend/reactivate cover the operational need today. Soft-delete + retention policy is recorded as the hard constraint for when this is built — see `anemal-platform-console/SKILL.md:82`. |
 ```
 
-- [ ] **Step 5: Delete the stale `.agents/` tree**
+- [x] **Step 5: Delete the stale `.agents/` tree**
 
 Run: `git rm -r .agents`
 Expected: removes all 32 files listed under `.agents/skills/` (grep-verified unreferenced by any config, CLAUDE.md, or tooling — CLAUDE.md names only `.claude/skills/` as the project skill path; this tree was a stale duplicate that caused the false BUG-009 audit claim in D4).
 
-- [ ] **Step 6: Confirm nothing references the deleted tree**
+- [x] **Step 6: Confirm nothing references the deleted tree**
 
 Run: `Grep -rn "\.agents/" --glob '!.git' .` (or `Grep -rn "\.agents/skills"` scoped to the repo root) excluding the git history itself.
 Expected: zero matches outside of this plan file and the ADR (which reference it only to explain the deletion, not as a live dependency).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add .claude/skills/anemal-rbac-matrix/references/permission-matrix.md .claude/skills/anemal-platform-console/references/platform-domain.md
@@ -553,9 +553,9 @@ Note: if `.agents` was already staged for deletion by Step 5's `git rm -r`, the 
 
 ## Final verification (after all 6 tasks)
 
-- [ ] Run full frontend suite: `npm test -- --run` (from `src/frontend`) — expect all suites pass, including the 5 new/extended test files from T1–T5
-- [ ] Run `npx tsc --noEmit -p src/frontend` — expect zero errors (catches any stray reference to the old flat `PlatformAuthPayload` shape or the old `emr.create` guard)
-- [ ] Run full backend suite once as a regression check (no backend files changed this batch, but confirms nothing in `src/backend` was accidentally touched): `npx jest --runInBand` (from `src/backend`)
-- [ ] Run `git status` and confirm `.agents/` no longer appears as tracked
-- [ ] Run `git log --oneline fix/codex-audit-batch2` and confirm 6 commits in T1→T2→T3→T4→T5→T6 order
-- [ ] Hand off to `@ponytail-agent` (Step 5 gate) before `/execute-plan`, then `@qa-agent` (Step 7) for RBAC/plane-isolation sign-off (T4 and T5 are RBAC-relevant — QA should specifically re-run the plane-isolation and permission-matrix regression suites), then `/anemal-finish-branch` (Step 8)
+- [x] Run full frontend suite: `npm test -- --run` (from `src/frontend`) — expect all suites pass, including the 5 new/extended test files from T1–T5
+- [x] Run `npx tsc --noEmit -p src/frontend` — expect zero errors (catches any stray reference to the old flat `PlatformAuthPayload` shape or the old `emr.create` guard)
+- [x] Run full backend suite once as a regression check (no backend files changed this batch, but confirms nothing in `src/backend` was accidentally touched): `npx jest --runInBand` (from `src/backend`)
+- [x] Run `git status` and confirm `.agents/` no longer appears as tracked
+- [x] Run `git log --oneline fix/codex-audit-batch2` and confirm 6 commits in T1→T2→T3→T4→T5→T6 order
+- [x] Hand off to `@ponytail-agent` (Step 5 gate) before `/execute-plan`, then `@qa-agent` (Step 7) for RBAC/plane-isolation sign-off (T4 and T5 are RBAC-relevant — QA should specifically re-run the plane-isolation and permission-matrix regression suites), then `/anemal-finish-branch` (Step 8)
