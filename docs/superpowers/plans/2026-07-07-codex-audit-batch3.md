@@ -304,32 +304,32 @@ Note: `/platform/auth/*` and other `/platform/*` routes are **not** part of this
 
 Before finalizing this list, re-run the verification done during planning: `Grep -n "router\.\(get\|post\|put\|patch\|delete\)(" <each clinic-mounted route file>` and confirm every match either has `requirePermission`/`requireAnyPermission` on the same line or appears in the allowlist above. At the time this plan was written, every clinic-mounted route file other than `auth.routes.ts` and `settings.routes.ts` (the `/personal` lines) had full annotation coverage — re-verify this hasn't drifted.
 
-- [ ] **Step 1: Write the test skeleton with fixtures (beforeAll/afterAll) — no assertions yet**
+- [x] **Step 1: Write the test skeleton with fixtures (beforeAll/afterAll) — no assertions yet**
 
 Create `src/backend/tests/integration/roleRouteMatrix.test.ts`. Set up: one isolated tenant (`SUB = 'role-route-matrix'`), one branch, three users (admin/doctor/staff) via `seedUserRoles`, `user_branches` rows, sequential logins producing `adminToken`/`doctorToken`/`staffToken`. Also stand up one platform user + `signPlatformToken` (pattern from `auditRedaction.test.ts:38-47`) for the plane-sweep direction. `afterAll` deletes only this test's own tenant/users/roles by id (never touch `tenantId: null` rows).
 
-- [ ] **Step 2: Run to verify the skeleton boots (no real assertions to fail yet, this step just proves fixtures work)**
+- [x] **Step 2: Run to verify the skeleton boots (no real assertions to fail yet, this step just proves fixtures work)**
 
 `node node_modules/jest/bin/jest.js --runInBand --forceExit --runTestsByPath tests/integration/roleRouteMatrix.test.ts`
 Expected: PASS (empty test body or a single `expect(true).toBe(true)` placeholder) — confirms tenant/user/role/branch/login fixtures all succeed before layering the real sweep on top.
 
-- [ ] **Step 3: Add the enumeration + allowed/denied/no-token sweep**
+- [x] **Step 3: Add the enumeration + allowed/denied/no-token sweep**
 
 Using `walkRoutes(app)` from T3, filter to routes NOT starting with `/platform`. For each remaining route:
 - If in `UNMAPPED_ALLOWLIST` and has no `permissionCodes` → skip (or assert it truly has none, to catch the allowlist going stale if someone adds a guard later without removing the allowlist entry — prefer this stronger form: `if (allowlisted) { expect(route.permissionCodes).toBeUndefined(); return }`).
 - Else if it has no `permissionCodes` and is **not** allowlisted → **fail** (`throw`/`fail()` naming the exact method+path, per ADR's "unmapped-route guard").
 - Else (has `permissionCodes` + `mode`): compute `expected = mode === 'all' ? permissionCodes.every(c => rolePerms.has(c)) : permissionCodes.some(c => rolePerms.has(c))` for each of admin/doctor/staff's `expectedPermissionsFor(...)` set, and assert the live HTTP call's allowed/denied outcome matches, for all three roles, plus the no-token 401 case.
 
-- [ ] **Step 4: Add the plane sweeps**
+- [x] **Step 4: Add the plane sweeps**
 
 For a representative sample of enumerated clinic routes (or all of them — budget allows per ADR's "runtime budget ~1-3 min accepted"), assert platform token → 403. For a representative sample of `/platform/*` routes (enumerate separately, unfiltered), assert clinic token (any of admin/doctor/staff) → 403.
 
-- [ ] **Step 5: Run the full file**
+- [x] **Step 5: Run the full file**
 
 `node node_modules/jest/bin/jest.js --runInBand --forceExit --runTestsByPath tests/integration/roleRouteMatrix.test.ts`
 Expected: PASS. If any route fails the allowed/denied sweep, that is either (a) a genuine RBAC gap this test correctly caught — flag to `@qa-agent`/`@ba-agent`, do not silently loosen the assertion — or (b) an expected-grants derivation bug — fix the derivation, not the test's strictness.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 ```bash
 git add src/backend/tests/integration/roleRouteMatrix.test.ts
 git commit -m "test(qa): add CI-enforced role-route authorization matrix sweep (ADR-0005 D2)"
