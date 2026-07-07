@@ -65,14 +65,21 @@ border-r-4 border-primary bg-surface-container-low text-primary
 
 ### Admin nav items
 
+> Real mount point is `/clinic-admin/*` (`RequirePlane plane="clinic"`, `App.tsx:96`); `/admin/*`
+> paths are legacy redirect-only routes (`<Navigate to="/clinic-admin/..." replace/>`, `App.tsx:110-120`).
+
 | Icon | Label | Route |
 |---|---|---|
-| `dashboard` | Overview | `/admin/dashboard` |
-| `group` | Users & Roles | `/admin/users` |
-| `business` | Clinic Profile | `/admin/profile` |
-| `bar_chart` | Usage Stats | `/admin/usage` |
-| `settings` | Settings | `/admin/settings` |
-| `credit_card` | Subscription | `/admin/subscription` |
+| `dashboard` | Overview | `/clinic-admin/dashboard` |
+| `group` | Users & Roles | `/clinic-admin/users` |
+| `business` | Clinic Profile | `/clinic-admin/profile` |
+| `bar_chart` | Usage Stats | `/clinic-admin/usage` |
+| `settings` | Settings | `/clinic-admin/settings` |
+| `credit_card` | Subscription | `/clinic-admin/subscription` |
+| `domain` | Branches | `/clinic-admin/branches` |
+| `bloodtype` | Blood Bank | `/clinic-admin/blood-bank` |
+| `fact_check` | Audit | `/clinic-admin/audit` |
+| `admin_panel_settings` | Roles | `/clinic-admin/roles` |
 
 ### Footer (border-t border-outline-variant p-sm)
 ```

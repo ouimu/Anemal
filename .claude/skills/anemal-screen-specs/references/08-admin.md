@@ -15,7 +15,10 @@ All pages offset: ml-56/ml-14 pt-16
 
 ---
 
-## Admin Dashboard (`/admin/dashboard` → AdminDashboard.tsx)
+> Real mount point is `/clinic-admin/*` (legacy `/admin/*` paths now redirect-only, see
+> `00-shared-layout.md`). Headings below use the current `/clinic-admin/*` prefix.
+
+## Admin Dashboard (`/clinic-admin/dashboard` → AdminDashboard.tsx)
 
 ```
 p-6 max-w-4xl mx-auto
@@ -39,7 +42,7 @@ Plan card: same card style
 
 ---
 
-## Users & Roles (`/admin/users` → AdminUsers.tsx)
+## Users & Roles (`/clinic-admin/users` → UserManagementTab.tsx)
 
 ```
 p-6 max-w-4xl mx-auto
@@ -77,7 +80,7 @@ CTA: bg-primary hover:bg-primary/90 text-on-primary rounded-xl min-h-[44px]
 
 ---
 
-## Clinic Profile (`/admin/profile` → ClinicProfileTab.tsx)
+## Clinic Profile (`/clinic-admin/profile` → ClinicProfileTab.tsx)
 
 ```
 form space-y-6
@@ -94,7 +97,7 @@ Save button: bg-primary hover:bg-primary/90 text-on-primary min-h-[44px] px-6 ro
 
 ---
 
-## Settings (`/admin/settings` → ClinicSettingsTab.tsx)
+## Settings (`/clinic-admin/settings` → ClinicSettingsTab.tsx)
 
 ```
 Toggle component: w-11 h-6 rounded-full
@@ -108,7 +111,19 @@ Save button: bg-primary hover:bg-primary/90 text-on-primary min-h-[44px] px-6 ro
 
 ---
 
-## Subscription (`/admin/subscription` → SubscriptionTab.tsx)
+## Subscription (`/clinic-admin/subscription` → SubscriptionTab.tsx)
+
+---
+
+## Unspecced admin screens (write-on-next-touch)
+
+These routes are real and shipped but have no detailed spec in this file yet — a spec is
+added only when the screen is next modified (see `SKILL.md` coverage table, ADR-0006 D4):
+
+- `/clinic-admin/branches` → `AdminBranches.tsx` — not yet specced, write-on-next-touch (see SKILL.md coverage table).
+- `/clinic-admin/blood-bank` → `AdminBloodBank.tsx` — not yet specced, write-on-next-touch (see SKILL.md coverage table).
+- `/clinic-admin/audit` → `AdminAudit.tsx` — not yet specced, write-on-next-touch (see SKILL.md coverage table).
+- `/clinic-admin/roles` → `RoleEditorView.tsx` — not yet specced, write-on-next-touch (see SKILL.md coverage table).
 
 ```
 Plan cards: bg-surface border rounded-xl p-5 flex flex-col gap-3

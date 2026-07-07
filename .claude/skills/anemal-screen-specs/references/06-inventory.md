@@ -55,8 +55,12 @@ TABLE (glass-card rounded-xl overflow-hidden):
 | Alerts | `GET /api/products/alerts` → low-stock, expiring-soon, inventory value |
 | Auto-deduct | Dispensing a prescription (EMR) deducts stock + logs `out` movement (Task 3.1.2) |
 
-## Deferred to Phase 4
-Per-branch stock (`branch_inventory`), inter-branch transfers, camera barcode scanning (currently barcode is a manual text field).
+## Status
+Per-branch stock (`branch_inventory`) and inter-branch transfers (`/api/inventory/transfers`) are
+**implemented**; barcode scanning is currently a manual text field (camera capture deferred).
+
+## Deferred
+Camera barcode scanning (currently a manual text field; no camera capture built).
 
 ## Touch / tokens
 All interactive elements ≥ 44×44px; rows ≥ 48px. No emoji, no raw hex — Compassionate Care tokens only (Material Symbols Outlined for every icon).
