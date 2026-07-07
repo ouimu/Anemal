@@ -142,7 +142,7 @@ export default function App() {
           <Route path="billing"              element={<RequirePermission perm="billing.create"><ClinicBilling/></RequirePermission>}/>
           <Route path="transactions"         element={<RequirePermission perm="billing.view"><ClinicTransactions/></RequirePermission>}/>
           <Route path="vaccinations-due"     element={<RequirePermission perm="emr.view"><ClinicVaccinationsDue/></RequirePermission>}/>
-          <Route path="vaccinations-due/record" element={<RequirePermission perm="emr.create"><ClinicRecordVaccination/></RequirePermission>}/>
+          <Route path="vaccinations-due/record" element={<RequirePermission perm="vaccination.create"><ClinicRecordVaccination/></RequirePermission>}/>
           <Route path="inpatient"    element={<RequirePermission perm="inpatient.view"><ClinicInpatient/></RequirePermission>}/>
           {/* Doctor has no grooming access — gate on grooming.view which doctor role lacks */}
           <Route path="grooming"     element={<RequirePermission perm="grooming.view"><ClinicGrooming/></RequirePermission>}/>
