@@ -4,8 +4,9 @@
  * Validates query parameters, delegates to the platform-audit repository,
  * and returns the standard `{ success, data }` envelope.
  *
- * The `to` date filter is extended to end-of-day (23:59:59.999) so that
- * callers can pass `YYYY-MM-DD` without losing the last 86 399 seconds.
+ * `from`/`to` (`YYYY-MM-DD`) are interpreted as pure UTC calendar-day bounds,
+ * inclusive: `from` -> `T00:00:00.000Z`, `to` -> `T23:59:59.999Z`. This is
+ * independent of server wall-clock/local timezone (ADR-0003 D6).
  *
  * @module platform-audit.controller
  */
@@ -17,9 +18,11 @@ import { listPlatformAuditLogs } from '../models/platform-audit.repository'
 /** Maximum allowed page size to prevent runaway queries. */
 const MAX_LIMIT = 200
 
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
+
 const querySchema = z.object({
-  from: z.string().optional(),
-  to: z.string().optional(),
+  from: z.string().regex(DATE_ONLY, 'from must be YYYY-MM-DD').optional(),
+  to: z.string().regex(DATE_ONLY, 'to must be YYYY-MM-DD').optional(),
   action: z.string().optional(),
   tenantId: z.coerce.number().int().positive().optional(),
   page: z.coerce.number().int().min(1).default(1),
@@ -44,14 +47,11 @@ export async function handleListPlatformAudit(
   try {
     const q = querySchema.parse(req.query)
 
-    const from = q.from ? new Date(q.from) : undefined
-    const to = q.to
-      ? (() => {
-          const d = new Date(q.to)
-          d.setHours(23, 59, 59, 999)
-          return d
-        })()
-      : undefined
+    // Pure UTC calendar-day bounds (ADR-0003 D6): from/to are YYYY-MM-DD interpreted
+    // as UTC calendar days, inclusive. Avoids setHours() mutating in server-local time,
+    // which silently dropped the last ~7h of the UTC day at UTC+7.
+    const from = q.from ? new Date(`${q.from}T00:00:00.000Z`) : undefined
+    const to = q.to ? new Date(`${q.to}T23:59:59.999Z`) : undefined
 
     const result = await listPlatformAuditLogs({
       from,

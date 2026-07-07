@@ -31,10 +31,12 @@ export const updateAllSettingsSchema = z.object({
   baseUrl:         z.string().url().max(500).optional(),
   maintenanceMode: z.boolean().optional(),
   trialDays:       z.number().int().min(0).max(3650).optional(),
-  smtpHost:        z.string().max(253).optional(),
-  smtpPort:        z.number().int().min(1).max(65535).optional(),
-  smtpUser:        z.string().max(200).optional(),
-  smtpFrom:        z.string().email().max(200).optional(),
+  // Nullable (BUG-004 / ADR-0003 D4): null clears the value, undefined leaves it
+  // unchanged, symmetric with GET which already emits null for blank SMTP fields.
+  smtpHost:        z.string().max(253).nullable().optional(),
+  smtpPort:        z.number().int().min(1).max(65535).nullable().optional(),
+  smtpUser:        z.string().max(200).nullable().optional(),
+  smtpFrom:        z.string().email().max(200).nullable().optional(),
   featureFlags:    z.record(z.boolean()).optional(),
 }).strict()
 
@@ -139,11 +141,13 @@ export async function updateAllSettings(req: Request, res: Response, next: NextF
 
     let updated = 0
     for (const [field, dbKey] of Object.entries(SETTINGS_KEY_MAP)) {
-      // featureFlags is not in SETTINGS_KEY_MAP so raw is always string | boolean | number | undefined
-      const raw = (body as Record<string, string | boolean | number | undefined>)[field]
-      if (raw === undefined) continue
+      // featureFlags is not in SETTINGS_KEY_MAP so raw is always string | boolean | number | null | undefined
+      const raw = (body as Record<string, string | boolean | number | null | undefined>)[field]
+      if (raw === undefined) continue // undefined = unchanged, per field
 
-      await systemSvc.updateByKey(dbKey, coerceToString(raw), userId)
+      // null = clear (stored as ''); non-null = set via existing coerceToString path.
+      const valueToStore = raw === null ? '' : coerceToString(raw)
+      await systemSvc.updateByKey(dbKey, valueToStore, userId)
       updated++
     }
 
