@@ -172,7 +172,7 @@ export interface EnumeratedRoute {
 export function walkRoutes(app: import('express').Express): EnumeratedRoute[]
 ```
 
-- [ ] **Step 1: Write the walker's own fixture-app unit test first**
+- [x] **Step 1: Write the walker's own fixture-app unit test first**
 
 Create `src/backend/tests/helpers/__tests__/expressRouteWalker.test.ts`:
 ```ts
@@ -230,12 +230,12 @@ describe('expressRouteWalker — fixture app (3 routes)', () => {
 })
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 `node node_modules/jest/bin/jest.js --runInBand --forceExit --runTestsByPath tests/helpers/__tests__/expressRouteWalker.test.ts`
 Expected: FAIL — module `../expressRouteWalker` doesn't exist yet.
 
-- [ ] **Step 3: Implement the walker**
+- [x] **Step 3: Implement the walker**
 
 Create `src/backend/tests/helpers/expressRouteWalker.ts`. Recursively walk `app._router.stack`; for each layer:
 - If `layer.route` exists, it's a terminal route — read `layer.route.path` and `layer.route.methods` (object of `{get: true, ...}`), and inspect `layer.route.stack` (the per-method handler chain) for any handler carrying `.permissionCodes`/`.mode` (set by T2). Concatenate with the current mount-path prefix.
@@ -243,16 +243,16 @@ Create `src/backend/tests/helpers/expressRouteWalker.ts`. Recursively walk `app.
 - Skip layers that are neither a route nor a named sub-router (e.g. bare middleware like `helmet()`, `cors()`, `express.json()`).
 - Normalize path params to `:name` form (Express already stores them this way in `layer.route.path` for nested routers — mount-path params from parent `app.use('/users/:userId/branches', ...)`-style dynamic mounts, if any exist in this codebase, must also resolve to `:name`; grep `app.use\(` and route files for parameterized mount paths before finalizing — none were found in `app.ts` at the time this plan was written, but verify at implementation time since a missed one would silently break path reconstruction for that subtree).
 
-- [ ] **Step 4: Run to verify pass**
+- [x] **Step 4: Run to verify pass**
 
 `node node_modules/jest/bin/jest.js --runInBand --forceExit --runTestsByPath tests/helpers/__tests__/expressRouteWalker.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Sanity-check against the real app before T4 depends on it**
+- [x] **Step 5: Sanity-check against the real app before T4 depends on it**
 
 Write a throwaway local script or extend the test temporarily with `import app from '../../../app'; console.log(walkRoutes(app).length)` to eyeball a plausible total route count (cross-check against `grep -c "router\.\(get\|post\|put\|patch\|delete\)(" src/backend/routes/*.routes.ts` plus the one `app.get('/health', ...)`). Remove the throwaway check before committing — it is a manual sanity step, not a kept test.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 ```bash
 git add src/backend/tests/helpers/expressRouteWalker.ts src/backend/tests/helpers/__tests__/expressRouteWalker.test.ts
 git commit -m "test(qa): add expressRouteWalker helper with its own fixture-app unit test (ADR-0005 D2)"
