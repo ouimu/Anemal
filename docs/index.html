@@ -414,13 +414,13 @@
   <!-- ── Build Status ── -->
   <div class="callout ok" style="margin-top:16px">
     <span class="callout-icon">🎉</span>
-    <span><strong>✅ Phase 9 COMPLETE (2026-06-18):</strong> Phases 1–9 done. <strong>554 backend + 138 frontend tests passing</strong> · tsc clean. <strong style="color:#16a34a">Phase 9 shipped:</strong> Full EN/TH i18n rollout — 260+ key pairs, 16 clinic screens translated (Login, ClinicDashboard, AdminDashboard, Appointments, Pets, EMR, Inventory, Billing, AdminUsers, AdminProfile, RoleEditor, RolePicker and more). Custom lightweight i18n (no external library). Language toggle persists via Zustand <code>uiStore.language</code>. Platform Console excluded (internal SaaS tool). <strong style="color:#0369a1">Codex audit remediation Batch 1 COMPLETE (2026-07-07, PR #8):</strong> 6 stop-ship findings fixed — secret redaction in audit logs, duplicate-seed cleanup, UTC audit date filters, trial-lifecycle deferral, plan payload translation, nullable SMTP settings. <strong>Batch 2 in progress.</strong> <strong>Next: Phase 10</strong> — Payment Gateway (credential-gated). <em>See <a onclick="show('roadmap-upcoming')" href="javascript:void(0)">Upcoming Work</a>.</em></span>
+    <span><strong>✅ Phase 9 COMPLETE (2026-06-18):</strong> Phases 1–9 done. <strong>554 backend + 143 frontend tests passing</strong> · tsc clean. <strong style="color:#16a34a">Phase 9 shipped:</strong> Full EN/TH i18n rollout — 260+ key pairs, 16 clinic screens translated (Login, ClinicDashboard, AdminDashboard, Appointments, Pets, EMR, Inventory, Billing, AdminUsers, AdminProfile, RoleEditor, RolePicker and more). Custom lightweight i18n (no external library). Language toggle persists via Zustand <code>uiStore.language</code>. Platform Console excluded (internal SaaS tool). <strong style="color:#0369a1">Codex audit remediation Batch 1 COMPLETE (2026-07-07, PR #8):</strong> 6 stop-ship findings fixed — secret redaction in audit logs, duplicate-seed cleanup, UTC audit date filters, trial-lifecycle deferral, plan payload translation, nullable SMTP settings. <strong style="color:#0369a1">Batch 2 COMPLETE (2026-07-07, PR #9):</strong> 5 findings fixed — grooming status URL, platform plane-client separation, platform login identity hydration, vaccination route-guard correction, /settings plane guard — zero backend changes. <strong>Next: Phase 10</strong> — Payment Gateway (credential-gated). <em>See <a onclick="show('roadmap-upcoming')" href="javascript:void(0)">Upcoming Work</a>.</em></span>
   </div>
 
   <!-- ── Stats ── -->
   <div class="stat-row">
     <div class="stat"><div class="n" style="color:#16a34a">9/11</div><div class="l">Phases Done</div></div>
-    <div class="stat"><div class="n" style="color:#16a34a">692</div><div class="l">Tests Passing</div></div>
+    <div class="stat"><div class="n" style="color:#16a34a">697</div><div class="l">Tests Passing</div></div>
     <div class="stat"><div class="n">28</div><div class="l">DB Tables</div></div>
     <div class="stat"><div class="n">13</div><div class="l">API Modules</div></div>
     <div class="stat"><div class="n">8</div><div class="l">Screen Prototypes</div></div>
@@ -443,7 +443,7 @@
       <tr><td><strong>Phase 9</strong></td><td>i18n Rollout — 260+ EN/TH key pairs; 16 clinic screens translated; custom lightweight i18n; language toggle via Zustand; Platform Console excluded</td><td>95 (frontend)</td><td><span style="color:#16a34a;font-weight:700">✅ Complete (2026-06-18)</span></td></tr>
       <tr><td><strong>D-1–D-5</strong> <span style="font-size:11px;color:#6b7280">(product decisions)</span></td><td>Username login (replace email), company types table (EN/TH), payment history API + tab, user management username+branch, owner-first pet browse flow in ClinicPets</td><td>447 backend</td><td><span style="color:#16a34a;font-weight:700">✅ Complete (2026-06-24)</span></td></tr>
       <tr><td><strong>Codex Audit</strong> <span style="font-size:11px;color:#6b7280">(Batch 1)</span></td><td>Stop-ship remediation — secret redaction, seed dedup, UTC audit filters, trial-lifecycle deferral (ADR-0003), plan payload translation, nullable SMTP fields. See <code>docs/adr/0003-codex-audit-batch1-stopship-decisions.md</code>.</td><td>554 backend / 138 frontend</td><td><span style="color:#16a34a;font-weight:700">✅ Complete (2026-07-07)</span></td></tr>
-      <tr style="opacity:0.5"><td><strong>Codex Audit</strong> <span style="font-size:11px;color:#6b7280">(Batch 2)</span></td><td>Remaining Codex audit findings — scope tracked separately</td><td>—</td><td><span style="color:#d97706;font-weight:700">🔄 In progress</span></td></tr>
+      <tr><td><strong>Codex Audit</strong> <span style="font-size:11px;color:#6b7280">(Batch 2)</span></td><td>Remaining Codex audit findings — grooming status URL, platform plane-client separation, platform login hydration, vaccination route-guard fix, /settings plane guard. Zero backend changes. See <code>docs/adr/0004-codex-audit-batch2-decisions.md</code>.</td><td>554 backend / 143 frontend</td><td><span style="color:#16a34a;font-weight:700">✅ Complete (2026-07-07)</span></td></tr>
       <tr style="opacity:0.7"><td><strong>Phase 10</strong> <span style="font-size:11px;color:#6b7280">(was Session F)</span></td><td>Payment Gateway &amp; Subscription Billing — Omise/Stripe, webhooks, SaaS billing + cron</td><td>—</td><td><span style="color:#6b7280;font-weight:700">⏸ Postponed (Omise + SMTP)</span></td></tr>
       <tr style="opacity:0.7"><td><strong>Phase 11</strong> <span style="font-size:11px;color:#6b7280">(was Session G)</span></td><td>LINE/SMS Real Dispatch — wire reminder worker to LINE + Twilio</td><td>—</td><td><span style="color:#6b7280;font-weight:700">⏸ Postponed (LINE + Twilio)</span></td></tr>
     </tbody>
@@ -909,7 +909,7 @@ CREATE INDEX idx_pet_reminders_pet          ON pet_reminders(tenant_id, pet_id);
   </ul>
 
   <h2>Current Backlog Owner</h2>
-  <div class="callout ok" style="margin-bottom:8px"><span class="callout-icon">✅</span><span><strong>Phases 1–9 + D-1–D-5 + Codex Audit Batch 1 complete (692 tests: 554 backend + 138 frontend).</strong> D-series COMPLETE 2026-06-24 — username login, company types, payment history, owner-first browse. Phase 9 COMPLETE 2026-06-18 — i18n rollout: 260+ EN/TH key pairs, 16 screens, 95/95 tests. Codex Audit Batch 1 COMPLETE 2026-07-07 (PR #8) — 6 stop-ship findings fixed, decision record <code>docs/adr/0003-codex-audit-batch1-stopship-decisions.md</code>; Batch 2 in progress. Phase 10/11 postponed (credential-gated). See <a onclick="show('roadmap-upcoming')" href="javascript:void(0)">Upcoming Work →</a></span></div>
+  <div class="callout ok" style="margin-bottom:8px"><span class="callout-icon">✅</span><span><strong>Phases 1–9 + D-1–D-5 + Codex Audit Batch 1 &amp; 2 complete (697 tests: 554 backend + 143 frontend).</strong> D-series COMPLETE 2026-06-24 — username login, company types, payment history, owner-first browse. Phase 9 COMPLETE 2026-06-18 — i18n rollout: 260+ EN/TH key pairs, 16 screens, 95/95 tests. Codex Audit Batch 1 COMPLETE 2026-07-07 (PR #8) — 6 stop-ship findings fixed, decision record <code>docs/adr/0003-codex-audit-batch1-stopship-decisions.md</code>. Codex Audit Batch 2 COMPLETE 2026-07-07 (PR #9) — 5 findings fixed, zero backend changes, decision record <code>docs/adr/0004-codex-audit-batch2-decisions.md</code>. Phase 10/11 postponed (credential-gated). See <a onclick="show('roadmap-upcoming')" href="javascript:void(0)">Upcoming Work →</a></span></div>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Phase</th><th>Scope</th><th>Est. Token Cost</th></tr></thead>
     <tbody>
@@ -4163,7 +4163,7 @@ cd ../frontend &amp;&amp; rm -rf node_modules &amp;&amp; npm install</code></pre
         <tr><td><span class="badge phase">Bugfix</span></td><td>Appointment doctor list not populating from branch</td><td><span class="cl-status complete">Complete</span></td><td>13 new (repo + endpoint)</td><td>2026-07-06</td></tr>
         <tr><td><span class="badge phase">Security</span></td><td>Appointment tenant-ownership validation (doctorId/petId)</td><td><span class="cl-status complete">Complete</span></td><td>8 new · 539/539 full suite</td><td>2026-07-06</td></tr>
         <tr><td><span class="badge phase">Codex Audit</span></td><td>Batch 1 stop-ship remediation (6 findings)</td><td><span class="cl-status complete">Complete</span></td><td>554 backend / 138 frontend</td><td>2026-07-07</td></tr>
-        <tr style="opacity:0.6"><td><span class="badge phase">Codex Audit</span></td><td>Batch 2 remediation</td><td><span class="cl-status paused">In progress</span></td><td>—</td><td>—</td></tr>
+        <tr><td><span class="badge phase">Codex Audit</span></td><td>Batch 2 remediation (5 findings)</td><td><span class="cl-status complete">Complete</span></td><td>554 backend / 143 frontend</td><td>2026-07-07</td></tr>
         <tr><td><span class="badge phase">Phase 10</span></td><td>Payment gateway + SaaS billing</td><td><span class="cl-status paused">Paused</span></td><td>—</td><td>Needs credentials</td></tr>
         <tr><td><span class="badge phase">Phase 11</span></td><td>LINE/SMS dispatch</td><td><span class="cl-status paused">Paused</span></td><td>—</td><td>Needs credentials</td></tr>
       </tbody>
@@ -4171,6 +4171,34 @@ cd ../frontend &amp;&amp; rm -rf node_modules &amp;&amp; npm install</code></pre
   </div>
 
   <hr/>
+
+  <!-- CODEX_AUDIT_BATCH2_BLOCK -->
+  <div class="cl-phase-block" id="cl-codex-audit-batch2">
+    <div class="cl-phase-header">
+      <div class="cl-phase-num">🛡️</div>
+      <div>
+        <div class="cl-phase-title">Codex Audit — Batch 2 Remediation</div>
+        <div class="cl-phase-subtitle">PR #9 · 5 findings (BUG-006, BUG-007, BUG-009, BUG-010, BUG-011) · zero backend changes</div>
+      </div>
+      <div class="cl-phase-meta">
+        <div class="cl-phase-date">2026-07-07</div>
+        <span class="cl-status complete">Complete</span>
+      </div>
+    </div>
+    <div class="cl-phase-body">
+      <p>Second batch of Codex audit findings, closed via the standard pipeline (brainstorm → BA sign-off → mandatory grilling → Ponytail gate → execution → QA sign-off). Every fix in this batch is frontend-only or documentation-only. Decision record: <code>docs/adr/0004-codex-audit-batch2-decisions.md</code>.</p>
+      <ul class="cl-deliverables">
+        <li><strong>BUG-006</strong> — grooming status update in <code>ClinicGrooming.tsx</code> was calling <code>PUT /api/grooming/bookings/:id</code>; fixed to the correct <code>.../status</code> suffix route</li>
+        <li><strong>BUG-007</strong> — platform company-types picker in <code>CustomerDetailView.tsx</code> was using the clinic API client against a platform path; switched to the platform API client calling <code>/platform/company-types</code>, preserving the hard rule that clinic and platform clients never mix</li>
+        <li><strong>BUG-010</strong> — platform login now hydrates identity from the nested <code>data.user</code> envelope (<code>platformUserId</code>, <code>role</code>, <code>name</code> all populate correctly in <code>platformAuthStore</code>); cosmetic UI fields only, no authorization path affected</li>
+        <li><strong>BUG-009</strong> — vaccination record route guard in <code>App.tsx</code> corrected from <code>emr.create</code> to the canonical <code>vaccination.create</code> (matches backend route, seed grants, and integration tests). The audit's claim that the RBAC matrix was missing this permission was found to be false — it read a stale <code>.agents/skills/</code> duplicate tree, which has now been deleted (34 files removed)</li>
+        <li><strong>BUG-011</strong> — <code>/settings</code> route wrapped in <code>RequirePlane plane="clinic"</code>, matching the existing <code>/clinic</code> and <code>/clinic-admin</code> guard pattern</li>
+        <li>RBAC matrix docs updated: added <code>staff.assign_branch</code> row and marked <code>clinic.settings.manage</code> as reserved (seeded, not yet route-enforced); platform-domain docs record 4 explicit scope deferrals (platform users CRUD → backlog, usage aggregate → deferred, provisioning UI → own future grilled task, customer deletion → Phase 10)</li>
+      </ul>
+      <span class="cl-test-count">Backend 554/554 (unchanged) · Frontend 143/143 · tsc clean · 697 total tests</span>
+    </div>
+  </div>
+  <!-- /CODEX_AUDIT_BATCH2_BLOCK -->
 
   <!-- CODEX_AUDIT_BATCH1_BLOCK -->
   <div class="cl-phase-block" id="cl-codex-audit-batch1">
@@ -4186,7 +4214,7 @@ cd ../frontend &amp;&amp; rm -rf node_modules &amp;&amp; npm install</code></pre
       </div>
     </div>
     <div class="cl-phase-body">
-      <p>First batch of stop-ship findings from an external Codex security/correctness audit, closed via the standard pipeline. Decision record: <code>docs/adr/0003-codex-audit-batch1-stopship-decisions.md</code>. Batch 2 (remaining findings) is in progress.</p>
+      <p>First batch of stop-ship findings from an external Codex security/correctness audit, closed via the standard pipeline. Decision record: <code>docs/adr/0003-codex-audit-batch1-stopship-decisions.md</code>. Batch 2 (remaining findings) is complete — see below.</p>
       <ul class="cl-deliverables">
         <li><strong>BUG-001</strong> — deep pattern-based secret redaction added to the audit-log middleware on both planes (clinic + platform); one-time scrub script redacted 67 pre-existing rows in <code>platform_audit_logs</code>; regression test <code>auditRedaction.test.ts</code></li>
         <li><strong>BUG-005</strong> — reran the seed script and deactivated (<code>isActive=false</code>) duplicate tenant-2 users (<code>user4</code>, <code>user5</code>, <code>user6</code>, <code>user2072</code>, <code>intruder_b</code>); new <code>seedCredentialSmoke.test.ts</code> verifies every credential in the HOW-TO-RUN guide completes the two-step login</li>
