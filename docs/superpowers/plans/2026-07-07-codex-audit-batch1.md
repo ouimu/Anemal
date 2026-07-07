@@ -400,7 +400,7 @@ git commit -m "fix(seed): re-run seed + deactivate tenant-2 duplicate/artifact u
 - Modifies: `querySchema.from`/`querySchema.to` gain `.regex(/^\d{4}-\d{2}-\d{2}$/)` validation.
 - Modifies: `handleListPlatformAudit` date-bound construction — `from` → `${from}T00:00:00.000Z`, `to` → `${to}T23:59:59.999Z`, both parsed as literal UTC instants (no `setHours`, which mutates in local time).
 
-- [ ] **Step 1: Write the failing tests with injected timestamps**
+- [x] **Step 1: Write the failing tests with injected timestamps**
 
 Create `src/backend/tests/integration/platformAuditUtcBounds.test.ts`:
 ```ts
@@ -476,12 +476,12 @@ describe('GET /platform/audit — pure UTC date bounds (BUG-008)', () => {
 ```
 Note for implementer: wire `platformToken` using the same platform super-admin login helper already present in `platform-console-t5f02.test.ts` (read that file's `beforeAll` in full for the exact call sequence before finalizing).
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `npx jest platformAuditUtcBounds --runInBand`
 Expected: FAIL on the malformed-param test (currently no regex validation → not rejected with 400) and possibly on the day-boundary tests depending on the machine's local timezone (only fails reliably at UTC+ offsets ahead of UTC, per ADR D6 — if run on a UTC or UTC-behind machine the existing `setHours` bug may not reproduce; that's expected and is exactly why ADR D6 calls for injected-timestamp determinism plus a code fix rather than relying on a flaky wall-clock repro).
 
-- [ ] **Step 3: Add Zod regex validation and switch to pure UTC bounds**
+- [x] **Step 3: Add Zod regex validation and switch to pure UTC bounds**
 
 In `src/backend/controllers/platform-audit.controller.ts`, replace lines 20–27:
 ```ts
@@ -528,17 +528,17 @@ with:
     const to = q.to ? new Date(`${q.to}T23:59:59.999Z`) : undefined
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `npx jest platformAuditUtcBounds --runInBand`
 Expected: PASS, all 3 tests.
 
-- [ ] **Step 5: Confirm the existing flaky test is now deterministically correct**
+- [x] **Step 5: Confirm the existing flaky test is now deterministically correct**
 
 Run: `npx jest platform-console-t5f02 --runInBand`
 Expected: PASS — the `today window (from=to=today) includes the just-written suspend row` test (line ~443) now passes regardless of local server timezone offset, since the controller is UTC-consistent end to end.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/backend/controllers/platform-audit.controller.ts src/backend/tests/integration/platformAuditUtcBounds.test.ts
