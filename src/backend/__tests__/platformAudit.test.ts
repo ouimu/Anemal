@@ -276,15 +276,13 @@ describe('GET /platform/audit — filters (AC6)', () => {
 // AC7 — `to` extended to end-of-day
 // ═══════════════════════════════════════════════════════════════════════════
 describe('GET /platform/audit — end-of-day `to` (AC7)', () => {
-  it('pa-17: ?to=2026-06-17 is extended to 23:59:59.999 local time', async () => {
+  it('pa-17: ?to=2026-06-17 is extended to 23:59:59.999 UTC (ADR-0003 D6)', async () => {
     await get('/platform/audit?to=2026-06-17', platformToken())
     const lte: Date = lastFindManyArgs.where.createdAt.lte
     expect(lte).toBeInstanceOf(Date)
-    // Controller uses local-time setHours(23,59,59,999)
-    expect(lte.getHours()).toBe(23)
-    expect(lte.getMinutes()).toBe(59)
-    expect(lte.getSeconds()).toBe(59)
-    expect(lte.getMilliseconds()).toBe(999)
+    // BUG-008 fix: controller parses `to` as a pure UTC calendar-day bound
+    // (T23:59:59.999Z), independent of server-local timezone.
+    expect(lte.toISOString()).toBe('2026-06-17T23:59:59.999Z')
   })
 
   it('pa-18: end-of-day `to` is NOT start-of-day (regression guard)', async () => {
