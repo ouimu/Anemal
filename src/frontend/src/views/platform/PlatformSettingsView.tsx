@@ -1,6 +1,6 @@
 /**
  * PlatformSettingsView — /platform/settings
- * Form for platform-wide settings: maintenance mode, trial days, SMTP, feature flags.
+ * Form for platform-wide settings: maintenance mode, trial days, SMTP.
  */
 import React, { useEffect, useState } from 'react'
 import {
@@ -9,8 +9,6 @@ import {
   type PlatformSettings,
 } from '../../hooks/usePlatformSettings'
 import MaterialIcon from '../../components/MaterialIcon'
-
-const DEFAULT_FLAGS: Record<string, boolean> = {}
 
 export default function PlatformSettingsView() {
   const { data, isLoading, isError } = usePlatformSettings()
@@ -25,8 +23,6 @@ export default function PlatformSettingsView() {
   const [smtpPort,        setSmtpPort]         = useState<number | ''>(587)
   const [smtpUser,        setSmtpUser]         = useState('')
   const [smtpFrom,        setSmtpFrom]         = useState('')
-  const [featureFlags,    setFeatureFlags]     = useState<Record<string, boolean>>(DEFAULT_FLAGS)
-  const [newFlagKey,      setNewFlagKey]       = useState('')
 
   // Populate form when data loads
   useEffect(() => {
@@ -39,7 +35,6 @@ export default function PlatformSettingsView() {
     setSmtpPort(data.smtpPort ?? '')
     setSmtpUser(data.smtpUser ?? '')
     setSmtpFrom(data.smtpFrom ?? '')
-    setFeatureFlags(data.featureFlags ?? {})
   }, [data])
 
   const handleSave = (e: React.FormEvent) => {
@@ -53,27 +48,9 @@ export default function PlatformSettingsView() {
       smtpPort:  smtpPort !== '' ? smtpPort : null,
       smtpUser:  smtpUser  || null,
       smtpFrom:  smtpFrom  || null,
-      featureFlags,
     }
     updateMutation.mutate(payload)
   }
-
-  const toggleFlag = (key: string) =>
-    setFeatureFlags((prev) => ({ ...prev, [key]: !prev[key] }))
-
-  const addFlag = () => {
-    const trimmed = newFlagKey.trim()
-    if (!trimmed || trimmed in featureFlags) return
-    setFeatureFlags((prev) => ({ ...prev, [trimmed]: false }))
-    setNewFlagKey('')
-  }
-
-  const removeFlag = (key: string) =>
-    setFeatureFlags((prev) => {
-      const next = { ...prev }
-      delete next[key]
-      return next
-    })
 
   if (isLoading) {
     return (
@@ -240,58 +217,6 @@ export default function PlatformSettingsView() {
                 placeholder="no-reply@anemal.app"
               />
             </div>
-          </div>
-        </section>
-
-        {/* ── Feature Flags ─────────────────────────────────────────────── */}
-        <section className="bg-surface rounded-lg shadow-lvl1 p-lg space-y-md">
-          <h2 className="text-headline-xs font-headline font-bold text-on-surface">Feature Flags</h2>
-
-          {Object.entries(featureFlags).map(([key, enabled]) => (
-            <div key={key} className="flex items-center justify-between min-h-[44px]">
-              <span className="text-body-sm font-code text-on-surface">{key}</span>
-              <div className="flex items-center gap-sm">
-                <button
-                  type="button"
-                  onClick={() => toggleFlag(key)}
-                  className={`relative min-w-[52px] h-7 rounded-full transition-colors ${enabled ? 'bg-secondary' : 'bg-outline'}`}
-                  aria-checked={enabled}
-                  role="switch"
-                  aria-label={`Toggle ${key}`}
-                >
-                  <span
-                    className={`absolute top-0.5 w-6 h-6 rounded-full bg-surface shadow transition-transform ${enabled ? 'translate-x-6' : 'translate-x-0.5'}`}
-                  />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => removeFlag(key)}
-                  className="min-h-[44px] min-w-[44px] flex items-center justify-center text-on-surface-variant hover:text-error transition-colors rounded-lg hover:bg-error/10"
-                  aria-label={`Remove ${key} flag`}
-                >
-                  <MaterialIcon name="delete_outline" size={18} />
-                </button>
-              </div>
-            </div>
-          ))}
-
-          <div className="flex items-center gap-sm pt-sm border-t border-outline-variant">
-            <input
-              type="text"
-              value={newFlagKey}
-              onChange={(e) => setNewFlagKey(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addFlag() } }}
-              placeholder="new_feature_flag"
-              className="flex-1 min-h-[44px] px-md border border-outline-variant rounded text-body-sm font-code text-on-surface bg-surface focus:outline-none focus:border-secondary"
-            />
-            <button
-              type="button"
-              onClick={addFlag}
-              className="flex items-center gap-sm min-h-[44px] px-md border border-outline-variant rounded text-body-sm text-on-surface-variant hover:bg-surface-container transition-colors"
-            >
-              <MaterialIcon name="add" size={18} />
-              Add Flag
-            </button>
           </div>
         </section>
 
