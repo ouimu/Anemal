@@ -14,6 +14,7 @@ import type { ProvisioningUpdateData, TenantProvisioning } from '../models/platf
 import { encryptField, decryptField, maskSecret } from '../utils/encryption'
 import { NotFoundError } from '../utils/errors'
 import { logger } from '../utils/logger'
+import * as platformAuditRepo from '../models/platform-audit.repository'
 import prisma from '../config/db'
 
 export type { ProvisioningUpdateData }
@@ -111,13 +112,11 @@ export async function updateProvisioning(
   const encrypted = encryptSecrets(data)
   const updated = await repo.upsertProvisioning(tenantId, encrypted, performedById)
 
-  await prisma.platformAuditLog.create({
-    data: {
-      action: 'provisioning.update',
-      targetTenantId: tenantId,
-      performedByPlatformUserId: performedById,
-      details: { updatedFields: Object.keys(data).filter(k => data[k as keyof ProvisioningUpdateData] !== undefined) },
-    },
+  await platformAuditRepo.createPlatformAuditLog({
+    action: 'provisioning.update',
+    targetTenantId: tenantId,
+    performedByPlatformUserId: performedById,
+    details: { updatedFields: Object.keys(data).filter(k => data[k as keyof ProvisioningUpdateData] !== undefined) },
   })
 
   return maskSecrets(updated)
