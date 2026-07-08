@@ -10,6 +10,11 @@ import { signPlatformToken } from '../../config/jwt'
 import bcrypt from 'bcrypt'
 import { seedUserRoles, cleanupUserRoles } from '../helpers/seedUserRoles'
 
+interface PlanUpdateAuditDetails {
+  planId: number
+  changes: { features?: Record<string, unknown> }
+}
+
 const SENTINEL = 'SENTINEL-SECRET-VALUE-DO-NOT-PERSIST'
 const SUB_A = 'audit-redaction-a'
 const PASSWORD = 'TestPass1!'
@@ -129,6 +134,42 @@ describe('audit redaction — third sink (settings_audit_log)', () => {
     // The row this test just created must show maskSecret's exact masked shape --
     // oldValue/newValue are the repository's actual column names (settings-audit.repository.ts).
     expect(rows[0]?.newValue).toBe(expectedMasked)
+  })
+})
+
+describe('audit redaction — direct-service platform writes (D1)', () => {
+  let redactionPlanId = 0
+
+  afterAll(async () => {
+    if (redactionPlanId) {
+      await prisma.platformAuditLog.deleteMany({ where: { action: { in: ['plan.create', 'plan.update'] }, details: { path: ['planId'], equals: redactionPlanId } } })
+      await prisma.plan.deleteMany({ where: { id: redactionPlanId } })
+    }
+  })
+
+  it('redacts a sensitive-key feature flag written via the direct-service plan-update path, bypassing HTTP middleware', async () => {
+    const createRes = await request(server)
+      .post('/platform/plans')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ key: `audit_d1_${Date.now()}`, name: 'Audit D1 Test Plan', maxBranches: 1, maxUsers: 1 })
+    expect(createRes.status).toBe(201)
+    redactionPlanId = createRes.body.data.id as number
+
+    const updateRes = await request(server)
+      .put(`/platform/plans/${redactionPlanId}`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ features: { apiToken: true } })
+    expect(updateRes.status).toBe(200)
+
+    const rows = await prisma.platformAuditLog.findMany({
+      where: { action: 'plan.update' },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    })
+    const row = rows.find(r => (r.details as unknown as PlanUpdateAuditDetails)?.planId === redactionPlanId)
+    expect(row).toBeDefined()
+    const details = row!.details as unknown as PlanUpdateAuditDetails
+    expect(details.changes.features?.apiToken).toBe('***')
   })
 })
 

@@ -20,7 +20,7 @@ export const createPlanSchema = z.object({
   maxBranches: z.number().int().positive().optional(),
   maxUsers:    z.number().int().positive().optional(),
   maxOwners:   z.number().int().positive().optional().nullable(),
-  features:    z.record(z.unknown()).optional(),
+  features:    z.record(z.boolean()).optional(),
 }).strict()
 
 /** Zod schema for PUT /platform/plans/:id */
@@ -30,7 +30,7 @@ export const updatePlanSchema = z.object({
   maxBranches: z.number().int().positive().optional(),
   maxUsers:    z.number().int().positive().optional(),
   maxOwners:   z.number().int().positive().optional().nullable(),
-  features:    z.record(z.unknown()).optional(),
+  features:    z.record(z.boolean()).optional(),
   isActive:    z.boolean().optional(),
 }).strict()
 

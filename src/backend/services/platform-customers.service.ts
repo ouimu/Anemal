@@ -17,6 +17,7 @@ import type {
   TenantListRow,
   TenantWithPlanAndQuota,
 } from '../models/platform-customers.repository'
+import * as platformAuditRepo from '../models/platform-audit.repository'
 import prisma from '../config/db'
 
 /** Tenant status computed from isActive + trialEndsAt. */
@@ -49,15 +50,16 @@ export interface CustomerListItem {
 
 /** Normalized detail item returned to the API. */
 export interface CustomerDetail extends CustomerListItem {
-  maxBranches:  number | null
-  maxUsers:     number | null
-  maxOwners:    number | null
-  email:        string | null
-  phone:        string | null
-  address:      string | null
-  logoUrl:      string | null
+  maxBranches:   number | null
+  maxUsers:      number | null
+  maxOwners:     number | null
+  email:         string | null
+  phone:         string | null
+  address:       string | null
+  logoUrl:       string | null
+  companyTypeId: number | null
   // D-2-06: company type detail (null if not assigned)
-  companyType:  { id: number; key: string; nameEn: string; nameTh: string } | null
+  companyType:   { id: number; key: string; nameEn: string; nameTh: string } | null
 }
 
 function toListItem(row: TenantListRow): CustomerListItem {
@@ -91,12 +93,13 @@ function toDetailItem(row: TenantWithPlanAndQuota): CustomerDetail {
     maxBranches,
     maxUsers,
     maxOwners,
-    email:       row.settings?.email   ?? null,
-    phone:       row.settings?.phone   ?? null,
-    address:     row.settings?.address ?? null,
-    logoUrl:     row.settings?.logoUrl ?? null,
+    email:         row.settings?.email   ?? null,
+    phone:         row.settings?.phone   ?? null,
+    address:       row.settings?.address ?? null,
+    logoUrl:       row.settings?.logoUrl ?? null,
+    companyTypeId: row.companyTypeId,
     // D-2-06: company type detail
-    companyType: row.companyType ?? null,
+    companyType:   row.companyType ?? null,
   }
 }
 
@@ -187,13 +190,11 @@ export async function createCustomer(data: CreateCustomerInput, performedById: n
   }
   const tenant = await customersRepo.createTenant(createData)
 
-  await prisma.platformAuditLog.create({
-    data: {
-      action: 'customer.create',
-      targetTenantId: tenant.id,
-      performedByPlatformUserId: performedById,
-      details: { name: tenant.name, subdomain: tenant.subdomain, planId: tenant.planId },
-    },
+  await platformAuditRepo.createPlatformAuditLog({
+    action: 'customer.create',
+    targetTenantId: tenant.id,
+    performedByPlatformUserId: performedById,
+    details: { name: tenant.name, subdomain: tenant.subdomain, planId: tenant.planId },
   })
 
   return tenant
@@ -233,15 +234,13 @@ export async function updateCustomer(id: number, data: UpdateCustomerInput, perf
   }
   const updated = await customersRepo.updateTenant(id, updateData)
 
-  await prisma.platformAuditLog.create({
-    data: {
-      action: 'customer.update',
-      targetTenantId: id,
-      performedByPlatformUserId: performedById,
-      details: {
-        before: { name: tenant.name, subdomain: tenant.subdomain, planId: tenant.planId },
-        after: { name: data.name, subdomain: data.subdomain, planId: data.planId },
-      },
+  await platformAuditRepo.createPlatformAuditLog({
+    action: 'customer.update',
+    targetTenantId: id,
+    performedByPlatformUserId: performedById,
+    details: {
+      before: { name: tenant.name, subdomain: tenant.subdomain, planId: tenant.planId },
+      after: { name: data.name, subdomain: data.subdomain, planId: data.planId },
     },
   })
 
@@ -261,13 +260,11 @@ export async function suspendCustomer(id: number, performedById: number) {
 
   const updated = await customersRepo.setTenantActive(id, false)
 
-  await prisma.platformAuditLog.create({
-    data: {
-      action: 'tenant.suspend',
-      targetTenantId: id,
-      performedByPlatformUserId: performedById,
-      details: { tenantName: tenant.name },
-    },
+  await platformAuditRepo.createPlatformAuditLog({
+    action: 'tenant.suspend',
+    targetTenantId: id,
+    performedByPlatformUserId: performedById,
+    details: { tenantName: tenant.name },
   })
 
   return updated
@@ -285,13 +282,11 @@ export async function reactivateCustomer(id: number, performedById: number) {
 
   const updated = await customersRepo.setTenantActive(id, true)
 
-  await prisma.platformAuditLog.create({
-    data: {
-      action: 'tenant.reactivate',
-      targetTenantId: id,
-      performedByPlatformUserId: performedById,
-      details: { tenantName: tenant.name },
-    },
+  await platformAuditRepo.createPlatformAuditLog({
+    action: 'tenant.reactivate',
+    targetTenantId: id,
+    performedByPlatformUserId: performedById,
+    details: { tenantName: tenant.name },
   })
 
   return updated

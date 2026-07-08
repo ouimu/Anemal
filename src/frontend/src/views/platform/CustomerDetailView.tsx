@@ -33,7 +33,7 @@ const TABS: { id: Tab; label: string }[] = [
 
 // ── Overview tab ─────────────────────────────────────────────────────────────
 
-interface CompanyType { id: number; key: string; label: string }
+interface CompanyType { id: number; key: string; nameEn: string; nameTh: string }
 
 function OverviewTab({ id }: { id: number }) {
   const { data: customer, isLoading } = usePlatformCustomer(id)
@@ -57,7 +57,7 @@ function OverviewTab({ id }: { id: number }) {
 
   const openEdit = () => {
     setEditName(customer.name)
-    setEditCompanyTypeId((customer as { companyTypeId?: number | null }).companyTypeId ?? null)
+    setEditCompanyTypeId(customer.companyTypeId ?? null)
     setEditing(true)
   }
 
@@ -103,7 +103,7 @@ function OverviewTab({ id }: { id: number }) {
                   className="w-full min-h-[44px] px-md border border-outline-variant rounded text-body-md text-on-surface bg-surface focus:outline-none focus:border-secondary"
                 >
                   <option value="">— None —</option>
-                  {companyTypes.map(ct => <option key={ct.id} value={ct.id}>{ct.label}</option>)}
+                  {companyTypes.map(ct => <option key={ct.id} value={ct.id}>{ct.nameTh || ct.nameEn || ct.key}</option>)}
                 </select>
               </div>
             )}

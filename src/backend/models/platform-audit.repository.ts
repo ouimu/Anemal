@@ -12,6 +12,7 @@
 
 import { Prisma } from '@prisma/client'
 import prisma from '../config/db'
+import { redact } from '../utils/audit-sanitize'
 
 /** Columns returned for every audit log entry. `details` DB column is omitted (PII risk). */
 const SELECT = {
@@ -74,7 +75,7 @@ export function createPlatformAuditLog(entry: PlatformAuditEntry) {
       performedByPlatformUserId: entry.performedByPlatformUserId,
       action:                    entry.action,
       targetTenantId:            entry.targetTenantId ?? null,
-      details:                   (entry.details ?? undefined) as Prisma.InputJsonValue | undefined,
+      details:                   (entry.details != null ? redact(entry.details) : undefined) as Prisma.InputJsonValue | undefined,
       ipAddress:                 entry.ipAddress ?? null,
     },
   })

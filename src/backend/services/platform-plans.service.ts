@@ -18,7 +18,7 @@ import type {
   QuotaOverrideData,
 } from '../models/platform-plans.repository'
 import { CustomerNotFoundError } from './platform-customers.service'
-import prisma from '../config/db'
+import * as platformAuditRepo from '../models/platform-audit.repository'
 
 /** Normalized plan shape returned to API callers. */
 export interface PlanResponse {
@@ -130,13 +130,11 @@ export async function getPlan(id: number): Promise<PlanResponse> {
 export async function createPlan(data: Omit<CreatePlanData, 'features'> & { features?: Record<string, unknown> }, performedById: number): Promise<PlanResponse> {
   const plan = await plansRepo.createPlan(data as CreatePlanData)
 
-  await prisma.platformAuditLog.create({
-    data: {
-      action: 'plan.create',
-      targetTenantId: null,
-      performedByPlatformUserId: performedById,
-      details: { planId: plan.id, key: plan.key, name: plan.name },
-    },
+  await platformAuditRepo.createPlatformAuditLog({
+    action: 'plan.create',
+    targetTenantId: null,
+    performedByPlatformUserId: performedById,
+    details: { planId: plan.id, key: plan.key, name: plan.name },
   })
 
   return normalizePlan(plan)
@@ -153,13 +151,11 @@ export async function updatePlan(id: number, data: Omit<UpdatePlanData, 'feature
   await getPlan(id)
   const updated = await plansRepo.updatePlan(id, data as UpdatePlanData)
 
-  await prisma.platformAuditLog.create({
-    data: {
-      action: 'plan.update',
-      targetTenantId: null,
-      performedByPlatformUserId: performedById,
-      details: { planId: id, changes: JSON.parse(JSON.stringify(data)) },
-    },
+  await platformAuditRepo.createPlatformAuditLog({
+    action: 'plan.update',
+    targetTenantId: null,
+    performedByPlatformUserId: performedById,
+    details: { planId: id, changes: JSON.parse(JSON.stringify(data)) },
   })
 
   return normalizePlan(updated)
@@ -178,13 +174,11 @@ export async function retirePlan(id: number, performedById: number): Promise<Pla
   if (count > 0) throw new PlanInUseError(count)
   const retired = await plansRepo.retirePlan(id)
 
-  await prisma.platformAuditLog.create({
-    data: {
-      action: 'plan.delete',
-      targetTenantId: null,
-      performedByPlatformUserId: performedById,
-      details: { planId: id, key: plan.key, name: plan.name },
-    },
+  await platformAuditRepo.createPlatformAuditLog({
+    action: 'plan.delete',
+    targetTenantId: null,
+    performedByPlatformUserId: performedById,
+    details: { planId: id, key: plan.key, name: plan.name },
   })
 
   return normalizePlan(retired)
