@@ -97,6 +97,13 @@ Columns are the three **system clinic roles**. Custom roles start as a clone of 
   `emr.create` (full SOAP-note/medical-record creation). `clinic_staff` holds
   `vaccination.create` (vet techs administer vaccines under doctor supervision) but NOT
   `emr.create` — they cannot write medical-record/SOAP notes.
+- **Vaccination records are pet-scoped, not branch-scoped** (ADR-0007 D6b, confirmed
+  intentional): `POST /api/vaccinations` and its list/history reads follow the pet across
+  branches — a pet vaccinated at Branch A shows the record when seen at Branch B, matching
+  ADR-0002's "clinical records follow the pet" precedent. The one exception is the operational
+  due-soon **worklist** (`GET /api/vaccinations/due-soon`), which does take `branchId` — that's a
+  front-desk scheduling view, not the clinical record itself. Do not add a branch guard to
+  create/list; it would break the legitimate cross-branch visit flow.
 
 ## 3. Route -> permission map
 

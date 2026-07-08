@@ -180,6 +180,14 @@
 
 ---
 
+## Backlog — RBAC / UX
+
+| Task | Effort | Notes |
+|------|--------|-------|
+| **T-5B-02** (backlog, deferred): retire the 4 legacy `role === 'admin'` string-comparison nav sites once the custom/multi-role Role Editor ships — `ClinicLayout.tsx:31`, `AdminLayout.tsx:54`, `useAuth.ts:97`/`:112`, `LoginView.tsx:31`. Server-side authorization is already role-agnostic (deny-by-default, permission-code based); this is UX routing only. (ADR-0007 D6a) | Low | Server-side deny-by-default already proven (Batch 3: 148 routes × 3 roles, zero gaps). |
+
+---
+
 ## Priority Order
 1. ~~**Session A** — Screen specs~~ ✅ Done 2026-06-10
 2. ~~**Session B** — PDF receipts~~ ✅ Done 2026-06-10
