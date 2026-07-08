@@ -50,15 +50,16 @@ export interface CustomerListItem {
 
 /** Normalized detail item returned to the API. */
 export interface CustomerDetail extends CustomerListItem {
-  maxBranches:  number | null
-  maxUsers:     number | null
-  maxOwners:    number | null
-  email:        string | null
-  phone:        string | null
-  address:      string | null
-  logoUrl:      string | null
+  maxBranches:   number | null
+  maxUsers:      number | null
+  maxOwners:     number | null
+  email:         string | null
+  phone:         string | null
+  address:       string | null
+  logoUrl:       string | null
+  companyTypeId: number | null
   // D-2-06: company type detail (null if not assigned)
-  companyType:  { id: number; key: string; nameEn: string; nameTh: string } | null
+  companyType:   { id: number; key: string; nameEn: string; nameTh: string } | null
 }
 
 function toListItem(row: TenantListRow): CustomerListItem {
@@ -92,12 +93,13 @@ function toDetailItem(row: TenantWithPlanAndQuota): CustomerDetail {
     maxBranches,
     maxUsers,
     maxOwners,
-    email:       row.settings?.email   ?? null,
-    phone:       row.settings?.phone   ?? null,
-    address:     row.settings?.address ?? null,
-    logoUrl:     row.settings?.logoUrl ?? null,
+    email:         row.settings?.email   ?? null,
+    phone:         row.settings?.phone   ?? null,
+    address:       row.settings?.address ?? null,
+    logoUrl:       row.settings?.logoUrl ?? null,
+    companyTypeId: row.companyTypeId,
     // D-2-06: company type detail
-    companyType: row.companyType ?? null,
+    companyType:   row.companyType ?? null,
   }
 }
 

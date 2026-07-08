@@ -216,7 +216,7 @@
 - Company-type picker (`CustomerDetailView.tsx:36`) declares a local `CompanyType { id, key, label }` interface, but the real `/platform/company-types` response (`platform-company-type.controller.ts` `handleListCompanyTypes` → `companyTypeService.listCompanyTypes()`) returns `{ id, key, nameEn, nameTh, sortOrder, isActive }` — there is no `label` field, so `ct.label` at line 106 always renders blank. This is the "unrelated, separate options-endpoint bug" ADR D2 calls out.
 - `platformContract.test.ts` is schema-only today (no DB/app fixtures) — the round-trip test needs `request`/`app`/`prisma`/`signPlatformToken` fixtures like `auditRedaction.test.ts` has. Per grill FX.1, add these fixtures locally in `platformContract.test.ts` (or create a new integration test file if that's cleaner given the file's current schema-only nature) — either way, it must NOT touch `PlatformConsole.test.tsx`.
 
-- [ ] **Step 1 (TDD, red): write the failing round-trip regression test first (grill FX.1 — backend suite only)**
+- [x] **Step 1 (TDD, red): write the failing round-trip regression test first (grill FX.1 — backend suite only)**
 
   In `platformContract.test.ts`, add a new `describe('platform contract — company-type round-trip (D2, grill FX.1)', ...)` block with its own minimal `beforeAll`/`afterAll` fixture (platform token + a tenant with a seeded/created company type — reuse `auditRedaction.test.ts`'s fixture pattern for the platform token and tenant creation, do not import from that file, keep this file's fixtures self-contained):
   - Create a company type via `POST /platform/company-types` (or seed one directly via `companyTypeRepo`).
@@ -225,7 +225,7 @@
   - `GET /platform/customers/:id`, assert the response's `data.companyTypeId` equals the original value (proves the DTO round-trips the scalar and the update didn't silently clear it).
   - Run it now — it must **fail** (today's `CustomerDetail` DTO has no `companyTypeId` key at all, so the assertion has nothing to read).
 
-- [ ] **Step 2: Add `companyTypeId` scalar to the backend `CustomerDetail` DTO**
+- [x] **Step 2: Add `companyTypeId` scalar to the backend `CustomerDetail` DTO**
 
   In `platform-customers.service.ts`, add the field to the interface (line 51-61) and populate it in `toDetailItem()` (line 77-101):
   ```ts
@@ -244,7 +244,7 @@
   ```
   And in `toDetailItem()`, add `companyTypeId: row.companyTypeId,` alongside the existing `companyType: row.companyType ?? null,` line.
 
-- [ ] **Step 3: Add `companyTypeId` to the frontend hook's `CustomerDetail` interface**
+- [x] **Step 3: Add `companyTypeId` to the frontend hook's `CustomerDetail` interface**
 
   In `usePlatformCustomers.ts` (lines 22-30), add:
   ```ts
@@ -260,7 +260,7 @@
   }
   ```
 
-- [ ] **Step 4: Remove the `as` cast in `CustomerDetailView.tsx`**
+- [x] **Step 4: Remove the `as` cast in `CustomerDetailView.tsx`**
 
   Change line 60 from:
   ```ts
@@ -272,7 +272,7 @@
   ```
   Now type-safe against the updated `CustomerDetail` interface from Step 3 — no cast needed.
 
-- [ ] **Step 5: Fix the company-type picker label (separate options-endpoint bug, same file)**
+- [x] **Step 5: Fix the company-type picker label (separate options-endpoint bug, same file)**
 
   Change the local interface (line 36) to match the real API shape:
   ```ts
@@ -283,12 +283,12 @@
   {companyTypes.map(ct => <option key={ct.id} value={ct.id}>{ct.nameTh || ct.nameEn || ct.key}</option>)}
   ```
 
-- [ ] **Step 6: Run the regression test (green)**
+- [x] **Step 6: Run the regression test (green)**
   ```bash
   cd src/backend && node node_modules/jest/bin/jest.js platformContract --runInBand --forceExit
   ```
 
-- [ ] **Step 7: Full backend + frontend suites**
+- [x] **Step 7: Full backend + frontend suites**
   ```bash
   cd src/backend && node node_modules/jest/bin/jest.js --runInBand --forceExit
   ```
@@ -298,7 +298,9 @@
   ```
   Expect 143 passing, zero failures — T2 does not add or modify a frontend test file (`usePlatformCustomers.test.ts` only tests `UpdateCustomerPayload`, untouched by this task's DTO addition to `CustomerDetail`; confirmed no `PlatformConsole.test.tsx` conflict since D2's test is backend-only per FX.1).
 
-- [ ] **Step 8: Commit**
+  **Result:** backend 834 passed / 1 pre-existing unrelated failure (`seedCredentialSmoke.test.ts` — `doctor_b` login returns 403; reproduced identically on the T1 commit before any T2 change, confirmed a dev-DB seed-state issue, not caused by this batch). Frontend: 143 passed, 0 failed.
+
+- [x] **Step 8: Commit**
   ```bash
   git add src/backend/services/platform-customers.service.ts src/frontend/src/hooks/usePlatformCustomers.ts src/frontend/src/views/platform/CustomerDetailView.tsx src/backend/tests/integration/platformContract.test.ts
   git commit -m "$(cat <<'EOF'

@@ -20,13 +20,14 @@ export interface Customer {
 }
 
 export interface CustomerDetail extends Customer {
-  email:        string | null
-  phone:        string | null
-  address:      string | null
-  logoUrl:      string | null
-  maxBranches:  number | null
-  maxUsers:     number | null
-  maxOwners:    number | null
+  email:         string | null
+  phone:         string | null
+  address:       string | null
+  logoUrl:       string | null
+  maxBranches:   number | null
+  maxUsers:      number | null
+  maxOwners:     number | null
+  companyTypeId: number | null
 }
 
 export interface CreateCustomerPayload {

@@ -17,6 +17,11 @@ import {
 } from '../../controllers/platform-customers.controller'
 import { createPlanSchema, updatePlanSchema } from '../../controllers/platform-plans.controller'
 import { updateAllSettingsSchema, updateSystemSettingSchema } from '../../controllers/system-settings.controller'
+import request from 'supertest'
+import { Server } from 'http'
+import app from '../../app'
+import prisma from '../../config/db'
+import { signPlatformToken } from '../../config/jwt'
 
 describe('platform contract — createCustomerSchema', () => {
   // KEEP IN SYNC with src/frontend/src/hooks/usePlatformCustomers.ts:122 (platformApi.post('/platform/customers', payload))
@@ -133,6 +138,74 @@ describe('platform contract — updateSystemSettingSchema', () => {
   it('rejects a payload missing the required value field', () => {
     const result = updateSystemSettingSchema.safeParse({})
     expect(result.success).toBe(false)
+  })
+})
+
+describe('platform contract — company-type round-trip (D2, grill FX.1)', () => {
+  let server: Server
+  let platformToken = ''
+  let platformUserId = 0
+  let planId = 0
+  let companyTypeId = 0
+  let customerId = 0
+
+  beforeAll(async () => {
+    await new Promise<void>(resolve => { server = app.listen(0, resolve) })
+    server.keepAliveTimeout = 0
+
+    const platformUser = await prisma.platformUser.create({
+      data: {
+        name:         'PlatformContractSysAdmin',
+        email:        'platform-contract-sysadmin@test.anemal',
+        passwordHash: 'x',
+        role:         'platform_super_admin',
+      },
+    })
+    platformUserId = platformUser.id
+    platformToken = signPlatformToken({ platformUserId: platformUser.id, plane: 'platform', role: 'platform_super_admin' })
+
+    const plan = await prisma.plan.create({
+      data: { key: `contract_d2_${Date.now()}`, name: 'Contract D2 Test Plan', priceMonth: 0, maxBranches: 1, maxUsers: 1 },
+    })
+    planId = plan.id
+
+    const companyType = await prisma.companyType.create({
+      data: { key: `contract_d2_ct_${Date.now()}`, nameEn: 'Contract D2 Company Type', nameTh: 'Contract D2 Company Type TH' },
+    })
+    companyTypeId = companyType.id
+  })
+
+  afterAll(async () => {
+    if (customerId) await prisma.platformAuditLog.deleteMany({ where: { targetTenantId: customerId } })
+    if (platformUserId) await prisma.platformAuditLog.deleteMany({ where: { performedByPlatformUserId: platformUserId } })
+    if (customerId) await prisma.tenant.deleteMany({ where: { id: customerId } })
+    if (companyTypeId) await prisma.companyType.deleteMany({ where: { id: companyTypeId } })
+    if (planId) await prisma.plan.deleteMany({ where: { id: planId } })
+    if (platformUserId) await prisma.platformUser.deleteMany({ where: { id: platformUserId } })
+    await prisma.$disconnect()
+    server.closeAllConnections()
+    await new Promise<void>(resolve => server.close(() => resolve()))
+  }, 30000)
+
+  it('round-trips companyTypeId through create -> unchanged update -> get without clearing it', async () => {
+    const createRes = await request(server)
+      .post('/platform/customers')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ name: 'Contract D2 Customer', subdomain: `contract-d2-${Date.now()}`, planId, companyTypeId })
+    expect(createRes.status).toBe(201)
+    customerId = createRes.body.data.id as number
+
+    const updateRes = await request(server)
+      .put(`/platform/customers/${customerId}`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ name: 'Contract D2 Customer' })
+    expect(updateRes.status).toBe(200)
+
+    const getRes = await request(server)
+      .get(`/platform/customers/${customerId}`)
+      .set('Authorization', `Bearer ${platformToken}`)
+    expect(getRes.status).toBe(200)
+    expect(getRes.body.data.companyTypeId).toBe(companyTypeId)
   })
 })
 
