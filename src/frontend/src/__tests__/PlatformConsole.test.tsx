@@ -15,17 +15,13 @@
  *  AC-F5 Plans CRUD: create appears in list; retired plan shows "Retired".
  *  AC-F6 Audit view filters drive the hook (date range, action, tenantId).
  *
- * ⚠️ STOP-CLASS WIRING BUGS asserted here (see QA summary "gaps"):
- *  - usePlatformCustomerUsage returns the backend's flat
- *    `{ branches:number, users:number, owners:number, caps, overPlan }` raw, but
- *    UsageTab reads `usage.branches.current` / `usage.staff.current`. At runtime
- *    `usage.staff` is undefined → TypeError. The Usage progress bars cannot render
- *    against the live backend. Tests that exercise the Usage tab feed the SHAPE THE
- *    COMPONENT EXPECTS so the component is tested in isolation, and a separate
- *    contract test pins the divergence.
- *  - usePlatformAudit returns `r.data.data` but the backend wraps audit rows as
- *    `{ items, total, page, limit }` (object, not array) and omits actorName/
- *    tenantName/details. The audit table's `.map` would throw on the live payload.
+ * Note: `usePlatformCustomerUsage` (usePlatformCustomers.ts) and `usePlatformAudit`
+ * (usePlatformAudit.ts) already normalize their raw backend envelopes into the
+ * shapes UsageTab / the audit table expect. That real, unmocked normalization logic
+ * is covered by a dedicated hook test — see
+ * `src/frontend/src/hooks/usePlatformCustomers.normalization.test.ts` (ADR-0007 D6c).
+ * The tests below mock the hooks themselves and feed them the already-normalized
+ * shape, so they exercise component rendering, not hook normalization.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, within } from '@testing-library/react'
@@ -226,16 +222,6 @@ describe('AC-F3 — CustomerDetailView tabs + usage', () => {
     expect(screen.getByText('Branches')).toBeInTheDocument()
     expect(screen.getByText('Staff')).toBeInTheDocument()
     expect(screen.getByText('Customers')).toBeInTheDocument()
-  })
-
-  it('⚠️ CONTRACT: live backend usage shape ({branches:number, no staff}) breaks UsageTab', () => {
-    // This is the real payload from GET /platform/customers/:id/usage. The hook
-    // returns it raw, so UsageTab reads usage.staff.current on `undefined`.
-    state.usage = { branches: 2, users: 5, owners: 40, caps: { maxBranches: 3, maxUsers: 10, maxOwners: 100 }, overPlan: false }
-    expect(() => {
-      render(<CustomerDetailView />)
-      fireEvent.click(screen.getByRole('button', { name: 'Usage' }))
-    }).toThrow() // TypeError: Cannot read properties of undefined (reading 'current')
   })
 
   it('fetches company-types via platformApi, never the clinic api client (BUG-007)', async () => {

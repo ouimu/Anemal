@@ -14,6 +14,8 @@
 - Stakeholders & product owners
 - External auditors (security, compliance)
 
+> **Current-status note (2026-07-08):** this is a historical baseline specification, not the live implementation-status source. Use `.claude/specs/implementation-status-matrix.md`, `README.md`, and `HOW-TO-RUN.md` for current routes, stack versions, login credentials, and release status. Current auth override rows were added below; older roadmap/schema excerpts remain historical.
+
 **Purpose:** This document consolidates the functional requirements, technical architecture, database design, and roadmap for the Anemal multi‑tenant, multi‑branch veterinary clinic management platform. It is intended for direct import into Microsoft Word (Markdown → Word conversion) and serves as the single source of truth for future development, onboarding, and compliance audits.
 
 ---
@@ -28,6 +30,8 @@ Anemal is a SaaS solution supporting **Web** and **Tablet** clients for veterina
 
 | ID | Requirement (Thai) | Priority |
 |----|--------------------|----------|
+| CURRENT-AUTH-01 | Clinic login uses `subdomain` + `username` + password; platform login uses email + password | Must |
+| CURRENT-AUTH-02 | Clinic JWT carries `userId`, `tenantId`, `branchId`, `plane`, `permSetVersion`, `role`; platform JWT carries `platformUserId`, `plane:'platform'`, `role` | Must |
 | FR-01-01 | ระบบรองรับการ Login ด้วย email + password | Must |
 | FR-01-02 | JWT Token ต้องฝัง `tenant_id`, `branch_id`, `user_id`, `role` ไว้ทุกครั้ง | Must |
 | FR-01-03 | Token หมดอายุใน 8 ชั่วโมง (clinic work day) พร้อม Refresh Token | Must |

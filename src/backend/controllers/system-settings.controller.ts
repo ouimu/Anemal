@@ -37,7 +37,6 @@ export const updateAllSettingsSchema = z.object({
   smtpPort:        z.number().int().min(1).max(65535).nullable().optional(),
   smtpUser:        z.string().max(200).nullable().optional(),
   smtpFrom:        z.string().email().max(200).nullable().optional(),
-  featureFlags:    z.record(z.boolean()).optional(),
 }).strict()
 
 /** Coerces a raw string value from system_settings to the typed field. */
@@ -61,7 +60,6 @@ export interface PlatformSettingsResponse {
   smtpPort:        number | null
   smtpUser:        string | null
   smtpFrom:        string | null
-  featureFlags:    Record<string, boolean>
 }
 
 export async function getAllSettings(_req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -75,7 +73,7 @@ export async function getAllSettings(_req: Request, res: Response, next: NextFun
     }
 
     // Reduce rows into named object
-    const partial: Partial<PlatformSettingsResponse> = { featureFlags: {} }
+    const partial: Partial<PlatformSettingsResponse> = {}
     for (const row of rows) {
       const field = reverseMap[row.key]
       if (!field) continue
@@ -93,7 +91,6 @@ export async function getAllSettings(_req: Request, res: Response, next: NextFun
       smtpPort:        partial.smtpPort        ?? null,
       smtpUser:        partial.smtpUser        ?? null,
       smtpFrom:        partial.smtpFrom        ?? null,
-      featureFlags:    partial.featureFlags    ?? {},
     }
 
     res.json({ success: true, data })
@@ -110,7 +107,12 @@ export async function getSettingByKey(req: Request, res: Response, next: NextFun
 export async function updateSettingByKey(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { value } = req.body as z.infer<typeof updateSystemSettingSchema>
-    const data = await systemSvc.updateByKey(req.params.key, value, req.context!.userId)
+    // Platform-plane requests carry no userId (JWT has platformUserId instead of it — see
+    // jwt.ts's PlatformTokenPayload). settings_audit_log.changedBy FKs clinic users(id); writing
+    // a platformUserId there would risk an id-collision bug, not a fix. Actor identity for
+    // platform-plane writes lives in the companion platform_audit_logs row instead (ADR-0007 D5).
+    const actorUserId = req.context!.plane === 'clinic' ? req.context!.userId : undefined
+    const data = await systemSvc.updateByKey(req.params.key, value, actorUserId)
     res.json({ success: true, data })
   } catch (err) { next(err) }
 }
@@ -137,11 +139,12 @@ function coerceToString(raw: string | boolean | number): string {
 export async function updateAllSettings(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const body = req.body as z.infer<typeof updateAllSettingsSchema>
-    const userId = req.context!.userId
+    // See updateSettingByKey's comment above — same rationale (ADR-0007 D5).
+    const userId = req.context!.plane === 'clinic' ? req.context!.userId : undefined
 
     let updated = 0
     for (const [field, dbKey] of Object.entries(SETTINGS_KEY_MAP)) {
-      // featureFlags is not in SETTINGS_KEY_MAP so raw is always string | boolean | number | null | undefined
+      // Every field in SETTINGS_KEY_MAP is string | boolean | number | null | undefined
       const raw = (body as Record<string, string | boolean | number | null | undefined>)[field]
       if (raw === undefined) continue // undefined = unchanged, per field
 

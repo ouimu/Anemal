@@ -16,7 +16,6 @@ export interface PlatformSettings {
   smtpPort:         number | null
   smtpUser:         string | null
   smtpFrom:         string | null
-  featureFlags:     Record<string, boolean>
 }
 
 export type UpdatePlatformSettingsPayload = Partial<PlatformSettings>

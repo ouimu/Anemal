@@ -91,21 +91,22 @@ function PlanForm({ value, onChange, isEdit = false }: PlanFormProps) {
 
       <div className="grid grid-cols-3 gap-sm">
         {([
-          { id: 'plan-branches', label: 'Max Branches', key: 'maxBranches' as const },
-          { id: 'plan-users',    label: 'Max Users',    key: 'maxUsers'    as const },
-          { id: 'plan-owners',   label: 'Max Clients',  key: 'maxOwners'   as const },
+          { id: 'plan-branches', label: 'Max Branches', key: 'maxBranches' as const, min: 1, required: true,  placeholder: undefined },
+          { id: 'plan-users',    label: 'Max Users',    key: 'maxUsers'    as const, min: 1, required: true,  placeholder: undefined },
+          { id: 'plan-owners',   label: 'Max Clients',  key: 'maxOwners'   as const, min: 0, required: false, placeholder: 'Unlimited' },
         ]).map((field) => (
           <div key={field.id}>
             <label className="block text-label-md text-on-surface-variant mb-xs" htmlFor={field.id}>
-              {field.label}
+              {field.label}{field.required && <span className="text-error"> *</span>}
             </label>
             <input
               id={field.id}
               type="number"
-              min={0}
+              min={field.min}
+              required={field.required}
               value={value[field.key] ?? ''}
               onChange={(e) => set(field.key, nullableInt(e.target.value))}
-              placeholder="Unlimited"
+              placeholder={field.placeholder}
               className="w-full min-h-[44px] px-md border border-outline-variant rounded text-body-sm text-on-surface bg-surface focus:outline-none focus:border-secondary"
             />
           </div>

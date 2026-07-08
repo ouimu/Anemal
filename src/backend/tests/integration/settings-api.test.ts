@@ -328,6 +328,27 @@ describe('TC-S011 — PUT /platform/settings aggregate update', () => {
     })
   })
 
+  it('platform admin PUT /platform/settings → changedBy stays NULL, platform_audit_logs has the real actor (ADR-0007 D5)', async () => {
+    const res = await request(server)
+      .put('/platform/settings')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ appName: 'Anemal D5 Check' })
+    expect(res.status).toBe(200)
+
+    const auditRow = await prisma.settingsAuditLog.findFirst({
+      where: { tableName: 'system_settings', fieldName: 'app_name' },
+      orderBy: { id: 'desc' },
+    })
+    expect(auditRow?.changedBy).toBeNull()
+
+    const platformAuditRow = await prisma.platformAuditLog.findFirst({
+      where: { performedByPlatformUserId: platformUserId },
+      orderBy: { id: 'desc' },
+    })
+    expect(platformAuditRow).not.toBeNull()
+    expect(platformAuditRow!.performedByPlatformUserId).toBe(platformUserId)
+  })
+
   it('platform token PUT /platform/settings updates multiple keys → 200 + updated count', async () => {
     const res = await request(server)
       .put('/platform/settings')

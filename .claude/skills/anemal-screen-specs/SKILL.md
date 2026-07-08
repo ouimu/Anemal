@@ -36,6 +36,17 @@ when it is next modified (see rule below), not batched up front (ADR-0006 D4):
 | Blood Bank | `/clinic-admin/blood-bank` | `views/admin/AdminBloodBank.tsx` — not yet specced, write-on-next-touch |
 | Audit | `/clinic-admin/audit` | `views/admin/AdminAudit.tsx` — not yet specced, write-on-next-touch |
 | Role Editor | `/clinic-admin/roles` | `views/clinic/RoleEditorView.tsx` — not yet specced, write-on-next-touch |
+| Clinic — Inpatient | `/clinic/inpatient` | `views/clinic/ClinicInpatient.tsx` — not yet specced, write-on-next-touch |
+| Clinic — Grooming | `/clinic/grooming` | `views/clinic/ClinicGrooming.tsx` — not yet specced, write-on-next-touch |
+| Clinic — Transactions | `/clinic/transactions` | `views/clinic/ClinicTransactions.tsx` — not yet specced, write-on-next-touch |
+| Clinic — Vaccinations Due | `/clinic/vaccinations-due` | `views/clinic/ClinicVaccinationsDue.tsx` — not yet specced, write-on-next-touch |
+| Clinic — Record Vaccination | `/clinic/vaccinations-due/record` | `views/clinic/ClinicRecordVaccination.tsx` — not yet specced, write-on-next-touch |
+| Settings — Clinic Profile | `/settings/clinic-profile` | `views/settings/ClinicProfilePage.tsx` — not yet specced, write-on-next-touch |
+| Settings — Operating Hours | `/settings/hours` | `views/settings/OperatingHoursPage.tsx` — not yet specced, write-on-next-touch |
+| Settings — Notifications | `/settings/notifications` | `views/settings/NotificationsPage.tsx` — not yet specced, write-on-next-touch |
+| Settings — Payment | `/settings/payment` | `views/settings/PaymentPage.tsx` — not yet specced, write-on-next-touch |
+| Settings — Integrations | `/settings/integrations` | `views/settings/IntegrationsPage.tsx` — not yet specced, write-on-next-touch |
+| Settings — Preferences | `/settings/preferences` | `views/settings/PreferencesPage.tsx` — not yet specced, write-on-next-touch |
 | Platform — Customers | `/platform/customers`, `/platform/customers/:id` | `views/platform/CustomerListView.tsx`, `views/platform/CustomerDetailView.tsx` — not yet specced, write-on-next-touch |
 | Platform — Plans | `/platform/plans` | `views/platform/PlatformPlansView.tsx` — not yet specced, write-on-next-touch |
 | Platform — Settings | `/platform/settings` | `views/platform/PlatformSettingsView.tsx` — not yet specced, write-on-next-touch |

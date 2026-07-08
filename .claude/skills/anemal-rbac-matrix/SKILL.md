@@ -21,7 +21,8 @@ description: >
   `tenant_id=NULL`); clinic admins may clone a system role into a tenant-scoped **custom role**
   and toggle permissions (configurable RBAC).
 - **User** holds **one or more roles** via `user_roles` (CR-01). Server resolves the **union**
-  of all roles' permissions (Redis cache keyed by `userId`+`permSetVersion`); UI mirrors it via
+  of all roles' permissions (current implementation: 5-minute in-memory cache keyed by
+  `tenantId:userId`; `permSetVersion` in the JWT detects stale tokens). UI mirrors it via
   `usePermissions()` for hide/disable only. A Clinic Admin assigns/removes a user's roles.
 
 ## System clinic roles (seeded defaults)
@@ -65,5 +66,6 @@ Platform-plane permissions live in the `anemal-platform-console` skill.
 A user holds 1..N roles via `user_roles` (same tenant). Effective permissions = **union** of all
 assigned roles (most-permissive wins). A user must keep ≥ 1 role. Clinic Admin (perm
 `staff.assign_role`) assigns/removes roles but may only grant roles whose permissions are a
-**subset of their own** (no escalation). Permission cache is keyed by `userId`+`permSetVersion`;
-assigning/removing a role or editing a role's permissions re-resolves the affected users.
+**subset of their own** (no escalation). Permission cache is currently keyed by `tenantId:userId`;
+assigning/removing a role or editing a role's permissions invalidates/re-resolves the affected users,
+and `permSetVersion` protects active tokens from stale role versions.

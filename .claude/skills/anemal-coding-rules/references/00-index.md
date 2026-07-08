@@ -46,7 +46,7 @@
 1. **TypeScript strict mode** — no `any` types; explicit return types everywhere
 2. **Multi-tenant isolation** — every DB query: `WHERE tenant_id = tenantId` (ABSOLUTE RULE)
 3. **Server is security boundary** — UI gating is UX only, never security
-4. **Structured logging** — Winston only, no `console.log` in production
+4. **Structured logging** — use `src/backend/utils/logger.ts`, no `console.log` in production
 5. **Parameterized queries** — Prisma ORM only; no raw SQL string interpolation
 
 ---
