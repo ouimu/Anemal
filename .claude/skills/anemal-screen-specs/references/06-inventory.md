@@ -3,7 +3,7 @@
 > Component: `src/frontend/src/views/clinic/ClinicInventory.tsx`
 > Hooks: `src/frontend/src/hooks/useInventory.ts`
 > API: `/api/products` (CRUD, `/alerts`, `/:id/stock-in`, `/:id/movements`)
-> Status: **Implemented** (Phase 3) — flat tenant-scoped stock model; branch_inventory deferred to Phase 4
+> Status: **Implemented** — per-branch stock (`branch_inventory`), transfers, and inventory camera barcode scan are present.
 
 ---
 
@@ -26,6 +26,7 @@ KPI ALERT CARDS (grid sm:grid-cols-3 gap-md):
 TOOLBAR (flex gap-sm):
   Search input (rounded-full, search icon prefix) — matches name OR barcode (ILIKE)
   Category <select>: All + Medicine/Vaccine/Supply/Food/Equipment/Grooming/Other
+  Scan button — opens `BarcodeScanner` (`@zxing/browser`) and fills product search with the scanned code
 
 TABLE (glass-card rounded-xl overflow-hidden):
   thead bg-surface-container-low · th text-label-md uppercase
@@ -57,10 +58,11 @@ TABLE (glass-card rounded-xl overflow-hidden):
 
 ## Status
 Per-branch stock (`branch_inventory`) and inter-branch transfers (`/api/inventory/transfers`) are
-**implemented**; barcode scanning is currently a manual text field (camera capture deferred).
+**implemented**. Inventory barcode scan is also implemented via `components/BarcodeScanner/*`
+and the `ClinicInventory` toolbar Scan button.
 
 ## Deferred
-Camera barcode scanning (currently a manual text field; no camera capture built).
+Pet/microchip camera barcode capture remains deferred; inventory product barcode scan is not deferred.
 
 ## Touch / tokens
 All interactive elements ≥ 44×44px; rows ≥ 48px. No emoji, no raw hex — Compassionate Care tokens only (Material Symbols Outlined for every icon).

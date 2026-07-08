@@ -91,7 +91,7 @@ async create(tenantId: string, dto: CreateAppointmentDto): Promise<Appointment> 
 
 ## Code Style & Quality
 
-- No `console.log` — use Winston logger
+- No `console.log` — use the dependency-free JSON logger in `src/backend/utils/logger.ts`
 - No magic numbers — define constants
 - Functions ≤ 40 lines. Extract helpers if longer.
 - Maximum cyclomatic complexity: 5

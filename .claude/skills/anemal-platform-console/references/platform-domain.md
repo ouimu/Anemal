@@ -16,7 +16,7 @@
 | PUT `/platform/customers/:id/provisioning` | `platform.provisioning.manage` | backend API creates/updates per-tenant S3/SMS/SMTP/LINE provisioning with encrypted secrets; customer-detail UI remains a deferred placeholder |
 | DELETE `/platform/customers/:id` | n/a | **NOT IMPLEMENTED — DEFERRED to Phase 10 (ADR-0004 D6):** suspend/reactivate cover the operational need today. Soft-delete + retention policy is recorded as the hard constraint for when this is built — see `anemal-platform-console/SKILL.md:82`. |
 | GET/POST/PUT `/platform/plans` | `platform.plans.view\|manage` | plan CRUD |
-| GET/PUT `/platform/settings` | `platform.settings.view\|edit` | app/SMTP/maintenance/default-trial settings. Current UI/schema expose feature flags, but persistence is not implemented because `featureFlags` is not mapped to `system_settings`. |
+| GET/PUT `/platform/settings` | `platform.settings.view\|edit` | app/SMTP/maintenance/default-trial settings (feature flags removed, ADR-0007 D3 — no consumer; re-add with real persistence when a flag-reading feature ships). |
 | GET/POST/PUT `/platform/users` | `platform.users.manage` | platform operator CRUD — **DEFERRED (ADR-0004 D6):** operators are a 2-role static enum managed via seed today; CRUD is its own privilege-escalation surface needing its own grilled pipeline cycle. Backlog. |
 | GET `/platform/usage` | `platform.usage.view` | cross-tenant usage vs quota — **DEFERRED (ADR-0004 D6):** per-customer usage (shipped, see Customer Detail's Usage tab) satisfies the current operational need; the cross-tenant aggregate view is deferred. |
 | GET `/platform/audit` | `platform.audit.view` | platform audit trail |
@@ -32,7 +32,7 @@ Standard response envelope `{ success, data, meta }` / `{ success, error:{code,m
 | Customers (Tenants) | `/platform/customers` | table: name, subdomain, plan, status, user count |
 | Customer Detail | `/platform/customers/:id` | tabs: Overview · Plan & Quota · Provisioning · Usage |
 | Plans / Packages | `/platform/plans` | define/edit packages + quotas + boolean feature flags; UI validation must keep branch/user caps positive because backend rejects zero/blank values |
-| Platform Settings | `/platform/settings` | App · Email/SMTP · Maintenance · default trial days; feature-flag persistence remains a known gap |
+| Platform Settings | `/platform/settings` | App · Email/SMTP · Maintenance · default trial days; feature flags removed (ADR-0007 D3) |
 | Platform Audit | `/platform/audit` | audit log screen |
 | Platform Users | `/platform/users` | **Deferred** — no current route |
 | Cross-tenant Usage | `/platform/usage` | **Deferred** — per-customer Usage tab is shipped instead |

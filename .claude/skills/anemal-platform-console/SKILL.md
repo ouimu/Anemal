@@ -5,7 +5,7 @@ description: >
   product across all tenants. Use this skill for anything platform-plane: customer/tenant
   provisioning, plan/package management, per-customer quotas (max branches/staff/customers),
   per-tenant integration provisioning (S3, SMTP, base providers), platform settings, platform
-  users, maintenance mode, feature flags, cross-tenant usage/audit. Trigger when work involves
+  users, maintenance mode, cross-tenant usage/audit. Trigger when work involves
   /platform/*, platform_users, plans, tenant_quotas, or "manage customers/packages/limits". Do NOT
   use for clinic-side settings (that is anemal-rbac-matrix + clinic-settings).
 ---
@@ -30,13 +30,13 @@ clinical/PII data from the platform plane is a stop-ship violation (see QA stop 
 
 | # | Capability | Operations | Entities |
 |---|---|---|---|
-| P1 | Customer (Tenant) management | list / create / update / suspend / reactivate / delete; set subdomain, trial | `tenants` |
+| P1 | Customer (Tenant) management | list / create / update / suspend / reactivate; set name, subdomain, plan, company type | `tenants` |
 | P2 | Plan / Package management | define plans (name, price, quotas, features); edit; retire | `plans` |
 | P3 | Quota / scope per customer | set/override max_branches, max_users, max_owners per tenant | `tenant_quotas` (overrides `plans`) |
-| P4 | Per-tenant provisioning | S3 bucket/prefix, base provider keys, LINE channel binding, rotate secrets | `tenant_settings`, `system_settings` |
-| P5 | Platform settings | app name, base URL, maintenance mode, trial days, SMTP, feature flags | `system_settings` |
-| P6 | Platform users | manage operators & platform roles | `platform_users` |
-| P7 | Usage & audit | per-tenant usage vs quota, platform audit trail | `usage` views, `audit_logs` |
+| P4 | Per-tenant provisioning | Backend API for S3 bucket/prefix, base provider keys, LINE channel binding, rotate secrets; customer-detail UI is placeholder/deferred | `tenant_provisioning` |
+| P5 | Platform settings | app name, base URL, maintenance mode, trial days, SMTP (feature flags removed, ADR-0007 D3 — no consumer; re-add with real persistence when a flag-reading feature ships) | `system_settings` |
+| P6 | Platform users | seed/static platform operators today; CRUD UI/API deferred | `platform_users` |
+| P7 | Usage & audit | per-customer usage vs quota, platform audit trail; cross-tenant usage dashboard deferred | `usage.service`, `platform_audit_logs` |
 
 ## Platform permission codes
 `platform.customers.view|manage` · `platform.plans.view|manage` · `platform.quotas.manage` ·
@@ -63,8 +63,10 @@ Default: `platform_super_admin` = all; `platform_support` = all `.view` only.
 |---|---|---|
 | Clinic name/logo/address/hours/PromptPay QR | clinic | `/clinic-admin/*` |
 | Clinic's own LINE/SMS/Lab keys (clinic-supplied, encrypted) | clinic | `/clinic-admin/integrations` |
-| Plan, quota overrides, subdomain, trial, active/suspended | platform | `/platform/customers` |
-| S3 bucket/prefix, SMTP, base providers, maintenance, feature flags | platform | `/platform/settings` |
+| Plan, quota overrides, subdomain, company type, active/suspended | platform | `/platform/customers` |
+| Trial lifecycle | platform | Deferred to Phase 10; `default_trial_days` exists in platform settings but `Tenant.trialEndsAt` is not in the current schema |
+| S3 bucket/prefix, SMTP, base providers, LINE binding | platform | Backend: `/platform/customers/:id/provisioning`; UI: deferred placeholder in customer detail |
+| Maintenance, global SMTP defaults | platform | `/platform/settings` (feature flags removed, ADR-0007 D3) |
 
 ## Default plans (seed)
 | key | name | max_branches | max_users | max_owners |
@@ -77,6 +79,6 @@ Default: `platform_super_admin` = all; `platform_support` = all `.view` only.
 
 ## Audit & safety
 - Every platform mutation (tenant create/suspend, plan/quota change, provisioning, settings) writes
-  to `audit_logs` with the acting `platform_user`.
+  to `platform_audit_logs` or the relevant settings audit sink with the acting `platform_user`.
 - Suspending a tenant must immediately block that tenant's clinic logins.
 - Deleting a tenant is soft-delete + retention window, never hard-delete of clinical data on click.

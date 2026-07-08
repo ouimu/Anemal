@@ -32,24 +32,27 @@
 | Grooming status update | `PUT /api/grooming/bookings/:id/status` | Fixed Batch 2 D1 (frontend URL) | `routes/grooming.routes.ts` | `views/clinic/ClinicGrooming.tsx:278` | — | implemented |
 | Blood bank registry | `/api/blood-bank/*` | Donor eligibility, bag collection, transfusions | `routes/blood-bank.routes.ts` | `views/admin/AdminBloodBank.tsx` | `tests/integration/phase4.test.ts` | implemented |
 | Branch inventory transfers | `/api/inventory/transfers` | Mounted `app.ts:80` | `routes/transfer.routes.ts` | `views/clinic/ClinicInventory.tsx` | — | implemented |
-| Inventory barcode scan | Pets/Inventory barcode field | Manual text field, no camera scan | `models/product.repository.ts` | `views/clinic/ClinicPets.tsx`, `views/clinic/ClinicInventory.tsx` | — | deferred |
+| Inventory barcode scan | Inventory toolbar | ZXing camera scanner opens from ClinicInventory and fills product search; pet/microchip barcode capture remains separate/deferred | `models/product.repository.ts` | `components/BarcodeScanner/*`, `views/clinic/ClinicInventory.tsx` | frontend suite | implemented |
 | Billing — invoices/receipts | `/api/invoices/*` | Browser-print receipt + PDF download | `routes/invoice.routes.ts`, `services/pdf.service.ts` | `views/clinic/ClinicBilling.tsx` | `tests/integration/invoice.test.ts`, `tests/integration/pdf.test.ts` | implemented |
 | Billing — PromptPay QR | `/api/invoices/*` (QR panel) | 422 without configured `promptpayId` | `services/promptpay-qr.service.ts` | `views/clinic/ClinicBilling.tsx` | `tests/unit/promptpay-qr.test.ts` | credential-gated |
 | Billing — card gateway | — | Omise/Stripe not integrated | — | — | — | deferred (Phase 10) |
 | Photo upload (pets/owners) | `/api/upload/*` | 503 `STORAGE_NOT_CONFIGURED` without S3 env | `services/upload.service.ts` | `views/clinic/ClinicPets.tsx` | `__tests__/upload.test.ts` | credential-gated |
-| Camera barcode capture | Pet/Inventory forms | Not built — manual entry only | — | — | — | deferred |
-| Platform — customers | `/platform/customers/*` | Tenant provisioning, quotas | `routes/platform-customers.routes.ts` | `views/platform/CustomerDetailView.tsx` | `tests/integration/platformContract.test.ts` | implemented |
-| Platform — company types | `/platform/company-types` | Fixed Batch 2 D2 (client) | `routes/platform-company-type.routes.ts` | `views/platform/CustomerDetailView.tsx:42` | — | implemented |
-| Platform — plans/quotas | `/platform/plans/*` | Package + per-tenant quota mgmt | `routes/platform-plans.routes.ts` | `views/platform/PlatformPlansView.tsx` | `tests/integration/platformContract.test.ts` | implemented |
-| Platform — settings | `/platform/settings/*` | Integration secrets, AES-256-GCM | `controllers/system-settings.controller.ts` | `views/platform/PlatformSettingsView.tsx` | `tests/integration/auditRedaction.test.ts` | implemented |
+| Pet/microchip camera barcode capture | Pet/Owner forms | Not built — manual entry/photo upload only | — | `views/clinic/ClinicPets.tsx` | — | deferred |
+| Platform — customers | `/platform/customers/*` | Tenant metadata, suspend/reactivate, quotas, per-customer usage | `routes/platform-customers.routes.ts` | `views/platform/CustomerDetailView.tsx` | `tests/integration/platformContract.test.ts` | implemented |
+| Platform — trial lifecycle | customer create/edit/status | `default_trial_days` setting exists; `Tenant.trialEndsAt` schema/write flow deferred | `controllers/system-settings.controller.ts` | read-only `trialEndsAt` display only when present | `tests/integration/platformContract.test.ts` | deferred (Phase 10, ADR-0003 D2) |
+| Platform — company types | `/platform/company-types` | Plane client/path fixed; Customer Detail's `companyTypeId` scalar + picker label bug fixed (ADR-0007 D2) | `routes/platform-company-type.routes.ts` | `views/platform/CustomerDetailView.tsx:42` | `tests/integration/platformContract.test.ts` | implemented |
+| Platform — plans/quotas | `/platform/plans/*` | Package + per-tenant quota mgmt (branches/users require min=1 — ADR-0007 D4) | `routes/platform-plans.routes.ts` | `views/platform/PlatformPlansView.tsx` | `tests/integration/platformContract.test.ts` | implemented |
+| Platform — settings | `/platform/settings/*` | Integration secrets, AES-256-GCM; featureFlags removed (ADR-0007 D3) | `controllers/system-settings.controller.ts` | `views/platform/PlatformSettingsView.tsx` | `tests/integration/auditRedaction.test.ts` | implemented |
 | Platform — audit log | `/platform/audit/*` | Cross-tenant audit sink | `routes/platform-audit.routes.ts` | `views/platform/PlatformAuditView.tsx` | `tests/integration/auditRedaction.test.ts` | implemented |
 | Platform — users CRUD | — | 2-role static enum via seed only | — | — | — | deferred (ADR-0004 D6) |
-| Platform — usage aggregate | — | Per-customer usage shipped; cross-tenant aggregate not | `routes/platform-customers.routes.ts` (per-customer) | `views/platform/CustomerDetailView.tsx` | — | deferred (ADR-0004 D6) |
-| Platform — provisioning UI | — | Secret-entry form (S3/SMTP/LINE) not built | — | — | — | deferred (ADR-0004 D6) |
+| Platform — per-customer usage | `/platform/customers/:id/usage` | Live branches/users/owners vs effective quota | `routes/platform-customers.routes.ts`, `services/usage.service.ts` | `views/platform/CustomerDetailView.tsx` | — | implemented |
+| Platform — cross-tenant usage aggregate | `/platform/usage` | Aggregate dashboard not built | — | — | — | deferred (ADR-0004 D6) |
+| Platform — per-tenant provisioning API | `/platform/customers/:id/provisioning` | Backend GET/PUT with encrypted/masked secrets | `routes/platform-customers.routes.ts`, `services/platform-provisioning.service.ts` | — | — | backend-only |
+| Platform — provisioning UI | Customer Detail Provisioning tab | Secret-entry form (S3/SMTP/LINE) not built; tab is placeholder | backend API above | `views/platform/CustomerDetailView.tsx` | — | deferred (ADR-0004 D6) |
 | Platform — customer deletion | — | Suspend only; delete/retention not built | `routes/platform-customers.routes.ts` (suspend) | — | — | deferred (Phase 10, ADR-0004 D6) |
 | i18n (Thai/English) | all clinic screens | 16 screens, no library, EN/TH | `frontend/src/i18n` | all `views/clinic/*` | frontend suite (95 of 143) | implemented |
 | Username login (D-1) | `/auth/login` | Replaces email login for clinic plane | `services/auth.service.ts` | `views/LoginView.tsx` | `tests/integration/auth.test.ts` | implemented |
-| Company types (D-2) | `/platform/company-types` | See platform row above | — | — | — | implemented |
+| Company types (D-2) | `/platform/company-types` | See platform row above; ADR-0007 D2 companyTypeId scalar + label bug fixed | `routes/platform-company-type.routes.ts` | `views/platform/CustomerDetailView.tsx` | `tests/integration/platformContract.test.ts` | implemented |
 | Payment history (D-3) | owner/pet billing history | Historical invoice list | `controllers/invoice.controller.ts` | `views/clinic/ClinicPets.tsx` | `tests/integration/invoice.test.ts` | implemented |
 | Owner-first browse (D-4/D-5) | pets/owners search | Owner-first navigation flow | `routes/owner.routes.ts` | `views/clinic/ClinicPets.tsx` | `__tests__/owner-delete-reactivate.test.ts` | implemented |
 | Payment gateway (Phase 10) | — | Omise/Stripe webhooks | — | — | — | deferred (needs credentials) |

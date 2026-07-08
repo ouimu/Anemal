@@ -18,7 +18,7 @@ It runs seamlessly on **Web browsers** (front-desk / counter use) and **Tablets*
 | Inpatient Management | Daily hospitalization tracking with custom time-slot observations |
 | Grooming Services | Groomer bookings, capacity limits, and dedicated service queue routing |
 | Blood Bank Registry | Donor eligibility logs, bag collection, status tracking, and transfusions |
-| Inventory & Transfers | Multi-branch stocks, stock cards, lot/expiry alerts, barcode scanning, branch transfers |
+| Inventory & Transfers | Multi-branch stocks, stock cards, lot/expiry alerts, inventory camera barcode scanning, branch transfers |
 | Billing & Retail POS | Invoices, receipts, tax invoices, PromptPay QR, credit cards, retail item cashiering |
 | Loyalty & Discounts | Membership tiers, points accumulation, and customizable discounting engines |
 | Multi-Tenancy & Branches | Complete tenant data isolation via `tenant_id` and multi-branch support via `branch_id` |
@@ -80,7 +80,8 @@ AnimalClinic/
 - Real LINE/SMS dispatch — LINE Messaging API + Twilio SMS (Phase 11, needs credentials)
 - Redis (temporary queue state) — not yet integrated
 - Cornerstone.js DICOM viewer — not yet integrated
-- Recharts / Radix UI — not yet integrated into the current component set
+- Recharts — integrated in Admin Dashboard and Clinic Transactions charts
+- Radix UI — not yet integrated into the current component set
 
 ---
 

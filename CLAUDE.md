@@ -112,9 +112,9 @@ ANY yes = REJECT. All no = APPROVE. See `.claude/agents/ponytail-agent/SKILL.md`
 **Multi-tenancy (ABSOLUTE):** Every query must include `WHERE tenant_id = :tenantId`. JWT middleware extracts `tenant_id` → explicit param on every repo function. `@db-agent` reviews all DB changes.
 
 **Two planes:**
-- Clinic (`/clinic/*`): `{ userId, tenantId, branchId, roleId }` — roles: `clinic_admin`/`doctor`/`clinic_staff` + custom
-- Platform (`/platform/*`): `{ platformUserId, plane:'platform', roleId }` — no `tenant_id`, never touches PII
-- Every route: `requirePlane(...)` → `requirePermission('module.action')`. Deny-by-default.
+- Clinic (`/clinic/*`, `/clinic-admin/*`, `/settings/*`): `{ userId, tenantId, branchId, plane:'clinic', permSetVersion, role }`; effective `roleIds[]`/`permissions[]` come from `/auth/me` via `user_roles`
+- Platform (`/platform/*`): `{ platformUserId, plane:'platform', role }` — no `tenant_id`, never touches PII
+- Every protected route: `requirePlane(...)` → clinic `requirePermission('module.action')` or platform `requirePlatformPermission('platform.*')`. Deny-by-default.
 
 See `anemal-rbac-matrix` skill and `.claude/specs/RBAC_Platform_Restructure_Spec.md`.
 
