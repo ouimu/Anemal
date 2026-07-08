@@ -612,24 +612,29 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
 
 ## Definition of done
 
-- [ ] T1: `featureFlags` gone from both frontend and backend in one commit; `tsc --noEmit` clean
-      both sides; existing settings tests still pass.
-- [ ] T2: `maxBranches`/`maxUsers` require `min=1`, no "Unlimited" placeholder; `maxOwners`
+- [x] T1: `featureFlags` gone from both frontend and backend in one commit; `tsc --noEmit` clean
+      both sides; existing settings tests still pass. (commit 2a558cd)
+- [x] T2: `maxBranches`/`maxUsers` require `min=1`, no "Unlimited" placeholder; `maxOwners`
       unchanged; existing AC-F5 plan tests still pass; backlog note recorded in this plan (done
-      above, no further action needed).
-- [ ] T3: both `req.context!.userId` reads replaced with explicit plane-conditional `undefined`;
+      above, no further action needed). (commit a1d950e)
+- [x] T3: both `req.context!.userId` reads replaced with explicit plane-conditional `undefined`;
       new regression test passes (`changedBy IS NULL` + companion `platform_audit_logs` row
-      exists with correct actor); one doc line added.
-- [ ] T4: vaccination branch-scope paragraph added to `permission-matrix.md`; legacy-nav backlog
-      item recorded with all 4 file:line sites; zero source-code changes.
-- [ ] T5: stale header removed; mock-based throw-test deleted; new unmocked hook normalization
-      test added and passing; `grep STOP-CLASS` returns nothing.
-- [ ] T6: tree-clean re-verified; forward doc edits applied for D3/D4 annotations; no false
-      "implemented" claims made for anything not actually merged (D2/5A gated correctly).
-- [ ] All 6 commits present on `fix/codex-audit-batch5b-hygiene`, each ending with the required
+      exists with correct actor); one doc line added. (commit 12fa389)
+- [x] T4: vaccination branch-scope paragraph added to `permission-matrix.md`; legacy-nav backlog
+      item recorded with all 4 file:line sites; zero source-code changes. (commit faa54db)
+- [x] T5: stale header removed; mock-based throw-test deleted; new unmocked hook normalization
+      test added and passing; `grep STOP-CLASS` returns nothing. (commit ce8c044)
+- [x] T6: tree-clean re-verified (found dirty again per popped stash, all 12 drafts re-verified
+      against current code, 4 stale "bug" rows corrected back to "implemented" since D2/D3/D4
+      are fixed on this branch); forward doc edits applied for D3/D4 annotations; no false
+      "implemented" claims made for anything not actually merged (5A not merged to main —
+      "Platform — customers" row left untouched). (commit 5a358be)
+- [x] All 6 commits present on `fix/codex-audit-batch5b-hygiene`, each ending with the required
       co-author trailer.
-- [ ] Full test suite green: `cd src/backend && npx jest --silent` and
-      `cd src/frontend && npx vitest run`.
+- [x] Full test suite green: backend 834/835 passing (1 pre-existing, unrelated
+      `seedCredentialSmoke.test.ts` failure — confirmed present before this batch's changes via
+      `git stash`, a dev-DB seed-state issue, not caused by T1-T6) and
+      `cd src/frontend && npx vitest run` 143/143 passing.
 
 **Next steps after this plan is approved by `@ponytail-agent` (Step 5 gate):** `/execute-plan`
 (Step 6) → `@qa-agent` sign-off (Step 7) → `/anemal-finish-branch` (Step 8, which invokes
