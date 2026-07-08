@@ -1,8 +1,15 @@
 # Anemal — RBAC, Platform Console & Structure Restructure Specification
 
-> **Spec ID:** SPEC-RBAC-PLATFORM-01 · **Status:** Approved for planning · **Owner:** @ba-agent
+> **Spec ID:** SPEC-RBAC-PLATFORM-01 · **Status:** Historical (Phase 5 implemented) · **Owner:** @ba-agent
 > **Created:** 2026-06-13 · **Phase:** Phase 5 — Authorization & Platform Separation
 > **Authoritative references:** `anemal-rbac-matrix` skill · `anemal-platform-console` skill · `phase5-rbac-platform-tasks.md`
+>
+> **Staleness note (2026-07-09, Codex audit remediation):** this TO-BE design predates several
+> permission codes added after Phase 5 shipped — `vaccination.create`, `staff.assign_branch`,
+> `clinic.settings.manage` — none of which are listed here. Do not treat this document's
+> permission catalogue as current; the `anemal-rbac-matrix` skill (`.claude/skills/anemal-rbac-matrix/references/permission-matrix.md`)
+> is the single canonical, continuously-updated source for the permission catalogue and role
+> matrix. This spec remains useful for the historical TO-BE rationale/narrative only.
 
 This is a **business-analysis specification**, not an implementation. It defines the TO-BE
 authorization model, the Platform/Clinic separation, the target application structure, and the
