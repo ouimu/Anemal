@@ -107,7 +107,12 @@ export async function getSettingByKey(req: Request, res: Response, next: NextFun
 export async function updateSettingByKey(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { value } = req.body as z.infer<typeof updateSystemSettingSchema>
-    const data = await systemSvc.updateByKey(req.params.key, value, req.context!.userId)
+    // Platform-plane requests carry no userId (JWT has platformUserId instead of it — see
+    // jwt.ts's PlatformTokenPayload). settings_audit_log.changedBy FKs clinic users(id); writing
+    // a platformUserId there would risk an id-collision bug, not a fix. Actor identity for
+    // platform-plane writes lives in the companion platform_audit_logs row instead (ADR-0007 D5).
+    const actorUserId = req.context!.plane === 'clinic' ? req.context!.userId : undefined
+    const data = await systemSvc.updateByKey(req.params.key, value, actorUserId)
     res.json({ success: true, data })
   } catch (err) { next(err) }
 }
@@ -134,7 +139,8 @@ function coerceToString(raw: string | boolean | number): string {
 export async function updateAllSettings(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const body = req.body as z.infer<typeof updateAllSettingsSchema>
-    const userId = req.context!.userId
+    // See updateSettingByKey's comment above — same rationale (ADR-0007 D5).
+    const userId = req.context!.plane === 'clinic' ? req.context!.userId : undefined
 
     let updated = 0
     for (const [field, dbKey] of Object.entries(SETTINGS_KEY_MAP)) {
