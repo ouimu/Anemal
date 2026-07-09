@@ -1,7 +1,7 @@
 # DESIGN.md — Compassionate Care System
 > Single source of truth for Anemal design tokens, component rules, and layout constraints.  
 > **Stitch prototypes are read-only reference:** `design_prototype/<screen>/code.html`  
-> **Full token cheat-sheet:** `.claude/specs/design-system-tokens.md`  
+> **Full token cheat-sheet:** `.claude/skills/anemal-design-system/references/tokens.md`  
 > Last updated: 2026-06-04
 
 ---
@@ -232,14 +232,14 @@ Role — staff:  bg-green-100 text-green-700 border-green-200
 
 | Screen | Prototype | React component | Spec file |
 |---|---|---|---|
-| Login | `login_page/code.html` | `LoginView.tsx` | `.claude/specs/screen-specs/01-login.md` |
-| Dashboard | `dashboard_overview_1024x768/code.html` | `ClinicDashboard.tsx` | `.claude/specs/screen-specs/02-dashboard.md` |
-| Appointments | `appointment_scheduling_1024x768/code.html` | `ClinicAppointments.tsx` | `.claude/specs/screen-specs/03-appointments.md` |
-| Pet & Owner | `pet_owner_management_1024x768/code.html` | `ClinicPets.tsx` | `.claude/specs/screen-specs/04-pet-owner.md` |
-| EMR | `emr_1024x768/code.html` | `ClinicEMR.tsx` | `.claude/specs/screen-specs/05-emr.md` |
-| Inventory | `inventory_management_1024x768/code.html` | `ClinicInventory.tsx` | `.claude/specs/screen-specs/06-inventory.md` |
-| Billing/POS | `billing_pos_1024x768/code.html` | `ClinicBilling.tsx` | `.claude/specs/screen-specs/07-billing-pos.md` |
-| Admin | `admin_control_center_1024x768/code.html` | `AdminView.tsx` | `.claude/specs/screen-specs/08-admin.md` |
+| Login | `login_page/code.html` | `LoginView.tsx` | `.claude/skills/anemal-screen-specs/references/01-login.md` |
+| Dashboard | `dashboard_overview_1024x768/code.html` | `ClinicDashboard.tsx` | `.claude/skills/anemal-screen-specs/references/02-dashboard.md` |
+| Appointments | `appointment_scheduling_1024x768/code.html` | `ClinicAppointments.tsx` | `.claude/skills/anemal-screen-specs/references/03-appointments.md` |
+| Pet & Owner | `pet_owner_management_1024x768/code.html` | `ClinicPets.tsx` | `.claude/skills/anemal-screen-specs/references/04-pet-owner.md` |
+| EMR | `emr_1024x768/code.html` | `ClinicEMR.tsx` | `.claude/skills/anemal-screen-specs/references/05-emr.md` |
+| Inventory | `inventory_management_1024x768/code.html` | `ClinicInventory.tsx` | `.claude/skills/anemal-screen-specs/references/06-inventory.md` |
+| Billing/POS | `billing_pos_1024x768/code.html` | `ClinicBilling.tsx` | `.claude/skills/anemal-screen-specs/references/07-billing-pos.md` |
+| Admin | `admin_control_center_1024x768/code.html` | `AdminView.tsx` | `.claude/skills/anemal-screen-specs/references/08-admin.md` |
 
 > **Rule:** Before implementing any screen, open the corresponding `code.html` and copy its exact Tailwind classes. Never modify files inside `stitch_vet_clinic_design_system/`.
 

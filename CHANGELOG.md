@@ -1,5 +1,9 @@
 # CHANGELOG
 
+> **FROZEN (2026-07-09):** this file stopped being maintained after 2026-06-05 (Phase 3).
+> It is kept as a historical record only. For change history since then, use
+> `HistoryLog.md`, `docs/adr/`, and `git log`.
+
 All changes to this project are recorded here in reverse-chronological order.
 Format: `[YYYY-MM-DD] Agent — Description`
 

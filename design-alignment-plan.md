@@ -1,5 +1,10 @@
 # Design Alignment Plan — Compassionate Care System
-> **Status:** PLAN ONLY — Do not implement until approved  
+> **Status:** EXECUTED / HISTORICAL (2026-07-09) — the Compassionate Care alignment shipped
+> (Phase 7 UI redesign sign-off complete). Kept because `docs/index.html` and the
+> `anemal-screen-specs` skill reference it. Live design authority: `DESIGN.md` +
+> `.claude/skills/anemal-design-system/`. Original header follows.
+>
+> **Original status:** PLAN ONLY — Do not implement until approved  
 > **Created:** 2026-06-04  
 > **Source designs:** `design_prototype/` (8 screens, read-only)  
 > **Design tokens:** `design_prototype/compassionate_care_system/DESIGN.md`

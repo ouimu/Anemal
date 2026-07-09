@@ -415,7 +415,7 @@ extended for quota checks.
 | 5-G | QA hardening & cleanup | QA | permission-matrix tests, plane-isolation tests, structure cleanup, docs |
 
 Detailed, atomic, developer-ready tasks with acceptance criteria:
-**`.claude/roadmap/phase5-rbac-platform-tasks.md`**.
+**`.claude/roadmap/archive/phase5-rbac-platform-tasks.md`** (archived 2026-07-09; shipped as Phase 8).
 
 ---
 

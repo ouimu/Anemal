@@ -6,7 +6,8 @@
 > This matrix is the canonical status source; @pm-agent updates it LAST on every
 > task (see CLAUDE.md → Tracking & Documentation).
 >
-> Current totals as of this batch (Codex Audit Batches 1–4): **832 backend tests,
+> Current totals as of the Codex audit closeout, 2026-07-09 (Batches 1–5, PRs #8–#13,
+> plus the seedCredentialSmoke isolation-flake fix 4e78e0b): **835 backend tests,
 > 143 frontend tests.** Route-level authorization is machine-verified by
 > `src/backend/tests/integration/roleRouteMatrix.test.ts` — that file is the source
 > of truth for per-route permission coverage; this matrix does not duplicate it.

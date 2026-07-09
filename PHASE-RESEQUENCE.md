@@ -1,4 +1,10 @@
 # Phase Re-sequence & Worklist — Master Plan
+> **HISTORICAL (2026-07-09):** the resequence described here was executed in full — Phases 1–9
+> and the Codex audit remediation are complete; only credential-gated Phases 10–11 remain.
+> This file stays as the authoritative old→new phase-number map and the rationale for the
+> stable `phase5`/`5-x`/`T-5x` identifiers. Current status: CLAUDE.md → Phases table and
+> `.claude/specs/implementation-status-matrix.md`. "Do next" sections below are stale.
+>
 > Produced 2026-06-13 by @ba-agent (validation) + @pm-agent (sequencing) + @qa-agent (conflict review).
 > Supersedes the priority order in `.claude/roadmap/remaining-tasks.md` (that file is read-only this session; sub-task IDs there remain authoritative).
 > **Change requested:** postpone Payment Gateway (Session F) and LINE/SMS (Session G); make the redesign track the priority; full clean resequence of phase numbers.

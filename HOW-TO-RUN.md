@@ -86,7 +86,7 @@ Expected seed output:
 npm test
 ```
 
-Expected: **8 tests pass** at this early setup-verification point (5 auth unit tests + 3 RBAC unit tests, no DB required). The current full suite (Step 7, DB required) runs **832 backend + 143 frontend** tests — the 8-test figure above is historical, scoped to this unit-only checkpoint, not the authoritative total.
+Expected: **8 tests pass** at this early setup-verification point (5 auth unit tests + 3 RBAC unit tests, no DB required). The current full suite (Step 7, DB required) runs **835 backend + 143 frontend** tests — the 8-test figure above is historical, scoped to this unit-only checkpoint, not the authoritative total.
 Integration tests require the seeded DB and will be skipped if DB is unavailable.
 
 > **Phase 8 note:** After seeding you also have a platform super-admin user seeded for the Platform Console. Login at `/platform/login` with the platform credentials from the seed output.
@@ -160,7 +160,7 @@ Frontend running at: `http://localhost:5173`
 npm test
 ```
 
-All tests should pass including cross-tenant isolation tests, RBAC permission matrix, and platform plane isolation. As of Codex Audit Batch 4 the full suite runs **832 backend + 143 frontend** tests (the earlier "~394 backend" figure was as of Phase 8 completion and is historical).
+All tests should pass including cross-tenant isolation tests, RBAC permission matrix, and platform plane isolation. As of the Codex audit closeout (Batches 1–5) the full suite runs **835 backend + 143 frontend** tests (the earlier "~394 backend" figure was as of Phase 8 completion and is historical).
 
 Run frontend tests separately:
 ```powershell

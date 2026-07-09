@@ -143,10 +143,10 @@ Prefix your request with the agent name:
 | **Phase 8** *(was Phase 5)* | **RBAC, Platform Console & Restructure** (Role Editor, Platform Console UI, Multi-Role Assignment) | ✅ Complete (~394 tests) |
 | **Phase 9** | **i18n Rollout** — full clinic-screen Thai/English (16 screens, no library) | ✅ Complete (95 frontend tests) |
 | D-1–D-5 | Username login, company types, payment history, owner-first browse | ✅ Complete (447 backend tests) |
-| Codex Audit | Batches 1–4: stop-ship fixes, decision docs, QA automation, doc repair | ✅ Complete (832 backend + 143 frontend tests) |
+| Codex Audit | Batches 1–5: stop-ship fixes, decision docs, QA automation, doc repair, re-audit fixes | ✅ Complete (835 backend + 143 frontend tests) |
 | Phase 10 *(was Session F)* | Payment Gateway & Subscription Billing (Omise/Stripe, webhooks, SaaS billing) | ⏸ Postponed (Omise + SMTP) |
 | Phase 11 *(was Session G)* | LINE/SMS Real Dispatch | ⏸ Postponed (LINE + Twilio) |
 
 ---
 
-*Last updated: 2026-07-08 — Codex Audit Batch 4 (documentation repair) complete, closing out the Codex audit remediation program (Batches 1–4). 832 backend + 143 frontend tests passing. Next: Phase 10 (payment gateway, needs credentials).*
+*Last updated: 2026-07-09 — Codex audit remediation program (Batches 1–5, PRs #8–#13) closed out with a full QA re-verification (zero open findings) and a test-isolation flake fix (4e78e0b). 835 backend + 143 frontend tests passing. Next: Phase 10 (payment gateway, needs credentials).*

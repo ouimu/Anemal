@@ -14,10 +14,10 @@ You are the UIUX-Agent for the Anemal project. All UI work **must** follow the *
 | Resource | Path | Role |
 |---|---|---|
 | Stitch prototypes (READ-ONLY) | `stitch_vet_clinic_design_system/<screen>/code.html` | Visual source of truth — copy exact classes |
-| Token cheat-sheet | `.claude/specs/design-system-tokens.md` | Every token → Tailwind class → hex |
+| Token cheat-sheet | `.claude/skills/anemal-design-system/references/tokens.md` | Every token → Tailwind class → hex |
 | Component & layout spec | `DESIGN.md` (root) | Component patterns, layout rules |
-| Shared layout spec | `.claude/specs/screen-specs/00-shared-layout.md` | Sidebar + TopNav — applies to all screens |
-| Per-screen specs | `.claude/specs/screen-specs/NN-name.md` | Detailed per-screen specs |
+| Shared layout spec | `.claude/skills/anemal-screen-specs/references/00-shared-layout.md` | Sidebar + TopNav — applies to all screens |
+| Per-screen specs | `.claude/skills/anemal-screen-specs/references/NN-name.md` | Detailed per-screen specs |
 | Tailwind config | `src/frontend/tailwind.config.js` | Token source for dev-agent |
 
 **Before designing any screen:** open its `code.html` prototype and read it fully. Extract exact class names. Never guess or invent token names.
@@ -117,15 +117,15 @@ Content area offset: `ml-56 pt-16` or `ml-14 pt-16`
 
 | Screen | Spec | Status |
 |---|---|---|
-| Shared layout (Sidebar + TopNav) | `.claude/specs/screen-specs/00-shared-layout.md` | ✅ Done |
-| Login | `.claude/specs/screen-specs/01-login.md` | ✅ Done |
-| Dashboard | `.claude/specs/screen-specs/02-dashboard.md` | ✅ Done |
-| Appointments | `.claude/specs/screen-specs/03-appointments.md` | Phase 2 |
-| Pet & Owner | `.claude/specs/screen-specs/04-pet-owner.md` | Phase 2 |
-| EMR | `.claude/specs/screen-specs/05-emr.md` | Phase 2 |
-| Inventory | `.claude/specs/screen-specs/06-inventory.md` | ✅ Done |
-| Billing/POS | `.claude/specs/screen-specs/07-billing-pos.md` | ✅ Done |
-| Admin | `.claude/specs/screen-specs/08-admin.md` | ✅ Done |
+| Shared layout (Sidebar + TopNav) | `.claude/skills/anemal-screen-specs/references/00-shared-layout.md` | ✅ Done |
+| Login | `.claude/skills/anemal-screen-specs/references/01-login.md` | ✅ Done |
+| Dashboard | `.claude/skills/anemal-screen-specs/references/02-dashboard.md` | ✅ Done |
+| Appointments | `.claude/skills/anemal-screen-specs/references/03-appointments.md` | ✅ Done |
+| Pet & Owner | `.claude/skills/anemal-screen-specs/references/04-pet-owner.md` | ✅ Done |
+| EMR | `.claude/skills/anemal-screen-specs/references/05-emr.md` | ✅ Done |
+| Inventory | `.claude/skills/anemal-screen-specs/references/06-inventory.md` | ✅ Done |
+| Billing/POS | `.claude/skills/anemal-screen-specs/references/07-billing-pos.md` | ✅ Done |
+| Admin | `.claude/skills/anemal-screen-specs/references/08-admin.md` | ✅ Done |
 
 ---
 

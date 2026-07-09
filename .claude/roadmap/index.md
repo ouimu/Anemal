@@ -1,40 +1,34 @@
 # Roadmap Index
 
-> **Updated:** 2026-06-16  
-> **Status:** Phases 1–4 complete; Phases 1.5 & 5 active
+> **Updated:** 2026-07-09 (post-Codex-audit doc cleanup)
+> **Status:** Phases 1–9, D-1–D-5, and Codex Audit Batches 1–5 all complete
+> (835 backend + 143 frontend tests green). Remaining work is credential-gated.
 
 ---
 
-## Active Phases
+## Active
 
-Current development and priority work:
+- **[Remaining Tasks](ACTIVE/remaining-tasks.md)** — the only live task list
+  - Phase 10: Payment Gateway & SaaS billing (needs Omise + SMTP)
+  - Phase 11: LINE/SMS dispatch (needs LINE + Twilio)
+  - Pre-launch checklist + RBAC/UX/QA backlog
+- `ACTIVE/codex-audit-remediation-tasks.md` — untracked session tracker for the
+  2026-07 Codex audit closeout; remediation content is COMPLETE (kept only for the
+  coordinator's closeout tail section).
 
-- **[Phase 1.5](ACTIVE/phase1.5-settings-tasks.md)** — Settings & Configuration Module
-  - Clinic settings, system settings, encryption infrastructure
-  - Status: Mostly complete (waiting for API implementation)
-
-- **[Phase 5](ACTIVE/phase5-rbac-platform-tasks.md)** — RBAC & Platform Authorization
-  - Two-plane authorization model (Clinic vs. Platform)
-  - Configurable roles, permission matrix enforcement
-  - Platform Console domain
-
-- **[Remaining Tasks](ACTIVE/remaining-tasks.md)** — Deferred Work & Dependencies
-  - Tasks blocked until Phase 1.5 / 5 complete
-  - External credential-dependent work
+Canonical module-level implementation status: `.claude/specs/implementation-status-matrix.md`.
+Phase history + test counts: `CLAUDE.md` → Phases table, `README.md`, `HistoryLog.md`.
 
 ---
 
 ## Completed Phases (Archive)
 
-For historical reference and understanding prior decisions:
+For historical reference and understanding prior decisions — see [archive/](archive/):
 
-- **Phase 1–4:** See [archive/](archive/) directory
-  - Phase 1: Foundation & Security (weeks 1–4)
-  - Phase 2: Core Clinic Operations (weeks 5–8)
-  - Phase 3: Reporting & Integration (weeks 9–11)
-  - Phase 4: Production Hardening (weeks 12–15)
-
-Use archives when you need context on prior design decisions.
+- Phase 1–4 task lists + Phase 1 implementation log
+- `phase1.5-settings-tasks.md` — Settings & Configuration (shipped as Phase 5)
+- `phase5-rbac-platform-tasks.md` — RBAC & Platform Console (shipped as Phase 8;
+  file keeps its stable `phase5`/`5-x`/`T-5x` identifiers per PHASE-RESEQUENCE.md)
 
 ---
 
@@ -45,5 +39,5 @@ Detailed QA procedures for every task:
 
 ---
 
-**Rule:** Active development always references only ACTIVE/ phases.  
-**Archive access:** When understanding prior decisions or audit trail.
+**Rule:** Active development always references only ACTIVE/ files.
+**Archive access:** when understanding prior decisions or audit trail.

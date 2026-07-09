@@ -129,7 +129,7 @@ design_prototype/        # Compassionate Care UI (read-only)
   skills/anemal-{coding-rules,design-system,screen-specs,functional-reqs,
                  db-context,rbac-matrix,platform-console,ba-toolkit}/
   specs/RBAC_Platform_Restructure_Spec.md, database-schema.sql
-  roadmap/phase5-rbac-platform-tasks.md, qa-protocols.md
+  roadmap/ACTIVE/remaining-tasks.md, qa-protocols.md, archive/  # completed phase task lists live in archive/
 src/
   backend/{config,controllers,middlewares,models,services,routes}/
   frontend/src/{components,views,hooks,utils,store}/
@@ -151,11 +151,11 @@ src/
 | 8 | RBAC + Platform Console | ✅ ~394 backend tests |
 | 9 | i18n Thai/English (16 screens, no library) | ✅ 95 frontend tests |
 | D-1–D-5 | Username login, company types, payment history, owner-first browse | ✅ 447 backend tests |
-| Codex Audit | Batches 1–4: stop-ship fixes, decision docs, QA automation, doc repair (PRs #8/#9/#10 + this batch) | ✅ 832 backend + 143 frontend tests |
+| Codex Audit | Batches 1–5: stop-ship fixes, decision docs, QA automation, doc repair, re-audit fixes (PRs #8–#13) | ✅ 835 backend + 143 frontend tests |
 | 10 | Payment gateway + SaaS billing | ⏸ needs credentials |
 | 11 | LINE/SMS dispatch | ⏸ needs credentials |
 
-See `.claude/roadmap/remaining-tasks.md` for sub-tasks.
+See `.claude/roadmap/ACTIVE/remaining-tasks.md` for sub-tasks.
 
 ---
 

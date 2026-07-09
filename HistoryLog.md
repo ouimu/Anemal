@@ -2,6 +2,39 @@
 
 ---
 
+## Codex Audit Remediation — Batches 1–5 + Closeout (2026-07-07 → 2026-07-09)
+
+**Status:** Complete
+**Tests:** 835 backend (Jest) + 143 frontend (Vitest) passing.
+
+### Summary
+
+Full remediation of the external Codex review and re-audit, shipped as five batches
+(PRs #8–#13), each through the complete CLAUDE.md pipeline. Decisions recorded in
+ADR-0003 … ADR-0007 (`docs/adr/`). Closeout (2026-07-09): QA walkthrough re-verified
+all findings (7/7 role logins, full role matrix, audit redaction DB-verified) with
+**zero open findings**; the `RecomendByCodex/` audit-input folder was then deleted, and
+a test-isolation flake in `seedCredentialSmoke` was root-caused and fixed (`4e78e0b` —
+`user.repository.test.ts` used an unscoped `findFirst` that wiped `doctor_b`'s branch
+assignment; now uses isolated fixtures).
+
+| Batch | Focus | PR / ADR |
+|---|---|---|
+| 1 | Stop-ship fixes (audit-log tenantId crash, build/test failures) | #8 / ADR-0003 |
+| 2 | Product decision docs + targeted bug fixes | #9 / ADR-0004 |
+| 3 | QA automation — `roleRouteMatrix.test.ts` (148 routes × 3 roles, CI-enforced) | #10 / ADR-0005 |
+| 4 | Documentation repair + `implementation-status-matrix.md` created | #11 / ADR-0006 |
+| 5A/5B | Re-audit fixes (audit redaction choke-point, company-type contract, quota validation, featureFlags removal, hygiene) | #12, #13 / ADR-0007 |
+
+### Doc cleanup (2026-07-09, this entry's commit)
+Completed plan files archived to `docs/superpowers/plans/archive/`; completed phase task
+lists archived to `.claude/roadmap/archive/`; obsolete docs deleted (`ReviewByCodex.md`,
+`session-summary.md`, `docs/claude-setup-audit-2026-07-05.md` + evidence,
+`.claude/plans/*`); stale status/test counts refreshed across README, CLAUDE.md, and
+the implementation-status matrix.
+
+---
+
 ## D-1 through D-5 — Product Decision Implementations (2026-06-24)
 
 **Status:** Complete  
