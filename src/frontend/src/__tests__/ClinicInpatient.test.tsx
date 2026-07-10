@@ -148,6 +148,26 @@ describe('ClinicInpatient — Edit modal (AC1, AC6)', () => {
   })
 })
 
+describe('ClinicInpatient — Log Care modal payload (careSchema field-name regression guard)', () => {
+  it('submits POST with backend field names (temperatureC), no nonexistent weight field', async () => {
+    stubGet([activeAdmission])
+    renderBoard()
+    await screen.findByText('Rex')
+
+    await userEvent.click(screen.getByText('Log Care'))
+    await userEvent.click(screen.getByText('16:00'))
+    await userEvent.click(screen.getByText('Next'))
+    await userEvent.click(screen.getByText('Next'))
+    await userEvent.click(screen.getByText('Save Care Record'))
+
+    await waitFor(() => expect(postMock).toHaveBeenCalled())
+    const [, payload] = postMock.mock.calls[0]
+    expect(payload).toEqual({ timeSlot: '16:00', temperatureC: null, notes: '' })
+    expect(payload).not.toHaveProperty('weight')
+    expect(payload).not.toHaveProperty('temperature')
+  })
+})
+
 describe('AdmitModal — standalone (B4, AC5)', () => {
   it('submits POST /api/hospitalizations with the pre-filled petId', async () => {
     getMock.mockImplementation((url: string) => {

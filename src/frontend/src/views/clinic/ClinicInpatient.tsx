@@ -28,8 +28,7 @@ interface Doctor { id: number; name: string }
 
 interface CareEntry {
   timeSlot: string
-  temperature: number | null
-  weight: number | null
+  temperatureC: number | null
   notes: string
 }
 
@@ -81,8 +80,7 @@ function CareModal({ hospit, onClose, onSaved }: {
   const [step, setStep] = useState(1)
   const [entry, setEntry] = useState<CareEntry>({
     timeSlot: TIME_SLOTS[0],
-    temperature: null,
-    weight: null,
+    temperatureC: null,
     notes: '',
   })
 
@@ -143,15 +141,9 @@ function CareModal({ hospit, onClose, onSaved }: {
       <div className="flex flex-col gap-xl">
         <Stepper
           label="Body Temperature"
-          value={entry.temperature}
-          onChange={v => setEntry(e => ({ ...e, temperature: v }))}
+          value={entry.temperatureC}
+          onChange={v => setEntry(e => ({ ...e, temperatureC: v }))}
           unit="°C"
-        />
-        <Stepper
-          label="Weight"
-          value={entry.weight}
-          onChange={v => setEntry(e => ({ ...e, weight: v }))}
-          unit="kg"
         />
       </div>
     )
