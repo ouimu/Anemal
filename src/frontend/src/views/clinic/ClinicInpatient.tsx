@@ -28,9 +28,25 @@ interface Doctor { id: number; name: string }
 
 interface CareEntry {
   timeSlot: string
-  temperature: number | null
-  weight: number | null
+  temperatureC: number | null
   notes: string
+}
+
+// One row of `DailyInpatientCare` as returned nested under `careLogs` by
+// `GET /api/hospitalizations/:id`, already sorted newest-first server-side.
+// `performedBy` is a `User.id` (any staff role, not necessarily a Doctor) —
+// see grill finding 1: must render as "Staff #<id>", never a resolved name.
+interface CareLog {
+  id: number
+  recordedAt: string
+  timeSlot: string
+  temperatureC: number | null
+  heartRateBpm: number | null
+  respRateRpm: number | null
+  feedingStatus: string | null
+  medicationGiven: string | null
+  notes: string | null
+  performedBy: number | null
 }
 
 interface AdmitEditForm {
@@ -64,6 +80,12 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
+function formatDateTime(iso: string) {
+  return new Date(iso).toLocaleString('en-GB', {
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  })
+}
+
 function doctorName(doctors: Doctor[], id: number | null): string {
   if (id == null) return 'Unassigned'
   return doctors.find(d => d.id === id)?.name ?? 'Unassigned'
@@ -81,15 +103,18 @@ function CareModal({ hospit, onClose, onSaved }: {
   const [step, setStep] = useState(1)
   const [entry, setEntry] = useState<CareEntry>({
     timeSlot: TIME_SLOTS[0],
-    temperature: null,
-    weight: null,
+    temperatureC: null,
     notes: '',
   })
 
   const qc = useQueryClient()
   const mut = useMutation({
     mutationFn: (data: CareEntry) => api.post(`/api/hospitalizations/${hospit.id}/care`, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['inpatient-active'] }); onSaved() },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['inpatient-active'] })
+      qc.invalidateQueries({ queryKey: ['hospitalization', hospit.id] })
+      onSaved()
+    },
   })
 
   function step1() {
@@ -143,15 +168,9 @@ function CareModal({ hospit, onClose, onSaved }: {
       <div className="flex flex-col gap-xl">
         <Stepper
           label="Body Temperature"
-          value={entry.temperature}
-          onChange={v => setEntry(e => ({ ...e, temperature: v }))}
+          value={entry.temperatureC}
+          onChange={v => setEntry(e => ({ ...e, temperatureC: v }))}
           unit="°C"
-        />
-        <Stepper
-          label="Weight"
-          value={entry.weight}
-          onChange={v => setEntry(e => ({ ...e, weight: v }))}
-          unit="kg"
         />
       </div>
     )
@@ -373,14 +392,96 @@ function EditModal({ hospit, doctors, onClose, onSaved }: {
   )
 }
 
+// ─── Care History Modal ─────────────────────────────────────────────────────
+// Read-only. Fetches the single hospitalization (which nests `careLogs`,
+// already sorted newest-first server-side) via `GET /api/hospitalizations/:id`.
+// Mirrors CareModal's overlay/dialog chrome and header structure.
+function CareHistoryModal({ hospit, onClose }: { hospit: Hospitalization; onClose: () => void }) {
+  const { data, isLoading, isError } = useQuery<Hospitalization & { careLogs: CareLog[] }>({
+    queryKey: ['hospitalization', hospit.id],
+    queryFn: () => api.get(`/api/hospitalizations/${hospit.id}`).then(r => r.data.data),
+  })
+  const logs = data?.careLogs ?? []
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-md" onClick={onClose}>
+      <div
+        className="bg-surface rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-xl pt-xl pb-md border-b border-outline-variant">
+          <div>
+            <p className="text-label-md text-on-surface-variant">{hospit.pet.name}</p>
+            <p className="text-headline-sm font-headline font-bold text-on-surface">Care History</p>
+          </div>
+          <button onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-surface-container text-on-surface-variant transition-colors">
+            <MaterialIcon name="close" size={20} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-xl py-lg flex-1 overflow-y-auto">
+          {isLoading && (
+            <div className="flex justify-center py-xl">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+          {isError && (
+            <div className="bg-error-container text-error rounded-xl p-lg text-body-md flex items-center gap-sm">
+              <MaterialIcon name="error" size={20} />
+              Failed to load care history.
+            </div>
+          )}
+          {!isLoading && !isError && logs.length === 0 && (
+            <p className="text-body-md text-on-surface-variant text-center py-xl">No care history recorded yet</p>
+          )}
+          {!isLoading && !isError && logs.length > 0 && (
+            <div className="flex flex-col gap-sm">
+              {logs.map(log => (
+                <div key={log.id} className="rounded-xl border border-outline-variant p-md flex flex-col gap-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-label-md font-semibold text-on-surface">{formatDateTime(log.recordedAt)}</span>
+                    <span className="px-sm py-xs rounded-full bg-surface-container-low text-label-sm text-on-surface-variant">{log.timeSlot}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-sm text-body-sm text-on-surface-variant">
+                    <span>Temp: {log.temperatureC != null ? `${Number(log.temperatureC).toFixed(1)}°C` : '—'}</span>
+                    <span>HR: {log.heartRateBpm != null ? `${log.heartRateBpm} bpm` : '—'}</span>
+                    <span>Resp: {log.respRateRpm != null ? `${log.respRateRpm} rpm` : '—'}</span>
+                  </div>
+                  <p className="text-body-sm text-on-surface-variant">Feeding: {log.feedingStatus || '—'}</p>
+                  <p className="text-body-sm text-on-surface-variant">Medication: {log.medicationGiven || '—'}</p>
+                  <p className="text-body-sm text-on-surface">{log.notes || '—'}</p>
+                  <p className="text-label-sm text-on-surface-variant">
+                    By: {log.performedBy != null ? `Staff #${log.performedBy}` : '—'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-xl pb-xl">
+          <button
+            onClick={onClose}
+            className="w-full min-h-[44px] rounded-xl border border-outline-variant bg-surface text-on-surface hover:bg-surface-container text-body-md font-medium transition-colors"
+          >Close</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Cage Card ────────────────────────────────────────────────────────────────
-function CageCard({ hospit, doctors, onCare, onDischarge, onEdit, onDelete }: {
+function CageCard({ hospit, doctors, onCare, onDischarge, onEdit, onDelete, onHistory }: {
   hospit: Hospitalization
   doctors: Doctor[]
   onCare: () => void
   onDischarge: () => void
   onEdit: () => void
   onDelete: () => void
+  onHistory: () => void
 }) {
   const statusColor = STATUS_COLORS[hospit.status] ?? STATUS_COLORS.admitted
   const statusLabel = STATUS_LABELS[hospit.status] ?? hospit.status
@@ -441,6 +542,13 @@ function CageCard({ hospit, doctors, onCare, onDischarge, onEdit, onDelete }: {
           <MaterialIcon name="logout" size={16} />
           Discharge
         </button>
+        <button
+          onClick={onHistory}
+          aria-label="View care history"
+          className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl border border-outline-variant bg-surface text-on-surface hover:bg-surface-container transition-colors"
+        >
+          <MaterialIcon name="history" size={16} />
+        </button>
         {isAdmitted && (
           <button
             onClick={onEdit}
@@ -468,6 +576,7 @@ function CageCard({ hospit, doctors, onCare, onDischarge, onEdit, onDelete }: {
 export default function ClinicInpatient() {
   const [careTarget, setCareTarget] = useState<Hospitalization | null>(null)
   const [editTarget, setEditTarget] = useState<Hospitalization | null>(null)
+  const [historyTarget, setHistoryTarget] = useState<Hospitalization | null>(null)
   const qc = useQueryClient()
 
   const { data, isLoading, isError, refetch } = useQuery<Hospitalization[]>({
@@ -557,6 +666,7 @@ export default function ClinicInpatient() {
               onDischarge={() => handleDischarge(h)}
               onEdit={() => setEditTarget(h)}
               onDelete={() => handleDelete(h)}
+              onHistory={() => setHistoryTarget(h)}
             />
           ))}
         </div>
@@ -578,6 +688,14 @@ export default function ClinicInpatient() {
           doctors={doctors}
           onClose={() => setEditTarget(null)}
           onSaved={() => setEditTarget(null)}
+        />
+      )}
+
+      {/* Care history modal */}
+      {historyTarget && (
+        <CareHistoryModal
+          hospit={historyTarget}
+          onClose={() => setHistoryTarget(null)}
         />
       )}
     </div>
