@@ -6,11 +6,11 @@
 > This matrix is the canonical status source; @pm-agent updates it LAST on every
 > task (see CLAUDE.md → Tracking & Documentation).
 >
-> Current totals as of the Pet/EMR Batch A merge, 2026-07-10 (PR #14, branch
-> `feat/pet-emr-batch-a`, on top of the Codex audit closeout 2026-07-09 Batches
-> 1–5, PRs #8–#13, plus the seedCredentialSmoke isolation-flake fix 4e78e0b):
-> **850 backend tests, 168 frontend tests.** Route-level authorization is
-> machine-verified by
+> Current totals as of the Pet/EMR Item 3 merge, 2026-07-10 (PR #15, branch
+> `feat/inpatient-crud`, on top of Pet/EMR Batch A, PR #14, on top of the Codex audit
+> closeout 2026-07-09 Batches 1–5, PRs #8–#13, plus the seedCredentialSmoke
+> isolation-flake fix 4e78e0b): **864 backend tests, 181 frontend tests.**
+> Route-level authorization is machine-verified by
 > `src/backend/tests/integration/roleRouteMatrix.test.ts` — that file is the source
 > of truth for per-route permission coverage; this matrix does not duplicate it.
 
@@ -63,5 +63,7 @@
 | Pet edit (Batch A item 1) | `PUT /api/pets/:id` | Edit Pet modal added to `PetDetail`, mirrors `OwnerPanel` edit pattern; backend was already fully wired | `services/pet.service.ts`, `models/pet.repository.ts` | `views/clinic/ClinicPets.tsx` | `__tests__/EditPetModal.test.tsx`, `__tests__/PetDetail.editButton.test.tsx` | implemented |
 | Pet weight ↔ EMR sync (Batch A item 2) | `POST/PUT /api/medical-records` | `Pet.weightKg` recomputed in-transaction from latest non-null-weight record on every save; atomic conditional UPDATE-subquery, no pessimistic lock (ADR-0008) | `models/medical-record.repository.ts` | `views/clinic/ClinicEMR.tsx` | `tests/integration/medical-record-weight-sync.test.ts`, `__tests__/ClinicEMR.weightSync.test.tsx` | implemented |
 | EMR vitals free-text input (Batch A item 4) | EMR Objective tab | `VitalStepper` numeric `<input>` (blur-commit) alongside +/- buttons; bounds match tightened Zod validation (999.99/999.9/3000/3000) | `services/medical-record.service.ts` | `views/clinic/ClinicEMR.tsx` | `__tests__/VitalStepper.test.tsx` | implemented |
+| Inpatient create/edit/delete (item 3) | `POST/PUT/DELETE /api/hospitalizations/:id` | Admit UI added (was fully missing on frontend), edit + care-log-gated hard delete added (reuses `inpatient.manage`, ADR-0009); fixed a pre-existing board-crashing field mismatch (`cageNumber`/`admitReason`/`doctor.name` never existed on the API response) | `services/hospitalization.service.ts`, `models/hospitalization.repository.ts` | `views/clinic/ClinicInpatient.tsx`, `views/clinic/ClinicPets.tsx` | `tests/integration/hospitalization-crud.test.ts`, `__tests__/ClinicInpatient.test.tsx`, `__tests__/PetDetail.admitButton.test.tsx` | implemented |
+| Inpatient care-log entry | `POST /api/hospitalizations/:id/care` | **Known bug, not fixed by item 3** — `CareModal`'s payload field names (`temperature`/`weight`) don't match `careSchema` (`temperatureC`, no `weight` field); every real submission fails Zod validation. Discovered during item-3 recon, deliberately out of that item's scope; flagged as a separate follow-up task | `services/hospitalization.service.ts` | `views/clinic/ClinicInpatient.tsx` (`CareModal`) | `tests/integration/phase4.test.ts` (covers only the correctly-shaped direct-API case, not the frontend's actual payload) | bug |
 
 Implementer note: this is a starting seed (~30 rows), not exhaustive — the header rule ("expand a row before modifying that module") is the mechanism that keeps it growing accurately over time rather than trying to enumerate everything up front.
