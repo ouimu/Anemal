@@ -6,6 +6,7 @@ import { usePhotoUpload } from '../../hooks/usePhotoUpload'
 import { useT } from '../../i18n'
 import Can from '../../components/Can'
 import { useAuthStore } from '../../store/authStore'
+import { AdmitModal } from './ClinicInpatient'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Owner { id: number; firstName: string; lastName: string; phone: string; email?: string; lineId?: string; address?: string; idCardType?: string; idCardNumber?: string; isActive: boolean; pets: Pet[] }
@@ -503,6 +504,7 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
   const t = useT()
   const [tab, setTab] = useState<Tab>('Overview')
   const [editingPet, setEditingPet] = useState(false)
+  const [admitting, setAdmitting] = useState(false)
 
   const { data, isLoading } = useQuery<{ data: Pet }>({
     queryKey: ['pet', petId],
@@ -534,6 +536,16 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
                 className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-surface-container-low transition-colors"
               >
                 <MaterialIcon name="edit" size={20} className="text-on-surface-variant" />
+              </button>
+            </Can>
+            <Can perm="inpatient.manage">
+              <button
+                type="button"
+                onClick={() => setAdmitting(true)}
+                className="flex items-center gap-xs rounded-lg border border-outline-variant px-md py-xs min-h-[44px] text-body-sm font-medium text-on-surface hover:bg-surface-container-low transition-colors"
+              >
+                <MaterialIcon name="local_hospital" size={18} />
+                Admit to Inpatient
               </button>
             </Can>
           </div>
@@ -634,6 +646,10 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
 
       {editingPet && pet && (
         <EditPetModal pet={pet} onClose={() => setEditingPet(false)} onSuccess={() => setEditingPet(false)} />
+      )}
+
+      {admitting && pet && (
+        <AdmitModal petId={pet.id} onClose={() => setAdmitting(false)} onSaved={() => setAdmitting(false)} />
       )}
     </div>
   )

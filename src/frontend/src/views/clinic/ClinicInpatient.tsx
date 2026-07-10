@@ -4,23 +4,40 @@ import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+// Field names match the real backend response shape (hospitalization.repository.ts
+// findActive/findById) — see docs/superpowers/specs/2026-07-10-inpatient-crud-design.md §0
+// for the field-mismatch bug this replaces (cageNumber/admitReason/assignedDoctorId/
+// lastCareAt/doctor never existed on the API response). doctorInCharge is a bare
+// FK-less Int — the doctor's name is resolved client-side from a doctors id→name map
+// (§2.2), not a Prisma relation.
 interface Hospitalization {
   id: number
   petId: number
-  cageNumber: string
+  cageNo: string | null
   status: string
-  admitReason: string
+  reason: string
   admittedAt: string
-  lastCareAt: string | null
-  assignedDoctorId: number
+  doctorInCharge: number | null
+  dailyRate: number
+  notes: string | null
+  _count: { careLogs: number }
   pet: { id: number; name: string; species: string; photoUrl?: string }
-  doctor: { id: number; name: string }
 }
+
+interface Doctor { id: number; name: string }
 
 interface CareEntry {
   timeSlot: string
   temperature: number | null
   weight: number | null
+  notes: string
+}
+
+interface AdmitEditForm {
+  reason: string
+  cageNo: string
+  doctorInCharge: string
+  dailyRate: string
   notes: string
 }
 
@@ -43,17 +60,17 @@ const STATUS_LABELS: Record<string, string> = {
 
 const TIME_SLOTS = ['08:00', '12:00', '16:00', '20:00']
 
-function hoursAgo(iso: string | null): string {
-  if (!iso) return 'No records yet'
-  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 3600000)
-  if (diff < 1) return 'Less than 1 hour ago'
-  if (diff === 1) return '1 hour ago'
-  return `${diff} hours ago`
-}
-
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
+
+function doctorName(doctors: Doctor[], id: number | null): string {
+  if (id == null) return 'Unassigned'
+  return doctors.find(d => d.id === id)?.name ?? 'Unassigned'
+}
+
+const inputCls = 'bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary'
+const textareaCls = 'bg-surface-container-low rounded-lg px-md py-sm min-h-[80px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary resize-none'
 
 // ─── Care Modal ───────────────────────────────────────────────────────────────
 function CareModal({ hospit, onClose, onSaved }: {
@@ -213,27 +230,175 @@ function CareModal({ hospit, onClose, onSaved }: {
   )
 }
 
-// ─── Cage Card ────────────────────────────────────────────────────────────────
-function CageCard({ hospit, onCare, onDischarge }: {
+// ─── Admit Modal ──────────────────────────────────────────────────────────────
+// Launched from ClinicPets.tsx PetDetail with petId pre-filled (B4) — mirrors
+// EditModal's overlay/dialog structure, same field set plus the (fixed) petId.
+export function AdmitModal({ petId, onClose, onSaved }: {
+  petId: number
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [form, setForm] = useState<AdmitEditForm>({
+    reason: '', cageNo: '', doctorInCharge: '', dailyRate: '0', notes: '',
+  })
+  const [error, setError] = useState('')
+
+  const qc = useQueryClient()
+  const { data: doctorsData } = useQuery({
+    queryKey: ['appointments', 'doctors'],
+    queryFn: () => api.get('/api/appointments/doctors').then(r => r.data.data as Doctor[]),
+  })
+  const doctors = doctorsData ?? []
+
+  const mut = useMutation({
+    mutationFn: (data: AdmitEditForm) => api.post('/api/hospitalizations', {
+      petId,
+      reason: data.reason,
+      cageNo: data.cageNo || null,
+      doctorInCharge: data.doctorInCharge ? Number(data.doctorInCharge) : null,
+      dailyRate: data.dailyRate ? Number(data.dailyRate) : 0,
+      notes: data.notes || null,
+    }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['inpatient-active'] }); onSaved() },
+    onError: (err: unknown) => {
+      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to admit patient')
+    },
+  })
+
+  const set = (k: keyof AdmitEditForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    setForm(f => ({ ...f, [k]: e.target.value }))
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    mut.mutate(form)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-md" onClick={onClose}>
+      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md p-xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-lg">
+          <h3 className="text-headline-sm font-headline font-bold text-on-surface">Admit to Inpatient</h3>
+          <button onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-surface-container text-on-surface-variant transition-colors">
+            <MaterialIcon name="close" size={20} />
+          </button>
+        </div>
+        {error && <p className="text-error text-body-sm mb-md">{error}</p>}
+        <form onSubmit={submit} className="flex flex-col gap-md">
+          <input required className={inputCls} placeholder="Reason for admission" value={form.reason} onChange={set('reason')} />
+          <input className={inputCls} placeholder="Cage number (optional)" value={form.cageNo} onChange={set('cageNo')} />
+          <select className={inputCls} value={form.doctorInCharge} onChange={set('doctorInCharge')}>
+            <option value="">Doctor in charge (optional)</option>
+            {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+          </select>
+          <input type="number" step="0.01" min="0" max="99999999.99" className={inputCls} placeholder="Daily rate" value={form.dailyRate} onChange={set('dailyRate')} />
+          <textarea className={textareaCls} placeholder="Notes (optional)" value={form.notes} onChange={set('notes')} rows={3} />
+          <div className="flex gap-md pt-sm">
+            <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-xl border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
+            <button type="submit" disabled={mut.isPending || !form.reason.trim()} className="flex-1 min-h-[44px] rounded-xl bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{mut.isPending ? 'Admitting…' : 'Admit Patient'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Edit Modal ───────────────────────────────────────────────────────────────
+// Mirrors CareModal's overlay/dialog structure — single-step form (B2).
+function EditModal({ hospit, doctors, onClose, onSaved }: {
   hospit: Hospitalization
+  doctors: Doctor[]
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [form, setForm] = useState<AdmitEditForm>({
+    reason: hospit.reason,
+    cageNo: hospit.cageNo ?? '',
+    doctorInCharge: hospit.doctorInCharge != null ? String(hospit.doctorInCharge) : '',
+    dailyRate: String(hospit.dailyRate ?? 0),
+    notes: hospit.notes ?? '',
+  })
+  const [error, setError] = useState('')
+
+  const qc = useQueryClient()
+  const mut = useMutation({
+    mutationFn: (data: AdmitEditForm) => api.put(`/api/hospitalizations/${hospit.id}`, {
+      reason: data.reason,
+      cageNo: data.cageNo || null,
+      doctorInCharge: data.doctorInCharge ? Number(data.doctorInCharge) : null,
+      dailyRate: data.dailyRate ? Number(data.dailyRate) : 0,
+      notes: data.notes || null,
+    }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['inpatient-active'] }); onSaved() },
+    onError: (err: unknown) => {
+      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save changes')
+    },
+  })
+
+  const set = (k: keyof AdmitEditForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    setForm(f => ({ ...f, [k]: e.target.value }))
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    mut.mutate(form)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-md" onClick={onClose}>
+      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md p-xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-lg">
+          <h3 className="text-headline-sm font-headline font-bold text-on-surface">Edit Admission — {hospit.pet.name}</h3>
+          <button onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-surface-container text-on-surface-variant transition-colors">
+            <MaterialIcon name="close" size={20} />
+          </button>
+        </div>
+        {error && <p className="text-error text-body-sm mb-md">{error}</p>}
+        <form onSubmit={submit} className="flex flex-col gap-md">
+          <input required className={inputCls} placeholder="Reason for admission" value={form.reason} onChange={set('reason')} />
+          <input className={inputCls} placeholder="Cage number (optional)" value={form.cageNo} onChange={set('cageNo')} />
+          <select className={inputCls} value={form.doctorInCharge} onChange={set('doctorInCharge')}>
+            <option value="">Doctor in charge (optional)</option>
+            {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+          </select>
+          <input type="number" step="0.01" min="0" max="99999999.99" className={inputCls} placeholder="Daily rate" value={form.dailyRate} onChange={set('dailyRate')} />
+          <textarea className={textareaCls} placeholder="Notes (optional)" value={form.notes} onChange={set('notes')} rows={3} />
+          <div className="flex gap-md pt-sm">
+            <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-xl border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
+            <button type="submit" disabled={mut.isPending} className="flex-1 min-h-[44px] rounded-xl bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{mut.isPending ? 'Saving…' : 'Save Changes'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Cage Card ────────────────────────────────────────────────────────────────
+function CageCard({ hospit, doctors, onCare, onDischarge, onEdit, onDelete }: {
+  hospit: Hospitalization
+  doctors: Doctor[]
   onCare: () => void
   onDischarge: () => void
+  onEdit: () => void
+  onDelete: () => void
 }) {
   const statusColor = STATUS_COLORS[hospit.status] ?? STATUS_COLORS.admitted
   const statusLabel = STATUS_LABELS[hospit.status] ?? hospit.status
+  const isAdmitted = hospit.status === 'admitted'
+  const canDelete = isAdmitted && hospit._count.careLogs === 0
 
   return (
     <div className="bg-surface rounded-2xl border border-outline-variant shadow-sm flex flex-col gap-sm p-lg hover:shadow-md transition-shadow">
       {/* Status badge + cage number */}
       <div className="flex items-center justify-between">
         <span className={`px-sm py-xs rounded-full text-label-md font-medium ${statusColor}`}>{statusLabel}</span>
-        <span className="text-label-md text-on-surface-variant font-mono">Cage {hospit.cageNumber}</span>
+        <span className="text-label-md text-on-surface-variant font-mono">Cage {hospit.cageNo ?? '—'}</span>
       </div>
 
       {/* Pet info */}
       <div className="flex items-center gap-md">
         <div className="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center flex-shrink-0">
-          <MaterialIcon name={hospit.pet.species === 'cat' ? 'pets' : 'pets'} size={20} className="text-on-surface-variant" />
+          <MaterialIcon name="pets" size={20} className="text-on-surface-variant" />
         </div>
         <div className="min-w-0">
           <p className="text-body-lg font-semibold text-on-surface truncate">{hospit.pet.name}</p>
@@ -245,27 +410,23 @@ function CageCard({ hospit, onCare, onDischarge }: {
       <div className="flex flex-col gap-xs text-label-md text-on-surface-variant">
         <div className="flex items-center gap-xs">
           <MaterialIcon name="stethoscope" size={14} />
-          <span>{hospit.doctor.name}</span>
+          <span>{doctorName(doctors, hospit.doctorInCharge)}</span>
         </div>
         <div className="flex items-center gap-xs">
           <MaterialIcon name="calendar_today" size={14} />
           <span>Admitted {formatDate(hospit.admittedAt)}</span>
         </div>
-        <div className="flex items-center gap-xs">
-          <MaterialIcon name="schedule" size={14} />
-          <span>Last care: {hoursAgo(hospit.lastCareAt)}</span>
-        </div>
       </div>
 
       {/* Reason */}
-      {hospit.admitReason && (
+      {hospit.reason && (
         <p className="text-body-sm text-on-surface-variant bg-surface-container-low rounded-lg px-sm py-xs line-clamp-2">
-          {hospit.admitReason}
+          {hospit.reason}
         </p>
       )}
 
       {/* Actions */}
-      <div className="flex gap-sm mt-xs">
+      <div className="flex flex-wrap gap-sm mt-xs">
         <button
           onClick={onCare}
           className="flex-1 min-h-[44px] flex items-center justify-center gap-xs rounded-xl bg-primary text-primary-on text-body-sm font-medium hover:opacity-90 transition-opacity"
@@ -280,6 +441,24 @@ function CageCard({ hospit, onCare, onDischarge }: {
           <MaterialIcon name="logout" size={16} />
           Discharge
         </button>
+        {isAdmitted && (
+          <button
+            onClick={onEdit}
+            aria-label="Edit admission"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl border border-outline-variant bg-surface text-on-surface-variant hover:bg-surface-container transition-colors"
+          >
+            <MaterialIcon name="edit" size={16} />
+          </button>
+        )}
+        {canDelete && (
+          <button
+            onClick={onDelete}
+            aria-label="Delete admission"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl border border-outline-variant bg-surface text-error hover:bg-error-container transition-colors"
+          >
+            <MaterialIcon name="delete" size={16} />
+          </button>
+        )}
       </div>
     </div>
   )
@@ -288,6 +467,7 @@ function CageCard({ hospit, onCare, onDischarge }: {
 // ─── Main view ────────────────────────────────────────────────────────────────
 export default function ClinicInpatient() {
   const [careTarget, setCareTarget] = useState<Hospitalization | null>(null)
+  const [editTarget, setEditTarget] = useState<Hospitalization | null>(null)
   const qc = useQueryClient()
 
   const { data, isLoading, isError, refetch } = useQuery<Hospitalization[]>({
@@ -296,14 +476,30 @@ export default function ClinicInpatient() {
     refetchInterval: 60_000,
   })
 
+  const { data: doctorsData } = useQuery({
+    queryKey: ['appointments', 'doctors'],
+    queryFn: () => api.get('/api/appointments/doctors').then(r => r.data.data as Doctor[]),
+  })
+  const doctors = doctorsData ?? []
+
   const discharge = useMutation({
     mutationFn: (id: number) => api.put(`/api/hospitalizations/${id}/discharge`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inpatient-active'] }),
+  })
+
+  const remove = useMutation({
+    mutationFn: (id: number) => api.delete(`/api/hospitalizations/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['inpatient-active'] }),
   })
 
   function handleDischarge(hospit: Hospitalization) {
     if (!window.confirm(`Discharge ${hospit.pet.name}? This will generate the billing invoice.`)) return
     discharge.mutate(hospit.id)
+  }
+
+  function handleDelete(hospit: Hospitalization) {
+    if (!window.confirm(`Delete this admission for ${hospit.pet.name}? This cannot be undone.`)) return
+    remove.mutate(hospit.id)
   }
 
   const list = data ?? []
@@ -356,8 +552,11 @@ export default function ClinicInpatient() {
             <CageCard
               key={h.id}
               hospit={h}
+              doctors={doctors}
               onCare={() => setCareTarget(h)}
               onDischarge={() => handleDischarge(h)}
+              onEdit={() => setEditTarget(h)}
+              onDelete={() => handleDelete(h)}
             />
           ))}
         </div>
@@ -369,6 +568,16 @@ export default function ClinicInpatient() {
           hospit={careTarget}
           onClose={() => setCareTarget(null)}
           onSaved={() => setCareTarget(null)}
+        />
+      )}
+
+      {/* Edit modal */}
+      {editTarget && (
+        <EditModal
+          hospit={editTarget}
+          doctors={doctors}
+          onClose={() => setEditTarget(null)}
+          onSaved={() => setEditTarget(null)}
         />
       )}
     </div>
