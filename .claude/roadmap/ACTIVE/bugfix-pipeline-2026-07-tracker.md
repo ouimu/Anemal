@@ -14,9 +14,9 @@ Note (2026-07-11 run 1): found pre-existing UNCOMMITTED diff in working tree at 
 - [x] Step 3.5: /grill-with-docs (MANDATORY) — docs/superpowers/specs/2026-07-11-inpatient-log-care-vitals-grill.md — 6 findings, all resolved (2 filed to backlog: performedBy name resolution, branch isolation on GET /:id; Finding 5 corrected by Finding 6 + ADR-0011: discharged-history unreachable from this board, deferred to Item 2)
 - [x] Step 4: /write-plan — docs/superpowers/plans/2026-07-11-inpatient-log-care-vitals.md (4 tasks, 2 files, 0 new endpoints/permissions/deps)
 - [x] Step 5: @ponytail-agent gate — APPROVE, all 7 criteria clear
-- [ ] Step 6: /execute-plan (@dev-agent / @uiux-agent / @db-agent)
-- [ ] Step 7: /code-review + @qa-agent sign-off
-- [ ] Step 8: /anemal-finish-branch (PR + main green + docs)
+- [x] Step 6: /execute-plan (@dev-agent) — CareHistoryModal + CageCard button + cache-invalidation fix implemented in ClinicInpatient.tsx + test file; 16/16 file tests, 213/213 full suite, typecheck+lint clean; uncommitted pending QA sign-off
+- [x] Step 7: /code-review + @qa-agent sign-off — code-review APPROVE (pm-agent self-review of diff, clean); QA SIGN-OFF, fixed 1 minor AC deviation (temperature decimal formatting, .toFixed(1)), tenant isolation confirmed pre-covered (phase4.test.ts:163), RBAC surface confirmed zero new, 213/213 frontend + 864/864 backend green
+- [ ] Step 8: /anemal-finish-branch (PR + main green + docs) — in progress
 
 ## Item 2 — Pet Profile Medical tab
 
