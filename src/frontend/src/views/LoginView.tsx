@@ -1,8 +1,66 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useLogin } from '../hooks/useAuth'
 import { useAuthStore } from '../store/authStore'
 import { Navigate } from 'react-router-dom'
 import { useT } from '../i18n'
+import * as rememberedUsernames from '../utils/rememberedUsernames'
+import type { RememberedUsername } from '../utils/rememberedUsernames'
+
+/**
+ * Popup shown on login when 2+ usernames are remembered on this device.
+ * Not a focus-trapping dialog — the username field behind it stays live;
+ * see docs/adr/0010-remember-me-username-recall-not-session-persistence.md.
+ */
+function RememberedUsersModal({
+  entries, onPick, onRemove, onDismiss, t,
+}: {
+  entries:   RememberedUsername[]
+  onPick:    (entry: RememberedUsername) => void
+  onRemove:  (entry: RememberedUsername) => void
+  onDismiss: () => void
+  t:         (key: string) => string
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onDismiss}>
+      <div
+        className="bg-surface rounded-xl border border-outline-variant shadow-lg w-full max-w-sm mx-md p-lg"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-md">
+          <h2 className="text-headline-xs font-headline font-bold text-on-surface">
+            {t('login.rememberedUsersTitle')}
+          </h2>
+          <button
+            type="button" aria-label="Close" onClick={onDismiss}
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center"
+          >
+            <span className="material-symbols-outlined text-outline">close</span>
+          </button>
+        </div>
+        <div className="flex flex-col gap-xs">
+          {entries.map(entry => (
+            <div key={entry.username} className="flex items-center justify-between rounded-lg hover:bg-surface-container-low">
+              <button
+                type="button" onClick={() => onPick(entry)}
+                className="flex-grow text-left px-md py-sm min-h-[44px] text-body-lg text-on-surface"
+              >
+                {entry.username}
+              </button>
+              <button
+                type="button"
+                aria-label={`${t('login.forgetRememberedUser')}: ${entry.username}`}
+                onClick={() => onRemove(entry)}
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-outline hover:text-error"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function LoginView() {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated())
@@ -25,6 +83,34 @@ export default function LoginView() {
   const [showPass, setShowPass] = useState(false)
   const [remember, setRemember] = useState(false)
   const { branchSelection, loginMutation: login, selectBranchMutation, resetBranchSelection } = useLogin()
+
+  const [showRememberedPopup, setShowRememberedPopup] = useState(false)
+  const [rememberedList, setRememberedList]           = useState<RememberedUsername[]>([])
+  const passwordRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const entries = rememberedUsernames.list(detectedSubdomain)
+    if (entries.length === 1) {
+      setForm(p => ({ ...p, username: entries[0].username }))
+      setRemember(true)
+    } else if (entries.length >= 2) {
+      setRememberedList(entries)
+      setShowRememberedPopup(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount only, spec §2.4
+  }, [])
+
+  function handlePickRemembered(entry: RememberedUsername) {
+    setForm(p => ({ ...p, username: entry.username }))
+    setRemember(true)
+    setShowRememberedPopup(false)
+    passwordRef.current?.focus()
+  }
+
+  function handleRemoveRemembered(entry: RememberedUsername) {
+    rememberedUsernames.remove(detectedSubdomain, entry.username)
+    setRememberedList(list => list.filter(e => e.username.toLowerCase() !== entry.username.toLowerCase()))
+  }
 
   if (isAuthenticated) {
     return <Navigate to={
@@ -190,7 +276,11 @@ export default function LoginView() {
                   </span>
                   <input
                     id="username" name="username" type="text"
-                    value={form.username} onChange={set('username')}
+                    value={form.username}
+                    onChange={e => {
+                      if (showRememberedPopup) setShowRememberedPopup(false)
+                      set('username')(e)
+                    }}
                     placeholder="your_username"
                     autoComplete="username" required
                     className="w-full pl-[48px] pr-md py-[14px] bg-surface-container-low border border-outline-variant rounded-lg focus:border-secondary focus:ring-1 focus:ring-secondary outline-none transition-all text-body-md text-on-surface"
@@ -208,6 +298,7 @@ export default function LoginView() {
                     lock
                   </span>
                   <input
+                    ref={passwordRef}
                     id="password" name="password"
                     type={showPass ? 'text' : 'password'}
                     value={form.password} onChange={set('password')}
@@ -303,6 +394,16 @@ export default function LoginView() {
           </div>
         </div>
       </footer>
+
+      {showRememberedPopup && (
+        <RememberedUsersModal
+          entries={rememberedList}
+          onPick={handlePickRemembered}
+          onRemove={handleRemoveRemembered}
+          onDismiss={() => setShowRememberedPopup(false)}
+          t={t}
+        />
+      )}
     </div>
   )
 }

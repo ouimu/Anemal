@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '../utils/api'
 import { useAuthStore, AuthData } from '../store/authStore'
 import { useT } from '../i18n'
+import * as rememberedUsernames from '../utils/rememberedUsernames'
 
 interface LoginPayload { subdomain: string; username: string; password: string; remember: boolean }
 
@@ -52,8 +53,7 @@ async function fetchMe(token: string): Promise<MeResponse | null> {
 
 async function applyLogin(
   login: LoginStep2Response,
-  remember: boolean,
-  setAuth: (data: AuthData, remember: boolean) => void,
+  setAuth: (data: AuthData) => void,
   branchName = '',
 ): Promise<void> {
   const me = await fetchMe(login.token)
@@ -70,13 +70,15 @@ async function applyLogin(
     name:           login.name,
     companyName:    login.companyName ?? '',
     branchName,
-  }, remember)
+  })
   try { await useAuthStore.getState().refreshPermissions() } catch { /* server enforces */ }
 }
 
 export function useLogin() {
-  const [branchSelection, setBranchSelection] = useState<BranchSelectionState | null>(null)
-  const [remember, setRemember]               = useState(false)
+  const [branchSelection, setBranchSelection]   = useState<BranchSelectionState | null>(null)
+  const [remember, setRemember]                 = useState(false)
+  const [pendingUsername, setPendingUsername]   = useState('')
+  const [pendingSubdomain, setPendingSubdomain]  = useState('')
   const setAuth   = useAuthStore((s) => s.setAuth)
   const navigate  = useNavigate()
   const t         = useT()
@@ -87,15 +89,19 @@ export function useLogin() {
 
     onSuccess: (res, vars) => {
       setRemember(vars.remember)
+      setPendingUsername(vars.username)
+      setPendingSubdomain(vars.subdomain)
       const data = res.data.data
       if (data.requiresBranchSelection) {
         setBranchSelection({ pendingToken: data.pendingToken, branches: data.branches })
       } else {
         // Admin bypass: branchId is null → use 'All Branches' label
         const branchName = data.branchId === null ? t('nav.allBranches') : ''
-        void applyLogin(data, vars.remember, setAuth, branchName).then(() =>
+        void applyLogin(data, setAuth, branchName).then(() => {
+          if (vars.remember) rememberedUsernames.upsert(vars.subdomain, vars.username)
+          else rememberedUsernames.remove(vars.subdomain, vars.username)
           navigate(data.role === 'admin' ? '/clinic-admin/dashboard' : '/clinic/dashboard')
-        )
+        })
       }
     },
   })
@@ -108,7 +114,9 @@ export function useLogin() {
       const data = res.data.data
       const selectedBranch = branchSelection?.branches.find(b => b.id === vars.branchId)
       setBranchSelection(null)
-      await applyLogin(data, remember, setAuth, selectedBranch?.name ?? '')
+      await applyLogin(data, setAuth, selectedBranch?.name ?? '')
+      if (remember) rememberedUsernames.upsert(pendingSubdomain, pendingUsername)
+      else rememberedUsernames.remove(pendingSubdomain, pendingUsername)
       navigate(data.role === 'admin' ? '/clinic-admin/dashboard' : '/clinic/dashboard')
     },
   })
@@ -134,8 +142,7 @@ export function useSwitchBranch() {
       api.post<{ success: boolean; data: { token: string } }>('/auth/switch-branch', { branchId }),
 
     onSuccess: (res, { branchId, branchName }) => {
-      const state   = useAuthStore.getState()
-      const remember = localStorage.getItem('vc_auth') !== null
+      const state = useAuthStore.getState()
       state.setAuth({
         token:          res.data.data.token,
         plane:          state.plane,
@@ -149,7 +156,7 @@ export function useSwitchBranch() {
         name:           state.name,
         companyName:    state.companyName,
         branchName,
-      }, remember)
+      })
     },
   })
 }
