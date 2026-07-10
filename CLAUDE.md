@@ -153,10 +153,12 @@ src/
 | 9 | i18n Thai/English (16 screens, no library) | ✅ 95 frontend tests |
 | D-1–D-5 | Username login, company types, payment history, owner-first browse | ✅ 447 backend tests |
 | Codex Audit | Batches 1–5: stop-ship fixes, decision docs, QA automation, doc repair, re-audit fixes (PRs #8–#13) | ✅ 835 backend + 143 frontend tests |
+| Pet/EMR Batch A | Pet edit, weight↔EMR sync, vitals free-text input (PR #14) | ✅ 850 backend + 168 frontend tests |
+| Pet/EMR Item 3 | Inpatient create/edit/delete | 🟨 in progress |
 | 10 | Payment gateway + SaaS billing | ⏸ needs credentials |
 | 11 | LINE/SMS dispatch | ⏸ needs credentials |
 
-See `.claude/roadmap/ACTIVE/remaining-tasks.md` for sub-tasks.
+See `.claude/roadmap/ACTIVE/pet-emr-inpatient-fixes.md` for Pet/EMR sub-tasks, `.claude/roadmap/ACTIVE/remaining-tasks.md` for other sub-tasks.
 
 ---
 

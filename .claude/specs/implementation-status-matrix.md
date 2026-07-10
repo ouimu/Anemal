@@ -6,9 +6,11 @@
 > This matrix is the canonical status source; @pm-agent updates it LAST on every
 > task (see CLAUDE.md → Tracking & Documentation).
 >
-> Current totals as of the Codex audit closeout, 2026-07-09 (Batches 1–5, PRs #8–#13,
-> plus the seedCredentialSmoke isolation-flake fix 4e78e0b): **835 backend tests,
-> 143 frontend tests.** Route-level authorization is machine-verified by
+> Current totals as of the Pet/EMR Batch A merge, 2026-07-10 (PR #14, branch
+> `feat/pet-emr-batch-a`, on top of the Codex audit closeout 2026-07-09 Batches
+> 1–5, PRs #8–#13, plus the seedCredentialSmoke isolation-flake fix 4e78e0b):
+> **850 backend tests, 168 frontend tests.** Route-level authorization is
+> machine-verified by
 > `src/backend/tests/integration/roleRouteMatrix.test.ts` — that file is the source
 > of truth for per-route permission coverage; this matrix does not duplicate it.
 
@@ -58,5 +60,8 @@
 | Owner-first browse (D-4/D-5) | pets/owners search | Owner-first navigation flow | `routes/owner.routes.ts` | `views/clinic/ClinicPets.tsx` | `__tests__/owner-delete-reactivate.test.ts` | implemented |
 | Payment gateway (Phase 10) | — | Omise/Stripe webhooks | — | — | — | deferred (needs credentials) |
 | LINE/SMS dispatch (Phase 11) | — | Real notification dispatch | — | — | — | deferred (needs credentials) |
+| Pet edit (Batch A item 1) | `PUT /api/pets/:id` | Edit Pet modal added to `PetDetail`, mirrors `OwnerPanel` edit pattern; backend was already fully wired | `services/pet.service.ts`, `models/pet.repository.ts` | `views/clinic/ClinicPets.tsx` | `__tests__/EditPetModal.test.tsx`, `__tests__/PetDetail.editButton.test.tsx` | implemented |
+| Pet weight ↔ EMR sync (Batch A item 2) | `POST/PUT /api/medical-records` | `Pet.weightKg` recomputed in-transaction from latest non-null-weight record on every save; atomic conditional UPDATE-subquery, no pessimistic lock (ADR-0008) | `models/medical-record.repository.ts` | `views/clinic/ClinicEMR.tsx` | `tests/integration/medical-record-weight-sync.test.ts`, `__tests__/ClinicEMR.weightSync.test.tsx` | implemented |
+| EMR vitals free-text input (Batch A item 4) | EMR Objective tab | `VitalStepper` numeric `<input>` (blur-commit) alongside +/- buttons; bounds match tightened Zod validation (999.99/999.9/3000/3000) | `services/medical-record.service.ts` | `views/clinic/ClinicEMR.tsx` | `__tests__/VitalStepper.test.tsx` | implemented |
 
 Implementer note: this is a starting seed (~30 rows), not exhaustive — the header rule ("expand a row before modifying that module") is the mechanism that keeps it growing accurately over time rather than trying to enumerate everything up front.
