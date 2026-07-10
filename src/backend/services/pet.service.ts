@@ -10,7 +10,7 @@ export const createPetSchema = z.object({
   color:               z.string().max(100).optional().nullable(),
   birthDate:           z.string().optional().nullable(),
   gender:              z.enum(['male', 'female', 'unknown']).optional().nullable(),
-  weightKg:            z.number().positive().optional().nullable(),
+  weightKg:            z.number().positive().max(999.99).optional().nullable(),
   microchipId:         z.string().max(50).optional().nullable(),
   photoUrl:            z.string().optional().nullable(),
   allergies:           z.string().optional().nullable(),

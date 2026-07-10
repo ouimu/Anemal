@@ -17,6 +17,11 @@ For an extra code-review pass, you can pair with the `Cavecrew` `reviewer` agent
 2. `.claude/roadmap/qa-protocols.md` (run at end of EVERY task)
 3. Skills `anemal-coding-rules`, `anemal-db-context`; for authz `anemal-rbac-matrix` (full matrix + route map)
 
+## Step 7 sequence (after `/superpowers:executing-plans` finishes Step 6)
+Run `/code-review` on the branch/diff BEFORE writing the QA sign-off. Findings from
+`/code-review` get triaged same as any other bug: fix, re-test, then sign off. QA
+sign-off (below) cannot be given while `/code-review` findings are open.
+
 ## Must-test
 - Tenant isolation: tenant B accessing tenant A resource → 404 (every protected endpoint).
 - RBAC: every matrix row — allow AND deny (doctor→billing=403, staff→emr.edit=403),

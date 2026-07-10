@@ -10,10 +10,10 @@ export const createMedicalRecordSchema = z.object({
   objective:        z.string().optional().nullable(),
   assessment:       z.string().optional().nullable(),
   plan:             z.string().optional().nullable(),
-  weightKg:         z.number().positive().optional().nullable(),
-  temperatureC:     z.number().optional().nullable(),
-  heartRateBpm:     z.number().int().positive().optional().nullable(),
-  respRateRpm:      z.number().int().positive().optional().nullable(),
+  weightKg:         z.number().positive().max(999.99).optional().nullable(),
+  temperatureC:     z.number().min(0).max(999.9).optional().nullable(),
+  heartRateBpm:     z.number().int().positive().max(3000).optional().nullable(),
+  respRateRpm:      z.number().int().positive().max(3000).optional().nullable(),
   anatomyAnnotation:z.any().optional().nullable(),
 })
 

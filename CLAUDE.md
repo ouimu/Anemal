@@ -15,7 +15,7 @@
 | Backend/frontend implementation | `@dev-agent` | sonnet | `/tdd`, `/debug`, `/optimize` | Step 6∥ |
 | Stress-test design before plan (MANDATORY) | (human-driven) | opus | `/grill-with-docs` (invokes `grilling` + `domain-modeling` skills) | Step 3.5 gate |
 | Simplicity gate | `@ponytail-agent` | opus | — (project gate, not Superpowers) | Step 5 gate |
-| Tests, edge cases, isolation/RBAC verification | `@qa-agent` | fable | `/tdd`, `/audit` | Step 7 |
+| Tests, edge cases, isolation/RBAC verification | `@qa-agent` | fable | `/tdd`, `/code-review`, `/audit` | Step 7 |
 
 **Rules:** Delegate first (except trivial one-liners). Each delegation must include: agent name, task, specs/skills cited, output path. Context > 70% → Auto-Compact.
 
@@ -56,7 +56,7 @@ STEP 6 — /superpowers:execute-plan        [@dev-agent ∥ @db-agent ∥ @uiux-
           Two-stage review after each task (spec compliance → code quality).
           ⛔ NO skipping tasks. NO merging steps. Checkboxes must be tracked.
           ↓
-STEP 7 — @qa-agent (sign-off)             [/audit if RBAC-related]
+STEP 7 — /code-review 					[@qa-agent (Code Review + sign-off)]   [/audit if RBAC-related]
           ↓
 STEP 8 — /anemal-finish-branch           [@pm-agent ships the branch]
 		  Preflight gh auth → run tests → create PR → verify main stays green
@@ -73,6 +73,7 @@ Each agent: performs only assigned scope → produces report → returns to coor
 > - `/grill-with-docs` is MANDATORY after `@ba-agent` sign-off (Step 3) and CANNOT be skipped under any circumstance
 > - `/write-plan` requires `/brainstorm` output + `/grill-with-docs` + `@ba-agent` sign-off + run with all findings resolved
 > - `/execute-plan` requires `@ponytail-agent` APPROVE as gate
+> - `/code-review` requires `@qa-agent` APPROVE and Sign-off
 > - Skipping any step is a pipeline violation — restart from the violated step
 > - `/anemal-finish-branch` requires `@pm-agent` APPROVE updating all documents (it invokes `/anemal-HTML-updater` internally as its last step — do not call `/anemal-HTML-updater` directly)
 > - Do not finish the workflow, if STEP 8 are not finished.
@@ -176,7 +177,7 @@ Superpowers is installed as a Claude Code plugin and provides methodology skills
 **Mandatory skill sequence — enforced, no skipping:**
 
 ```
-/brainstorm → @pm-agent → @ba-agent sign-off → /grill-with-docs, MANDATORY → /write-plan → [Ponytail Gate] → /execute-plan → @qa-agent → /anemal-finish-branch (→ /anemal-HTML-updater)
+/brainstorm → @pm-agent → @ba-agent sign-off → /grill-with-docs, MANDATORY → /write-plan → [Ponytail Gate] → /execute-plan → /code-review → @qa-agent sign-off → /anemal-finish-branch (→ /anemal-HTML-updater)
 ```
 
 **Coexistence rules:**
@@ -187,5 +188,6 @@ Superpowers is installed as a Claude Code plugin and provides methodology skills
 3. **execute-plan gate:** `/execute-plan` is BLOCKED until `@ponytail-agent` APPROVE (Step 5). Superpowers plan approval ≠ Ponytail approval. Both are required.
 4. **No step skipping:** Running `/execute-plan` directly without `/write-plan` output as input is not allowed. Restart from `/write-plan` if plan is missing.
 5. **Skill precedence:** Project skills (`.claude/agents/*/SKILL.md`, `.claude/skills/anemal-*/`) always win over Superpowers skills when they cover the same topic.
-6. **TDD scope:** Superpowers `/tdd` applies to `@dev-agent` implementation tasks inside `/execute-plan` only. `@qa-agent` retains ownership of RBAC, isolation, and edge-case verification per `.claude/roadmap/qa-protocols.md`.
-7. **No routing override:** Superpowers subagent routing suggestions are advisory only. Final agent delegation follows the Agent Router table above.
+6. **TDD scope:** Superpowers `/tdd` applies to `@dev-agent` implementation tasks inside `/execute-plan` only. 
+7. **Code review gate:** `/code-review` runs right after `/superpowers:executing-plans` (Step 6→7 handoff), owned by `@qa-agent`. Open findings block QA sign-off. `@qa-agent` retains ownership of RBAC, isolation, and edge-case verification per `.claude/roadmap/qa-protocols.md`.
+8. **No routing override:** Superpowers subagent routing suggestions are advisory only. Final agent delegation follows the Agent Router table above.
