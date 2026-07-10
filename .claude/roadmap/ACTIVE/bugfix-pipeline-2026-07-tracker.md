@@ -16,7 +16,7 @@ Note (2026-07-11 run 1): found pre-existing UNCOMMITTED diff in working tree at 
 - [x] Step 5: @ponytail-agent gate — APPROVE, all 7 criteria clear
 - [x] Step 6: /execute-plan (@dev-agent) — CareHistoryModal + CageCard button + cache-invalidation fix implemented in ClinicInpatient.tsx + test file; 16/16 file tests, 213/213 full suite, typecheck+lint clean; uncommitted pending QA sign-off
 - [x] Step 7: /code-review + @qa-agent sign-off — code-review APPROVE (pm-agent self-review of diff, clean); QA SIGN-OFF, fixed 1 minor AC deviation (temperature decimal formatting, .toFixed(1)), tenant isolation confirmed pre-covered (phase4.test.ts:163), RBAC surface confirmed zero new, 213/213 frontend + 864/864 backend green
-- [ ] Step 8: /anemal-finish-branch (PR + main green + docs) — in progress
+- [ ] Step 8: /anemal-finish-branch (PR + main green + docs) — PR #17 open (https://github.com/ouimu/AnimalClinic/pull/17), CLEAN/MERGEABLE, 213/213 frontend + 864/864 backend green, typecheck clean. NOT merged — anemal-finish-branch's git-safety rule is "never merge without being asked" and no human is present in this autonomous run to give that go-ahead. Merge-and-verify-main-green + anemal-HTML-updater (the doc sync) still pending — run those next once a human merges PR #17, or explicitly authorizes an agent to merge it. Resume here.
 
 ## Item 2 — Pet Profile Medical tab
 
