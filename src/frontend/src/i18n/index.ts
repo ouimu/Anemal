@@ -127,6 +127,9 @@ const en: Dict = {
   'login.privacy': 'Privacy Policy',
   'login.terms': 'Terms of Service',
   'login.idleLogoutMessage': 'You were logged out due to inactivity.',
+  'login.rememberedUsersTitle': 'Choose a username',
+  'login.forgetRememberedUser': 'Forget this username',
+  'login.rememberedUsersHint': 'Saved on this device',
 
   // Clinic dashboard
   'clinic.dashboard.title': 'Clinic Overview',
@@ -438,6 +441,9 @@ const th: Dict = {
   'login.privacy': 'นโยบายความเป็นส่วนตัว',
   'login.terms': 'ข้อกำหนดการใช้บริการ',
   'login.idleLogoutMessage': 'คุณถูกออกจากระบบเนื่องจากไม่มีการใช้งาน',
+  'login.rememberedUsersTitle': 'เลือกชื่อผู้ใช้',
+  'login.forgetRememberedUser': 'ลืมชื่อผู้ใช้นี้',
+  'login.rememberedUsersHint': 'บันทึกไว้บนอุปกรณ์นี้',
 
   // Clinic dashboard
   'clinic.dashboard.title': 'ภาพรวมคลินิก',

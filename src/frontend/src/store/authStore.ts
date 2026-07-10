@@ -1,6 +1,7 @@
-// Zustand auth store — JWT persisted to web storage so sessions survive refresh.
-// "Remember me" → localStorage (survives browser restart); otherwise → sessionStorage
-// (survives F5 refresh, cleared when the tab/browser closes).
+// Zustand auth store — JWT persisted to sessionStorage only, so a session
+// always ends when the tab/browser/app closes (survives F5 refresh, nothing
+// more). "Remember me" no longer affects session lifetime — see
+// docs/adr/0010-remember-me-username-recall-not-session-persistence.md.
 import { create } from 'zustand'
 
 const STORAGE_KEY = 'vc_auth'
@@ -26,7 +27,7 @@ export interface AuthData {
 interface AuthState extends AuthData {
   /** True once refreshPermissions() has written permissions from /auth/me into the store. */
   permissionsLoaded:  boolean
-  setAuth:            (data: AuthData, remember: boolean) => void
+  setAuth:            (data: AuthData) => void
   clearAuth:          () => void
   isAuthenticated:    () => boolean
   /**
@@ -79,12 +80,16 @@ function normalise(raw: Partial<AuthData>): AuthData {
   }
 }
 
-// Synchronously read persisted auth at module load — sessionStorage first (current
-// tab), then localStorage (remembered).  Sync read means isAuthenticated() is already
-// true on the first render after F5, so RequireAuth does not bounce to /login.
+// Synchronously read persisted auth at module load — sessionStorage only, so
+// isAuthenticated() is already true on the first render after F5 and
+// RequireAuth does not bounce to /login. Also sweeps away any legacy
+// "remembered" auth blob left in localStorage by the old remember-me
+// behavior (runs every module load, independent of whether a session is
+// being restored — see ADR-0010's legacy-token migration note).
 function loadPersisted(): AuthData | null {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(STORAGE_KEY)
+    localStorage.removeItem('vc_auth') // legacy sweep: old "remember me" persisted the full auth blob here
+    const raw = sessionStorage.getItem(STORAGE_KEY)
     if (!raw) return null
     return normalise(JSON.parse(raw) as Partial<AuthData>)
   } catch {
@@ -99,12 +104,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   ...(persisted ?? {}),
   permissionsLoaded: persisted !== null && persisted.permissions.length > 0,
 
-  setAuth: (data, remember) => {
+  setAuth: (data) => {
     try {
-      const target = remember ? localStorage : sessionStorage
-      const other  = remember ? sessionStorage : localStorage
-      target.setItem(STORAGE_KEY, JSON.stringify(data))
-      other.removeItem(STORAGE_KEY) // avoid a stale duplicate in the other storage
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data))
     } catch { /* storage unavailable (private mode) — keep in-memory only */ }
     // permissionsLoaded stays false — permissions come from /auth/me, not the login response
     set(data)
@@ -155,11 +157,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Persist the updated data so the next page load reflects the new permissions.
     const next: AuthData = { ...get(), ...patch }
     try {
-      const stored =
-        localStorage.getItem(STORAGE_KEY) !== null
-          ? localStorage
-          : sessionStorage
-      stored.setItem(STORAGE_KEY, JSON.stringify(next))
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next))
     } catch { /* ignore */ }
 
     set({ ...patch, permissionsLoaded: true })
