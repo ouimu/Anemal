@@ -8,22 +8,46 @@ Task ID: LCV-1   Actor/role: Doctor, Nurse/Vet Tech (any role with `inpatient.vi
 
 Description: Add a "View Care History" action button to `CageCard` that opens a
 read-only `CareHistoryModal` listing all `DailyInpatientCare` rows for that
-hospitalization (fetched via existing `GET /api/hospitalizations/:id`), newest
-first, showing: recordedAt (date+time), timeSlot, temperatureC, heartRateBpm,
-respRateRpm, feedingStatus, medicationGiven, notes, performedBy (resolved to
-staff name via existing doctors id→name map, falls back to "—" if unassigned/
-not found).
+hospitalization (fetched via existing `GET /api/hospitalizations/:id`, react-
+query key `['hospitalization', hospit.id]`), newest first, showing: recordedAt
+(date+time), timeSlot, temperatureC, heartRateBpm, respRateRpm, feedingStatus,
+medicationGiven, notes, performedBy.
+
+**Corrected per Step 3.5 grill finding 1:** `performedBy` is a `User.id` (any
+staff role, set from the logged-in user at log-care time), NOT a Doctor.id —
+it must NOT be resolved via the existing `doctors` id→name map (wrong id
+space; also `GET /users` needed for a full staff lookup requires `staff.view`,
+a permission `inpatient.view`-only roles don't hold). Display as
+`Staff #<performedBy>` (or "—" if null). Real name resolution is backlog
+(remaining-tasks.md).
+
+**Corrected per grill finding 2:** `CareModal`'s mutation `onSuccess` must
+also invalidate `['hospitalization', hospit.id]` (not just
+`['inpatient-active']`) so a subsequently-opened history modal isn't stale.
+
+**Corrected per grill finding 3:** `CareHistoryModal` must render an inline
+error state on query `isError` (`bg-error-container text-error`, matching the
+board's existing error styling) — this is the first per-modal GET in this
+file; no prior pattern to reuse verbatim, but the visual style is shared.
+
+**Corrected per grill finding 4 (ADR-0011):** the Inpatient Board only fetches
+`GET /api/hospitalizations/active` — discharged hospitalizations never render
+as a `CageCard` here, so "regardless of admission status" was unreachable as
+written. Scope corrected to admitted-only; discharged-admission history
+access is deferred to Item 2 (Pet Profile Medical tab).
 
 Acceptance Criteria:
-- [ ] "View Care History" button appears on every `CageCard` regardless of
-      admission status (admitted or discharged — history should remain visible
-      after discharge).
+- [ ] "View Care History" button appears on every `CageCard` on the Inpatient
+      Board (admitted hospitalizations only — board never renders discharged
+      admissions; see ADR-0011 for why discharged history is out of scope
+      here).
 - [ ] Clicking it opens a modal fetching `GET /api/hospitalizations/:id` and
       renders `careLogs` newest-first (already sorted server-side).
 - [ ] Each row shows timeSlot, temperature (°C, 1 decimal, "—" if null), heart
       rate (bpm, "—" if null), resp rate (rpm, "—" if null), feeding status
       (text, "—" if null), medication given (text, "—" if null), notes ("—" if
-      empty), recordedAt formatted date+time, performedBy resolved name.
+      empty), recordedAt formatted date+time, performedBy as `Staff #<id>`
+      ("—" if null) — NOT a resolved name (see grill finding 1).
 - [ ] Empty state: "No care history recorded yet" when `careLogs.length === 0`.
 - [ ] Modal is read-only — no edit/delete affordance (matches backend: no
       PUT/DELETE on care sub-resource).
