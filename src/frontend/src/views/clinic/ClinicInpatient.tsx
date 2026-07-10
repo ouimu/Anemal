@@ -445,7 +445,7 @@ function CareHistoryModal({ hospit, onClose }: { hospit: Hospitalization; onClos
                     <span className="px-sm py-xs rounded-full bg-surface-container-low text-label-sm text-on-surface-variant">{log.timeSlot}</span>
                   </div>
                   <div className="grid grid-cols-3 gap-sm text-body-sm text-on-surface-variant">
-                    <span>Temp: {log.temperatureC != null ? `${log.temperatureC}°C` : '—'}</span>
+                    <span>Temp: {log.temperatureC != null ? `${Number(log.temperatureC).toFixed(1)}°C` : '—'}</span>
                     <span>HR: {log.heartRateBpm != null ? `${log.heartRateBpm} bpm` : '—'}</span>
                     <span>Resp: {log.respRateRpm != null ? `${log.respRateRpm} rpm` : '—'}</span>
                   </div>

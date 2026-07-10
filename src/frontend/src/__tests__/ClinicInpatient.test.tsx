@@ -203,12 +203,20 @@ describe('ClinicInpatient — Care History modal (LCV-1)', () => {
   })
 
   it('renders care-log rows with correct field values, "—" for null fields', async () => {
-    stubGetWithDetail([activeAdmission], { ...activeAdmission, careLogs: [careLog, careLogNulls] })
+    // id 3: integer-valued temp (Prisma Decimal "38" over the wire) must still
+    // render with 1 decimal per LCV-1 AC — regression guard for toFixed(1).
+    const careLogIntTemp = {
+      ...careLog, id: 3, timeSlot: '16:00', temperatureC: 38,
+      heartRateBpm: 100, respRateRpm: 24, feedingStatus: 'Fasting',
+      medicationGiven: 'Saline drip', notes: 'Temp check', performedBy: 30,
+    }
+    stubGetWithDetail([activeAdmission], { ...activeAdmission, careLogs: [careLog, careLogNulls, careLogIntTemp] })
     renderBoard()
     await screen.findByText('Rex')
     await userEvent.click(screen.getByLabelText('View care history'))
 
     expect(await screen.findByText('Temp: 38.5°C')).toBeInTheDocument()
+    expect(screen.getByText('Temp: 38.0°C')).toBeInTheDocument()
     expect(screen.getByText('HR: 90 bpm')).toBeInTheDocument()
     expect(screen.getByText('Resp: 20 rpm')).toBeInTheDocument()
     expect(screen.getByText('Feeding: Ate well')).toBeInTheDocument()
