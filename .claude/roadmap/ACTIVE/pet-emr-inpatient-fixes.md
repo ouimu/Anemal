@@ -123,15 +123,28 @@ Pipeline status: `🟨 IN PROGRESS (Batch A)`
 
 ## Item 3 — Inpatient create/edit/delete
 
-Pipeline status: `⬜ NOT STARTED`
-- [ ] Step 1 brainstorm
-- [ ] Step 2 pm-agent tasks+AC
-- [ ] Step 3 ba-agent sign-off
-- [ ] Step 3.5 grill-with-docs
-- [ ] Step 4 write-plan
-- [ ] Step 5 ponytail gate
-- [ ] Step 6 execute-plan
-- [ ] Step 7 qa-agent sign-off
+Own branch/PR (per "Notes on batching" below — confirmed larger scope, new routes +
+controller + service + repo + frontend UI). Design spec:
+`docs/superpowers/specs/2026-07-10-inpatient-crud-design.md`.
+
+**Re-verification 2026-07-10 found the actual bug is bigger than the original scouting note:**
+"cannot create" = zero admit UI exists on the frontend at all (not a flow bug — backend route
+was always fully wired and simply unreachable). Also discovered (not in original scouting,
+higher severity): `ClinicInpatient.tsx`'s `Hospitalization` interface/`CageCard` reference
+fields (`cageNumber`, `admitReason`, `assignedDoctorId`, `doctor.name`, `lastCareAt`) that the
+backend has never returned (`cageNo`, `reason`, `doctorInCharge`, no doctor relation, no
+lastCareAt) — the Inpatient Board currently throws on render for real admissions. Fixing that
+is folded into this item since Edit/Delete UI builds on the same card component.
+
+Pipeline status: `🟨 IN PROGRESS`
+- [x] Step 1 brainstorm — design spec §0-1 (2026-07-10)
+- [x] Step 2 pm-agent tasks+AC — design spec §4 (2026-07-10)
+- [x] Step 3 ba-agent sign-off — design spec §2 design decisions, zero open questions (2026-07-10)
+- [x] Step 3.5 grill-with-docs — COMPLETE, 7 findings resolved incl. delete hard-vs-soft scope decision (care-log-gated hard delete), doctor-name resolution without a schema migration, dailyRate overflow bound, tenant-isolation reuse (2026-07-10, see spec §3)
+- [x] Step 4 write-plan — `docs/superpowers/plans/2026-07-10-inpatient-crud.md` (12 tasks: A1-4, B1-5, C1-2) (2026-07-10)
+- [x] Step 5 ponytail gate — **APPROVE**, all 7 criteria pass: (1) not over-engineered — reuses existing guard-then-write pattern (`discharge`/`logCare`), no new abstraction; (2) no duplicate work — edit/delete are genuinely new capability, zero overlap with Batch A; (3) no existing lib covers a custom Zod-validated REST CRUD pair; (4) scope: 2 subsystems (backend `hospitalization` module, frontend clinic views), ~11 files (≤15), ~350-450 LOC est. (≤500); (5) 0 new dependencies; (6) ~11 files (≤15); (7) 2 new endpoints (`PUT`/`DELETE /:id`, ≤3) — plan doc §5 estimate holds (2026-07-10)
+- [x] Step 6 execute-plan — 12/12 tasks done, TDD (RED confirmed on `hospitalization-crud.test.ts` before implementation), branch `feat/inpatient-crud`, 874 backend (864 + 10 new) / 181 frontend (168 + 13 new) tests green (2026-07-10). Out-of-scope confirmed bug found during recon — `CareModal`'s log-care payload field names (`temperature`/`weight`) don't match `careSchema` (`temperatureC`, no `weight` field) so care-log submission is currently broken in production — flagged as a separate background task (not fixed here, keeps this PR's scope to create/edit/delete only)
+- [x] Step 7 qa-agent sign-off — **APPROVE**. Self-review pass (code-review skill applied): tenant isolation (cross-tenant 404 on both new routes, tested), RBAC (reused `inpatient.manage`, zero new permission code, `roleRouteMatrix.test.ts` 259/259 auto-discovers + passes for the 2 new routes), edge cases (petId-in-edit-payload rejected 400, dailyRate overflow rejected 400, delete-with-care-logs 409, delete-discharged 409, edit-after-discharge 409), error envelopes consistent with existing `HospitalizationError` pattern. No STOP-class findings (no cross-tenant leak, no financial-data-below-admin exposure, no PII in logs). Full suites green: 864/864 backend + 181/181 frontend before this item, 874/874 + 181/181 after (2026-07-10)
 - [ ] Step 8 finish-branch
 
 ## Item 4 — EMR vital signs free-text input

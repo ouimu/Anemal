@@ -19,6 +19,18 @@ export async function getHospitalization(req: Request, res: Response, next: Next
   catch (err) { next(err) }
 }
 
+export async function edit(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try { res.json({ success: true, data: await svc.editHospitalization(req.context!.tenantId, Number(req.params.id), req.body) }) }
+  catch (err) { next(err) }
+}
+
+export async function remove(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    await svc.deleteHospitalization(req.context!.tenantId, Number(req.params.id))
+    res.status(204).send()
+  } catch (err) { next(err) }
+}
+
 export async function logCare(req: Request, res: Response, next: NextFunction): Promise<void> {
   try { res.status(201).json({ success: true, data: await svc.logCare(req.context!.tenantId, Number(req.params.id), req.body, req.context!.userId) }) }
   catch (err) { next(err) }
