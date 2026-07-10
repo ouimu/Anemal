@@ -1,12 +1,25 @@
-# Pet/EMR/Inpatient Fixes — Pipeline Tracker
+# 🏁 ALL ITEMS COMPLETE — Pet/EMR/Inpatient Fixes — Pipeline Tracker
 
-> **STATUS (2026-07-10):** Batch A (items 1, 2, 4) genuinely shipped — **PR #14 merged to `main`**.
+> **FINAL STATUS (2026-07-10):** All 4 items shipped.
+> - **Items 1, 2, 4 (Batch A)** — pet edit, pet weight ↔ EMR sync, EMR vitals free-text input —
+>   **PR #14**, merged to `main` 2026-07-10.
+> - **Item 3** — Inpatient create/edit/delete + a fix for a pre-existing Inpatient Board
+>   field-mismatch crash — **PR #15**, merged to `main` 2026-07-10T01:29:06Z.
+> Both branches' full test suites re-verified green on `main` post-merge (final: 864 backend /
+> 181 frontend tests). HTML docs (`docs/index.html`, `.claude/specs/implementation-status-matrix.md`,
+> `CLAUDE.md`) synced for both merges.
+>
 > A 2026-07-09 run had marked Batch A's Step 8 complete without actually committing/pushing/opening
 > a PR (working tree sat dirty, no PR existed); the 2026-07-10 orchestrator resume caught this via
-> `git status`/`gh pr list` reconciliation, verified both suites still green on the dirty tree,
-> committed, pushed, opened PR #14, merged it, re-verified `main` green post-merge, and pushed the
-> HTML-doc updates. See the corrected Step 8 entries under Items 1/2/4 below. Item 3 (Inpatient
-> create/edit/delete) is next, starting from Step 1.
+> `git status`/`gh pr list` reconciliation before doing any further work, then genuinely completed
+> Step 8 for Batch A (PR #14) and ran the full pipeline for Item 3 from Step 1 through Step 8 (PR #15).
+> One confirmed bug was found during Item 3 recon but deliberately left unfixed (out of that item's
+> declared scope) and flagged separately: `CareModal`'s care-log submission payload uses field names
+> that don't match the backend's `careSchema`, so logging care for a hospitalized patient currently
+> fails validation on every real attempt — see the implementation-status-matrix "Inpatient care-log
+> entry" row (status: `bug`) and the spawned background task for the fix.
+>
+> The scheduled task `resume-pet-emr-inpatient-fixes` has been disabled (all 4 items reached Step 8).
 >
 > Created: 2026-07-09 by orchestrator setup (user: kritsapon)
 > Orchestration: dedicated background orchestrator agent (spawned via Agent tool) drives this —
