@@ -168,6 +168,95 @@ describe('ClinicInpatient — Log Care modal payload (careSchema field-name regr
   })
 })
 
+describe('ClinicInpatient — Care History modal (LCV-1)', () => {
+  const careLog = {
+    id: 1, recordedAt: '2026-07-05T08:00:00.000Z', timeSlot: '08:00',
+    temperatureC: 38.5, heartRateBpm: 90, respRateRpm: 20,
+    feedingStatus: 'Ate well', medicationGiven: 'Amoxicillin', notes: 'Stable',
+    performedBy: 12,
+  }
+  const careLogNulls = {
+    id: 2, recordedAt: '2026-07-05T12:00:00.000Z', timeSlot: '12:00',
+    temperatureC: null, heartRateBpm: null, respRateRpm: null,
+    feedingStatus: null, medicationGiven: null, notes: null,
+    performedBy: null,
+  }
+
+  function stubGetWithDetail(list: unknown[], detail: unknown) {
+    getMock.mockImplementation((url: string) => {
+      if (url === '/api/hospitalizations/active') return Promise.resolve({ data: { data: list } })
+      if (url === '/api/appointments/doctors') return Promise.resolve({ data: { data: doctors } })
+      if (url === '/api/hospitalizations/500') return Promise.resolve({ data: { data: detail } })
+      return Promise.resolve({ data: { data: null } })
+    })
+  }
+
+  it('history button renders on the card and opens the modal showing the pet name', async () => {
+    stubGetWithDetail([activeAdmission], { ...activeAdmission, careLogs: [] })
+    renderBoard()
+    await screen.findByText('Rex')
+    expect(screen.getByLabelText('View care history')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByLabelText('View care history'))
+    expect(await screen.findByText('Care History')).toBeInTheDocument()
+    expect(screen.getAllByText('Rex').length).toBeGreaterThan(0)
+  })
+
+  it('renders care-log rows with correct field values, "—" for null fields', async () => {
+    stubGetWithDetail([activeAdmission], { ...activeAdmission, careLogs: [careLog, careLogNulls] })
+    renderBoard()
+    await screen.findByText('Rex')
+    await userEvent.click(screen.getByLabelText('View care history'))
+
+    expect(await screen.findByText('Temp: 38.5°C')).toBeInTheDocument()
+    expect(screen.getByText('HR: 90 bpm')).toBeInTheDocument()
+    expect(screen.getByText('Resp: 20 rpm')).toBeInTheDocument()
+    expect(screen.getByText('Feeding: Ate well')).toBeInTheDocument()
+    expect(screen.getByText('Medication: Amoxicillin')).toBeInTheDocument()
+    expect(screen.getByText('Stable')).toBeInTheDocument()
+    expect(screen.getByText((_, el) => el?.textContent === 'By: Staff #12')).toBeInTheDocument()
+
+    expect(screen.getByText('Temp: —')).toBeInTheDocument()
+    expect(screen.getByText('HR: —')).toBeInTheDocument()
+    expect(screen.getByText('Resp: —')).toBeInTheDocument()
+    expect(screen.getByText('Feeding: —')).toBeInTheDocument()
+    expect(screen.getByText('Medication: —')).toBeInTheDocument()
+  })
+
+  it('shows empty state when careLogs is empty', async () => {
+    stubGetWithDetail([activeAdmission], { ...activeAdmission, careLogs: [] })
+    renderBoard()
+    await screen.findByText('Rex')
+    await userEvent.click(screen.getByLabelText('View care history'))
+    expect(await screen.findByText('No care history recorded yet')).toBeInTheDocument()
+  })
+
+  it('shows error banner when the hospitalization detail fetch fails', async () => {
+    getMock.mockImplementation((url: string) => {
+      if (url === '/api/hospitalizations/active') return Promise.resolve({ data: { data: [activeAdmission] } })
+      if (url === '/api/appointments/doctors') return Promise.resolve({ data: { data: doctors } })
+      if (url === '/api/hospitalizations/500') return Promise.reject(new Error('fail'))
+      return Promise.resolve({ data: { data: null } })
+    })
+    renderBoard()
+    await screen.findByText('Rex')
+    await userEvent.click(screen.getByLabelText('View care history'))
+    expect(await screen.findByText('Failed to load care history.')).toBeInTheDocument()
+  })
+
+  it('performedBy renders as Staff #<id>, never a resolved staff name (regression, grill finding 1)', async () => {
+    stubGetWithDetail([activeAdmission], { ...activeAdmission, careLogs: [{ ...careLog, performedBy: 7 }] })
+    renderBoard()
+    await screen.findByText('Rex')
+    await userEvent.click(screen.getByLabelText('View care history'))
+
+    expect(await screen.findByText((_, el) => el?.textContent === 'By: Staff #7')).toBeInTheDocument()
+    // "Dr. Somchai" (doctorInCharge=7) must appear only in the card's doctor row,
+    // never as a resolved name for performedBy inside the history modal.
+    expect(screen.getAllByText('Dr. Somchai')).toHaveLength(1)
+  })
+})
+
 describe('AdmitModal — standalone (B4, AC5)', () => {
   it('submits POST /api/hospitalizations with the pre-filled petId', async () => {
     getMock.mockImplementation((url: string) => {
