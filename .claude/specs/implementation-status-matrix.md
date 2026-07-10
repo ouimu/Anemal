@@ -6,10 +6,11 @@
 > This matrix is the canonical status source; @pm-agent updates it LAST on every
 > task (see CLAUDE.md → Tracking & Documentation).
 >
-> Current totals as of the Pet/EMR Item 3 merge, 2026-07-10 (PR #15, branch
-> `feat/inpatient-crud`, on top of Pet/EMR Batch A, PR #14, on top of the Codex audit
-> closeout 2026-07-09 Batches 1–5, PRs #8–#13, plus the seedCredentialSmoke
-> isolation-flake fix 4e78e0b): **864 backend tests, 181 frontend tests.**
+> Current totals as of the remember-me redesign merge, 2026-07-10 (PR #16, branch
+> `feat/remember-me-username-recall`, on top of Pet/EMR Item 3, PR #15, on top of
+> Pet/EMR Batch A, PR #14, on top of the Codex audit closeout 2026-07-09 Batches 1–5,
+> PRs #8–#13, plus the seedCredentialSmoke isolation-flake fix 4e78e0b):
+> **864 backend tests, 207 frontend tests.**
 > Route-level authorization is machine-verified by
 > `src/backend/tests/integration/roleRouteMatrix.test.ts` — that file is the source
 > of truth for per-route permission coverage; this matrix does not duplicate it.
@@ -27,7 +28,7 @@
 
 | Area | Screen / API route | Status | Backend evidence | Frontend evidence | Test evidence | Release status |
 |---|---|---|---|---|---|---|
-| Auth (clinic) | `/auth/login`, `/auth/select-branch` | Username + two-step branch select | `controllers/auth.controller.ts`, `services/auth.service.ts` | `views/LoginView.tsx` | `tests/integration/auth.test.ts` | implemented |
+| Auth (clinic) | `/auth/login`, `/auth/select-branch` | Username + two-step branch select. "Remember me" recalls username(s) per subdomain (localStorage, picker popup for 2+) — session itself always ends on tab/browser/app close or 8h JWT expiry (sessionStorage-only, no persistent-session opt-in), ADR-0010 | `controllers/auth.controller.ts`, `services/auth.service.ts` | `views/LoginView.tsx`, `utils/rememberedUsernames.ts`, `store/authStore.ts` | `tests/integration/auth.test.ts`, `__tests__/LoginView.rememberMe.test.tsx`, `utils/rememberedUsernames.test.ts`, `store/__tests__/authStore.test.ts` | implemented |
 | Auth (platform) | `/platform/auth/login` | Email-based, single-step | `controllers/platform-auth.controller.ts` | `views/platform/PlatformLoginView.tsx` | `tests/integration/seedCredentialSmoke.test.ts` | implemented |
 | RBAC — clinic roles | `/clinic/roles/*` | Role editor, custom roles | `routes/role.routes.ts` | `views/clinic/RoleEditorView.tsx` | `tests/integration/roleEditor-t5f01.test.ts` | implemented |
 | RBAC — route authorization | all clinic-mounted routes | Per-role allow/deny sweep, CI-enforced | `middlewares/permission.middleware.ts` | — | `tests/integration/roleRouteMatrix.test.ts` | implemented |

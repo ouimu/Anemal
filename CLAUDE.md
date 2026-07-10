@@ -155,6 +155,7 @@ src/
 | Codex Audit | Batches 1–5: stop-ship fixes, decision docs, QA automation, doc repair, re-audit fixes (PRs #8–#13) | ✅ 835 backend + 143 frontend tests |
 | Pet/EMR Batch A | Pet edit, weight↔EMR sync, vitals free-text input (PR #14) | ✅ 850 backend + 168 frontend tests |
 | Pet/EMR Item 3 | Inpatient create/edit/delete + board field-mismatch fix (PR #15) | ✅ 864 backend + 181 frontend tests |
+| Remember-me redesign | Login remember-me redefined as per-subdomain username recall, not session persistence (PR #16, ADR-0010) | ✅ 864 backend + 207 frontend tests |
 | 10 | Payment gateway + SaaS billing | ⏸ needs credentials |
 | 11 | LINE/SMS dispatch | ⏸ needs credentials |
 
