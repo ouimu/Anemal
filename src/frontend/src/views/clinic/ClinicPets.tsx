@@ -324,6 +324,133 @@ export function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerI
   )
 }
 
+// ─── Modal: Edit Pet ──────────────────────────────────────────────────────────
+export function EditPetModal({ pet, onClose, onSuccess }: { pet: Pet; onClose: () => void; onSuccess: () => void }) {
+  const t = useT()
+  const qc = useQueryClient()
+  const [form, setForm] = useState({
+    name: pet.name, species: pet.species, breed: pet.breed ?? '', color: pet.color ?? '',
+    // birthDate arrives as a full ISO datetime from the API (Prisma DateTime @db.Date);
+    // <input type="date"> only accepts yyyy-MM-dd — slice, or the field renders blank.
+    gender: pet.gender ?? '', birthDate: pet.birthDate ? pet.birthDate.slice(0, 10) : '', weightKg: pet.weightKg?.toString() ?? '',
+    microchipId: pet.microchipId ?? '', allergies: pet.allergies ?? '', underlyingConditions: pet.underlyingConditions ?? '',
+  })
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [photoFile, setPhotoFile]       = useState<File | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(pet.photoUrl ?? null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { uploadPhoto, isUploading, uploadError } = usePhotoUpload()
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setForm(f => ({ ...f, [k]: e.target.value }))
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setPhotoFile(file)
+    setPhotoPreview(URL.createObjectURL(file))
+  }
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    setError('')
+    try {
+      let photoUrl = pet.photoUrl ?? null
+      if (photoFile) photoUrl = await uploadPhoto(photoFile)
+      await api.put(`/api/pets/${pet.id}`, {
+        name: form.name,
+        species: form.species,
+        breed: form.breed || null,
+        color: form.color || null,
+        gender: form.gender || null,
+        birthDate: form.birthDate || null,
+        weightKg: form.weightKg ? Number(form.weightKg) : null,
+        microchipId: form.microchipId || null,
+        allergies: form.allergies || null,
+        underlyingConditions: form.underlyingConditions || null,
+        photoUrl,
+      })
+      qc.invalidateQueries({ queryKey: ['pet', pet.id] })
+      onSuccess()
+    } catch (err: unknown) {
+      if (!uploadError) {
+        setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save')
+      }
+    } finally { setSaving(false) }
+  }
+
+  const busy = saving || isUploading
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-lg">
+      <div className="bg-surface rounded-xl shadow-lg w-full max-w-md p-xl overflow-y-auto max-h-[90vh]">
+        <h3 className="text-headline-sm font-headline font-bold text-primary mb-lg">{t('clinic.pets.editPet')}</h3>
+        {(error || uploadError) && <p className="text-error text-body-sm mb-md">{error || uploadError}</p>}
+        <form onSubmit={submit} className="flex flex-col gap-md">
+          {/* Photo upload */}
+          <div className="flex items-center gap-md">
+            <div className="w-16 h-16 rounded-xl bg-surface-container-high flex items-center justify-center overflow-hidden flex-shrink-0 border border-outline-variant">
+              {photoPreview
+                ? <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                : <MaterialIcon name="pets" size={28} className="text-on-surface-variant" />
+              }
+            </div>
+            <div className="flex flex-col gap-xs flex-1">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-sm bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm min-h-[44px] text-body-sm font-medium hover:bg-surface-container transition-colors"
+              >
+                <MaterialIcon name="photo_camera" size={18} className="text-on-surface-variant" />
+                {photoFile ? 'Change photo' : 'Add photo (optional)'}
+              </button>
+              {isUploading && <p className="text-body-sm text-on-surface-variant">Uploading…</p>}
+            </div>
+          </div>
+
+          <input required className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.petName')} value={form.name} onChange={set('name')} />
+          <div className="flex gap-md">
+            <select className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.species} onChange={set('species')}>
+              <option value="canine">Canine</option>
+              <option value="feline">Feline</option>
+              <option value="avian">Avian</option>
+              <option value="other">Other</option>
+            </select>
+            <select className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.gender} onChange={set('gender')}>
+              <option value="">Gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="unknown">Unknown</option>
+            </select>
+          </div>
+          <div className="flex gap-md">
+            <input className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.breedOptional')} value={form.breed} onChange={set('breed')} />
+            <input className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.colorOptional')} value={form.color} onChange={set('color')} />
+          </div>
+          <input type="number" step="0.01" min="0" className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.weightOptional')} value={form.weightKg} onChange={set('weightKg')} />
+          <input type="date" className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.birthDate} onChange={set('birthDate')} />
+          <input className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.microchipOptional')} value={form.microchipId} onChange={set('microchipId')} />
+          <textarea className="bg-surface-container-low rounded-lg px-md py-sm min-h-[80px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary resize-none" placeholder={t('clinic.pets.allergiesOptional')} value={form.allergies} onChange={set('allergies')} />
+          <textarea className="bg-surface-container-low rounded-lg px-md py-sm min-h-[80px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary resize-none" placeholder={t('clinic.pets.conditionsOptional')} value={form.underlyingConditions} onChange={set('underlyingConditions')} />
+          <div className="flex gap-md pt-sm">
+            <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
+            <button type="submit" disabled={busy} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{busy ? 'Saving…' : t('clinic.pets.saveChanges')}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ─── Modal: Add Vaccination ───────────────────────────────────────────────────
 function AddVaccinationModal({ petId, onClose, onSuccess }: { petId: number; onClose: () => void; onSuccess: () => void }) {
   const t = useT()
@@ -373,7 +500,9 @@ const TABS = ['Overview', 'Medical', 'Vaccinations'] as const
 type Tab = typeof TABS[number]
 
 export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVaccination: () => void }) {
+  const t = useT()
   const [tab, setTab] = useState<Tab>('Overview')
+  const [editingPet, setEditingPet] = useState(false)
 
   const { data, isLoading } = useQuery<{ data: Pet }>({
     queryKey: ['pet', petId],
@@ -395,7 +524,19 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
           : <div className="w-[120px] h-[120px] rounded-xl bg-surface-container-high flex items-center justify-center"><MaterialIcon name="pets" size={48} className="text-on-surface-variant" /></div>
         }
         <div className="flex-1">
-          <h3 className="text-headline-md font-headline font-bold text-primary">{pet.name}</h3>
+          <div className="flex items-center gap-sm">
+            <h3 className="text-headline-md font-headline font-bold text-primary">{pet.name}</h3>
+            <Can perm="crm.edit">
+              <button
+                type="button"
+                aria-label={t('clinic.pets.editPet')}
+                onClick={() => setEditingPet(true)}
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-surface-container-low transition-colors"
+              >
+                <MaterialIcon name="edit" size={20} className="text-on-surface-variant" />
+              </button>
+            </Can>
+          </div>
           <div className="flex flex-wrap gap-sm mt-sm">
             <span className={`px-sm py-xs rounded-full text-label-md font-medium ${speciesChip(pet.species)}`}>{pet.species}</span>
             {pet.breed && <span className="px-sm py-xs rounded-full bg-surface-container text-on-surface-variant text-label-md">{pet.breed}</span>}
@@ -489,6 +630,10 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
             </div>
           )) : <p className="text-body-sm text-on-surface-variant py-lg">No vaccination records yet.</p>}
         </div>
+      )}
+
+      {editingPet && pet && (
+        <EditPetModal pet={pet} onClose={() => setEditingPet(false)} onSuccess={() => setEditingPet(false)} />
       )}
     </div>
   )
