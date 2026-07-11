@@ -150,3 +150,34 @@ describe('Item 3 — active list carries care-log count for delete-button gating
     expect(row?._count?.careLogs).toBe(0)
   })
 })
+
+describe('Item 3d — care performer name resolution (T-3d.2, ADR-0013 D4)', () => {
+  let hospId: number
+  let adminAUserId: number
+  let adminAName: string
+
+  beforeAll(async () => {
+    const me = await request(server).get('/auth/me').set('Authorization', `Bearer ${adminA}`)
+    adminAUserId = me.body.data.userId
+    adminAName = me.body.data.name
+
+    const admit = await request(server).post('/api/hospitalizations').set('Authorization', `Bearer ${adminA}`)
+      .send({ petId, reason: 'Performer name check', cageNo: 'E-1', dailyRate: 0 })
+    hospId = admit.body.data.id
+    await request(server).post(`/api/hospitalizations/${hospId}/care`).set('Authorization', `Bearer ${adminA}`)
+      .send({ timeSlot: '08:00', temperatureC: 38.0 })
+  })
+
+  it('✅ care log entry carries performedByUser { id, name } resolved from the authenticated caller', async () => {
+    const res = await request(server).get(`/api/hospitalizations/${hospId}`).set('Authorization', `Bearer ${adminA}`)
+    expect(res.status).toBe(200)
+    const log = res.body.data.careLogs[0]
+    expect(log.performedBy).toBe(adminAUserId)
+    expect(log.performedByUser).toEqual({ id: adminAUserId, name: adminAName })
+  })
+
+  it('❌ Tenant B never resolves a name for Tenant A\'s hospitalization → 404 (tenant isolation)', async () => {
+    const res = await request(server).get(`/api/hospitalizations/${hospId}`).set('Authorization', `Bearer ${adminB}`)
+    expect(res.status).toBe(404)
+  })
+})
