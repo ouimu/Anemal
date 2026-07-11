@@ -29,7 +29,7 @@ import app from '../../app'
 const prisma = new PrismaClient()
 let server: Server
 
-const PLATFORM_EMAIL = process.env.PLATFORM_ADMIN_EMAIL || 'admin@anemal.co'
+const PLATFORM_EMAIL = process.env.PLATFORM_ADMIN_EMAIL || 'admin@anemal.app'
 const PLATFORM_PASSWORD = process.env.PLATFORM_ADMIN_PASSWORD || 'PlatformAdmin1!'
 
 const SFX = `qaf02${Date.now().toString(36)}`

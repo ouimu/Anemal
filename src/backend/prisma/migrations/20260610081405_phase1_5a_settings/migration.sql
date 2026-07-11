@@ -60,13 +60,13 @@ ALTER TABLE "settings_audit_log" ADD CONSTRAINT "settings_audit_log_changedBy_fk
 -- Seed system_settings defaults (idempotent — safe on every environment)
 INSERT INTO "system_settings" ("key","value","description","category","isSecret","updatedAt") VALUES
   ('app_name','Anemal','Application display name','platform',false,NOW()),
-  ('app_base_url','https://app.anemal.co','Base URL for links in emails','platform',false,NOW()),
+  ('app_base_url','https://anemal.app','Base URL for links in emails','platform',false,NOW()),
   ('maintenance_mode','false','Set true to show maintenance page','platform',false,NOW()),
   ('default_trial_days','30','Free trial duration (days)','platform',false,NOW()),
   ('smtp_host','','SMTP server hostname','smtp',false,NOW()),
   ('smtp_port','587','SMTP server port','smtp',false,NOW()),
   ('smtp_user','','SMTP authentication username','smtp',false,NOW()),
   ('smtp_password','','SMTP authentication password','smtp',true,NOW()),
-  ('smtp_from_email','no-reply@anemal.co','From address','smtp',false,NOW()),
+  ('smtp_from_email','no-reply@anemal.app','From address','smtp',false,NOW()),
   ('smtp_from_name','Anemal','From name','smtp',false,NOW())
 ON CONFLICT ("key") DO NOTHING;

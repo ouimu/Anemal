@@ -115,7 +115,7 @@ describe('platform contract — updateAllSettingsSchema', () => {
   it('accepts a representative valid aggregate-settings payload', () => {
     const result = updateAllSettingsSchema.safeParse({
       appName: 'Anemal',
-      baseUrl: 'https://anemal.co',
+      baseUrl: 'https://anemal.app',
       maintenanceMode: false,
       trialDays: 14,
     })

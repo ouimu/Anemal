@@ -64,7 +64,7 @@ Five product decisions implemented after Phase 8+9, addressing real-world clinic
 | `admin_a` | `AdminPass1!` | admin | dev-clinic |
 | `doctor_a` | `DoctorPass1!` | doctor | dev-clinic |
 | `staff_a` | `StaffPass1!` | staff | dev-clinic |
-| Platform: `admin@anemal.co` | `PlatformAdmin1!` | superadmin | platform |
+| Platform: `admin@anemal.app` | `PlatformAdmin1!` | superadmin | platform |
 
 ### Test Count
 - Backend (Jest): 447 / 447
@@ -340,7 +340,7 @@ Developers/orchestrators can now follow "How to Run" → "Using Agents" flow to 
 ## 📅 Log Entry: 2026-06-10 — Phase 1.5-B: Settings API (S2.1, S2.2-minimal, S2.3, S4.1, S4.2)
 
 ### 🎯 Summary
-HTTP layer for the Settings module. 10 endpoints at `/api/settings` (clinic profile/notifications/payment/integrations/hours — admin only; personal preferences — all roles) plus a minimal System Settings API at `/admin/system-settings` gated by a **new `superadmin` Role enum value** (user-approved decision; seed login `super@anemal.co`). Test endpoints (`/notifications/test`, `/integrations/test`, `/smtp/test`) are fully stateless with a 10s timeout. Added a **masked-echo guard**: a client saving back the masked `••••••••xxxx` value can never overwrite a stored secret. Tests: 206 total (182 + 24 new, TC-S001–S009).
+HTTP layer for the Settings module. 10 endpoints at `/api/settings` (clinic profile/notifications/payment/integrations/hours — admin only; personal preferences — all roles) plus a minimal System Settings API at `/admin/system-settings` gated by a **new `superadmin` Role enum value** (user-approved decision; seed login `super@anemal.app`). Test endpoints (`/notifications/test`, `/integrations/test`, `/smtp/test`) are fully stateless with a 10s timeout. Added a **masked-echo guard**: a client saving back the masked `••••••••xxxx` value can never overwrite a stored secret. Tests: 206 total (182 + 24 new, TC-S001–S009).
 
 ### 📂 Files Changed
 | File | Action |
@@ -353,7 +353,7 @@ HTTP layer for the Settings module. 10 endpoints at `/api/settings` (clinic prof
 | `src/backend/services/user-preferences.service.ts` + `models/user.repository.ts` | **NEW service** — tenant-scoped per-user prefs |
 | `src/backend/services/tenant-settings.service.ts` | Masked-echo guard for secret fields |
 | `src/backend/types/index.ts`, `middlewares/rbac.middleware.ts`, `services/auth.service.ts` | Role unions extended with `superadmin` |
-| `src/backend/prisma/seed.ts` | Superadmin seed user (`super@anemal.co` / `SuperPass1!`) |
+| `src/backend/prisma/seed.ts` | Superadmin seed user (`super@anemal.app` / `SuperPass1!`) |
 | `src/backend/app.ts` | Mount `/api/settings` + `/admin/system-settings` |
 | `src/backend/tests/integration/settings-api.test.ts` | **NEW** — 24 endpoint tests (TC-S001–S009 + hours/prefs/no-persist) |
 

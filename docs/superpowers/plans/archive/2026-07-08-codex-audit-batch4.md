@@ -130,7 +130,7 @@ git commit -m "docs(specs): add canonical implementation-status matrix seeded fr
 - Tenant A (`dev-clinic`): `admin_a`/`AdminPass1!`, `doctor_a`/`DoctorPass1!`, `staff_a`/`StaffPass1!`.
 - Tenant B (`test-clinic`): `admin_b`/`AdminPass2!`, `doctor_b`/`DoctorPass2!`, `staff_b`/`StaffPass2!`.
 - Login is two-step: `POST /auth/login` body is `{ subdomain, username, password }` (the schema is `.strict()` — extra/wrong-named fields are rejected, not ignored) → returns a pending token requiring `POST /auth/select-branch`.
-- Platform admin stays **email**-based: `admin@anemal.co` / `PlatformAdmin1!` (env-overridable via `PLATFORM_ADMIN_EMAIL`/`PLATFORM_ADMIN_PASSWORD`) — platform plane is email-login by design, do not change this.
+- Platform admin stays **email**-based: `admin@anemal.app` / `PlatformAdmin1!` (env-overridable via `PLATFORM_ADMIN_EMAIL`/`PLATFORM_ADMIN_PASSWORD`) — platform plane is email-login by design, do not change this.
 - **(grill B5)** The seed console-output echo block (current lines ~55-64, the `✓ admin — admin@dev-clinic.com` block) reproduces `seed.ts:111`'s literal `console.log` line, which prints by email even though login is now by username. Leave this block untouched — it is truthful about what the script prints, not about how to log in.
 
 - [x] **Step 1: Replace the credential table**

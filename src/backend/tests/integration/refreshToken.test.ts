@@ -7,7 +7,7 @@ import { Server } from 'http'
 import app from '../../app'
 
 const CLINIC_CREDS = { subdomain: 'dev-clinic', username: 'admin_a', password: 'AdminPass1!' }
-const PLATFORM_EMAIL    = process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.co'
+const PLATFORM_EMAIL    = process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.app'
 const PLATFORM_PASSWORD = process.env.PLATFORM_ADMIN_PASSWORD || 'PlatformAdmin1!'
 
 let server: Server

@@ -252,7 +252,7 @@ export async function seedRbac(): Promise<void> {
 export async function seedPlatformAdmin(): Promise<void> {
   // Import bcrypt lazily so seed-rbac stays usable without it if ever split
   const bcrypt = await import('bcrypt')
-  const email    = process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.co'
+  const email    = process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.app'
   const name     = process.env.PLATFORM_ADMIN_NAME     || 'Platform Super Admin'
   const password = process.env.PLATFORM_ADMIN_PASSWORD || 'PlatformAdmin1!'
   const hash     = await bcrypt.hash(password, 10)

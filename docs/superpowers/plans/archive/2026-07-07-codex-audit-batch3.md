@@ -36,7 +36,7 @@
 
 **Verified against `src/backend/prisma/seed.ts:169-171`:**
 ```ts
-const platformEmail    = process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.co'
+const platformEmail    = process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.app'
 const platformPassword = process.env.PLATFORM_ADMIN_PASSWORD || 'PlatformAdmin1!'
 ```
 Confirmed matching `PLATFORM_ADMIN_EMAIL`/`PLATFORM_ADMIN_PASSWORD` env var names and literal fallbacks — no drift from what T1 will hard-code as its own fallback literals.
@@ -49,7 +49,7 @@ In `src/backend/tests/integration/seedCredentialSmoke.test.ts`, after the existi
 ```ts
 describe('seeded credential smoke test — platform admin login', () => {
   it('completes single-step platform login for the seeded platform admin', async () => {
-    const email    = process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.co'
+    const email    = process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.app'
     const password = process.env.PLATFORM_ADMIN_PASSWORD || 'PlatformAdmin1!'
 
     const res = await request(server)

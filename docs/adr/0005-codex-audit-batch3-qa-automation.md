@@ -7,7 +7,7 @@ Context: Batch 3 of Codex audit remediation (source: RecomendByCodex/06-recommen
 ## Decisions
 
 ### D1 — Seed credential smoke: add platform login case
-Extend `src/backend/tests/integration/seedCredentialSmoke.test.ts` with one case: `POST /platform/auth/login` using `process.env.PLATFORM_ADMIN_EMAIL || 'admin@anemal.co'` / `process.env.PLATFORM_ADMIN_PASSWORD || 'PlatformAdmin1!'` (verify fallbacks against seed.ts at implementation), assert 200 + platform JWT. No branch selection on platform plane. Clinic coverage (6 credentials, two-step login) already delivered in Batch 1.
+Extend `src/backend/tests/integration/seedCredentialSmoke.test.ts` with one case: `POST /platform/auth/login` using `process.env.PLATFORM_ADMIN_EMAIL || 'admin@anemal.app'` / `process.env.PLATFORM_ADMIN_PASSWORD || 'PlatformAdmin1!'` (verify fallbacks against seed.ts at implementation), assert 200 + platform JWT. No branch selection on platform plane. Clinic coverage (6 credentials, two-step login) already delivered in Batch 1.
 
 ### D2 — Role-route matrix test (grill-corrected design)
 ONE new file `src/backend/tests/integration/roleRouteMatrix.test.ts` + helper `src/backend/tests/helpers/expressRouteWalker.ts`:
