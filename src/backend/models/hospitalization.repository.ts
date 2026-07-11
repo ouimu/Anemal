@@ -14,17 +14,17 @@ export function admit(tenantId: number, branchId: number | null, data: AdmitInpu
   })
 }
 
-export function findActive(tenantId: number, branchId?: number) {
+export function findActive(tenantId: number, branchId?: number | null) {
   return prisma.hospitalization.findMany({
-    where: { tenantId, status: 'admitted', ...(branchId ? { branchId } : {}) },
+    where: { tenantId, status: 'admitted', ...(branchId != null ? { branchId } : {}) },
     include: { pet: petSelect, _count: { select: { careLogs: true } } },
     orderBy: { admittedAt: 'asc' },
   })
 }
 
-export function findById(tenantId: number, id: number) {
+export function findById(tenantId: number, branchId: number | null | undefined, id: number) {
   return prisma.hospitalization.findFirst({
-    where: { id, tenantId },
+    where: { id, tenantId, ...(branchId != null ? { branchId } : {}) },
     include: {
       pet: petSelect,
       careLogs: {
@@ -35,27 +35,27 @@ export function findById(tenantId: number, id: number) {
   })
 }
 
-export function findByIdWithCareCount(tenantId: number, id: number) {
+export function findByIdWithCareCount(tenantId: number, branchId: number | null | undefined, id: number) {
   return prisma.hospitalization.findFirst({
-    where: { id, tenantId },
+    where: { id, tenantId, ...(branchId != null ? { branchId } : {}) },
     include: { _count: { select: { careLogs: true } } },
   })
 }
 
-export function update(tenantId: number, id: number, data: EditInput) {
+export function update(tenantId: number, branchId: number | null | undefined, id: number, data: EditInput) {
   return prisma.hospitalization
     .updateMany({
-      where: { id, tenantId },
+      where: { id, tenantId, ...(branchId != null ? { branchId } : {}) },
       data: {
         reason: data.reason, cageNo: data.cageNo ?? null, doctorInCharge: data.doctorInCharge ?? null,
         dailyRate: data.dailyRate ?? 0, notes: data.notes ?? null,
       },
     })
-    .then(() => findById(tenantId, id))
+    .then(() => findById(tenantId, branchId, id))
 }
 
-export function remove(tenantId: number, id: number) {
-  return prisma.hospitalization.deleteMany({ where: { id, tenantId } })
+export function remove(tenantId: number, branchId: number | null | undefined, id: number) {
+  return prisma.hospitalization.deleteMany({ where: { id, tenantId, ...(branchId != null ? { branchId } : {}) } })
 }
 
 export function addCare(tenantId: number, hospitalizationId: number, data: CareInput, performedBy?: number) {
@@ -69,8 +69,11 @@ export function addCare(tenantId: number, hospitalizationId: number, data: CareI
   })
 }
 
-export function markDischarged(tenantId: number, id: number) {
+export function markDischarged(tenantId: number, branchId: number | null | undefined, id: number) {
   return prisma.hospitalization
-    .updateMany({ where: { id, tenantId }, data: { status: 'discharged', dischargedAt: new Date() } })
-    .then(() => findById(tenantId, id))
+    .updateMany({
+      where: { id, tenantId, ...(branchId != null ? { branchId } : {}) },
+      data: { status: 'discharged', dischargedAt: new Date() },
+    })
+    .then(() => findById(tenantId, branchId, id))
 }

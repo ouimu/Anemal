@@ -43,34 +43,34 @@ export function admit(tenantId: number, branchId: number | null, data: AdmitInpu
   return hospRepo.admit(tenantId, branchId, data)
 }
 
-export function listActive(tenantId: number, branchId?: number) {
-  return hospRepo.findActive(tenantId, branchId)
+export function listActive(tenantId: number, branchId: number | null | undefined) {
+  return hospRepo.findActive(tenantId, branchId ?? undefined)
 }
 
-export async function getHospitalization(tenantId: number, id: number) {
-  const h = await hospRepo.findById(tenantId, id)
+export async function getHospitalization(tenantId: number, branchId: number | null | undefined, id: number) {
+  const h = await hospRepo.findById(tenantId, branchId, id)
   if (!h) throw new HospitalizationError('Hospitalization not found', 404)
   return h
 }
 
-export async function logCare(tenantId: number, id: number, data: CareInput, performedBy?: number) {
-  const h = await getHospitalization(tenantId, id)
+export async function logCare(tenantId: number, branchId: number | null | undefined, id: number, data: CareInput, performedBy?: number) {
+  const h = await getHospitalization(tenantId, branchId, id)
   if (h.status !== 'admitted') throw new HospitalizationError('Cannot log care for a discharged patient', 409)
   return hospRepo.addCare(tenantId, id, data, performedBy)
 }
 
 // Edit → update admission details while still admitted (mirrors logCare/discharge's guard).
-export async function editHospitalization(tenantId: number, id: number, data: EditInput) {
-  const h = await getHospitalization(tenantId, id)
+export async function editHospitalization(tenantId: number, branchId: number | null | undefined, id: number, data: EditInput) {
+  const h = await getHospitalization(tenantId, branchId, id)
   if (h.status !== 'admitted') throw new HospitalizationError('Cannot edit a discharged admission', 409)
-  return hospRepo.update(tenantId, id, data)
+  return hospRepo.update(tenantId, branchId, id, data)
 }
 
 // Delete → only a mis-entered admission with no real clinical data yet: must still be
 // admitted (not discharged — that's part of the pet's medical history) AND have zero
 // care logs (any logged care is real clinical data, not a typo). See design spec §3.2.
-export async function deleteHospitalization(tenantId: number, id: number): Promise<void> {
-  const h = await hospRepo.findByIdWithCareCount(tenantId, id)
+export async function deleteHospitalization(tenantId: number, branchId: number | null | undefined, id: number): Promise<void> {
+  const h = await hospRepo.findByIdWithCareCount(tenantId, branchId, id)
   if (!h) throw new HospitalizationError('Hospitalization not found', 404)
   if (h.status !== 'admitted') {
     throw new HospitalizationError('Cannot delete a discharged admission — it is part of the pet\'s medical history', 409)
@@ -78,15 +78,15 @@ export async function deleteHospitalization(tenantId: number, id: number): Promi
   if (h._count.careLogs > 0) {
     throw new HospitalizationError('Cannot delete an admission with care history — discharge it instead', 409)
   }
-  await hospRepo.remove(tenantId, id)
+  await hospRepo.remove(tenantId, branchId, id)
 }
 
 // Discharge → mark discharged + auto-generate an invoice for the stay (days × dailyRate).
 export async function discharge(tenantId: number, branchId: number, id: number, createdBy?: number) {
-  const h = await getHospitalization(tenantId, id)
+  const h = await getHospitalization(tenantId, branchId, id)
   if (h.status !== 'admitted') throw new HospitalizationError('Patient is not currently admitted', 409)
 
-  const discharged = await hospRepo.markDischarged(tenantId, id)
+  const discharged = await hospRepo.markDischarged(tenantId, branchId, id)
   const rate = Number(h.dailyRate)
 
   let invoice = null
