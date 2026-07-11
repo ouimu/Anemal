@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MemoryRouter } from 'react-router-dom'
 
 const mockPet = {
   id: 1, ownerId: 1, name: 'Rex', species: 'canine', breed: 'Labrador', color: 'Golden',
@@ -38,7 +39,9 @@ function renderPetDetail() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     <QueryClientProvider client={queryClient}>
-      <PetDetail petId={1} onAddVaccination={vi.fn()} />
+      <MemoryRouter>
+        <PetDetail petId={1} onAddVaccination={vi.fn()} />
+      </MemoryRouter>
     </QueryClientProvider>
   )
 }

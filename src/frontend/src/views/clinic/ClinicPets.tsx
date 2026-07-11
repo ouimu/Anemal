@@ -1,4 +1,5 @@
 ﻿import React, { useState, useCallback, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
@@ -502,6 +503,8 @@ type Tab = typeof TABS[number]
 
 export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVaccination: () => void }) {
   const t = useT()
+  const navigate = useNavigate()
+  const hasPermission = useAuthStore(s => s.hasPermission)
   const [tab, setTab] = useState<Tab>('Overview')
   const [editingPet, setEditingPet] = useState(false)
   const [admitting, setAdmitting] = useState(false)
@@ -614,12 +617,29 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
 
       {tab === 'Medical' && (
         <div>
-          {pet.medicalRecords?.length ? pet.medicalRecords.map(r => (
-            <div key={r.id} className="flex justify-between items-center min-h-[48px] border-b border-outline-variant/50 py-sm">
-              <span className="text-body-sm">{r.assessment ?? 'Visit'}</span>
-              <span className="text-body-sm text-on-surface-variant">{new Date(r.createdAt).toLocaleDateString()}</span>
-            </div>
-          )) : <p className="text-body-sm text-on-surface-variant py-lg">No medical records yet.</p>}
+          {pet.medicalRecords?.length ? (
+            <>
+              {pet.medicalRecords.map(r => (
+                <div key={r.id} className="flex justify-between items-center min-h-[48px] border-b border-outline-variant/50 py-sm">
+                  <span className="text-body-sm">{r.assessment ?? 'Visit'}</span>
+                  <span className="text-body-sm text-on-surface-variant">{new Date(r.createdAt).toLocaleDateString()}</span>
+                </div>
+              ))}
+              <Can perm="emr.view">
+                <button
+                  type="button"
+                  onClick={() => navigate(`/clinic/emr?petId=${pet.id}`)}
+                  className="mt-md text-body-sm font-semibold text-primary hover:underline"
+                >
+                  View all in EMR
+                </button>
+              </Can>
+            </>
+          ) : (
+            <p className="text-body-sm text-on-surface-variant py-lg">
+              {hasPermission('emr.view') ? 'No medical records yet.' : "You don't have access to clinical records."}
+            </p>
+          )}
         </div>
       )}
 
