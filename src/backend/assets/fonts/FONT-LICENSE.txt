@@ -1,0 +1,13 @@
+NotoSansThai-Regular.ttf
+
+Font: Sarabun Regular (documented fallback used — the primary Noto Sans Thai
+static-instance URL returned 404 at download time; see
+docs/superpowers/plans/2026-07-11-billing-pipeline.md Task 1)
+Publisher: Google Fonts
+License: SIL Open Font License, Version 1.1 (OFL-1.1)
+Full license text: https://openfontlicense.org
+
+The OFL-1.1 permits embedding, redistribution, and modification (including
+subsetting) as part of a larger software work, provided the font itself is
+not sold separately from the software. No attribution is required in the
+rendered output. This file records provenance for audit purposes only.
