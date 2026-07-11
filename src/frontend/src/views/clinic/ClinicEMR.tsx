@@ -1,4 +1,5 @@
 ﻿import React, { useState, useRef, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
@@ -391,6 +392,13 @@ export default function ClinicEMR() {
   // Patient selection state
   const [patientSearch, setPatientSearch] = useState('')
   const [selectedPetId, setSelectedPetId] = useState<number | null>(null)
+  const [searchParams] = useSearchParams()
+
+  useEffect(() => {
+    const petId = searchParams.get('petId')
+    if (petId) setSelectedPetId(parseInt(petId, 10))
+  }, [searchParams])
+
   const [selectedRecordId, setSelectedRecordId] = useState<number | null>(null)
   const [isNewRecord, setIsNewRecord] = useState(false)
 

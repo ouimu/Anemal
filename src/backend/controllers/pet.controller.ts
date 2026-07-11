@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { listPets, getPet, createPet, updatePet } from '../services/pet.service'
+import { resolvePermissions } from '../services/permission.service'
 
 export async function handleListPets(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -14,7 +15,8 @@ export async function handleListPets(req: Request, res: Response, next: NextFunc
 
 export async function handleGetPet(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await getPet(req.context!.tenantId, parseInt(req.params.id))
+    const perms = await resolvePermissions(req.context!.userId, req.context!.tenantId)
+    const data = await getPet(req.context!.tenantId, parseInt(req.params.id), perms.has('emr.view'))
     res.json({ success: true, data })
   } catch (err) { next(err) }
 }

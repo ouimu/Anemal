@@ -2,11 +2,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 
 const mockPet = {
   id: 1, ownerId: 1, name: 'Rex', species: 'canine', breed: 'Labrador', color: 'Golden',
   birthDate: '2020-01-15', gender: 'male', weightKg: 22.4, microchipId: 'CHIP123',
-  allergies: 'Pollen', underlyingConditions: 'None', isActive: true,
+  allergies: 'Pollen', underlyingConditions: 'None', isActive: true, vaccinations: [] as unknown[],
   owner: { id: 1, firstName: 'Jane', lastName: 'Doe', phone: '0812345678', address: '123 Main St', idCardType: 'thai_id', idCardNumber: '1101700230503', isActive: true, pets: [] },
 }
 
@@ -30,9 +31,13 @@ function rowContains(label: string, value: string) {
   expect(screen.getByText(label).closest('div')).toHaveTextContent(value)
 }
 
+function renderPetDetail() {
+  return render(<MemoryRouter><PetDetail petId={1} onAddVaccination={vi.fn()} /></MemoryRouter>)
+}
+
 describe('PetDetail — Overview tab', () => {
   it('shows species, breed, gender, weight, microchipId, allergies, and underlyingConditions', () => {
-    render(<PetDetail petId={1} onAddVaccination={vi.fn()} />)
+    renderPetDetail()
     rowContains('Species', 'canine')
     rowContains('Breed', 'Labrador')
     rowContains('Gender', 'male')
@@ -49,14 +54,14 @@ describe('PetDetail — Add Vaccination button permission guard', () => {
   beforeEach(() => { state.permissions = [] })
 
   it('hides Add Vaccination button when user lacks vaccination.create', async () => {
-    render(<PetDetail petId={1} onAddVaccination={vi.fn()} />)
+    renderPetDetail()
     await userEvent.click(screen.getByText('Vaccinations'))
     expect(screen.queryByText('Add Vaccination')).not.toBeInTheDocument()
   })
 
   it('shows Add Vaccination button when user has vaccination.create', async () => {
     state.permissions = ['vaccination.create']
-    render(<PetDetail petId={1} onAddVaccination={vi.fn()} />)
+    renderPetDetail()
     await userEvent.click(screen.getByText('Vaccinations'))
     expect(screen.getByText('Add Vaccination')).toBeInTheDocument()
   })
@@ -64,12 +69,12 @@ describe('PetDetail — Add Vaccination button permission guard', () => {
 
 describe('PetDetail — owner card address and masked ID card', () => {
   it('shows the owner address', () => {
-    render(<PetDetail petId={1} onAddVaccination={vi.fn()} />)
+    renderPetDetail()
     expect(screen.getByText(mockPet.owner?.address ?? '')).toBeInTheDocument()
   })
 
   it('masks the ID card number to the last 4 digits', () => {
-    render(<PetDetail petId={1} onAddVaccination={vi.fn()} />)
+    renderPetDetail()
     expect(screen.getByText('•••••••••0503')).toBeInTheDocument()
     expect(screen.queryByText('1101700230503')).not.toBeInTheDocument()
   })
