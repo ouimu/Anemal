@@ -159,10 +159,11 @@ src/
 | Care History view | Read-only inpatient Care History on CageCard, admitted-only scope (PR #17, ADR-0011); folds in Log Care vitals field-name fix | ✅ 864 backend + 213 frontend tests |
 | Pet Profile Medical tab | Medical tab redesigned as permission-aware read-only EMR rollup, Option C hybrid (PR #18, ADR-0012) | ✅ 867 backend + 218 frontend tests |
 | Billing pipeline fixes | Thai PDF font, Payment History receipt modal + Method/Received-by filters, Care History performer-name resolution via new `DailyInpatientCare.performedBy → User` FK (PR #19, ADR-0013) | ✅ 888 backend + 225 frontend tests |
+| Hospitalization branch isolation | Closed BOLA gap (OWASP API1:2023) on single-record hospitalization ops — `branchId` now derived from authenticated context and threaded through get/edit/remove/logCare/discharge; `/active` no longer trusts query-string branch override (PR #20, ADR-0014) | ✅ 912 backend tests |
 | 10 | Payment gateway + SaaS billing | ⏸ needs credentials |
 | 11 | LINE/SMS dispatch | ⏸ needs credentials |
 
-See `.claude/roadmap/archive/bugfix-pipeline-2026-07-tracker.md` for the completed 2026-07 bugfix pipeline (all 3 items shipped — Items 1–2 via PRs #17/#18, Item 3 via PR #19), `.claude/roadmap/ACTIVE/pet-emr-inpatient-fixes.md` for Pet/EMR sub-tasks (all 4 items shipped), `.claude/roadmap/ACTIVE/remaining-tasks.md` for other sub-tasks.
+See `.claude/roadmap/archive/bugfix-pipeline-2026-07-tracker.md` for the completed 2026-07 bugfix pipeline (all 3 items shipped — Items 1–2 via PRs #17/#18, Item 3 via PR #19), `.claude/roadmap/ACTIVE/pet-emr-inpatient-fixes.md` for Pet/EMR sub-tasks (all 4 items shipped), `.claude/roadmap/ACTIVE/remaining-tasks.md` for other sub-tasks, `docs/adr/0014-hospitalization-branch-isolation.md` for the branch-isolation BOLA fix (PR #20).
 
 ---
 

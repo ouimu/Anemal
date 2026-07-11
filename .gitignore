@@ -6,3 +6,5 @@ build/
 .claude/settings.local.json
 .DS_Store
 coverage/
+.vercel
+.env*
