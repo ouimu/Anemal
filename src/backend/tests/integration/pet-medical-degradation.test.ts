@@ -14,6 +14,7 @@ let tid = 0
 let petId = 0
 let doctorToken = ''   // holds emr.view
 let staffToken  = ''   // custom no-emr.view role
+let unionToken  = ''   // custom no-emr.view role + doctor role (CR-01 union)
 
 beforeAll(async () => {
   await new Promise<void>(resolve => { server = app.listen(0, resolve) })
@@ -56,6 +57,14 @@ beforeAll(async () => {
   await prisma.userRole.create({ data: { userId: noEmrUser.id, roleId: noEmrRole.id, tenantId: tid } })
   await prisma.userBranch.create({ data: { userId: noEmrUser.id, branchId: branch.id, tenantId: tid } })
 
+  // Multi-role union (PET-MED-2 AC / CR-01): custom no-emr role + doctor role → emr.view resolves via union.
+  const unionUser = await prisma.user.create({
+    data: { tenantId: tid, branchId: branch.id, name: 'Union PMD', username: 'union_pmd', email: 'union@pmd.test', passwordHash, role: 'staff', roleId: noEmrRole.id },
+  })
+  await prisma.userRole.create({ data: { userId: unionUser.id, roleId: noEmrRole.id, tenantId: tid } })
+  await prisma.userRole.create({ data: { userId: unionUser.id, roleId: doctorRole.id, tenantId: tid } })
+  await prisma.userBranch.create({ data: { userId: unionUser.id, branchId: branch.id, tenantId: tid } })
+
   async function login(username: string): Promise<string> {
     const step1 = await request(server).post('/auth/login').send({ subdomain: SUBDOMAIN, username, password: PASSWORD })
     if (step1.body.data.requiresBranchSelection === false) return step1.body.data.token as string
@@ -65,6 +74,7 @@ beforeAll(async () => {
   }
   doctorToken = await login('doctor_pmd')
   staffToken  = await login('staff_pmd')
+  unionToken  = await login('union_pmd')
 })
 
 afterAll(async () => {
@@ -99,5 +109,12 @@ describe('GET /api/pets/:id — emr.view-gated medicalRecords/vaccinations', () 
     expect(res.body.data.name).toBe('Rex')
     expect(res.body.data.medicalRecords).toBeUndefined()
     expect(res.body.data.vaccinations).toBeUndefined()
+  })
+
+  it('multi-role union: no-emr custom role + doctor role still resolves emr.view and sees both fields (CR-01)', async () => {
+    const res = await request(server).get(`/api/pets/${petId}`).set('Authorization', `Bearer ${unionToken}`)
+    expect(res.status).toBe(200)
+    expect(res.body.data.medicalRecords).toHaveLength(1)
+    expect(res.body.data.vaccinations).toHaveLength(1)
   })
 })
