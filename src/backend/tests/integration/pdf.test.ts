@@ -161,3 +161,73 @@ describe('PDF — Prescription endpoint', () => {
     expect(res.status).toBe(404)
   })
 })
+
+describe('PDF — Thai+Latin+digit glyph smoke test (T-3a.2, ADR-0013 D1/F1)', () => {
+  it('✅ invoice PDF renders a Thai+Latin+digit line description without throwing', async () => {
+    const uniq = `${Date.now()}`
+    const ownerRes = await request(server).post('/api/owners').set('Authorization', `Bearer ${adminA}`)
+      .send({ firstName: 'Glyph', lastName: `Test${uniq}`, phone: `09${uniq.slice(-8)}` })
+    const petRes = await request(server).post('/api/pets').set('Authorization', `Bearer ${adminA}`)
+      .send({ ownerId: ownerRes.body.data.id, name: 'ตัวทดสอบ', species: 'cat', microchipId: `GLYPH${uniq}` })
+
+    const branchRes = await request(server).get('/api/branches').set('Authorization', `Bearer ${adminA}`)
+    const branchId: number = branchRes.body.data[0].id
+    const switchRes = await request(server)
+      .post('/auth/switch-branch')
+      .set('Authorization', `Bearer ${adminA}`)
+      .send({ branchId })
+    const scopedAdminA: string = switchRes.body.data.token
+
+    const invRes = await request(server)
+      .post('/api/invoices')
+      .set('Authorization', `Bearer ${scopedAdminA}`)
+      .send({
+        petId: petRes.body.data.id,
+        items: [{ description: 'ค่าตรวจ Exam 250', itemType: 'service', qty: 1, unitPrice: 250 }],
+        taxRate: 7,
+      })
+    expect(invRes.status).toBe(201)
+
+    const res = await request(server)
+      .get(`/api/invoices/${invRes.body.data.id}/pdf`)
+      .set('Authorization', `Bearer ${adminA}`)
+      .buffer(true)
+      .parse((res, callback) => {
+        const chunks: Buffer[] = []
+        res.on('data', (c: Buffer) => chunks.push(c))
+        res.on('end', () => callback(null, Buffer.concat(chunks)))
+      })
+    expect(res.status).toBe(200)
+    const buf = res.body as Buffer
+    expect(buf.length).toBeGreaterThan(0)
+    expect(buf.slice(0, 4).toString()).toBe('%PDF')
+  })
+
+  it('✅ prescription PDF renders Thai+Latin+digit dosage instructions without throwing [Grill F1]', async () => {
+    if (!prescriptionId) {
+      console.warn('Skipping — no drug seeded in dev-clinic')
+      return
+    }
+    // Patch the prescription seeded in the top-level beforeAll to mix Thai +
+    // Latin + digits in the dosage instruction — proves the shared font path
+    // (generatePrescriptionPdf, pdf.service.ts:166-237) also renders correctly.
+    await prisma.prescription.update({
+      where: { id: prescriptionId },
+      data: { dosageInstruction: '1 tab twice daily กินหลังอาหาร 250mg' },
+    })
+
+    const res = await request(server)
+      .get(`/api/prescriptions/${prescriptionId}/pdf`)
+      .set('Authorization', `Bearer ${adminA}`)
+      .buffer(true)
+      .parse((res, callback) => {
+        const chunks: Buffer[] = []
+        res.on('data', (c: Buffer) => chunks.push(c))
+        res.on('end', () => callback(null, Buffer.concat(chunks)))
+      })
+    expect(res.status).toBe(200)
+    const buf = res.body as Buffer
+    expect(buf.length).toBeGreaterThan(0)
+    expect(buf.slice(0, 4).toString()).toBe('%PDF')
+  })
+})
