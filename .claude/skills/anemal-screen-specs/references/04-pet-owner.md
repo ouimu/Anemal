@@ -103,7 +103,7 @@ Allergies: text-body-sm font-semibold text-error — icon warning size=16 inline
 Conditions: text-body-sm text-error mt-xs — icon medical_information size=16 inline
 ```
 
-### Tabs: Overview · Medical History · Vaccinations
+### Tabs: Overview · Medical · Vaccinations
 
 ```
 Tab bar: flex border-b border-outline-variant
@@ -113,14 +113,30 @@ Tab bar: flex border-b border-outline-variant
 Overview: key/value rows — flex justify-between items-center min-h-[48px] border-b border-outline-variant/50 py-sm
   Rows: Weight (kg) · Color · Date of birth — "—" when empty
 
-Medical History: same row pattern — assessment text + createdAt date
-  Empty: "No medical records yet."
+Medical: same row pattern — assessment text + createdAt date (latest 3 records)
+  "View all in EMR" link (Can perm="emr.view"): navigates to ClinicEMR.tsx?petId=<id>, pre-selecting the pet
+  Empty (emr.view held): "No medical records yet."
+  Empty (emr.view absent — server omits the field): "You don't have access to clinical records."
 
 Vaccinations:
-  "Add Vaccination" button (flex justify-end mb-md): bg-primary CTA pattern, icon add size=18
+  "Add Vaccination" button (flex justify-end mb-md): bg-primary CTA pattern, icon add size=18 —
+    only rendered when the vaccinations field is present (i.e. server included it for emr.view)
   Row: vaccine name (font-medium) + "Due: <date>" (text-label-md) | administered date right-aligned
-  Empty: "No vaccination records yet."
+  Empty (emr.view held): "No vaccination records yet."
+  Empty (emr.view absent — server omits the field): "You don't have access to clinical records."
 ```
+
+### EMR drill-in + emr.view degradation (PET-MED-1, PET-MED-2)
+
+`GET /api/pets/:id` gates the `medicalRecords`/`vaccinations` fields on the
+caller's `emr.view` permission (resolved server-side in
+`pet.controller.ts::handleGetPet`, passed through `pet.service.getPet` to
+`pet.repository.findPetById`'s conditional Prisma `include`). Callers without
+`emr.view` get the pet's core fields but neither clinical array — the fields
+are omitted entirely, not returned empty, so the frontend can distinguish
+"no records yet" from "no access." The Medical tab's "View all in EMR" link
+(itself gated on `emr.view`) navigates to `/clinic/emr?petId=<id>`, which
+`ClinicEMR.tsx` reads on mount to pre-select that patient.
 
 ---
 
@@ -149,7 +165,7 @@ Footer:  flex gap-md pt-sm — Cancel (border border-outline-variant) + Save (bg
 | Action | Call | Notes |
 |---|---|---|
 | List pets | `GET /api/pets?q=<search>&species=<filter>&limit=50` | Query key `['pets', search, speciesFilter]`, staleTime 30s |
-| Pet detail | `GET /api/pets/:id` | Includes owner, vaccinations, medicalRecords — key `['pet', petId]` |
+| Pet detail | `GET /api/pets/:id` | Includes owner always; vaccinations + medicalRecords (latest 3) only when caller has `emr.view` — key `['pet', petId]` |
 | Create owner | `POST /api/owners` | Optional fields sent as `null` |
 | Create pet | `POST /api/pets` | Requires `ownerId` (from selected pet's owner) |
 | Record vaccination | `POST /api/vaccinations` | `{ petId, vaccineName, administeredAt, nextDueAt?, batchNo?, notes? }` |
@@ -161,5 +177,5 @@ After any save: invalidate `['pets']` (and `['pet', id]` when a pet is selected)
 ## Deferred items
 
 - S3 pre-signed photo upload is implemented but **credential-gated** (503 `STORAGE_NOT_CONFIGURED` without S3 env vars — see `services/upload.service.ts`); camera-barcode capture remains deferred (not built)
-- Owner edit / pet edit modals (create-only today)
+- Owner edit modal (create-only today) — pet edit is implemented (`EditPetModal`, gated on `crm.edit`)
 - LINE userId capture on the owner form (Session G dependency)
