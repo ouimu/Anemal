@@ -6,6 +6,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MemoryRouter } from 'react-router-dom'
 
 const getMock = vi.fn()
 const postMock = vi.fn().mockResolvedValue({ data: { data: { id: 99 } } })
@@ -40,7 +41,9 @@ function renderWithClient() {
   const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
   render(
     <QueryClientProvider client={queryClient}>
-      <ClinicEMR />
+      <MemoryRouter>
+        <ClinicEMR />
+      </MemoryRouter>
     </QueryClientProvider>
   )
   return { invalidateSpy }

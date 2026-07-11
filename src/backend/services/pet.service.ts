@@ -39,8 +39,8 @@ export async function listPets(tenantId: number, page = 1, limit = 20, ownerId?:
   return { pets, total, page, limit }
 }
 
-export async function getPet(tenantId: number, id: number) {
-  const pet = await petRepo.findPetById(tenantId, id)
+export async function getPet(tenantId: number, id: number, includeEmr = true) {
+  const pet = await petRepo.findPetById(tenantId, id, includeEmr)
   if (!pet) throw new PetError('Pet not found', 404)
   return pet
 }

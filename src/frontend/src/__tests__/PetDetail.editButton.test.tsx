@@ -2,6 +2,7 @@
 // A4 — RBAC gating on the pencil edit button in PetDetail's hero card (crm.edit).
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 
 const mockPet = {
   id: 1, ownerId: 1, name: 'Rex', species: 'canine', breed: 'Labrador', color: 'Golden',
@@ -28,12 +29,12 @@ describe('PetDetail — edit button RBAC gating', () => {
 
   it('shows the edit button when the user has crm.edit', () => {
     state.permissions = ['crm.edit']
-    render(<PetDetail petId={1} onAddVaccination={vi.fn()} />)
+    render(<MemoryRouter><PetDetail petId={1} onAddVaccination={vi.fn()} /></MemoryRouter>)
     expect(screen.getByLabelText('Edit Pet')).toBeInTheDocument()
   })
 
   it('hides the edit button when the user lacks crm.edit (server-side 403 already covered by route tests)', () => {
-    render(<PetDetail petId={1} onAddVaccination={vi.fn()} />)
+    render(<MemoryRouter><PetDetail petId={1} onAddVaccination={vi.fn()} /></MemoryRouter>)
     expect(screen.queryByLabelText('Edit Pet')).not.toBeInTheDocument()
   })
 })
