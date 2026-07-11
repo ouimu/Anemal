@@ -25,7 +25,13 @@ export function findActive(tenantId: number, branchId?: number) {
 export function findById(tenantId: number, id: number) {
   return prisma.hospitalization.findFirst({
     where: { id, tenantId },
-    include: { pet: petSelect, careLogs: { orderBy: { recordedAt: 'desc' } } },
+    include: {
+      pet: petSelect,
+      careLogs: {
+        orderBy: { recordedAt: 'desc' },
+        include: { performedByUser: { select: { id: true, name: true } } },
+      },
+    },
   })
 }
 

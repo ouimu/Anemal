@@ -417,15 +417,18 @@ export default function ClinicBilling() {
 
 interface PayHistoryRow {
   id: number; paidAt: string; amount: string; method: string; note: string | null
-  invoice: { invoiceNo: string }
+  invoice: { id: number; invoiceNo: string }
   receivedBy: { id: number; name: string }
   branch: { id: number; name: string }
 }
-interface PayHistoryResult { rows: PayHistoryRow[]; total: number; page: number; limit: number }
+interface PayHistoryResult {
+  rows: PayHistoryRow[]; total: number; page: number; limit: number
+  receivedByOptions: Array<{ id: number; name: string }>
+}
 
 const METHOD_LABELS: Record<string, string> = { cash: 'Cash', qr_promptpay: 'PromptPay', credit_card: 'Card', transfer: 'Transfer', other: 'Other' }
 
-function PaymentHistoryTab() {
+export function PaymentHistoryTab() {
   const t = useT()
   const { branchId } = useAuthStore()
   const isAdmin = branchId === null
@@ -433,15 +436,26 @@ function PaymentHistoryTab() {
   const [endDate, setEndDate] = useState('')
   const [filterBranchId, setFilterBranchId] = useState('')
   const [page, setPage] = useState(1)
+  const [selectedRow, setSelectedRow] = useState<PayHistoryRow | null>(null)
+  const [method, setMethod] = useState('')
+  const [receivedById, setReceivedById] = useState('')
+
+  const { data: selectedInvoice, isLoading: invoiceLoading, isError: invoiceError } = useQuery<Invoice>({
+    queryKey: ['invoice', selectedRow?.invoice.id],
+    enabled: selectedRow != null,
+    queryFn: () => api.get(`/api/invoices/${selectedRow!.invoice.id}`).then((r) => r.data.data),
+  })
 
   const { data, isLoading } = useQuery<PayHistoryResult>({
-    queryKey: ['billing', 'payment-history', startDate, endDate, filterBranchId, page],
+    queryKey: ['billing', 'payment-history', startDate, endDate, filterBranchId, method, receivedById, page],
     queryFn: () =>
       api.get('/api/invoices/payment-history', {
         params: {
           ...(startDate ? { startDate } : {}),
           ...(endDate ? { endDate } : {}),
           ...(filterBranchId ? { branchId: filterBranchId } : {}),
+          ...(method ? { method } : {}),
+          ...(receivedById ? { receivedById } : {}),
           page,
         },
       }).then((r) => r.data.data),
@@ -470,8 +484,26 @@ function PaymentHistoryTab() {
                    placeholder="Branch ID" className={`${dateCls} w-32`} />
           </div>
         )}
-        {(startDate || endDate || filterBranchId) && (
-          <button onClick={() => { setStartDate(''); setEndDate(''); setFilterBranchId(''); setPage(1) }}
+        <div className="flex flex-col gap-xs">
+          <label htmlFor="ph-method" className="text-label-md text-on-surface-variant uppercase tracking-wider">{t('clinic.billing.method')}</label>
+          <select id="ph-method" value={method} onChange={(e) => { setMethod(e.target.value); setPage(1) }} className={`${dateCls} w-36`}>
+            <option value="">{t('clinic.billing.allMethods')}</option>
+            {Object.entries(METHOD_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-xs">
+          <label htmlFor="ph-received-by" className="text-label-md text-on-surface-variant uppercase tracking-wider">{t('clinic.billing.receivedBy')}</label>
+          <select id="ph-received-by" value={receivedById} onChange={(e) => { setReceivedById(e.target.value); setPage(1) }} className={`${dateCls} w-36`}>
+            <option value="">{t('clinic.billing.allReceivers')}</option>
+            {(data?.receivedByOptions ?? []).map((o) => (
+              <option key={o.id} value={o.id}>{o.name}</option>
+            ))}
+          </select>
+        </div>
+        {(startDate || endDate || filterBranchId || method || receivedById) && (
+          <button onClick={() => { setStartDate(''); setEndDate(''); setFilterBranchId(''); setMethod(''); setReceivedById(''); setPage(1) }}
                   className="min-h-[44px] px-md rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-low text-body-sm flex items-center gap-xs">
             <MaterialIcon name="close" size={16} /> Clear
           </button>
@@ -500,7 +532,15 @@ function PaymentHistoryTab() {
                 <tr><td colSpan={colCount} className="px-md py-xl text-center text-on-surface-variant">{t('clinic.billing.noHistory')}</td></tr>
               )}
               {rows.map((row) => (
-                <tr key={row.id} className="hover:bg-surface-container-low/50 transition-colors">
+                <tr
+                  key={row.id}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Open receipt ${row.invoice.invoiceNo}`}
+                  onClick={() => setSelectedRow(row)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedRow(row) } }}
+                  className="cursor-pointer hover:bg-surface-container-low/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40"
+                >
                   <td className="px-md py-sm text-on-surface font-code">{new Date(row.paidAt).toLocaleDateString()}</td>
                   <td className="px-md py-sm text-on-surface font-medium">{row.invoice.invoiceNo}</td>
                   <td className="px-md py-sm text-on-surface text-right font-code">{baht(Number(row.amount))}</td>
@@ -529,6 +569,27 @@ function PaymentHistoryTab() {
           </div>
         )}
       </div>
+      {selectedRow && invoiceLoading && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+          <MaterialIcon name="progress_activity" size={32} className="text-on-surface-variant animate-spin" />
+        </div>
+      )}
+      {selectedRow && invoiceError && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-md" onClick={() => setSelectedRow(null)}>
+          <div className="bg-surface rounded-xl shadow-lvl3 p-lg text-center" onClick={(e) => e.stopPropagation()}>
+            <p className="text-body-md text-error mb-md">{t('clinic.billing.receiptLoadError')}</p>
+            <button onClick={() => setSelectedRow(null)} className="min-h-[44px] px-lg rounded-lg bg-primary text-primary-on font-semibold">{t('common.done')}</button>
+          </div>
+        </div>
+      )}
+      {selectedRow && !invoiceLoading && !invoiceError && selectedInvoice && (
+        <ReceiptModal
+          invoice={selectedInvoice}
+          petLabel={selectedInvoice.pet ? `${selectedInvoice.pet.name}${selectedInvoice.pet.owner ? ' · Owner: ' + selectedInvoice.pet.owner.firstName + ' ' + selectedInvoice.pet.owner.lastName : ''}` : undefined}
+          method={selectedRow.method}
+          onClose={() => setSelectedRow(null)}
+        />
+      )}
     </div>
   )
 }
@@ -571,64 +632,125 @@ function Row({ label, value }: { label: string; value: string }) {
   )
 }
 
-function SuccessModal({ invoice, pet, method, earnedMsg, onClose }: { invoice: Invoice; pet: { petName: string; ownerName: string } | null; method: string; earnedMsg?: string; onClose: () => void }) {
+async function downloadInvoicePdf(invoice: Invoice) {
+  const res = await api.get(`/api/invoices/${invoice.id}/pdf`, { responseType: 'blob' })
+  const url = URL.createObjectURL(new Blob([res.data as BlobPart], { type: 'application/pdf' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${invoice.invoiceNo}.pdf`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function printReceipt(invoice: Invoice, petLabel: string | undefined, method: string) {
+  const items = (invoice.items ?? [])
+    .map((i) => `<tr><td>${i.description}</td><td style="text-align:center">${Number(i.quantity)}</td><td style="text-align:right">${baht(Number(i.unitPrice))}</td><td style="text-align:right">${baht(Number(i.totalPrice))}</td></tr>`)
+    .join('')
+  const html = `<!doctype html><html><head><title>${invoice.invoiceNo}</title>
+    <style>body{font-family:system-ui,sans-serif;padding:24px;color:#191c1e}h1{font-size:18px;margin:0}
+    .muted{color:#45464d;font-size:12px}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:13px}
+    th,td{padding:6px 4px;border-bottom:1px solid #e2e8f0}th{text-align:left;text-transform:uppercase;font-size:11px;color:#45464d}
+    .tot{display:flex;justify-content:space-between;font-size:13px;margin-top:6px}.grand{font-weight:700;font-size:16px;border-top:2px solid #191c1e;padding-top:6px;margin-top:8px}</style></head>
+    <body><h1>Anemal</h1><p class="muted">Tax invoice / receipt</p>
+    <p class="muted">Invoice: <b>${invoice.invoiceNo}</b> · ${new Date(invoice.issuedAt).toLocaleString()}</p>
+    ${petLabel ? `<p class="muted">Patient: ${petLabel}</p>` : ''}
+    <table><thead><tr><th>Item</th><th style="text-align:center">Qty</th><th style="text-align:right">Unit</th><th style="text-align:right">Total</th></tr></thead><tbody>${items}</tbody></table>
+    <div style="margin-top:16px"><div class="tot"><span>Subtotal</span><span>${baht(Number(invoice.subtotal))}</span></div>
+    <div class="tot"><span>Discount</span><span>-${baht(Number(invoice.discount))}</span></div>
+    <div class="tot"><span>Tax (${Number(invoice.taxRate)}%)</span><span>${baht(Number(invoice.taxAmount))}</span></div>
+    <div class="tot grand"><span>Total</span><span>${baht(Number(invoice.totalAmount))}</span></div>
+    <p class="muted" style="margin-top:8px">Paid by ${method.replace('_', ' ')} · Thank you!</p></div>
+    <script>window.onload=function(){window.print()}</script></body></html>`
+  const w = window.open('', '_blank', 'width=420,height=640')
+  if (w) { w.document.write(html); w.document.close() }
+}
+
+// Itemized lines + subtotal/discount/tax/total. No chrome (no overlay, no
+// header, no buttons) — reused by both ReceiptModal (history path, bare) and
+// SuccessModal (post-sale path, adds its own banner above this).
+function ReceiptBody({ invoice, method }: { invoice: Invoice; method: string }) {
+  return (
+    <div className="text-left mb-md">
+      <div className="max-h-48 overflow-y-auto divide-y divide-outline-variant border border-outline-variant rounded-lg mb-md">
+        {(invoice.items ?? []).length === 0 && (
+          <p className="px-sm py-sm text-body-sm text-on-surface-variant">No line items.</p>
+        )}
+        {(invoice.items ?? []).map((i) => (
+          <div key={i.id} className="flex items-center justify-between gap-sm px-sm py-xs text-body-sm">
+            <span className="flex-1 text-on-surface">{i.description}</span>
+            <span className="text-on-surface-variant font-code w-16 text-right">× {Number(i.quantity)}</span>
+            <span className="text-on-surface font-code w-20 text-right">{baht(Number(i.totalPrice))}</span>
+          </div>
+        ))}
+      </div>
+      <div className="space-y-xs">
+        <Row label="Subtotal" value={baht(Number(invoice.subtotal))} />
+        {Number(invoice.discount) > 0 && <Row label="Discount" value={`-${baht(Number(invoice.discount))}`} />}
+        <Row label={`Tax (${Number(invoice.taxRate)}%)`} value={baht(Number(invoice.taxAmount))} />
+        <div className="flex items-center justify-between border-t border-outline-variant pt-xs mt-xs">
+          <span className="text-body-md font-semibold text-on-surface">Total</span>
+          <span className="text-body-md font-bold text-primary font-code">{baht(Number(invoice.totalAmount))}</span>
+        </div>
+        <p className="text-label-md text-on-surface-variant">Paid by {method.replace('_', ' ')}</p>
+      </div>
+    </div>
+  )
+}
+
+function ReceiptActions({ invoice, petLabel, method, onClose }: { invoice: Invoice; petLabel?: string; method: string; onClose: () => void }) {
   const t = useT()
-  async function downloadPdf() {
-    const res = await api.get(`/api/invoices/${invoice.id}/pdf`, { responseType: 'blob' })
-    const url = URL.createObjectURL(new Blob([res.data as BlobPart], { type: 'application/pdf' }))
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${invoice.invoiceNo}.pdf`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
+  return (
+    <div className="flex gap-sm">
+      <button onClick={() => printReceipt(invoice, petLabel, method)} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-on-surface-variant font-medium hover:bg-surface-container-low transition-colors flex items-center justify-center gap-xs text-body-sm">
+        <MaterialIcon name="print" size={16} /> {t('clinic.billing.print')}
+      </button>
+      <button onClick={() => downloadInvoicePdf(invoice)} className="flex-1 min-h-[44px] rounded-lg border border-secondary text-secondary font-medium hover:bg-surface-container-low transition-colors flex items-center justify-center gap-xs text-body-sm">
+        <MaterialIcon name="download" size={16} /> PDF
+      </button>
+      <button onClick={onClose} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on font-semibold hover:bg-primary/90 transition-colors text-body-sm">{t('common.done')}</button>
+    </div>
+  )
+}
 
-  function print() {
-    const items = (invoice.items ?? [])
-      .map((i) => `<tr><td>${i.description}</td><td style="text-align:center">${Number(i.quantity)}</td><td style="text-align:right">${baht(Number(i.unitPrice))}</td><td style="text-align:right">${baht(Number(i.totalPrice))}</td></tr>`)
-      .join('')
-    const html = `<!doctype html><html><head><title>${invoice.invoiceNo}</title>
-      <style>body{font-family:system-ui,sans-serif;padding:24px;color:#191c1e}h1{font-size:18px;margin:0}
-      .muted{color:#45464d;font-size:12px}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:13px}
-      th,td{padding:6px 4px;border-bottom:1px solid #e2e8f0}th{text-align:left;text-transform:uppercase;font-size:11px;color:#45464d}
-      .tot{display:flex;justify-content:space-between;font-size:13px;margin-top:6px}.grand{font-weight:700;font-size:16px;border-top:2px solid #191c1e;padding-top:6px;margin-top:8px}</style></head>
-      <body><h1>Anemal</h1><p class="muted">Tax invoice / receipt</p>
-      <p class="muted">Invoice: <b>${invoice.invoiceNo}</b> · ${new Date(invoice.issuedAt).toLocaleString()}</p>
-      ${pet ? `<p class="muted">Patient: ${pet.petName} · Owner: ${pet.ownerName}</p>` : ''}
-      <table><thead><tr><th>Item</th><th style="text-align:center">Qty</th><th style="text-align:right">Unit</th><th style="text-align:right">Total</th></tr></thead><tbody>${items}</tbody></table>
-      <div style="margin-top:16px"><div class="tot"><span>Subtotal</span><span>${baht(Number(invoice.subtotal))}</span></div>
-      <div class="tot"><span>Discount</span><span>-${baht(Number(invoice.discount))}</span></div>
-      <div class="tot"><span>Tax (${Number(invoice.taxRate)}%)</span><span>${baht(Number(invoice.taxAmount))}</span></div>
-      <div class="tot grand"><span>Total</span><span>${baht(Number(invoice.totalAmount))}</span></div>
-      <p class="muted" style="margin-top:8px">Paid by ${method.replace('_', ' ')} · Thank you!</p></div>
-      <script>window.onload=function(){window.print()}</script></body></html>`
-    const w = window.open('', '_blank', 'width=420,height=640')
-    if (w) { w.document.write(html); w.document.close() }
-  }
+// Bare receipt view — invoice number, itemized lines, totals, method,
+// Print/PDF/Done. No success banner, no "earned" messaging: used when a
+// Payment History row is clicked (T-3b.3), never after a live sale (grill F2).
+export function ReceiptModal({ invoice, petLabel, method, onClose }: { invoice: Invoice; petLabel?: string; method: string; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-md" onClick={onClose}>
+      <div className="bg-surface rounded-xl shadow-lvl3 w-full max-w-sm p-xl" data-testid="receipt-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="text-center mb-md">
+          <p className="text-body-sm text-on-surface-variant">{invoice.invoiceNo}</p>
+          {petLabel && <p className="text-body-sm text-on-surface font-medium mt-xs">{petLabel}</p>}
+        </div>
+        <ReceiptBody invoice={invoice} method={method} />
+        <ReceiptActions invoice={invoice} petLabel={petLabel} method={method} onClose={onClose} />
+      </div>
+    </div>
+  )
+}
 
+// Post-sale confirmation — adds the success banner + optional loyalty-earned
+// message above the same ReceiptBody/ReceiptActions ReceiptModal uses.
+export function SuccessModal({ invoice, pet, method, earnedMsg, onClose }: { invoice: Invoice; pet: { petName: string; ownerName: string } | null; method: string; earnedMsg?: string; onClose: () => void }) {
+  const petLabel = pet ? `${pet.petName} · Owner: ${pet.ownerName}` : undefined
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-md">
-      <div className="bg-surface rounded-xl shadow-lvl3 w-full max-w-sm p-xl text-center">
-        <div className="w-16 h-16 rounded-full bg-secondary-container flex items-center justify-center mx-auto mb-md">
-          <MaterialIcon name="check_circle" fill={1} size={40} className="text-secondary" />
+      <div className="bg-surface rounded-xl shadow-lvl3 w-full max-w-sm p-xl" data-testid="success-modal">
+        <div className="text-center mb-md">
+          <div className="w-16 h-16 rounded-full bg-secondary-container flex items-center justify-center mx-auto mb-md">
+            <MaterialIcon name="check_circle" fill={1} size={40} className="text-secondary" />
+          </div>
+          <h3 className="text-headline-md font-headline font-bold text-on-surface mb-xs">Payment Successful!</h3>
+          <p className="text-body-sm text-on-surface-variant">{invoice.invoiceNo}</p>
+          {earnedMsg && (
+            <p className="inline-flex items-center gap-xs text-body-sm text-secondary font-medium mt-xs">
+              <MaterialIcon name="loyalty" size={16} /> {earnedMsg}
+            </p>
+          )}
         </div>
-        <h3 className="text-headline-md font-headline font-bold text-on-surface mb-xs">Payment Successful!</h3>
-        <p className="text-body-sm text-on-surface-variant mb-xs">{invoice.invoiceNo}</p>
-        <p className="text-headline-md font-headline font-bold text-primary font-code mb-sm">{baht(Number(invoice.totalAmount))}</p>
-        {earnedMsg && (
-          <p className="inline-flex items-center gap-xs text-body-sm text-secondary font-medium mb-lg">
-            <MaterialIcon name="loyalty" size={16} /> {earnedMsg}
-          </p>
-        )}
-        <div className="flex gap-sm">
-          <button onClick={print} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-on-surface-variant font-medium hover:bg-surface-container-low transition-colors flex items-center justify-center gap-xs text-body-sm">
-            <MaterialIcon name="print" size={16} /> {t('clinic.billing.print')}
-          </button>
-          <button onClick={downloadPdf} className="flex-1 min-h-[44px] rounded-lg border border-secondary text-secondary font-medium hover:bg-surface-container-low transition-colors flex items-center justify-center gap-xs text-body-sm">
-            <MaterialIcon name="download" size={16} /> PDF
-          </button>
-          <button onClick={onClose} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on font-semibold hover:bg-primary/90 transition-colors text-body-sm">{t('common.done')}</button>
-        </div>
+        <ReceiptBody invoice={invoice} method={method} />
+        <ReceiptActions invoice={invoice} petLabel={petLabel} method={method} onClose={onClose} />
       </div>
     </div>
   )
