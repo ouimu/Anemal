@@ -7,7 +7,7 @@ import { MemoryRouter } from 'react-router-dom'
 const mockPet = {
   id: 1, ownerId: 1, name: 'Rex', species: 'canine', breed: 'Labrador', color: 'Golden',
   birthDate: '2020-01-15', gender: 'male', weightKg: 22.4, microchipId: 'CHIP123',
-  allergies: 'Pollen', underlyingConditions: 'None', isActive: true,
+  allergies: 'Pollen', underlyingConditions: 'None', isActive: true, vaccinations: [] as unknown[],
   owner: { id: 1, firstName: 'Jane', lastName: 'Doe', phone: '0812345678', address: '123 Main St', idCardType: 'thai_id', idCardNumber: '1101700230503', isActive: true, pets: [] },
 }
 

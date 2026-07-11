@@ -645,13 +645,15 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
 
       {tab === 'Vaccinations' && (
         <div>
-          <div className="flex justify-end mb-md">
-            <Can perm="vaccination.create">
-              <button onClick={onAddVaccination} className="flex items-center gap-sm bg-primary text-primary-on rounded-lg px-md py-sm min-h-[44px] text-body-sm font-semibold hover:bg-primary/90 transition-colors">
-                <MaterialIcon name="add" size={18} />Add Vaccination
-              </button>
-            </Can>
-          </div>
+          {pet.vaccinations !== undefined && (
+            <div className="flex justify-end mb-md">
+              <Can perm="vaccination.create">
+                <button onClick={onAddVaccination} className="flex items-center gap-sm bg-primary text-primary-on rounded-lg px-md py-sm min-h-[44px] text-body-sm font-semibold hover:bg-primary/90 transition-colors">
+                  <MaterialIcon name="add" size={18} />Add Vaccination
+                </button>
+              </Can>
+            </div>
+          )}
           {pet.vaccinations?.length ? pet.vaccinations.map(v => (
             <div key={v.id} className="flex justify-between items-center min-h-[48px] border-b border-outline-variant/50 py-sm">
               <div>
@@ -660,7 +662,11 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
               </div>
               <span className="text-body-sm text-on-surface-variant">{new Date(v.administeredAt).toLocaleDateString()}</span>
             </div>
-          )) : <p className="text-body-sm text-on-surface-variant py-lg">No vaccination records yet.</p>}
+          )) : (
+            <p className="text-body-sm text-on-surface-variant py-lg">
+              {hasPermission('emr.view') ? 'No vaccination records yet.' : "You don't have access to clinical records."}
+            </p>
+          )}
         </div>
       )}
 

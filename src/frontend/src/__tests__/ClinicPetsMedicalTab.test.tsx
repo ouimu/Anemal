@@ -60,4 +60,13 @@ describe('PetDetail — Medical tab', () => {
     fireEvent.click(await screen.findByText('Medical'))
     expect(await screen.findByText('No medical records yet.')).toBeInTheDocument()
   })
+
+  it('hides Add Vaccination button when vaccinations is absent (emr.view denied)', async () => {
+    state.permissions = ['crm.view']
+    getMock.mockResolvedValue({ data: { data: { id: 1, name: 'Rex', species: 'canine' } } })
+    renderPetDetail()
+    fireEvent.click(await screen.findByText('Vaccinations'))
+    expect(screen.queryByText('Add Vaccination')).not.toBeInTheDocument()
+    expect(await screen.findByText("You don't have access to clinical records.")).toBeInTheDocument()
+  })
 })
