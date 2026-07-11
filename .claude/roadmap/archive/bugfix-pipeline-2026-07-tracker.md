@@ -54,10 +54,20 @@ Note (2026-07-11 run 1): found pre-existing UNCOMMITTED diff in working tree at 
   | staff_a | Inpatient Board | OK, N/A for AC-3d | 0 active admissions in seed data for this tenant/branch — could not click into a care-log entry to visually confirm performer-name display; not a gap, already covered by backend integration tests (`hospitalization-crud.test.ts`) + frontend `ClinicInpatient.test.tsx` (fallback chain name→Staff #id→— asserted) |
 
   PDF Thai-glyph rendering (AC-3a) not re-verified visually in-browser (opening a downloaded PDF is outside smoke-walkthrough scope) — covered by `pdf-font-coverage.test.ts` (fontkit glyph assertions) + `tests/integration/pdf.test.ts`, both green per Step 7.
-- [ ] Step 8: /anemal-finish-branch
+- [x] Step 8: /anemal-finish-branch — PR #19 created and merged to `main` (commit `0b6c130`), plus a reconciliation merge (`b7b122e`) for a stale local `main` ref, same benign pattern as Items 1/2's Step 8 notes. Final green: backend 888/888, frontend 225/225, tsc clean both workspaces. `/anemal-HTML-updater` run as the final act: `docs/index.html` (build-status callout, stats, Phase Progress table row, changelog Release Overview table row), `.claude/specs/implementation-status-matrix.md` (header totals + Billing rows + Inpatient performer-name row updated), `CLAUDE.md` (phase table row + tracker cross-reference, now pointing at the archive). **Item 3 — ALL 8 STEPS COMPLETE. All 3 items of the 2026-07 bugfix pipeline now shipped.** Tracker moved from `ACTIVE/` to `archive/` as its final act (Item 4 confirmed a non-issue — see note below, never real work).
 
 **Concurrency false-alarm — resolved, not escalated.** The prior stop was over-cautious. Verified directly by the follow-up orchestrator turn: `mcp__scheduled-tasks__list_scheduled_tasks` shows exactly one enabled schedule (`anemal-bugfix-pipeline-resume`, 2h interval, `resume-pet-emr-inpatient-fixes` is disabled); `git branch -a` shows only `fix/billing-pipeline-item3` + `main` + their `origin/main` remote — the claimed second branch `feature/billing-thai-font-receipt-filters` never existed; `git log main..fix/billing-pipeline-item3` is empty — zero code committed for Item 3 yet, so there was never anything to collide over. The two plan files' near-identical mtimes (14:30:19 vs 14:30:27, same run) confirm both were written by this same orchestrator's own async subagent calls, misread as a second writer — the exact same failure pattern already diagnosed and documented in Item 1 Step 8 and Item 2 Step 6/8 notes above. Duplicate `docs/superpowers/plans/2026-07-11-billing-pipeline-item3.md` deleted; 1400-line plan kept as sole source of truth. Safe to proceed with Step 6 on branch `fix/billing-pipeline-item3`.
 
-**Next unchecked step:** Step 6 (`/execute-plan`) on branch `fix/billing-pipeline-item3` using `docs/superpowers/plans/2026-07-11-billing-pipeline.md`.
+**Superseded note:** the "Next unchecked step: Step 6" line above was stale by the time Steps 6–8 actually ran (see Step 6/7/7b/8 entries above, all complete) — left in place as a historical artifact of the run rather than edited out of order.
 
-## Item 4 — (reserved; task file lists 3 items + Item 3 has 4 sub-parts — tracking as-is, 3 top-level items total unless split further)
+## Item 4 — confirmed non-issue, not real work
+
+Checked at Step 8 doc-sync time (2026-07-11): this placeholder ("reserved; task file
+lists 3 items + Item 3 has 4 sub-parts — tracking as-is, 3 top-level items total
+unless split further") was never backed by any actual Item-4 scope. Searched
+`.claude/roadmap/ACTIVE/` (only `pet-emr-inpatient-fixes.md`, all 4 items already
+shipped, and `remaining-tasks.md`, whose backlog rows are unrelated deferred
+items — Phase 10/11 credential-gated work, RBAC nav cleanup, dev-DB hygiene —
+not a 4th bugfix-pipeline item) and `.claude/roadmap/qa-protocols.md` (references
+only the 5 standing QA protocols, no Item 4). No further work exists anywhere
+under this name. **Pipeline is 3 items total, all shipped (PRs #17, #18, #19).**
