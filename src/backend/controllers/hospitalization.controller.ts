@@ -9,30 +9,30 @@ export async function admit(req: Request, res: Response, next: NextFunction): Pr
 
 export async function listActive(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const branchId = req.query.branchId ? Number(req.query.branchId) : req.context?.branchId
-    res.json({ success: true, data: await svc.listActive(req.context!.tenantId, branchId) })
+    // ADR-0014 Q4: query branchId override removed — req.context.branchId only.
+    res.json({ success: true, data: await svc.listActive(req.context!.tenantId, req.context?.branchId) })
   } catch (err) { next(err) }
 }
 
 export async function getHospitalization(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try { res.json({ success: true, data: await svc.getHospitalization(req.context!.tenantId, Number(req.params.id)) }) }
+  try { res.json({ success: true, data: await svc.getHospitalization(req.context!.tenantId, req.context?.branchId, Number(req.params.id)) }) }
   catch (err) { next(err) }
 }
 
 export async function edit(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try { res.json({ success: true, data: await svc.editHospitalization(req.context!.tenantId, Number(req.params.id), req.body) }) }
+  try { res.json({ success: true, data: await svc.editHospitalization(req.context!.tenantId, req.context?.branchId, Number(req.params.id), req.body) }) }
   catch (err) { next(err) }
 }
 
 export async function remove(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    await svc.deleteHospitalization(req.context!.tenantId, Number(req.params.id))
+    await svc.deleteHospitalization(req.context!.tenantId, req.context?.branchId, Number(req.params.id))
     res.status(204).send()
   } catch (err) { next(err) }
 }
 
 export async function logCare(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try { res.status(201).json({ success: true, data: await svc.logCare(req.context!.tenantId, Number(req.params.id), req.body, req.context!.userId) }) }
+  try { res.status(201).json({ success: true, data: await svc.logCare(req.context!.tenantId, req.context?.branchId, Number(req.params.id), req.body, req.context!.userId) }) }
   catch (err) { next(err) }
 }
 
