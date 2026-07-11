@@ -55,6 +55,15 @@ Acceptance Criteria:
 - [ ] Initial `useState<CareEntry>` sets the 4 new fields to `null`.
 - [ ] Local `Stepper` function is removed; no dead code left behind.
 - [ ] TypeScript compiles with no new `any`/type errors.
+- [ ] (Grill finding F3) The EXISTING test
+      `ClinicInpatient.test.tsx` → describe "Log Care modal payload (careSchema field-name
+      regression guard)" → its `toEqual` assertion is updated (not left to fail) from
+      `{ timeSlot: '16:00', temperatureC: null, notes: '' }` to
+      `{ timeSlot: '16:00', temperatureC: null, heartRateBpm: null, respRateRpm: null,
+      feedingStatus: null, medicationGiven: null, notes: null }` — `notes` is normalized to
+      `null` for consistency with the other 3 new optional fields (see LC-5's normalization
+      rule), not left at `''`. This is an intentional TDD update to a pre-existing assertion,
+      called out explicitly so it isn't mistaken for an accidental regression.
 
 Permission(s): none
 Dependencies: LC-1
@@ -83,6 +92,18 @@ Acceptance Criteria:
 - [ ] All 3 controls are ≥44×44px touch targets (inherited from `VitalStepper`, verify not
       overridden by the modal's grid classes).
 - [ ] No horizontal overflow at 768×1024 or 1024×768 viewport.
+- [ ] (Grill finding F2) Heart Rate and Resp Rate `VitalStepper` instances use `max={3000}`,
+      matching the existing EMR call sites (`ClinicEMR.tsx:611-612`) — reused for input-sanity
+      consistency, not a new/different ceiling. Temperature uses `max={999.9}`, matching EMR's
+      temperature field. Neither is a clinical range (no floor change beyond the existing >0
+      guard already in `VitalStepper.commit()`).
+- [ ] (Grill finding F6) Vitals grid reuses this file's own existing responsive convention
+      (`ClinicInpatient.tsx:663` already uses `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3`
+      for a similar card grid) rather than inventing new breakpoints — concretely
+      `grid grid-cols-1 sm:grid-cols-3 gap-md` for the 3 vitals controls (@uiux-agent may adjust
+      the exact class in Step 6 review but must stay on the Tailwind default scale already used
+      in this file). Modal grows from `max-w-md` to `max-w-xl`; body gets
+      `max-h-[min(80vh,640px)] overflow-y-auto` per the spec's sizing allowance.
 
 Permission(s): `inpatient.manage` (existing, unchanged)
 Dependencies: LC-1, LC-2
@@ -109,6 +130,12 @@ Acceptance Criteria:
 - [ ] Existing/legacy `feedingStatus` strings not in the controlled vocabulary still display
       correctly in Care History (no assertion needed here since Care History code is unchanged,
       but confirm no regression by inspection).
+- [ ] (Grill finding F1) A separate local `feedingOther` string state (UI-only, not part of
+      `CareEntry`) holds the typed "Other" text while the "Other" option is selected, so
+      switching the select away from "Other" and back does not lose the draft text. On submit,
+      `feedingStatus` is computed from the select's current selection (canonical string / `null`
+      for "Not assessed" / trimmed `feedingOther`, or `null` if blank, for "Other") — never a
+      raw shared write into `entry.feedingStatus` from both the select and the text input.
 
 Permission(s): `inpatient.manage` (existing, unchanged)
 Dependencies: LC-2
@@ -166,6 +193,10 @@ Acceptance Criteria:
 - [ ] A staff member's session lacking `inpatient.manage` never reaches this modal (existing route
       guard on `POST /:id/care`; negative authorization case — verify by confirming the route
       still requires the permission, not by adding new middleware).
+- [ ] (Grill finding F4) `error` state is cleared at the start of every save attempt (mirroring
+      `AdmitModal.submit()`'s `setError('')` before `mut.mutate(...)`), not only ever set by
+      `onError` — prevents a stale error from a prior failed attempt lingering visually into a
+      retry.
 
 Permission(s): `inpatient.manage`
 Dependencies: LC-3, LC-4, LC-5
