@@ -28,17 +28,19 @@ export function countPets(tenantId: number, ownerId?: number, species?: string) 
   return prisma.pet.count({ where: buildWhere(tenantId, ownerId, species) })
 }
 
-export function findPetById(tenantId: number, id: number) {
+export function findPetById(tenantId: number, id: number, includeEmr = true) {
   return prisma.pet.findFirst({
     where: { id, tenantId, isActive: true },
     include: {
       owner: true,
-      vaccinations: { orderBy: { administeredAt: 'desc' } },
-      medicalRecords: {
-        orderBy: { createdAt: 'desc' },
-        take: 3,
-        select: { id: true, createdAt: true, assessment: true, doctorId: true },
-      },
+      ...(includeEmr ? {
+        vaccinations: { orderBy: { administeredAt: 'desc' } },
+        medicalRecords: {
+          orderBy: { createdAt: 'desc' },
+          take: 3,
+          select: { id: true, createdAt: true, assessment: true, doctorId: true },
+        },
+      } : {}),
     },
   })
 }
