@@ -417,15 +417,18 @@ export default function ClinicBilling() {
 
 interface PayHistoryRow {
   id: number; paidAt: string; amount: string; method: string; note: string | null
-  invoice: { invoiceNo: string }
+  invoice: { id: number; invoiceNo: string }
   receivedBy: { id: number; name: string }
   branch: { id: number; name: string }
 }
-interface PayHistoryResult { rows: PayHistoryRow[]; total: number; page: number; limit: number }
+interface PayHistoryResult {
+  rows: PayHistoryRow[]; total: number; page: number; limit: number
+  receivedByOptions: Array<{ id: number; name: string }>
+}
 
 const METHOD_LABELS: Record<string, string> = { cash: 'Cash', qr_promptpay: 'PromptPay', credit_card: 'Card', transfer: 'Transfer', other: 'Other' }
 
-function PaymentHistoryTab() {
+export function PaymentHistoryTab() {
   const t = useT()
   const { branchId } = useAuthStore()
   const isAdmin = branchId === null
@@ -433,6 +436,13 @@ function PaymentHistoryTab() {
   const [endDate, setEndDate] = useState('')
   const [filterBranchId, setFilterBranchId] = useState('')
   const [page, setPage] = useState(1)
+  const [selectedRow, setSelectedRow] = useState<PayHistoryRow | null>(null)
+
+  const { data: selectedInvoice, isLoading: invoiceLoading, isError: invoiceError } = useQuery<Invoice>({
+    queryKey: ['invoice', selectedRow?.invoice.id],
+    enabled: selectedRow != null,
+    queryFn: () => api.get(`/api/invoices/${selectedRow!.invoice.id}`).then((r) => r.data.data),
+  })
 
   const { data, isLoading } = useQuery<PayHistoryResult>({
     queryKey: ['billing', 'payment-history', startDate, endDate, filterBranchId, page],
@@ -500,7 +510,15 @@ function PaymentHistoryTab() {
                 <tr><td colSpan={colCount} className="px-md py-xl text-center text-on-surface-variant">{t('clinic.billing.noHistory')}</td></tr>
               )}
               {rows.map((row) => (
-                <tr key={row.id} className="hover:bg-surface-container-low/50 transition-colors">
+                <tr
+                  key={row.id}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Open receipt ${row.invoice.invoiceNo}`}
+                  onClick={() => setSelectedRow(row)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedRow(row) } }}
+                  className="cursor-pointer hover:bg-surface-container-low/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40"
+                >
                   <td className="px-md py-sm text-on-surface font-code">{new Date(row.paidAt).toLocaleDateString()}</td>
                   <td className="px-md py-sm text-on-surface font-medium">{row.invoice.invoiceNo}</td>
                   <td className="px-md py-sm text-on-surface text-right font-code">{baht(Number(row.amount))}</td>
@@ -529,6 +547,27 @@ function PaymentHistoryTab() {
           </div>
         )}
       </div>
+      {selectedRow && invoiceLoading && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+          <MaterialIcon name="progress_activity" size={32} className="text-on-surface-variant animate-spin" />
+        </div>
+      )}
+      {selectedRow && invoiceError && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-md" onClick={() => setSelectedRow(null)}>
+          <div className="bg-surface rounded-xl shadow-lvl3 p-lg text-center" onClick={(e) => e.stopPropagation()}>
+            <p className="text-body-md text-error mb-md">{t('clinic.billing.receiptLoadError')}</p>
+            <button onClick={() => setSelectedRow(null)} className="min-h-[44px] px-lg rounded-lg bg-primary text-primary-on font-semibold">{t('common.done')}</button>
+          </div>
+        </div>
+      )}
+      {selectedRow && !invoiceLoading && !invoiceError && selectedInvoice && (
+        <ReceiptModal
+          invoice={selectedInvoice}
+          petLabel={selectedInvoice.pet ? `${selectedInvoice.pet.name}${selectedInvoice.pet.owner ? ' · Owner: ' + selectedInvoice.pet.owner.firstName + ' ' + selectedInvoice.pet.owner.lastName : ''}` : undefined}
+          method={selectedRow.method}
+          onClose={() => setSelectedRow(null)}
+        />
+      )}
     </div>
   )
 }
