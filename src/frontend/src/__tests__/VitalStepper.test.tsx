@@ -8,7 +8,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
-import { VitalStepper } from '../views/clinic/ClinicEMR'
+import { VitalStepper } from '../components/VitalStepper'
 
 function Wrapper({
   initial = null, step = 0.1, min = 0, max, onChangeSpy,

@@ -7,7 +7,7 @@
 // separate test) submits POST with petId. See
 // docs/superpowers/specs/2026-07-10-inpatient-crud-design.md.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
@@ -162,9 +162,155 @@ describe('ClinicInpatient — Log Care modal payload (careSchema field-name regr
 
     await waitFor(() => expect(postMock).toHaveBeenCalled())
     const [, payload] = postMock.mock.calls[0]
-    expect(payload).toEqual({ timeSlot: '16:00', temperatureC: null, notes: '' })
+    // Updated per grill finding F3 — all optional fields normalize to null (not
+    // ''), consistent across the 4 nullable fields. Intentional TDD update to a
+    // pre-existing assertion, not an accidental regression.
+    expect(payload).toEqual({
+      timeSlot: '16:00', temperatureC: null, heartRateBpm: null, respRateRpm: null,
+      feedingStatus: null, medicationGiven: null, notes: null,
+    })
     expect(payload).not.toHaveProperty('weight')
     expect(payload).not.toHaveProperty('temperature')
+  })
+})
+
+describe('ClinicInpatient — Log Care modal vitals (LC-3)', () => {
+  async function openStep2() {
+    stubGet([activeAdmission])
+    renderBoard()
+    await screen.findByText('Rex')
+    await userEvent.click(screen.getByText('Log Care'))
+    await userEvent.click(screen.getByText('16:00'))
+    await userEvent.click(screen.getByText('Next'))
+  }
+
+  it('renders 3 vitals steppers with typed entry committing on blur', async () => {
+    await openStep2()
+
+    const temp = screen.getByLabelText('Temperature') as HTMLInputElement
+    await userEvent.clear(temp)
+    await userEvent.type(temp, '38.5')
+    fireEvent.blur(temp)
+    expect(temp.value).toBe('38.5')
+
+    const hr = screen.getByLabelText('Heart Rate') as HTMLInputElement
+    await userEvent.type(hr, '90')
+    fireEvent.blur(hr)
+    expect(hr.value).toBe('90')
+
+    const rr = screen.getByLabelText('Resp Rate') as HTMLInputElement
+    await userEvent.type(rr, '20')
+    fireEvent.blur(rr)
+    expect(rr.value).toBe('20')
+  })
+
+  it('sends the entered vitals in the POST payload', async () => {
+    await openStep2()
+    await userEvent.type(screen.getByLabelText('Temperature'), '38.5')
+    fireEvent.blur(screen.getByLabelText('Temperature'))
+    await userEvent.type(screen.getByLabelText('Heart Rate'), '90')
+    fireEvent.blur(screen.getByLabelText('Heart Rate'))
+    await userEvent.type(screen.getByLabelText('Resp Rate'), '20')
+    fireEvent.blur(screen.getByLabelText('Resp Rate'))
+
+    await userEvent.click(screen.getByText('Next'))
+    await userEvent.click(screen.getByText('Save Care Record'))
+
+    await waitFor(() => expect(postMock).toHaveBeenCalled())
+    const [, payload] = postMock.mock.calls[0]
+    expect(payload).toMatchObject({ temperatureC: 38.5, heartRateBpm: 90, respRateRpm: 20 })
+  })
+})
+
+describe('ClinicInpatient — Log Care modal feeding status (LC-4)', () => {
+  async function openStep3() {
+    stubGet([activeAdmission])
+    renderBoard()
+    await screen.findByText('Rex')
+    await userEvent.click(screen.getByText('Log Care'))
+    await userEvent.click(screen.getByText('16:00'))
+    await userEvent.click(screen.getByText('Next'))
+    await userEvent.click(screen.getByText('Next'))
+  }
+
+  it('selecting a canonical feeding option and saving sends that exact string', async () => {
+    await openStep3()
+    await userEvent.selectOptions(screen.getByLabelText('Feeding status'), 'Ate some')
+    await userEvent.click(screen.getByText('Save Care Record'))
+
+    await waitFor(() => expect(postMock).toHaveBeenCalled())
+    const [, payload] = postMock.mock.calls[0]
+    expect(payload.feedingStatus).toBe('Ate some')
+  })
+
+  it('selecting "Not assessed" sends null', async () => {
+    await openStep3()
+    await userEvent.selectOptions(screen.getByLabelText('Feeding status'), 'Ate some')
+    await userEvent.selectOptions(screen.getByLabelText('Feeding status'), 'Not assessed')
+    await userEvent.click(screen.getByText('Save Care Record'))
+
+    await waitFor(() => expect(postMock).toHaveBeenCalled())
+    const [, payload] = postMock.mock.calls[0]
+    expect(payload.feedingStatus).toBeNull()
+  })
+
+  it('selecting "Other" and typing text sends the typed text', async () => {
+    await openStep3()
+    await userEvent.selectOptions(screen.getByLabelText('Feeding status'), 'Other')
+    await userEvent.type(screen.getByLabelText('Describe feeding status'), 'Tube fed')
+    await userEvent.click(screen.getByText('Save Care Record'))
+
+    await waitFor(() => expect(postMock).toHaveBeenCalled())
+    const [, payload] = postMock.mock.calls[0]
+    expect(payload.feedingStatus).toBe('Tube fed')
+  })
+
+  it('selecting "Other" and leaving it blank sends null, not the literal "Other"', async () => {
+    await openStep3()
+    await userEvent.selectOptions(screen.getByLabelText('Feeding status'), 'Other')
+    await userEvent.click(screen.getByText('Save Care Record'))
+
+    await waitFor(() => expect(postMock).toHaveBeenCalled())
+    const [, payload] = postMock.mock.calls[0]
+    expect(payload.feedingStatus).toBeNull()
+  })
+
+  it('typing medication note and care notes keeps them in separate payload keys', async () => {
+    await openStep3()
+    await userEvent.type(screen.getByLabelText('Medication / treatment note (optional)'), 'Amoxicillin 250mg')
+    await userEvent.type(screen.getByLabelText('Care notes (optional)'), 'Resting comfortably')
+    await userEvent.click(screen.getByText('Save Care Record'))
+
+    await waitFor(() => expect(postMock).toHaveBeenCalled())
+    const [, payload] = postMock.mock.calls[0]
+    expect(payload.medicationGiven).toBe('Amoxicillin 250mg')
+    expect(payload.notes).toBe('Resting comfortably')
+  })
+})
+
+describe('ClinicInpatient — Log Care modal error handling (LC-6)', () => {
+  it('shows an inline error and keeps the modal open with entry intact on API rejection', async () => {
+    postMock.mockRejectedValueOnce({ response: { data: { error: 'Care log rejected' } } })
+    stubGet([activeAdmission])
+    renderBoard()
+    await screen.findByText('Rex')
+
+    await userEvent.click(screen.getByText('Log Care'))
+    await userEvent.click(screen.getByText('16:00'))
+    await userEvent.click(screen.getByText('Next'))
+    await userEvent.type(screen.getByLabelText('Temperature'), '38.5')
+    fireEvent.blur(screen.getByLabelText('Temperature'))
+    await userEvent.click(screen.getByText('Next'))
+    await userEvent.click(screen.getByText('Save Care Record'))
+
+    expect(await screen.findByText('Care log rejected')).toBeInTheDocument()
+    expect(screen.getByText('Save Care Record')).toBeInTheDocument()
+
+    postMock.mockResolvedValueOnce({ data: { data: { id: 501, status: 'admitted' } } })
+    await userEvent.click(screen.getByText('Save Care Record'))
+    await waitFor(() => expect(postMock).toHaveBeenCalledTimes(2))
+    expect(screen.queryByText('Care log rejected')).not.toBeInTheDocument()
+    expect(postMock.mock.calls[1][1]).toEqual(postMock.mock.calls[0][1])
   })
 })
 

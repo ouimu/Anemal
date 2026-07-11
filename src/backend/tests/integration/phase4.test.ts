@@ -141,10 +141,18 @@ describe('Phase 4 — Hospitalization (admit → care → discharge billing)', (
     expect((res.body.data as { id: number }[]).some(h => h.id === hospId)).toBe(true)
   })
 
-  it('✅ log a care entry for a valid time slot → 201', async () => {
+  it('✅ log a care entry for a valid time slot → 201, all 7 careSchema fields persisted', async () => {
     const res = await request(server).post(`/api/hospitalizations/${hospId}/care`).set('Authorization', `Bearer ${adminA}`)
-      .send({ timeSlot: '08:00', temperatureC: 38.5, heartRateBpm: 90 })
+      .send({
+        timeSlot: '08:00', temperatureC: 38.5, heartRateBpm: 90, respRateRpm: 20,
+        feedingStatus: 'Ate all', medicationGiven: 'Amoxicillin 250mg', notes: 'Stable',
+      })
     expect(res.status).toBe(201)
+    expect(res.body.data).toMatchObject({
+      timeSlot: '08:00', heartRateBpm: 90, respRateRpm: 20,
+      feedingStatus: 'Ate all', medicationGiven: 'Amoxicillin 250mg', notes: 'Stable',
+    })
+    expect(Number(res.body.data.temperatureC)).toBe(38.5)
   })
 
   it('✅ discharge generates an invoice from the daily rate', async () => {
