@@ -310,6 +310,7 @@ describe('ClinicInpatient — Log Care modal error handling (LC-6)', () => {
     await userEvent.click(screen.getByText('Save Care Record'))
     await waitFor(() => expect(postMock).toHaveBeenCalledTimes(2))
     expect(screen.queryByText('Care log rejected')).not.toBeInTheDocument()
+    expect(postMock.mock.calls[1][1]).toEqual(postMock.mock.calls[0][1])
   })
 })
 
