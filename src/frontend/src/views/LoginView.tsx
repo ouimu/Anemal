@@ -5,6 +5,7 @@ import { Navigate } from 'react-router-dom'
 import { useT } from '../i18n'
 import * as rememberedUsernames from '../utils/rememberedUsernames'
 import type { RememberedUsername } from '../utils/rememberedUsernames'
+import loginVetHospital from '../assets/login-vet-hospital.png'
 
 /**
  * Popup shown on login when 2+ usernames are remembered on this device.
@@ -132,29 +133,29 @@ export default function LoginView() {
     : null
 
   return (
-    <div className="bg-background min-h-screen flex flex-col">
-      <main className="flex-grow flex flex-col md:flex-row">
+    <div className="bg-background h-screen overflow-hidden flex flex-col">
+      <main className="flex-1 min-h-0 flex flex-col md:flex-row">
 
         {/* ── Left: Hero image (desktop only) ──────────────────────────── */}
         <section className="hidden md:flex md:w-1/2 lg:w-3/5 relative bg-primary-container overflow-hidden">
           <img
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBx08i6mLtooKtMYfLPqt2q0Iiu8HzcBsB-zsx6cYuAeEhkq6zekL-h90BJ5vl_-ClVSjYHtyAEVlvGQuSUMilG1Ldrglao7qE9-wtTDvFMBp-aXyQRiotqMZwk31FwTlzN6vyx9ofRpjfnmdJCENAyYrR_o5kF0hMatwSWym6ixIBno6sLw_XUbDlqzbbCROL-i_mLnrKcbYd6IkP0HdDgLwd81uTxL735HIf0JdXrWSTyUZ530yRRNpxlijIzjHla_1Ey3snpdxQ"
+            src={loginVetHospital}
             alt="Veterinary Clinic"
             className="absolute inset-0 w-full h-full object-cover"
           />
           {/* Dark gradient overlay */}
           <div
-            className="absolute inset-0 flex items-end p-xl"
+            className="absolute inset-0 flex items-end p-lg"
             style={{ background: 'linear-gradient(rgba(15,23,42,0.4), rgba(15,23,42,0.1))' }}
           >
-            <div className="bg-surface/90 backdrop-blur-md p-lg rounded-xl border border-outline-variant max-w-md">
-              <span className="text-secondary font-bold text-label-md uppercase tracking-wider mb-sm block">
+            <div className="bg-surface/90 backdrop-blur-md p-sm rounded-xl border border-outline-variant max-w-md">
+              <span className="text-secondary font-bold text-label-sm uppercase tracking-wider mb-xs block">
                 Professional Excellence
               </span>
-              <h2 className="text-headline-lg font-headline font-bold text-primary mb-sm leading-tight">
+              <h2 className="text-headline-sm font-headline font-bold text-primary mb-xs leading-tight">
                 Advanced Care for Every Patient
               </h2>
-              <p className="text-on-surface-variant text-body-md">
+              <p className="text-on-surface-variant text-body-sm">
                 Empowering veterinary professionals with clinical precision and compassionate technology.
               </p>
             </div>
@@ -162,11 +163,11 @@ export default function LoginView() {
         </section>
 
         {/* ── Right: Login form ─────────────────────────────────────────── */}
-        <section className="flex-grow md:w-1/2 lg:w-2/5 flex flex-col justify-center items-center p-margin-mobile md:p-margin-desktop bg-surface">
+        <section className="flex-1 min-h-0 md:w-1/2 lg:w-2/5 flex flex-col justify-center items-center p-sm md:px-xl md:py-sm bg-surface overflow-hidden">
           <div className="w-full max-w-[440px]">
 
             {showIdleBanner && (
-              <div className="mb-lg flex items-start gap-sm bg-secondary-container/30 border border-secondary/30 rounded-lg px-md py-sm">
+              <div className="mb-sm flex items-start gap-sm bg-secondary-container/30 border border-secondary/30 rounded-lg px-md py-xs">
                 <span className="material-symbols-outlined text-secondary flex-shrink-0 mt-0.5" style={{ fontSize: '18px' }}>
                   info
                 </span>
@@ -175,8 +176,8 @@ export default function LoginView() {
             )}
 
             {/* Branding */}
-            <div className="mb-xl text-center md:text-left">
-              <div className="flex items-center gap-sm mb-lg justify-center md:justify-start">
+            <div className="mb-md text-center md:text-left">
+              <div className="flex items-center gap-sm mb-sm justify-center md:justify-start">
                 <div className="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center">
                   <span
                     className="material-symbols-outlined text-surface"
@@ -187,8 +188,8 @@ export default function LoginView() {
                 </div>
                 <span className="text-headline-sm font-headline font-bold text-primary">Anemal</span>
               </div>
-              <h1 className="text-headline-lg font-headline font-bold text-on-surface mb-xs">{t('login.title')}</h1>
-              <p className="text-on-surface-variant text-body-md">
+              <h1 className="text-headline-md font-headline font-bold text-on-surface mb-xs">{t('login.title')}</h1>
+              <p className="text-on-surface-variant text-body-sm">
                 {t('login.subtitle')}
               </p>
             </div>
@@ -241,7 +242,7 @@ export default function LoginView() {
             ) : (
             <>
             {/* Form */}
-            <form className="space-y-lg" onSubmit={handleSubmit}>
+            <form className="space-y-sm" onSubmit={handleSubmit}>
 
               {/* Clinic ID (multi-tenant requirement) */}
               <div className="space-y-xs">
@@ -257,7 +258,7 @@ export default function LoginView() {
                     value={form.subdomain} onChange={set('subdomain')}
                     placeholder="e.g. bangkokpetcare"
                     autoComplete="organization" required
-                    className="w-full pl-[48px] pr-[110px] py-[14px] bg-surface-container-low border border-outline-variant rounded-lg focus:border-secondary focus:ring-1 focus:ring-secondary outline-none transition-all text-body-md text-on-surface"
+                    className="w-full pl-[48px] pr-[110px] py-[10px] bg-surface-container-low border border-outline-variant rounded-lg focus:border-secondary focus:ring-1 focus:ring-secondary outline-none transition-all text-body-md text-on-surface"
                   />
                   <span className="absolute right-md top-1/2 -translate-y-1/2 text-label-md text-on-surface-variant pointer-events-none select-none">
                     .anemal.app
@@ -283,7 +284,7 @@ export default function LoginView() {
                     }}
                     placeholder="your_username"
                     autoComplete="username" required
-                    className="w-full pl-[48px] pr-md py-[14px] bg-surface-container-low border border-outline-variant rounded-lg focus:border-secondary focus:ring-1 focus:ring-secondary outline-none transition-all text-body-md text-on-surface"
+                    className="w-full pl-[48px] pr-md py-[10px] bg-surface-container-low border border-outline-variant rounded-lg focus:border-secondary focus:ring-1 focus:ring-secondary outline-none transition-all text-body-md text-on-surface"
                   />
                 </div>
               </div>
@@ -304,7 +305,7 @@ export default function LoginView() {
                     value={form.password} onChange={set('password')}
                     placeholder="••••••••"
                     autoComplete="current-password" required
-                    className="w-full pl-[48px] pr-[48px] py-[14px] bg-surface-container-low border border-outline-variant rounded-lg focus:border-secondary focus:ring-1 focus:ring-secondary outline-none transition-all text-body-md text-on-surface"
+                    className="w-full pl-[48px] pr-[48px] py-[10px] bg-surface-container-low border border-outline-variant rounded-lg focus:border-secondary focus:ring-1 focus:ring-secondary outline-none transition-all text-body-md text-on-surface"
                   />
                   <button
                     type="button"
@@ -349,7 +350,7 @@ export default function LoginView() {
               {/* Submit */}
               <button
                 type="submit" disabled={login.isPending}
-                className="w-full bg-primary-container text-surface py-md rounded-lg text-headline-xs font-headline font-bold hover:bg-black active:scale-[0.98] transition-all shadow-sm flex items-center justify-center gap-sm disabled:opacity-50 min-h-[48px]"
+                className="w-full bg-primary-container text-surface py-sm rounded-lg text-headline-xs font-headline font-bold hover:bg-black active:scale-[0.98] transition-all shadow-sm flex items-center justify-center gap-sm disabled:opacity-50 min-h-[44px]"
               >
                 {login.isPending ? (
                   <>
@@ -366,8 +367,8 @@ export default function LoginView() {
             </form>
 
             {/* Help */}
-            <div className="mt-2xl text-center">
-              <p className="text-body-md text-on-surface-variant">
+            <div className="mt-sm text-center">
+              <p className="text-body-sm text-on-surface-variant">
                 Need technical assistance?{' '}
                 <a href="#" className="text-secondary font-bold hover:underline">{t('login.contactSupport')}</a>
               </p>
@@ -379,7 +380,7 @@ export default function LoginView() {
       </main>
 
       {/* ── Footer ───────────────────────────────────────────────────────── */}
-      <footer className="w-full py-xl px-margin-desktop flex flex-col md:flex-row justify-between items-center gap-md bg-surface-container-low border-t border-outline-variant">
+      <footer className="w-full flex-shrink-0 py-xs px-margin-desktop flex flex-col md:flex-row justify-between items-center gap-sm bg-surface-container-low border-t border-outline-variant">
         <div className="flex flex-col md:flex-row items-center gap-lg">
           <span className="text-headline-xs font-headline font-bold text-on-surface">Anemal</span>
           <p className="text-label-md text-on-surface-variant">© 2024 Anemal. All rights reserved.</p>
