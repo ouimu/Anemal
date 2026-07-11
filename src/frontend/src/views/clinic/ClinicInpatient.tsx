@@ -34,8 +34,11 @@ interface CareEntry {
 
 // One row of `DailyInpatientCare` as returned nested under `careLogs` by
 // `GET /api/hospitalizations/:id`, already sorted newest-first server-side.
-// `performedBy` is a `User.id` (any staff role, not necessarily a Doctor) —
-// see grill finding 1: must render as "Staff #<id>", never a resolved name.
+// `performedBy` is a `User.id` (any staff role, not necessarily a Doctor).
+// `performedByUser` is the server-resolved name (ADR-0013 D4) — render it
+// when present; fall back to "Staff #<id>" then "—". Never resolve a name
+// client-side from the doctors-picker map (that map is keyed by
+// doctorInCharge, a different population — see grill finding 1).
 interface CareLog {
   id: number
   recordedAt: string
@@ -47,6 +50,7 @@ interface CareLog {
   medicationGiven: string | null
   notes: string | null
   performedBy: number | null
+  performedByUser?: { id: number; name: string } | null
 }
 
 interface AdmitEditForm {
@@ -453,7 +457,7 @@ function CareHistoryModal({ hospit, onClose }: { hospit: Hospitalization; onClos
                   <p className="text-body-sm text-on-surface-variant">Medication: {log.medicationGiven || '—'}</p>
                   <p className="text-body-sm text-on-surface">{log.notes || '—'}</p>
                   <p className="text-label-sm text-on-surface-variant">
-                    By: {log.performedBy != null ? `Staff #${log.performedBy}` : '—'}
+                    By: {log.performedByUser?.name ?? (log.performedBy != null ? `Staff #${log.performedBy}` : '—')}
                   </p>
                 </div>
               ))}

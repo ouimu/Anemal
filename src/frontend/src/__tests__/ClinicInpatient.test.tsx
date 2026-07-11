@@ -252,16 +252,34 @@ describe('ClinicInpatient — Care History modal (LCV-1)', () => {
     expect(await screen.findByText('Failed to load care history.')).toBeInTheDocument()
   })
 
-  it('performedBy renders as Staff #<id>, never a resolved staff name (regression, grill finding 1)', async () => {
-    stubGetWithDetail([activeAdmission], { ...activeAdmission, careLogs: [{ ...careLog, performedBy: 7 }] })
+  it('performedByUser.name renders when the server resolves it (T-3d.3, ADR-0013 D4)', async () => {
+    stubGetWithDetail([activeAdmission], { ...activeAdmission, careLogs: [{ ...careLog, performedBy: 7, performedByUser: { id: 7, name: 'Nok' } }] })
     renderBoard()
     await screen.findByText('Rex')
     await userEvent.click(screen.getByLabelText('View care history'))
 
-    expect(await screen.findByText((_, el) => el?.textContent === 'By: Staff #7')).toBeInTheDocument()
-    // "Dr. Somchai" (doctorInCharge=7) must appear only in the card's doctor row,
-    // never as a resolved name for performedBy inside the history modal.
+    expect(await screen.findByText((_, el) => el?.textContent === 'By: Nok')).toBeInTheDocument()
+    // Server-resolved name must come from performedByUser, never the
+    // doctors-picker map keyed by doctorInCharge — "Dr. Somchai"
+    // (doctorInCharge=7) must still appear only once, in the card's doctor
+    // row (grill finding 1 guard preserved, outcome inverted).
     expect(screen.getAllByText('Dr. Somchai')).toHaveLength(1)
+  })
+
+  it('falls back to Staff #<id> when performedByUser is null but performedBy id exists', async () => {
+    stubGetWithDetail([activeAdmission], { ...activeAdmission, careLogs: [{ ...careLog, performedBy: 12, performedByUser: null }] })
+    renderBoard()
+    await screen.findByText('Rex')
+    await userEvent.click(screen.getByLabelText('View care history'))
+    expect(await screen.findByText((_, el) => el?.textContent === 'By: Staff #12')).toBeInTheDocument()
+  })
+
+  it('renders — when both performedByUser and performedBy are null', async () => {
+    stubGetWithDetail([activeAdmission], { ...activeAdmission, careLogs: [careLogNulls] })
+    renderBoard()
+    await screen.findByText('Rex')
+    await userEvent.click(screen.getByLabelText('View care history'))
+    expect(await screen.findByText((_, el) => el?.textContent === 'By: —')).toBeInTheDocument()
   })
 })
 
