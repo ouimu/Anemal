@@ -146,3 +146,81 @@ describe('bill-3.2 — Invoice generation & payment', () => {
     await request(server).put(`/api/invoices/${invoiceId}/payment`).set(auth(tokenB)).send({ paymentMethod: 'cash' }).expect(404)
   })
 })
+
+describe('bill-3.3 — Payment History: invoice.id, filters, receiver options (T-3b.1, T-3c.1, T-3c.2)', () => {
+  // Deviation from plan (documented): the plan's Task 3 draft declared
+  // branchAId/adminUserId/staffUserId/staffBUserId/otherAdminUserId here even
+  // though they are only *read* starting in Tasks 7-8 (branchAId is never
+  // read at all). tsconfig.json has noUnusedLocals: true, so ts-jest fails to
+  // even load the suite with those declared-but-unread. Declaring each id
+  // variable in the task that first reads it (Task 7 adds the four it needs;
+  // branchAId is dropped — it was dead in the plan) keeps every task's commit
+  // green without changing any test's behavior or assertions.
+  let tidPH: number
+  let tidOther: number
+  let tokenAdminPH: string
+  let tokenStaffPH: string
+  let invoicePaidByAdmin: number
+
+  async function payInvoiceAs(token: string, method: string): Promise<number> {
+    const invRes = await request(server).post('/api/invoices').set(auth(token))
+      .send({ items: [{ description: 'Line', itemType: 'service', qty: 1, unitPrice: 100 }] }).expect(201)
+    await request(server).put(`/api/invoices/${invRes.body.data.id}/payment`).set(auth(token))
+      .send({ paymentMethod: method }).expect(200)
+    return invRes.body.data.id
+  }
+
+  beforeAll(async () => {
+    const ts = Date.now()
+    const hash = await bcrypt.hash('TestPass1!', 10)
+
+    const tenant = await prisma.tenant.create({ data: { name: 'PayHist Tenant', subdomain: `payhist-${ts}` } })
+    tidPH = tenant.id
+    const branchA = await prisma.branch.create({ data: { tenantId: tidPH, name: 'Main' } })
+    const branchB = await prisma.branch.create({ data: { tenantId: tidPH, name: 'Branch B' } })
+
+    const admin  = await prisma.user.create({ data: { tenantId: tidPH, branchId: branchA.id, name: 'PH Admin',  username: `ph_admin_${ts % 100000}`,  email: `ph-admin-${ts}@t.local`,  passwordHash: hash, role: 'admin' } })
+    const staff  = await prisma.user.create({ data: { tenantId: tidPH, branchId: branchA.id, name: 'PH Staff',  username: `ph_staff_${ts % 100000}`,  email: `ph-staff-${ts}@t.local`,  passwordHash: hash, role: 'staff' } })
+    const staffB = await prisma.user.create({ data: { tenantId: tidPH, branchId: branchB.id, name: 'PH Staff B', username: `ph_staffb_${ts % 100000}`, email: `ph-staffb-${ts}@t.local`, passwordHash: hash, role: 'staff' } })
+
+    await seedUserRoles(prisma, [
+      { userId: admin.id,  tenantId: tidPH, roleKey: 'clinic_admin' },
+      { userId: staff.id,  tenantId: tidPH, roleKey: 'clinic_staff' },
+      { userId: staffB.id, tenantId: tidPH, roleKey: 'clinic_staff' },
+    ])
+
+    tokenAdminPH = signToken({ userId: admin.id, tenantId: tidPH, branchId: branchA.id, plane: 'clinic', permSetVersion: 1, role: 'admin' })
+    tokenStaffPH = signToken({ userId: staff.id, tenantId: tidPH, branchId: branchA.id, plane: 'clinic', permSetVersion: 1, role: 'staff' })
+    const tokenStaffB = signToken({ userId: staffB.id, tenantId: tidPH, branchId: branchB.id, plane: 'clinic', permSetVersion: 1, role: 'staff' })
+
+    // Cross-tenant probe — a second tenant's admin, used to prove receivedById
+    // filtering and receivedByOptions never leak another tenant's user (T-3c.1
+    // test 4, T-3c.2 test).
+    const otherTenant = await prisma.tenant.create({ data: { name: 'PayHist Other', subdomain: `payhist-other-${ts}` } })
+    tidOther = otherTenant.id
+    const otherAdmin = await prisma.user.create({ data: { tenantId: tidOther, name: 'Other Admin', username: `ph_other_${ts % 100000}`, email: `ph-other-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
+    await seedUserRoles(prisma, [{ userId: otherAdmin.id, tenantId: tidOther, roleKey: 'clinic_admin' }])
+
+    invoicePaidByAdmin = await payInvoiceAs(tokenAdminPH, 'cash')
+    await payInvoiceAs(tokenStaffPH, 'qr_promptpay')
+    await payInvoiceAs(tokenStaffB, 'transfer')
+  })
+
+  afterAll(async () => {
+    await prisma.paymentHistory.deleteMany({ where: { tenantId: { in: [tidPH, tidOther] } } })
+    await prisma.invoiceItem.deleteMany({ where: { tenantId: { in: [tidPH, tidOther] } } })
+    await prisma.invoice.deleteMany({ where: { tenantId: { in: [tidPH, tidOther] } } })
+    await cleanupUserRoles(prisma, [tidPH, tidOther])
+    await prisma.user.deleteMany({ where: { tenantId: { in: [tidPH, tidOther] } } })
+    await prisma.branch.deleteMany({ where: { tenantId: tidPH } })
+    await prisma.tenant.deleteMany({ where: { id: { in: [tidPH, tidOther] } } })
+  })
+
+  test('bill-10: payment-history rows carry invoice.id and invoice.invoiceNo (T-3b.1)', async () => {
+    const res = await request(server).get('/api/invoices/payment-history').set(auth(tokenAdminPH)).expect(200)
+    const row = res.body.data.rows.find((r: { invoice: { id: number } }) => r.invoice.id === invoicePaidByAdmin)
+    expect(row).toBeTruthy()
+    expect(typeof row.invoice.id).toBe('number')
+    expect(typeof row.invoice.invoiceNo).toBe('string')
+  })
+})

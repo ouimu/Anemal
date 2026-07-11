@@ -206,7 +206,7 @@ export function findPaymentHistory(tenantId: number, userBranchId: number | null
     prisma.paymentHistory.findMany({
       where: where as never,
       include: {
-        invoice:    { select: { invoiceNo: true } },
+        invoice:    { select: { id: true, invoiceNo: true } },
         receivedBy: { select: { id: true, name: true } },
         branch:     { select: { id: true, name: true } },
       },
