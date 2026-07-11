@@ -6,12 +6,13 @@
 > This matrix is the canonical status source; @pm-agent updates it LAST on every
 > task (see CLAUDE.md → Tracking & Documentation).
 >
-> Current totals as of the Care History view merge, 2026-07-10 (PR #17, branch
-> `feature/inpatient-log-care-history`, on top of the remember-me redesign, PR #16,
-> on top of Pet/EMR Item 3, PR #15, on top of Pet/EMR Batch A, PR #14, on top of
-> the Codex audit closeout 2026-07-09 Batches 1–5, PRs #8–#13, plus the
+> Current totals as of the Pet Profile Medical tab merge, 2026-07-11 (PR #18,
+> branch `feature/pet-medical-tab-emr-rollup`, ADR-0012, on top of the Care
+> History view, PR #17, on top of the remember-me redesign, PR #16, on top of
+> Pet/EMR Item 3, PR #15, on top of Pet/EMR Batch A, PR #14, on top of the
+> Codex audit closeout 2026-07-09 Batches 1–5, PRs #8–#13, plus the
 > seedCredentialSmoke isolation-flake fix 4e78e0b):
-> **864 backend tests, 213 frontend tests.**
+> **867 backend tests, 218 frontend tests.**
 > Route-level authorization is machine-verified by
 > `src/backend/tests/integration/roleRouteMatrix.test.ts` — that file is the source
 > of truth for per-route permission coverage; this matrix does not duplicate it.
@@ -68,5 +69,6 @@
 | Inpatient create/edit/delete (item 3) | `POST/PUT/DELETE /api/hospitalizations/:id` | Admit UI added (was fully missing on frontend), edit + care-log-gated hard delete added (reuses `inpatient.manage`, ADR-0009); fixed a pre-existing board-crashing field mismatch (`cageNumber`/`admitReason`/`doctor.name` never existed on the API response) | `services/hospitalization.service.ts`, `models/hospitalization.repository.ts` | `views/clinic/ClinicInpatient.tsx`, `views/clinic/ClinicPets.tsx` | `tests/integration/hospitalization-crud.test.ts`, `__tests__/ClinicInpatient.test.tsx`, `__tests__/PetDetail.admitButton.test.tsx` | implemented |
 | Inpatient care-log entry | `POST /api/hospitalizations/:id/care` | **Fixed (PR #17)** — `CareModal`'s payload field names now match `careSchema` (`temperature`→`temperatureC`; removed a `weight` field that had no backend key). Body-temperature input already existed pre-fix; only the wire field name was wrong | `services/hospitalization.service.ts` | `views/clinic/ClinicInpatient.tsx` (`CareModal`) | `tests/integration/phase4.test.ts`, `__tests__/ClinicInpatient.test.tsx` | implemented |
 | Inpatient care-log history (LCV-1) | `GET /api/hospitalizations/:id` (existing endpoint, reused) | Read-only "View Care History" button on `CageCard` → `CareHistoryModal`, lists `careLogs` newest-first (already server-sorted). No new endpoint/permission/migration. Scoped to admitted hospitalizations only — board never renders discharged cards (ADR-0011); discharged-admission history deferred to Pet Profile Medical tab. `performedBy` shown as `Staff #<id>`, not resolved to a name (no permission-safe staff lookup at `inpatient.view`, backlogged) | `models/hospitalization.repository.ts` (`findById`, pre-existing) | `views/clinic/ClinicInpatient.tsx` (`CareHistoryModal`) | `tests/integration/phase4.test.ts` (tenant isolation on `GET /:id`), `__tests__/ClinicInpatient.test.tsx` | implemented |
+| Pet Profile Medical tab (PR #18) | `GET /api/pets/:id` (existing endpoint, reused) | Redesigned as a permission-aware, read-only EMR rollup (Option C hybrid, ADR-0012). `allergies`/`underlyingConditions` stay pet-level `crm.edit` fields, unchanged. `medicalRecords`/`vaccinations` now conditionally included server-side on caller's `emr.view` (closes a pre-existing over-fetch gap where both were always returned regardless of permission); "View all in EMR" drill-in navigates to `ClinicEMR.tsx?petId=<id>` (new `useSearchParams` support there). "Add Vaccination" button hidden when `vaccinations` is server-omitted. No new endpoint/permission/migration | `models/pet.repository.ts` (`findPetById`), `services/pet.service.ts`, `controllers/pet.controller.ts` | `views/clinic/ClinicPets.tsx`, `views/clinic/ClinicEMR.tsx` | `tests/integration/pet-medical-degradation.test.ts`, `__tests__/ClinicPetsMedicalTab.test.tsx`, `__tests__/ClinicEMR.petIdParam.test.tsx` | implemented |
 
 Implementer note: this is a starting seed (~30 rows), not exhaustive — the header rule ("expand a row before modifying that module") is the mechanism that keeps it growing accurately over time rather than trying to enumerate everything up front.

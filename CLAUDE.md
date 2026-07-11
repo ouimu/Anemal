@@ -157,10 +157,11 @@ src/
 | Pet/EMR Item 3 | Inpatient create/edit/delete + board field-mismatch fix (PR #15) | ✅ 864 backend + 181 frontend tests |
 | Remember-me redesign | Login remember-me redefined as per-subdomain username recall, not session persistence (PR #16, ADR-0010) | ✅ 864 backend + 207 frontend tests |
 | Care History view | Read-only inpatient Care History on CageCard, admitted-only scope (PR #17, ADR-0011); folds in Log Care vitals field-name fix | ✅ 864 backend + 213 frontend tests |
+| Pet Profile Medical tab | Medical tab redesigned as permission-aware read-only EMR rollup, Option C hybrid (PR #18, ADR-0012) | ✅ 867 backend + 218 frontend tests |
 | 10 | Payment gateway + SaaS billing | ⏸ needs credentials |
 | 11 | LINE/SMS dispatch | ⏸ needs credentials |
 
-See `.claude/roadmap/ACTIVE/bugfix-pipeline-2026-07-tracker.md` for the active 2026-07 bugfix pipeline (Item 1 shipped; Items 2–3 in progress), `.claude/roadmap/ACTIVE/pet-emr-inpatient-fixes.md` for Pet/EMR sub-tasks (all 4 items shipped), `.claude/roadmap/ACTIVE/remaining-tasks.md` for other sub-tasks.
+See `.claude/roadmap/ACTIVE/bugfix-pipeline-2026-07-tracker.md` for the active 2026-07 bugfix pipeline (Items 1–2 shipped; Item 3 in progress), `.claude/roadmap/ACTIVE/pet-emr-inpatient-fixes.md` for Pet/EMR sub-tasks (all 4 items shipped), `.claude/roadmap/ACTIVE/remaining-tasks.md` for other sub-tasks.
 
 ---
 
