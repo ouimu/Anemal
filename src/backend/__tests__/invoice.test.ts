@@ -263,4 +263,13 @@ describe('bill-3.3 — Payment History: invoice.id, filters, receiver options (T
     const res = await request(server).get('/api/invoices/payment-history').query({ receivedById: staffBUserId }).set(auth(tokenAdminPH)).expect(200)
     expect(res.body.data.rows.length).toBe(0) // tokenAdminPH is scoped to branchA; staffB is branchB
   })
+
+  test('bill-16: receivedByOptions lists exactly the distinct receivers in caller scope, never cross-tenant/cross-branch (T-3c.2)', async () => {
+    const res = await request(server).get('/api/invoices/payment-history').set(auth(tokenAdminPH)).expect(200)
+    const ids = (res.body.data.receivedByOptions as Array<{ id: number; name: string }>).map((o) => o.id)
+    expect(ids).toContain(adminUserId)
+    expect(ids).toContain(staffUserId)
+    expect(ids).not.toContain(staffBUserId)     // different branch — tokenAdminPH is branch-scoped to branchA
+    expect(ids).not.toContain(otherAdminUserId) // different tenant
+  })
 })

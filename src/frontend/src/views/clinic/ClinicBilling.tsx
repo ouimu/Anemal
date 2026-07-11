@@ -437,6 +437,8 @@ export function PaymentHistoryTab() {
   const [filterBranchId, setFilterBranchId] = useState('')
   const [page, setPage] = useState(1)
   const [selectedRow, setSelectedRow] = useState<PayHistoryRow | null>(null)
+  const [method, setMethod] = useState('')
+  const [receivedById, setReceivedById] = useState('')
 
   const { data: selectedInvoice, isLoading: invoiceLoading, isError: invoiceError } = useQuery<Invoice>({
     queryKey: ['invoice', selectedRow?.invoice.id],
@@ -445,13 +447,15 @@ export function PaymentHistoryTab() {
   })
 
   const { data, isLoading } = useQuery<PayHistoryResult>({
-    queryKey: ['billing', 'payment-history', startDate, endDate, filterBranchId, page],
+    queryKey: ['billing', 'payment-history', startDate, endDate, filterBranchId, method, receivedById, page],
     queryFn: () =>
       api.get('/api/invoices/payment-history', {
         params: {
           ...(startDate ? { startDate } : {}),
           ...(endDate ? { endDate } : {}),
           ...(filterBranchId ? { branchId: filterBranchId } : {}),
+          ...(method ? { method } : {}),
+          ...(receivedById ? { receivedById } : {}),
           page,
         },
       }).then((r) => r.data.data),
@@ -480,8 +484,26 @@ export function PaymentHistoryTab() {
                    placeholder="Branch ID" className={`${dateCls} w-32`} />
           </div>
         )}
-        {(startDate || endDate || filterBranchId) && (
-          <button onClick={() => { setStartDate(''); setEndDate(''); setFilterBranchId(''); setPage(1) }}
+        <div className="flex flex-col gap-xs">
+          <label htmlFor="ph-method" className="text-label-md text-on-surface-variant uppercase tracking-wider">{t('clinic.billing.method')}</label>
+          <select id="ph-method" value={method} onChange={(e) => { setMethod(e.target.value); setPage(1) }} className={`${dateCls} w-36`}>
+            <option value="">{t('clinic.billing.allMethods')}</option>
+            {Object.entries(METHOD_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-xs">
+          <label htmlFor="ph-received-by" className="text-label-md text-on-surface-variant uppercase tracking-wider">{t('clinic.billing.receivedBy')}</label>
+          <select id="ph-received-by" value={receivedById} onChange={(e) => { setReceivedById(e.target.value); setPage(1) }} className={`${dateCls} w-36`}>
+            <option value="">{t('clinic.billing.allReceivers')}</option>
+            {(data?.receivedByOptions ?? []).map((o) => (
+              <option key={o.id} value={o.id}>{o.name}</option>
+            ))}
+          </select>
+        </div>
+        {(startDate || endDate || filterBranchId || method || receivedById) && (
+          <button onClick={() => { setStartDate(''); setEndDate(''); setFilterBranchId(''); setMethod(''); setReceivedById(''); setPage(1) }}
                   className="min-h-[44px] px-md rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-low text-body-sm flex items-center gap-xs">
             <MaterialIcon name="close" size={16} /> Clear
           </button>

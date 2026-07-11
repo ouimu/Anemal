@@ -99,4 +99,23 @@ describe('PaymentHistoryTab — row click opens ReceiptModal (T-3b.3)', () => {
     expect(await screen.findByText('Could not load this receipt.')).toBeInTheDocument()
     expect(screen.queryByTestId('receipt-modal')).not.toBeInTheDocument()
   })
+
+  it('Method and Received-by filters add query params; Clear resets both (T-3c.3)', async () => {
+    stubGet([{ id: 5, name: 'Nok' }])
+    withClient(<PaymentHistoryTab />)
+    await screen.findByText('INV-2026-07-0009')
+
+    await userEvent.selectOptions(screen.getByLabelText('Method'), 'cash')
+    await waitFor(() => expect(getMock).toHaveBeenCalledWith('/api/invoices/payment-history', expect.objectContaining({ params: expect.objectContaining({ method: 'cash' }) })))
+
+    await userEvent.selectOptions(screen.getByLabelText('Received By'), '5')
+    await waitFor(() => expect(getMock).toHaveBeenCalledWith('/api/invoices/payment-history', expect.objectContaining({ params: expect.objectContaining({ receivedById: '5' }) })))
+
+    await userEvent.click(screen.getByText('Clear'))
+    await waitFor(() => {
+      const lastCall = getMock.mock.calls.filter((c) => c[0] === '/api/invoices/payment-history').pop()
+      expect(lastCall![1].params.method).toBeUndefined()
+      expect(lastCall![1].params.receivedById).toBeUndefined()
+    })
+  })
 })

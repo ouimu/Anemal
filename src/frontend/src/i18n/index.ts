@@ -273,6 +273,8 @@ const en: Dict = {
   'clinic.billing.noHistory': 'No payment history found.',
   'clinic.billing.filterBranch': 'Filter by branch',
   'clinic.billing.receiptLoadError': 'Could not load this receipt.',
+  'clinic.billing.allMethods': 'All methods',
+  'clinic.billing.allReceivers': 'All staff',
 
   // Admin users
   'admin.users.title': 'Users & Roles',
@@ -588,6 +590,8 @@ const th: Dict = {
   'clinic.billing.noHistory': 'ไม่พบประวัติการชำระเงิน',
   'clinic.billing.filterBranch': 'กรองตามสาขา',
   'clinic.billing.receiptLoadError': 'ไม่สามารถโหลดใบเสร็จนี้ได้',
+  'clinic.billing.allMethods': 'ทุกวิธี',
+  'clinic.billing.allReceivers': 'พนักงานทั้งหมด',
 
   // Admin users
   'admin.users.title': 'ผู้ใช้และบทบาท',

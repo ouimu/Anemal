@@ -208,6 +208,14 @@ function paymentHistoryWhere(tenantId: number, userBranchId: number | null | und
 
 export function findPaymentHistory(tenantId: number, userBranchId: number | null | undefined, params: PaymentHistoryParams) {
   const where = paymentHistoryWhere(tenantId, userBranchId, params)
+  // Receiver picker options use the same tenant/branch/date scope but WITHOUT
+  // the method/receivedById predicates, so narrowing those two never hides a
+  // valid receiver from the picker (T-3c.2). Narrowing the date/branch scope
+  // MAY shrink the list — that's intended faceted-filter behavior, not a bug
+  // (ADR-0013 D3, grill finding F3).
+  const { method: _method, receivedById: _receivedById, ...facetParams } = params
+  const optionsWhere = paymentHistoryWhere(tenantId, userBranchId, facetParams as PaymentHistoryParams)
+
   return Promise.all([
     prisma.paymentHistory.findMany({
       where: where as never,
@@ -221,5 +229,10 @@ export function findPaymentHistory(tenantId: number, userBranchId: number | null
       take: params.take,
     }),
     prisma.paymentHistory.count({ where: where as never }),
+    prisma.paymentHistory.findMany({
+      where: optionsWhere as never,
+      distinct: ['receivedById'],
+      select: { receivedBy: { select: { id: true, name: true } } },
+    }),
   ])
 }
