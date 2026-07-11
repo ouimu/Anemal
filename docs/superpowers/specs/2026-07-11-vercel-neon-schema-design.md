@@ -21,6 +21,7 @@ This is a development resource. It is not a production cutover and does not need
 ## Approved Target
 
 - Create a Vercel project named `Anemal` without deploying the application in this scope.
+- Create it under the user's Vercel Personal Account.
 - Provision Neon PostgreSQL through the Vercel Marketplace.
 - Use the free/development plan.
 - Select Singapore, or the closest available region to Thailand if Singapore is unavailable.
@@ -29,6 +30,7 @@ This is a development resource. It is not a production cutover and does not need
 - Do not run `prisma migrate dev`, `prisma db push`, `prisma/seed.ts`, or `prisma/seed-rbac.ts`.
 - Do not export or import any records from `vetclinic_dev`.
 - Leave the local Docker container, database, and volume unchanged.
+- Connect the Neon integration to `Development` and `Preview` only; do not expose it to `Production`.
 
 ## Expected Data State
 
