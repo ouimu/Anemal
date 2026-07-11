@@ -158,6 +158,10 @@ describe('bill-3.3 — Payment History: invoice.id, filters, receiver options (T
   // green without changing any test's behavior or assertions.
   let tidPH: number
   let tidOther: number
+  let adminUserId: number
+  let staffUserId: number
+  let staffBUserId: number
+  let otherAdminUserId: number
   let tokenAdminPH: string
   let tokenStaffPH: string
   let invoicePaidByAdmin: number
@@ -182,6 +186,9 @@ describe('bill-3.3 — Payment History: invoice.id, filters, receiver options (T
     const admin  = await prisma.user.create({ data: { tenantId: tidPH, branchId: branchA.id, name: 'PH Admin',  username: `ph_admin_${ts % 100000}`,  email: `ph-admin-${ts}@t.local`,  passwordHash: hash, role: 'admin' } })
     const staff  = await prisma.user.create({ data: { tenantId: tidPH, branchId: branchA.id, name: 'PH Staff',  username: `ph_staff_${ts % 100000}`,  email: `ph-staff-${ts}@t.local`,  passwordHash: hash, role: 'staff' } })
     const staffB = await prisma.user.create({ data: { tenantId: tidPH, branchId: branchB.id, name: 'PH Staff B', username: `ph_staffb_${ts % 100000}`, email: `ph-staffb-${ts}@t.local`, passwordHash: hash, role: 'staff' } })
+    adminUserId = admin.id
+    staffUserId = staff.id
+    staffBUserId = staffB.id
 
     await seedUserRoles(prisma, [
       { userId: admin.id,  tenantId: tidPH, roleKey: 'clinic_admin' },
@@ -199,6 +206,7 @@ describe('bill-3.3 — Payment History: invoice.id, filters, receiver options (T
     const otherTenant = await prisma.tenant.create({ data: { name: 'PayHist Other', subdomain: `payhist-other-${ts}` } })
     tidOther = otherTenant.id
     const otherAdmin = await prisma.user.create({ data: { tenantId: tidOther, name: 'Other Admin', username: `ph_other_${ts % 100000}`, email: `ph-other-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
+    otherAdminUserId = otherAdmin.id
     await seedUserRoles(prisma, [{ userId: otherAdmin.id, tenantId: tidOther, roleKey: 'clinic_admin' }])
 
     invoicePaidByAdmin = await payInvoiceAs(tokenAdminPH, 'cash')
@@ -222,5 +230,37 @@ describe('bill-3.3 — Payment History: invoice.id, filters, receiver options (T
     expect(row).toBeTruthy()
     expect(typeof row.invoice.id).toBe('number')
     expect(typeof row.invoice.invoiceNo).toBe('string')
+  })
+
+  test('bill-11: method=cash returns only cash rows (T-3c.1)', async () => {
+    const res = await request(server).get('/api/invoices/payment-history').query({ method: 'cash' }).set(auth(tokenAdminPH)).expect(200)
+    expect(res.body.data.rows.length).toBeGreaterThan(0)
+    for (const r of res.body.data.rows) expect(r.method).toBe('cash')
+  })
+
+  test('bill-12: receivedById=<staff> returns only that staff\'s rows (T-3c.1)', async () => {
+    const res = await request(server).get('/api/invoices/payment-history').query({ receivedById: staffUserId }).set(auth(tokenAdminPH)).expect(200)
+    expect(res.body.data.rows.length).toBeGreaterThan(0)
+    for (const r of res.body.data.rows) expect(r.receivedBy.id).toBe(staffUserId)
+  })
+
+  test('bill-13: method + receivedById AND together (T-3c.1)', async () => {
+    const match = await request(server).get('/api/invoices/payment-history')
+      .query({ method: 'cash', receivedById: adminUserId }).set(auth(tokenAdminPH)).expect(200)
+    expect(match.body.data.rows.some((r: { invoice: { id: number } }) => r.invoice.id === invoicePaidByAdmin)).toBe(true)
+
+    const mismatch = await request(server).get('/api/invoices/payment-history')
+      .query({ method: 'cash', receivedById: staffUserId }).set(auth(tokenAdminPH)).expect(200)
+    expect(mismatch.body.data.rows.length).toBe(0) // staff paid via qr_promptpay, not cash
+  })
+
+  test('bill-14: cross-tenant receivedById probe returns 0 rows, never leaks data (T-3c.1 test 4)', async () => {
+    const res = await request(server).get('/api/invoices/payment-history').query({ receivedById: otherAdminUserId }).set(auth(tokenAdminPH)).expect(200)
+    expect(res.body.data.rows.length).toBe(0)
+  })
+
+  test('bill-15: branch-scoped user filtering by another branch\'s receivedById gets 0 rows (T-3c.1 test 5)', async () => {
+    const res = await request(server).get('/api/invoices/payment-history').query({ receivedById: staffBUserId }).set(auth(tokenAdminPH)).expect(200)
+    expect(res.body.data.rows.length).toBe(0) // tokenAdminPH is scoped to branchA; staffB is branchB
   })
 })

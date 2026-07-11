@@ -184,7 +184,11 @@ export function createPaymentHistory(data: {
   return prisma.paymentHistory.create({ data })
 }
 
-interface PaymentHistoryParams { startDate?: string; endDate?: string; filterBranchId?: number; skip: number; take: number }
+interface PaymentHistoryParams {
+  startDate?: string; endDate?: string; filterBranchId?: number
+  method?: string; receivedById?: number
+  skip: number; take: number
+}
 
 function paymentHistoryWhere(tenantId: number, userBranchId: number | null | undefined, p: PaymentHistoryParams) {
   const where: Record<string, unknown> = { tenantId }
@@ -197,6 +201,8 @@ function paymentHistoryWhere(tenantId: number, userBranchId: number | null | und
     if (p.endDate)   paidAt['lte'] = new Date(p.endDate)
     where['paidAt'] = paidAt
   }
+  if (p.method)               where['method'] = p.method
+  if (p.receivedById != null) where['receivedById'] = p.receivedById
   return where
 }
 
