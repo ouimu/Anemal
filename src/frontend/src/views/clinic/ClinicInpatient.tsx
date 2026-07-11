@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
+import { VitalStepper } from '../../components/VitalStepper'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 // Field names match the real backend response shape (hospitalization.repository.ts
@@ -29,7 +30,11 @@ interface Doctor { id: number; name: string }
 interface CareEntry {
   timeSlot: string
   temperatureC: number | null
-  notes: string
+  heartRateBpm: number | null
+  respRateRpm: number | null
+  feedingStatus: string | null
+  medicationGiven: string | null
+  notes: string | null
 }
 
 // One row of `DailyInpatientCare` as returned nested under `careLogs` by
@@ -80,6 +85,19 @@ const STATUS_LABELS: Record<string, string> = {
 
 const TIME_SLOTS = ['08:00', '12:00', '16:00', '20:00']
 
+// Controlled feeding-status vocabulary (BA D1). '__other__' is a UI-only sentinel —
+// never sent as a literal feedingStatus value; see buildPayload/step3 for the
+// draft-preserving "Other" text-input handling (grill finding F1).
+const FEEDING_OPTIONS = [
+  { value: '', label: 'Not assessed' },
+  { value: 'Ate all', label: 'Ate all' },
+  { value: 'Ate some', label: 'Ate some' },
+  { value: 'Refused', label: 'Refused' },
+  { value: 'NPO', label: 'NPO' },
+  { value: 'Assisted feeding', label: 'Assisted feeding' },
+  { value: '__other__', label: 'Other' },
+] as const
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
@@ -99,6 +117,21 @@ const inputCls = 'bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] t
 const textareaCls = 'bg-surface-container-low rounded-lg px-md py-sm min-h-[80px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary resize-none'
 
 // ─── Care Modal ───────────────────────────────────────────────────────────────
+/**
+ * Normalizes optional `CareEntry` string fields before POST — blank/whitespace-only
+ * strings become `null` rather than `''`, for a consistent nullable contract across
+ * all 4 optional fields (grill finding F3). `temperatureC`/`heartRateBpm`/
+ * `respRateRpm` are already `number | null` from `VitalStepper`'s own commit logic.
+ */
+function buildPayload(entry: CareEntry): CareEntry {
+  return {
+    ...entry,
+    feedingStatus: entry.feedingStatus?.trim() || null,
+    medicationGiven: entry.medicationGiven?.trim() || null,
+    notes: entry.notes?.trim() || null,
+  }
+}
+
 function CareModal({ hospit, onClose, onSaved }: {
   hospit: Hospitalization
   onClose: () => void
@@ -108,8 +141,19 @@ function CareModal({ hospit, onClose, onSaved }: {
   const [entry, setEntry] = useState<CareEntry>({
     timeSlot: TIME_SLOTS[0],
     temperatureC: null,
-    notes: '',
+    heartRateBpm: null,
+    respRateRpm: null,
+    feedingStatus: null,
+    medicationGiven: null,
+    notes: null,
   })
+  const [feedingOther, setFeedingOther] = useState('')
+  // UI-only: tracks whether "Other" is the active select choice, independent of
+  // entry.feedingStatus (which goes null when "Other" is chosen but the draft
+  // text is still blank) — otherwise a blank "Other" selection would silently
+  // revert the select to "Not assessed" (grill finding F1).
+  const [feedingOtherMode, setFeedingOtherMode] = useState(false)
+  const [error, setError] = useState('')
 
   const qc = useQueryClient()
   const mut = useMutation({
@@ -119,7 +163,15 @@ function CareModal({ hospit, onClose, onSaved }: {
       qc.invalidateQueries({ queryKey: ['hospitalization', hospit.id] })
       onSaved()
     },
+    onError: (err: unknown) => {
+      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save care record')
+    },
   })
+
+  function handleSave() {
+    setError('')
+    mut.mutate(buildPayload(entry))
+  }
 
   function step1() {
     return (
@@ -143,54 +195,94 @@ function CareModal({ hospit, onClose, onSaved }: {
     )
   }
 
-  function Stepper({ label, value, onChange, step: s = 0.1, unit }: {
-    label: string; value: number | null; onChange: (v: number) => void; step?: number; unit: string
-  }) {
-    const v = value ?? 0
-    return (
-      <div className="flex flex-col gap-xs">
-        <p className="text-label-lg text-on-surface-variant">{label}</p>
-        <div className="flex items-center gap-md">
-          <button
-            onClick={() => onChange(Math.max(0, Math.round((v - s) * 10) / 10))}
-            className="min-h-[44px] min-w-[44px] rounded-xl border border-outline-variant bg-surface hover:bg-surface-container flex items-center justify-center text-headline-sm font-bold transition-colors"
-          >−</button>
-          <span className="text-headline-md font-headline font-bold text-on-surface min-w-[80px] text-center">
-            {v > 0 ? v.toFixed(1) : '—'} <span className="text-body-sm font-normal text-on-surface-variant">{unit}</span>
-          </span>
-          <button
-            onClick={() => onChange(Math.round((v + s) * 10) / 10)}
-            className="min-h-[44px] min-w-[44px] rounded-xl border border-outline-variant bg-surface hover:bg-surface-container flex items-center justify-center text-headline-sm font-bold transition-colors"
-          >+</button>
-        </div>
-      </div>
-    )
-  }
-
   function step2() {
     return (
-      <div className="flex flex-col gap-xl">
-        <Stepper
-          label="Body Temperature"
-          value={entry.temperatureC}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
+        <VitalStepper
+          label="Temperature" unit="°C" value={entry.temperatureC}
           onChange={v => setEntry(e => ({ ...e, temperatureC: v }))}
-          unit="°C"
+          step={0.1} max={999.9}
+        />
+        <VitalStepper
+          label="Heart Rate" unit="bpm" value={entry.heartRateBpm}
+          onChange={v => setEntry(e => ({ ...e, heartRateBpm: v }))}
+          step={1} min={1} max={3000}
+        />
+        <VitalStepper
+          label="Resp Rate" unit="rpm" value={entry.respRateRpm}
+          onChange={v => setEntry(e => ({ ...e, respRateRpm: v }))}
+          step={1} min={1} max={3000}
         />
       </div>
     )
   }
+
+  const selectedFeedingValue = feedingOtherMode ? '__other__' : (entry.feedingStatus ?? '')
 
   function step3() {
     return (
-      <div className="flex flex-col gap-sm">
-        <p className="text-label-lg text-on-surface-variant">Care notes (optional)</p>
-        <textarea
-          value={entry.notes}
-          onChange={e => setEntry(n => ({ ...n, notes: e.target.value }))}
-          rows={4}
-          placeholder="Medication given, observations, instructions…"
-          className="w-full rounded-xl border border-outline-variant bg-surface px-lg py-md text-body-md text-on-surface placeholder:text-on-surface-variant resize-none focus:outline-none focus:border-primary transition-colors"
-        />
+      <div className="flex flex-col gap-lg">
+        <div className="flex flex-col gap-xs">
+          <label htmlFor="feeding-status" className="text-label-lg text-on-surface-variant">Feeding status</label>
+          <select
+            id="feeding-status"
+            className={inputCls}
+            value={selectedFeedingValue}
+            onChange={e => {
+              const v = e.target.value
+              if (v === '__other__') {
+                setFeedingOtherMode(true)
+                setEntry(en => ({ ...en, feedingStatus: feedingOther || null }))
+              } else {
+                setFeedingOtherMode(false)
+                setEntry(en => ({ ...en, feedingStatus: v === '' ? null : v }))
+              }
+            }}
+          >
+            {FEEDING_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+          {feedingOtherMode && (
+            <input
+              id="feeding-other"
+              maxLength={255}
+              value={feedingOther}
+              onChange={e => {
+                setFeedingOther(e.target.value)
+                setEntry(en => ({ ...en, feedingStatus: e.target.value || null }))
+              }}
+              placeholder="Describe feeding status"
+              aria-label="Describe feeding status"
+              className={inputCls}
+            />
+          )}
+        </div>
+
+        <div className="flex flex-col gap-xs">
+          <label htmlFor="medication-given" className="text-label-lg text-on-surface-variant">Medication / treatment note (optional)</label>
+          <p className="text-label-md text-on-surface-variant">Documentation note only — not a verified medication administration record.</p>
+          <textarea
+            id="medication-given"
+            value={entry.medicationGiven ?? ''}
+            onChange={e => setEntry(en => ({ ...en, medicationGiven: e.target.value }))}
+            rows={3}
+            placeholder="Medication/treatment name, dose, route, or note"
+            className={textareaCls}
+          />
+        </div>
+
+        <div className="flex flex-col gap-xs">
+          <label htmlFor="care-notes" className="text-label-lg text-on-surface-variant">Care notes (optional)</label>
+          <textarea
+            id="care-notes"
+            value={entry.notes ?? ''}
+            onChange={e => setEntry(en => ({ ...en, notes: e.target.value }))}
+            rows={3}
+            placeholder="Observations, instructions…"
+            className={textareaCls}
+          />
+        </div>
+
+        {error && <p className="text-error text-body-sm">{error}</p>}
       </div>
     )
   }
@@ -201,7 +293,7 @@ function CareModal({ hospit, onClose, onSaved }: {
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-md" onClick={onClose}>
       <div
-        className="bg-surface rounded-2xl shadow-xl w-full max-w-md flex flex-col"
+        className="bg-surface rounded-2xl shadow-xl w-full max-w-xl flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -223,7 +315,7 @@ function CareModal({ hospit, onClose, onSaved }: {
         </div>
 
         {/* Step content */}
-        <div className="px-xl py-lg flex-1">
+        <div className="px-xl py-lg flex-1 max-h-[min(80vh,640px)] overflow-y-auto">
           {steps[step - 1]()}
         </div>
 
@@ -242,7 +334,7 @@ function CareModal({ hospit, onClose, onSaved }: {
             >Next</button>
           ) : (
             <button
-              onClick={() => mut.mutate(entry)}
+              onClick={handleSave}
               disabled={mut.isPending}
               className="flex-1 min-h-[44px] rounded-xl bg-primary text-primary-on text-body-md font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
             >{mut.isPending ? 'Saving…' : 'Save Care Record'}</button>
