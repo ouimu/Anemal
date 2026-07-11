@@ -184,7 +184,11 @@ export function createPaymentHistory(data: {
   return prisma.paymentHistory.create({ data })
 }
 
-interface PaymentHistoryParams { startDate?: string; endDate?: string; filterBranchId?: number; skip: number; take: number }
+interface PaymentHistoryParams {
+  startDate?: string; endDate?: string; filterBranchId?: number
+  method?: string; receivedById?: number
+  skip: number; take: number
+}
 
 function paymentHistoryWhere(tenantId: number, userBranchId: number | null | undefined, p: PaymentHistoryParams) {
   const where: Record<string, unknown> = { tenantId }
@@ -197,16 +201,26 @@ function paymentHistoryWhere(tenantId: number, userBranchId: number | null | und
     if (p.endDate)   paidAt['lte'] = new Date(p.endDate)
     where['paidAt'] = paidAt
   }
+  if (p.method)               where['method'] = p.method
+  if (p.receivedById != null) where['receivedById'] = p.receivedById
   return where
 }
 
 export function findPaymentHistory(tenantId: number, userBranchId: number | null | undefined, params: PaymentHistoryParams) {
   const where = paymentHistoryWhere(tenantId, userBranchId, params)
+  // Receiver picker options use the same tenant/branch/date scope but WITHOUT
+  // the method/receivedById predicates, so narrowing those two never hides a
+  // valid receiver from the picker (T-3c.2). Narrowing the date/branch scope
+  // MAY shrink the list — that's intended faceted-filter behavior, not a bug
+  // (ADR-0013 D3, grill finding F3).
+  const { method: _method, receivedById: _receivedById, ...facetParams } = params
+  const optionsWhere = paymentHistoryWhere(tenantId, userBranchId, facetParams as PaymentHistoryParams)
+
   return Promise.all([
     prisma.paymentHistory.findMany({
       where: where as never,
       include: {
-        invoice:    { select: { invoiceNo: true } },
+        invoice:    { select: { id: true, invoiceNo: true } },
         receivedBy: { select: { id: true, name: true } },
         branch:     { select: { id: true, name: true } },
       },
@@ -215,5 +229,10 @@ export function findPaymentHistory(tenantId: number, userBranchId: number | null
       take: params.take,
     }),
     prisma.paymentHistory.count({ where: where as never }),
+    prisma.paymentHistory.findMany({
+      where: optionsWhere as never,
+      distinct: ['receivedById'],
+      select: { receivedBy: { select: { id: true, name: true } } },
+    }),
   ])
 }

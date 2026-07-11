@@ -55,7 +55,7 @@ describe('seeded credential smoke test — every HOW-TO-RUN credential logs in',
 
 describe('seeded credential smoke test — platform admin login', () => {
   it('completes single-step platform login for the seeded platform admin', async () => {
-    const email    = process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.co'
+    const email    = process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.app'
     const password = process.env.PLATFORM_ADMIN_PASSWORD || 'PlatformAdmin1!'
 
     const res = await request(server)

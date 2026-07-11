@@ -166,6 +166,8 @@ model User {
   settingsAuditChanges  SettingsAuditLog[] @relation("SettingsAuditChangedBy")
   // Session D-3-01: payment history received by this user
   paymentHistoryReceived PaymentHistory[]  @relation("ReceivedPayments")
+  // ADR-0013 D4: care logs this user recorded (DailyInpatientCare.performedBy)
+  careLogsPerformed      DailyInpatientCare[] @relation("CarePerformedBy")
   userBranches           UserBranch[]
 
   // Session D-1: unique on (tenantId, username); email uniqueness enforced in service layer
@@ -641,8 +643,12 @@ model DailyInpatientCare {
   notes             String?
   performedBy       Int?
 
-  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  hospitalization Hospitalization @relation(fields: [hospitalizationId], references: [id], onDelete: Cascade)
+  tenant           Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  hospitalization  Hospitalization  @relation(fields: [hospitalizationId], references: [id], onDelete: Cascade)
+  // ADR-0013 D4: any staff member (not only doctors) may log care. ON DELETE
+  // SET NULL — the care log entry must survive staff deletion, only the
+  // performer name degrades (repository resolves null → "—" client-side).
+  performedByUser  User?            @relation("CarePerformedBy", fields: [performedBy], references: [id], onDelete: SetNull)
 
   @@index([tenantId, hospitalizationId, recordedAt])
   @@map("daily_inpatient_care")

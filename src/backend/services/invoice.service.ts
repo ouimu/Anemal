@@ -138,8 +138,9 @@ export async function recordPayment(tenantId: number, branchId: number | null | 
 export async function listPaymentHistory(
   tenantId: number, userBranchId: number | null | undefined,
   page = 1, limit = 20, startDate?: string, endDate?: string, filterBranchId?: number,
+  method?: string, receivedById?: number,
 ) {
   const skip = (page - 1) * limit
-  const [rows, total] = await invoiceRepo.findPaymentHistory(tenantId, userBranchId, { startDate, endDate, filterBranchId, skip, take: limit })
-  return { rows, total, page, limit }
+  const [rows, total, receiverRows] = await invoiceRepo.findPaymentHistory(tenantId, userBranchId, { startDate, endDate, filterBranchId, method, receivedById, skip, take: limit })
+  return { rows, total, page, limit, receivedByOptions: receiverRows.map((r) => r.receivedBy) }
 }

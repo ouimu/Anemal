@@ -166,7 +166,7 @@ async function main() {
   }
 
   // T-5C-02 — Platform super admin (platform plane, not tenant-scoped)
-  const platformEmail    = process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.co'
+  const platformEmail    = process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.app'
   const platformPassword = process.env.PLATFORM_ADMIN_PASSWORD || 'PlatformAdmin1!'
   const platformName     = process.env.PLATFORM_ADMIN_NAME     || 'Platform Super Admin'
   const platformHash     = await bcrypt.hash(platformPassword, SALT_ROUNDS)

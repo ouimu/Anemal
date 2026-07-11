@@ -90,7 +90,7 @@
 |-----|-------|-----|
 | AS-1 | **Structural bug (= X-1).** Section 8 "Version Information" `<blockquote>` is not closed and the page ends with `</section><!-- /usermanual -->` instead of `</div>`. | Close the `<blockquote>`/`<p>` properly and replace `</section><!-- /usermanual -->` with `</div>` to close `page-adminsetup`. |
 | AS-2 | §3 role table label "Receptionist" — same reconciliation as UM-1. | Add `(clinic_staff)` parenthetical once. |
-| AS-3 | §8 Support: "LINE OA @anemal — Coming Soon" ✅ accurate. support@anemal.com — confirm this is a real address before publishing or mark as placeholder. | @pm-agent to confirm support email; otherwise label "(example)". |
+| AS-3 | §8 Support: "LINE OA @anemal — Coming Soon" ✅ accurate. support@anemal.app — confirm this is a real address before publishing or mark as placeholder. | @pm-agent to confirm support email; otherwise label "(example)". |
 | AS-4 | §1 password rule "minimum 8 characters, at least one number" — confirm this matches the actual backend validation (bcrypt cost ≥12 is hashing, not a complexity rule). | @dev-agent to confirm the real password policy; correct the text if it differs. |
 
 ### Missing for Phase 9
@@ -204,6 +204,6 @@
 | R-1 | Pre-Phase-3 dates are approximate (public git starts 2026-06-05; earlier work was a pre-refactor snapshot). | Marked "approx." in §4. Do not assert false precision. @pm-agent owns final date sign-off. |
 | R-2 | Seed login email / password policy in How to Run + Admin Setup may not match `prisma/seed.ts` / validation. | @dev-agent verifies against source (HTR-2, AS-4) before publish. |
 | R-3 | Phase 6 has no clean git marker; risk of double-counting with Phase 4/7. | §4 notes the overlap explicitly; keep as a single brief entry. |
-| R-4 | support@anemal.com may be a placeholder. | @pm-agent confirms (AS-3). |
+| R-4 | support@anemal.app may be a placeholder. | @pm-agent confirms (AS-3). |
 
 **Definition of Ready:** met — objective, per-page findings, changelog content, acceptance criteria, risks, and dependencies all present. Ready to hand to @pm-agent for task breakdown, then @dev-agent for HTML conversion.

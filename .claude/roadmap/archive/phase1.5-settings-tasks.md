@@ -74,7 +74,7 @@ CREATE TRIGGER trg_clinic_settings_updated_at
 #### [x] Task S1.2 — Database Schema: `system_settings` table ✅ 2026-06-10
 **Agent:** @db-agent | **Priority:** 🔴 Critical
 
-> Done — seeded idempotently inside the migration (`ON CONFLICT DO NOTHING`) with Anemal branding (`app_name='Anemal'`, anemal.co URLs). Secret values are AES-encrypted by `system-settings.service.ts`, masked on read.
+> Done — seeded idempotently inside the migration (`ON CONFLICT DO NOTHING`) with Anemal branding (`app_name='Anemal'`, anemal.app URLs). Secret values are AES-encrypted by `system-settings.service.ts`, masked on read.
 
 ```sql
 CREATE TABLE system_settings (
@@ -175,7 +175,7 @@ export function maskSecret(value: string): string  // "••••••••a
 **Agent:** @dev-agent | **Priority:** 🔴 Critical
 **File:** `src/backend/controllers/system-settings.controller.ts`
 
-> Done (minimal, approved decision) — new `superadmin` Role enum value (migration `20260610134121_phase1_5b_settings_api` + down.sql; seed user `super@anemal.co`). Routes at `/admin/system-settings` (GET /, GET/PUT /:key, POST /smtp/test — TCP reachability check). Superadmin has NO access to clinic-admin routes and vice-versa.
+> Done (minimal, approved decision) — new `superadmin` Role enum value (migration `20260610134121_phase1_5b_settings_api` + down.sql; seed user `super@anemal.app`). Routes at `/admin/system-settings` (GET /, GET/PUT /:key, POST /smtp/test — TCP reachability check). Superadmin has NO access to clinic-admin routes and vice-versa.
 
 | Method | Endpoint | Role |
 |---|---|---|

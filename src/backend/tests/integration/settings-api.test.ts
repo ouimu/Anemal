@@ -319,7 +319,7 @@ describe('TC-S011 — PUT /platform/settings aggregate update', () => {
       data: { updatedBy: null },
     })
     await prisma.systemSettings.update({ where: { key: 'app_name'          }, data: { value: 'Anemal' } })
-    await prisma.systemSettings.update({ where: { key: 'app_base_url'      }, data: { value: 'https://app.anemal.co' } })
+    await prisma.systemSettings.update({ where: { key: 'app_base_url'      }, data: { value: 'https://anemal.app' } })
     await prisma.systemSettings.update({ where: { key: 'maintenance_mode'  }, data: { value: 'false' } })
     await prisma.systemSettings.update({ where: { key: 'default_trial_days'}, data: { value: '30' } })
     await prisma.systemSettings.update({ where: { key: 'smtp_port'         }, data: { value: '587' } })

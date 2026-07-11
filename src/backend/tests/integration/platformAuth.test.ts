@@ -23,7 +23,7 @@ describe('POST /platform/auth/login', () => {
     const res = await request(server)
       .post('/platform/auth/login')
       .send({
-        email:    process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.co',
+        email:    process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.app',
         password: process.env.PLATFORM_ADMIN_PASSWORD || 'PlatformAdmin1!',
       })
     expect(res.status).toBe(200)
@@ -31,7 +31,7 @@ describe('POST /platform/auth/login', () => {
     expect(res.body.data.token).toBeDefined()
     expect(typeof res.body.data.token).toBe('string')
     expect(res.body.data.user.email).toBe(
-      process.env.PLATFORM_ADMIN_EMAIL || 'admin@anemal.co'
+      process.env.PLATFORM_ADMIN_EMAIL || 'admin@anemal.app'
     )
     expect(res.body.data.user.role).toBeDefined()
     // Must NOT expose passwordHash
@@ -42,7 +42,7 @@ describe('POST /platform/auth/login', () => {
     const res = await request(server)
       .post('/platform/auth/login')
       .send({
-        email:    process.env.PLATFORM_ADMIN_EMAIL || 'admin@anemal.co',
+        email:    process.env.PLATFORM_ADMIN_EMAIL || 'admin@anemal.app',
         password: 'WrongPassword99!',
       })
     expect(res.status).toBe(401)
@@ -63,7 +63,7 @@ describe('POST /platform/auth/login', () => {
   it('returns 400 on missing fields', async () => {
     const res = await request(server)
       .post('/platform/auth/login')
-      .send({ email: 'admin@anemal.co' })
+      .send({ email: 'admin@anemal.app' })
     expect(res.status).toBe(400)
   })
 
@@ -79,7 +79,7 @@ describe('POST /platform/auth/login', () => {
     try {
       const created = await prisma.platformUser.create({
         data: {
-          email:        'inactive-fixture@anemal.co',
+          email:        'inactive-fixture@anemal.app',
           passwordHash: hashedPw,
           name:         'Inactive Fixture',
           role:         'platform_support',
@@ -89,7 +89,7 @@ describe('POST /platform/auth/login', () => {
       createdId = created.id
       const res = await request(server)
         .post('/platform/auth/login')
-        .send({ email: 'inactive-fixture@anemal.co', password: 'CorrectPass1!' })
+        .send({ email: 'inactive-fixture@anemal.app', password: 'CorrectPass1!' })
       expect(res.status).toBe(401)
       expect(res.body.success).toBe(false)
       expect(res.body.error).toBe('Invalid credentials')
@@ -112,7 +112,7 @@ describe('plane isolation', () => {
     const pRes = await request(server)
       .post('/platform/auth/login')
       .send({
-        email:    process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.co',
+        email:    process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.app',
         password: process.env.PLATFORM_ADMIN_PASSWORD || 'PlatformAdmin1!',
       })
     platformToken = pRes.body.data?.token
@@ -169,7 +169,7 @@ describe('GET /platform/auth/me', () => {
     const res = await request(server)
       .post('/platform/auth/login')
       .send({
-        email:    process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.co',
+        email:    process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.app',
         password: process.env.PLATFORM_ADMIN_PASSWORD || 'PlatformAdmin1!',
       })
     platformToken = res.body.data?.token
@@ -182,7 +182,7 @@ describe('GET /platform/auth/me', () => {
     expect(res.status).toBe(200)
     expect(res.body.success).toBe(true)
     expect(typeof res.body.data.platformUserId).toBe('number')
-    expect(res.body.data.email).toBe(process.env.PLATFORM_ADMIN_EMAIL || 'admin@anemal.co')
+    expect(res.body.data.email).toBe(process.env.PLATFORM_ADMIN_EMAIL || 'admin@anemal.app')
     expect(res.body.data.role).toBeDefined()
     // platform RBAC landed — super_admin should have full platform permissions
     expect(Array.isArray(res.body.data.permissions)).toBe(true)
