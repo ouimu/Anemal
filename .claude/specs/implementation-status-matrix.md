@@ -6,16 +6,22 @@
 > This matrix is the canonical status source; @pm-agent updates it LAST on every
 > task (see CLAUDE.md → Tracking & Documentation).
 >
-> Current totals as of the Billing pipeline fixes merge, 2026-07-11 (PR #19,
-> branch `fix/billing-pipeline-item3`, ADR-0013 — Item 3 of the 2026-07 bugfix
-> pipeline: Thai PDF font, Payment History receipt modal, Method/Received-by
-> filters, Care History `performedBy` name resolution — on top of the Pet
-> Profile Medical tab merge, PR #18, ADR-0012, on top of the Care History
-> view, PR #17, on top of the remember-me redesign, PR #16, on top of
-> Pet/EMR Item 3, PR #15, on top of Pet/EMR Batch A, PR #14, on top of the
-> Codex audit closeout 2026-07-09 Batches 1–5, PRs #8–#13, plus the
-> seedCredentialSmoke isolation-flake fix 4e78e0b):
-> **888 backend tests, 225 frontend tests.**
+> Current totals as of the Log Care vitals modal merge, 2026-07-11 (PR #21,
+> branch `fix/log-care-vitals-modal` — Package B of the RecommendByCodex
+> fixup set: heartRateBpm/respRateRpm/feedingStatus/medicationGiven input
+> fields on the Log Care wizard, shared `VitalStepper` component extracted
+> from ClinicEMR — on top of the Hospitalization branch isolation fix,
+> PR #20, ADR-0014 (Package A: BOLA close on single-record hospitalization
+> ops), on top of the Billing pipeline fixes merge, PR #19, ADR-0013 — Item 3
+> of the 2026-07 bugfix pipeline: Thai PDF font, Payment History receipt
+> modal, Method/Received-by filters, Care History `performedBy` name
+> resolution — on top of the Pet Profile Medical tab merge, PR #18,
+> ADR-0012, on top of the Care History view, PR #17, on top of the
+> remember-me redesign, PR #16, on top of Pet/EMR Item 3, PR #15, on top of
+> Pet/EMR Batch A, PR #14, on top of the Codex audit closeout 2026-07-09
+> Batches 1–5, PRs #8–#13, plus the seedCredentialSmoke isolation-flake fix
+> 4e78e0b):
+> **912 backend tests, 233 frontend tests.**
 > Route-level authorization is machine-verified by
 > `src/backend/tests/integration/roleRouteMatrix.test.ts` — that file is the source
 > of truth for per-route permission coverage; this matrix does not duplicate it.
@@ -72,6 +78,8 @@
 | Inpatient create/edit/delete (item 3) | `POST/PUT/DELETE /api/hospitalizations/:id` | Admit UI added (was fully missing on frontend), edit + care-log-gated hard delete added (reuses `inpatient.manage`, ADR-0009); fixed a pre-existing board-crashing field mismatch (`cageNumber`/`admitReason`/`doctor.name` never existed on the API response) | `services/hospitalization.service.ts`, `models/hospitalization.repository.ts` | `views/clinic/ClinicInpatient.tsx`, `views/clinic/ClinicPets.tsx` | `tests/integration/hospitalization-crud.test.ts`, `__tests__/ClinicInpatient.test.tsx`, `__tests__/PetDetail.admitButton.test.tsx` | implemented |
 | Inpatient care-log entry | `POST /api/hospitalizations/:id/care` | **Fixed (PR #17)** — `CareModal`'s payload field names now match `careSchema` (`temperature`→`temperatureC`; removed a `weight` field that had no backend key). Body-temperature input already existed pre-fix; only the wire field name was wrong | `services/hospitalization.service.ts` | `views/clinic/ClinicInpatient.tsx` (`CareModal`) | `tests/integration/phase4.test.ts`, `__tests__/ClinicInpatient.test.tsx` | implemented |
 | Inpatient care-log history (LCV-1) | `GET /api/hospitalizations/:id` (existing endpoint, reused) | Read-only "View Care History" button on `CageCard` → `CareHistoryModal`, lists `careLogs` newest-first (already server-sorted). No new endpoint/permission/migration. Scoped to admitted hospitalizations only — board never renders discharged cards (ADR-0011); discharged-admission history deferred to Pet Profile Medical tab. `performedBy` name resolution: **fixed (PR #19, ADR-0013)** — now shows the resolved staff name via a new `DailyInpatientCare.performedBy → User` FK (`ON DELETE SET NULL`), server-side `findFirst` scoped to tenant; falls back to `Staff #<id>` then `—` if the user was deleted | `models/hospitalization.repository.ts` (`findById`), `migrations/*_add_performed_by_user_fk` | `views/clinic/ClinicInpatient.tsx` (`CareHistoryModal`) | `tests/integration/phase4.test.ts` (tenant isolation on `GET /:id`), `__tests__/ClinicInpatient.test.tsx` (performer-name fallback chain) | implemented |
+| Hospitalization branch isolation (Package A) | `GET/PUT/DELETE /api/hospitalizations/:id`, `POST /api/hospitalizations/:id/care`, `PUT /api/hospitalizations/:id/discharge`, `GET /api/hospitalizations/active` | **Fixed (PR #20, ADR-0014)** — closed a BOLA gap (OWASP API1:2023): single-record ops were scoped by `tenantId` only, letting a branch-scoped `inpatient.view`/`inpatient.manage` holder read/edit/delete/log-care/discharge another branch's admission by guessing the numeric ID. `branchId` is now derived only from `req.context` (never body/path/query) and threaded through get/edit/remove/logCare/discharge; cross-branch-same-tenant access returns 404 (not 403); `/active` no longer trusts `req.query.branchId` over context; all-branch/admin sessions (`branchId` null) unaffected | `controllers/hospitalization.controller.ts`, `services/hospitalization.service.ts`, `models/hospitalization.repository.ts` | — | `tests/integration/hospitalization-branch-isolation.test.ts` (24 tests: cross-branch 404 + DB-state-unchanged, cross-tenant 404, all-branch-admin regression) | implemented |
+| Log Care vitals/nursing fields (Package B) | `POST /api/hospitalizations/:id/care` (existing endpoint, reused) | **Added (PR #21)** — Log Care wizard now has input fields for `heartRateBpm`, `respRateRpm`, `feedingStatus` (picklist + "Other" free text), `medicationGiven` (explicit documentation note, not a verified MAR); backend `careSchema` already accepted all four, no backend changes. Numeric-input logic extracted from `ClinicEMR.tsx` into shared `components/VitalStepper.tsx`, reused by both screens (no duplicated stepper logic) | — (no backend changes) | `views/clinic/ClinicInpatient.tsx` (`CareModal`), `components/VitalStepper.tsx` (new, shared) | `__tests__/ClinicInpatient.test.tsx`, `__tests__/VitalStepper.test.tsx` | implemented |
 | Pet Profile Medical tab (PR #18) | `GET /api/pets/:id` (existing endpoint, reused) | Redesigned as a permission-aware, read-only EMR rollup (Option C hybrid, ADR-0012). `allergies`/`underlyingConditions` stay pet-level `crm.edit` fields, unchanged. `medicalRecords`/`vaccinations` now conditionally included server-side on caller's `emr.view` (closes a pre-existing over-fetch gap where both were always returned regardless of permission); "View all in EMR" drill-in navigates to `ClinicEMR.tsx?petId=<id>` (new `useSearchParams` support there). "Add Vaccination" button hidden when `vaccinations` is server-omitted. No new endpoint/permission/migration | `models/pet.repository.ts` (`findPetById`), `services/pet.service.ts`, `controllers/pet.controller.ts` | `views/clinic/ClinicPets.tsx`, `views/clinic/ClinicEMR.tsx` | `tests/integration/pet-medical-degradation.test.ts`, `__tests__/ClinicPetsMedicalTab.test.tsx`, `__tests__/ClinicEMR.petIdParam.test.tsx` | implemented |
 | Billing — Thai PDF font (PR #19, ADR-0013) | `POST /api/invoices/:id/pdf`, prescription PDF | **Fixed** — Thai invoice/prescription PDFs used a Thai-only font subset (`NotoSansThai-Regular.ttf`, later swapped to Sarabun OFL-1.1 after the primary Noto URL 404'd) with zero Latin-character/digit glyph coverage, corrupting mixed Thai/English/numeric text. Glyph-coverage smoke test added for both invoice and prescription PDFs (grill finding F1) | `services/pdf.service.ts`, `assets/fonts/*`, `docs/adr/FONT-LICENSE.txt` | — | `tests/integration/pdf-font-coverage.test.ts` (fontkit glyph assertions), `tests/integration/pdf.test.ts` | implemented |
 | Billing — Payment History receipt modal (PR #19, ADR-0013) | `GET /api/invoices/payment-history`, `GET /api/invoices/:id` | Payment History rows now open a read-only receipt modal (reuses existing `GET /:id`, no new endpoint). History-triggered modal deliberately omits the post-sale success-banner copy (grill finding F2). `payment-history` select widened to include `invoice.id` (BA correction) | `controllers/invoice.controller.ts` | `views/clinic/ClinicBilling.tsx` | `__tests__/ClinicBilling.test.tsx`, `tests/integration/invoice.test.ts` | implemented |

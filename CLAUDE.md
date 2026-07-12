@@ -160,6 +160,7 @@ src/
 | Pet Profile Medical tab | Medical tab redesigned as permission-aware read-only EMR rollup, Option C hybrid (PR #18, ADR-0012) | ✅ 867 backend + 218 frontend tests |
 | Billing pipeline fixes | Thai PDF font, Payment History receipt modal + Method/Received-by filters, Care History performer-name resolution via new `DailyInpatientCare.performedBy → User` FK (PR #19, ADR-0013) | ✅ 888 backend + 225 frontend tests |
 | Hospitalization branch isolation | Closed BOLA gap (OWASP API1:2023) on single-record hospitalization ops — `branchId` now derived from authenticated context and threaded through get/edit/remove/logCare/discharge; `/active` no longer trusts query-string branch override (PR #20, ADR-0014) | ✅ 912 backend tests |
+| Log Care vitals modal | Added heartRateBpm/respRateRpm/feedingStatus/medicationGiven input fields to the Log Care wizard; extracted shared `VitalStepper` component from ClinicEMR for reuse (PR #21) | ✅ 912 backend + 233 frontend tests |
 | 10 | Payment gateway + SaaS billing | ⏸ needs credentials |
 | 11 | LINE/SMS dispatch | ⏸ needs credentials |
 
