@@ -1,7 +1,10 @@
 # Remaining Tasks — Credential-Gated Work & Backlog
 > Created: 2026-06-09 · Rewritten: 2026-07-09 (doc cleanup after Codex audit closeout)
+> Updated: 2026-07-13 — removed 3 backlog items shipped via PRs #19/#20/#21; PR #22
+> closed the RETEST-2026-07-13 findings (tenant-scoped performer lookup, FK index,
+> Tailwind token fix, VitalStepper max-clamp)
 > Everything shippable without external credentials is DONE — Phases 1–9, D-1–D-5, and
-> Codex Audit Batches 1–5 are complete (835 backend + 143 frontend tests green).
+> Codex Audit Batches 1–5 are complete (915 backend + 235 frontend tests green).
 > Completed session/phase task lists were removed from this file; see
 > `.claude/roadmap/archive/`, `HistoryLog.md`, and git history for the record.
 > Canonical module status: `.claude/specs/implementation-status-matrix.md`.
