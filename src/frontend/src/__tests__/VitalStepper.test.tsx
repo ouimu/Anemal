@@ -165,6 +165,13 @@ describe('VitalStepper — C3 buttons after typing', () => {
     await userEvent.click(screen.getByText('+'))
     expect(onChangeSpy).toHaveBeenLastCalledWith(10.1)
   })
+
+  it('+ button clamps to max instead of exceeding it (RETEST-2026-07-13)', async () => {
+    const onChangeSpy = vi.fn()
+    render(<Wrapper step={1} min={1} max={3000} initial={3000} onChangeSpy={onChangeSpy} />)
+    await userEvent.click(screen.getByText('+'))
+    expect(onChangeSpy).toHaveBeenLastCalledWith(3000)
+  })
 })
 
 describe('VitalStepper — C4 save-path wiring', () => {

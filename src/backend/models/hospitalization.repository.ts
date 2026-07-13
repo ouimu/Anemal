@@ -22,17 +22,33 @@ export function findActive(tenantId: number, branchId?: number | null) {
   })
 }
 
-export function findById(tenantId: number, branchId: number | null | undefined, id: number) {
-  return prisma.hospitalization.findFirst({
+// Performer names are resolved via a separate tenant-scoped query rather than a Prisma
+// relation `include`, because `performedBy` is a bare FK to User.id with no tenantId in
+// its join condition — an `include` would resolve any tenant's user for a malformed/
+// legacy-imported row. Filtering the batch lookup by tenantId keeps names tenant-safe.
+export async function findById(tenantId: number, branchId: number | null | undefined, id: number) {
+  const hosp = await prisma.hospitalization.findFirst({
     where: { id, tenantId, ...(branchId != null ? { branchId } : {}) },
     include: {
       pet: petSelect,
-      careLogs: {
-        orderBy: { recordedAt: 'desc' },
-        include: { performedByUser: { select: { id: true, name: true } } },
-      },
+      careLogs: { orderBy: { recordedAt: 'desc' } },
     },
   })
+  if (!hosp) return null
+
+  const performerIds = [...new Set(hosp.careLogs.map(c => c.performedBy).filter((v): v is number => v != null))]
+  const performers = performerIds.length
+    ? await prisma.user.findMany({ where: { id: { in: performerIds }, tenantId }, select: { id: true, name: true } })
+    : []
+  const performerMap = new Map(performers.map(p => [p.id, p]))
+
+  return {
+    ...hosp,
+    careLogs: hosp.careLogs.map(c => ({
+      ...c,
+      performedByUser: c.performedBy != null ? (performerMap.get(c.performedBy) ?? null) : null,
+    })),
+  }
 }
 
 export function findByIdWithCareCount(tenantId: number, branchId: number | null | undefined, id: number) {

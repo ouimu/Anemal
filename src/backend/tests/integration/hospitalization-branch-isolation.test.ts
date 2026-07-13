@@ -219,6 +219,14 @@ describe('PUT /api/hospitalizations/:id — branch isolation', () => {
     expect(res.status).toBe(404)
   })
 
+  it('✅ all-branch admin edits a Branch A admission → 200', async () => {
+    const hospId = await admitDirect(branchAId, petIdA, 'Admin edit A')
+    const res = await request(server).put(`/api/hospitalizations/${hospId}`).set('Authorization', `Bearer ${adminToken}`)
+      .send({ reason: 'Edited by admin (A)' })
+    expect(res.status).toBe(200)
+    expect(res.body.data.reason).toBe('Edited by admin (A)')
+  })
+
   it('✅ all-branch admin edits a Branch B admission → 200', async () => {
     const hospId = await admitDirect(branchBId, petIdA, 'Admin edit B')
     const res = await request(server).put(`/api/hospitalizations/${hospId}`).set('Authorization', `Bearer ${adminToken}`)
@@ -249,6 +257,12 @@ describe('DELETE /api/hospitalizations/:id — branch isolation', () => {
     const hospId = await admitDirect(branchAId, petIdA, 'Delete cross tenant')
     const res = await request(server).delete(`/api/hospitalizations/${hospId}`).set('Authorization', `Bearer ${otherTenantToken}`)
     expect(res.status).toBe(404)
+  })
+
+  it('✅ all-branch admin deletes a Branch A admission → 204', async () => {
+    const hospId = await admitDirect(branchAId, petIdA, 'Admin delete A')
+    const res = await request(server).delete(`/api/hospitalizations/${hospId}`).set('Authorization', `Bearer ${adminToken}`)
+    expect(res.status).toBe(204)
   })
 
   it('✅ all-branch admin deletes a Branch B admission → 204', async () => {
@@ -283,6 +297,13 @@ describe('POST /api/hospitalizations/:id/care — branch isolation', () => {
     expect(res.status).toBe(404)
   })
 
+  it('✅ all-branch admin logs care on a Branch A admission → 201', async () => {
+    const hospId = await admitDirect(branchAId, petIdA, 'Admin care A')
+    const res = await request(server).post(`/api/hospitalizations/${hospId}/care`).set('Authorization', `Bearer ${adminToken}`)
+      .send({ timeSlot: '12:00', temperatureC: 38.2 })
+    expect(res.status).toBe(201)
+  })
+
   it('✅ all-branch admin logs care on a Branch B admission → 201', async () => {
     const hospId = await admitDirect(branchBId, petIdA, 'Admin care B')
     const res = await request(server).post(`/api/hospitalizations/${hospId}/care`).set('Authorization', `Bearer ${adminToken}`)
@@ -299,13 +320,18 @@ describe('PUT /api/hospitalizations/:id/discharge — branch isolation', () => {
     expect(res.body.data.hospitalization.status).toBe('discharged')
   })
 
-  it('❌ same-tenant other-branch staffer cannot discharge → 404 and DB state unchanged', async () => {
+  it('❌ same-tenant other-branch staffer cannot discharge → 404, DB state and invoice count unchanged', async () => {
     const hospId = await admitDirect(branchBId, petIdA, 'Discharge other branch')
+    const invoicesBefore = await prisma.invoice.count({ where: { tenantId: tid, petId: petIdA } })
+
     const res = await request(server).put(`/api/hospitalizations/${hospId}/discharge`).set('Authorization', `Bearer ${staffAToken}`).send({})
     expect(res.status).toBe(404)
 
     const verify = await request(server).get(`/api/hospitalizations/${hospId}`).set('Authorization', `Bearer ${adminToken}`)
     expect(verify.body.data.status).toBe('admitted')
+
+    const invoicesAfter = await prisma.invoice.count({ where: { tenantId: tid, petId: petIdA } })
+    expect(invoicesAfter).toBe(invoicesBefore)
   })
 
   it('❌ other-tenant staffer cannot discharge → 404', async () => {

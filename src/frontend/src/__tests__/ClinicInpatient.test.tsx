@@ -275,6 +275,20 @@ describe('ClinicInpatient — Log Care modal feeding status (LC-4)', () => {
     expect(payload.feedingStatus).toBeNull()
   })
 
+  it('Other → preset → Other preserves the typed draft text (RETEST-2026-07-13)', async () => {
+    await openStep3()
+    await userEvent.selectOptions(screen.getByLabelText('Feeding status'), 'Other')
+    await userEvent.type(screen.getByLabelText('Describe feeding status'), 'Tube fed')
+    await userEvent.selectOptions(screen.getByLabelText('Feeding status'), 'Ate some')
+    await userEvent.selectOptions(screen.getByLabelText('Feeding status'), 'Other')
+    expect(screen.getByLabelText('Describe feeding status')).toHaveValue('Tube fed')
+
+    await userEvent.click(screen.getByText('Save Care Record'))
+    await waitFor(() => expect(postMock).toHaveBeenCalled())
+    const [, payload] = postMock.mock.calls[0]
+    expect(payload.feedingStatus).toBe('Tube fed')
+  })
+
   it('typing medication note and care notes keeps them in separate payload keys', async () => {
     await openStep3()
     await userEvent.type(screen.getByLabelText('Medication / treatment note (optional)'), 'Amoxicillin 250mg')
