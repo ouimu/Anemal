@@ -223,7 +223,7 @@ function CareModal({ hospit, onClose, onSaved }: {
     return (
       <div className="flex flex-col gap-lg">
         <div className="flex flex-col gap-xs">
-          <label htmlFor="feeding-status" className="text-label-lg text-on-surface-variant">Feeding status</label>
+          <label htmlFor="feeding-status" className="text-label-md text-on-surface-variant">Feeding status</label>
           <select
             id="feeding-status"
             className={inputCls}
@@ -258,7 +258,7 @@ function CareModal({ hospit, onClose, onSaved }: {
         </div>
 
         <div className="flex flex-col gap-xs">
-          <label htmlFor="medication-given" className="text-label-lg text-on-surface-variant">Medication / treatment note (optional)</label>
+          <label htmlFor="medication-given" className="text-label-md text-on-surface-variant">Medication / treatment note (optional)</label>
           <p className="text-label-md text-on-surface-variant">Documentation note only — not a verified medication administration record.</p>
           <textarea
             id="medication-given"
@@ -271,7 +271,7 @@ function CareModal({ hospit, onClose, onSaved }: {
         </div>
 
         <div className="flex flex-col gap-xs">
-          <label htmlFor="care-notes" className="text-label-lg text-on-surface-variant">Care notes (optional)</label>
+          <label htmlFor="care-notes" className="text-label-md text-on-surface-variant">Care notes (optional)</label>
           <textarea
             id="care-notes"
             value={entry.notes ?? ''}

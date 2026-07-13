@@ -25,7 +25,10 @@ export function VitalStepper({ label, unit, value, onChange, step = 0.1, min = 0
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value])
 
-  const inc = () => onChange(Math.round(((value ?? 0) + step) * 10) / 10)
+  const inc = () => {
+    const next = Math.round(((value ?? 0) + step) * 10) / 10
+    onChange(max !== undefined && next > max ? max : next)
+  }
   const dec = () => { const v = Math.round(((value ?? 0) - step) * 10) / 10; onChange(v < min ? null : v) }
 
   const commit = () => {
