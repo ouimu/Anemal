@@ -85,6 +85,10 @@ beforeAll(async () => {
 afterAll(async () => {
   if (createdTenantIds.length) {
     // Children first to satisfy FK constraints, then the tenant rows.
+    // CO-1 (ADR-0015): createCustomer() now auto-creates a clinic_admin user +
+    // user_roles row per tenant; user_roles.tenantId has no cascade delete, so
+    // it must be cleared before the user/tenant rows themselves are removed.
+    await prisma.userRole.deleteMany({ where: { tenantId: { in: createdTenantIds } } })
     await prisma.user.deleteMany({ where: { tenantId: { in: createdTenantIds } } })
     await prisma.branch.deleteMany({ where: { tenantId: { in: createdTenantIds } } })
     await prisma.owner.deleteMany({ where: { tenantId: { in: createdTenantIds } } })
@@ -141,7 +145,7 @@ describe('T-5F-02 / AC2 — customer usage endpoint', () => {
     tenantId = await createCustomer({ name: 'QA Usage Tenant', subdomain: `qa-usage-${SFX}`, planId })
   })
 
-  it('✅ fresh tenant → 200 with branches/users/owners = 0 and caps = plan defaults', async () => {
+  it('✅ fresh tenant → 200 with branches/owners = 0, users = 1 (CO-1 auto-admin), caps = plan defaults', async () => {
     const res = await request(server)
       .get(`/platform/customers/${tenantId}/usage`)
       .set('Authorization', `Bearer ${platformToken}`)
@@ -149,8 +153,11 @@ describe('T-5F-02 / AC2 — customer usage endpoint', () => {
     expect(res.body.success).toBe(true)
     const d = res.body.data
     // Actual shape: { branches, users, owners, caps, overPlan }
+    // CO-1 (ADR-0015): POST /platform/customers now auto-creates the tenant's
+    // first clinic_admin user in the same transaction, so a "fresh" tenant
+    // always has users = 1, never 0.
     expect(d.branches).toBe(0)
-    expect(d.users).toBe(0)
+    expect(d.users).toBe(1)
     expect(d.owners).toBe(0)
     // Effective caps surfaced for the progress bars (current vs limit on the FE).
     expect(d.caps).toEqual({ maxBranches: 3, maxUsers: 10, maxOwners: 100 })
@@ -170,7 +177,7 @@ describe('T-5F-02 / AC2 — customer usage endpoint', () => {
     expect(typeof d.users).toBe('number')
   })
 
-  it('✅ counts reflect real rows: seed 2 branches, 1 user, 3 owners', async () => {
+  it('✅ counts reflect real rows: seed 2 branches, 1 more user, 3 owners', async () => {
     await prisma.branch.createMany({ data: [
       { tenantId, name: 'B1', isActive: true },
       { tenantId, name: 'B2', isActive: true },
@@ -189,7 +196,9 @@ describe('T-5F-02 / AC2 — customer usage endpoint', () => {
       .set('Authorization', `Bearer ${platformToken}`)
     expect(res.status).toBe(200)
     expect(res.body.data.branches).toBe(2)
-    expect(res.body.data.users).toBe(1)
+    // CO-1 (ADR-0015): 1 auto-created clinic_admin (from beforeAll's createCustomer)
+    // + 1 seeded staff user above = 2.
+    expect(res.body.data.users).toBe(2)
     expect(res.body.data.owners).toBe(3)
     // Still within caps (3/10/100) → not over plan.
     expect(res.body.data.overPlan).toBe(false)

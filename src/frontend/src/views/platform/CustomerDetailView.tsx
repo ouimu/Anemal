@@ -19,16 +19,18 @@ import { usePlatformPlans } from '../../hooks/usePlatformPlans'
 import StatusBadge from '../../components/platform/StatusBadge'
 import QuotaBar from '../../components/platform/QuotaBar'
 import MaterialIcon from '../../components/MaterialIcon'
+import ClinicAdminsTab from '../../components/platform/ClinicAdminsTab'
 
 // ── Tab type ─────────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'quota' | 'provisioning' | 'usage'
+type Tab = 'overview' | 'quota' | 'provisioning' | 'usage' | 'admins'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'overview',     label: 'Overview' },
   { id: 'quota',        label: 'Plan & Quota' },
   { id: 'provisioning', label: 'Provisioning' },
   { id: 'usage',        label: 'Usage' },
+  { id: 'admins',       label: 'Clinic Admins' },
 ]
 
 // ── Overview tab ─────────────────────────────────────────────────────────────
@@ -423,6 +425,7 @@ export default function CustomerDetailView() {
           {activeTab === 'quota'        && <QuotaTab        id={customerId} />}
           {activeTab === 'provisioning' && <ProvisioningTab />}
           {activeTab === 'usage'        && <UsageTab        id={customerId} />}
+          {activeTab === 'admins'       && <ClinicAdminsTab id={customerId} />}
         </div>
       </div>
     </div>
