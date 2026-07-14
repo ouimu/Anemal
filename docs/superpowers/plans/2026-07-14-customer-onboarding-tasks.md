@@ -414,3 +414,120 @@ editability of "Administrator" name, Q-9 reactivate scope, and the Ponytail 4-en
 paths (CO-1 auto-create, CO-2 create, CO-5 reset), BOLA scoping on CO-4/CO-5 (cross-tenant
 userId probe), and Q-8 role-scope enforcement (deactivate/reset rejected for non-clinic_admin
 users) — Step 7.
+
+---
+
+## BA Sign-off (Step 3) — @ba-agent, 2026-07-14
+
+Validated this breakdown against the approved brainstorm (Option D, Q1–Q10), `anemal-rbac-matrix`,
+`anemal-platform-console`, `SPEC-RBAC-PLATFORM-01`, and the actual code
+(`src/backend/services/user.service.ts`, `src/backend/routes/platform-customers.routes.ts`).
+The CO-1..CO-10 structure, RBAC guards, BOLA scoping, quota semantics (Q-5), and audit actions
+(Q-7) all trace correctly to the brainstorm decisions. Three open items resolved below.
+
+### R-E resolution — Option (a): D-2-02 does not apply to the platform auto-created first admin (email = NULL, phone = NULL)
+
+**Decision:** The CO-1 auto-created first `clinic_admin` is created with `email = NULL` and
+`phone = NULL`. D-2-02 is **not relaxed globally and not bypassed via a flag** — it simply does
+not govern this code path.
+
+**Justification:**
+
+1. **D-2-02 is a service-layer rule, not a schema rule.** Verified: the check lives only in
+   `user.service.ts` `createUser()` (lines 50–53, throws 422); `User.email` and `User.phone` are
+   both nullable in the Prisma schema. CO-1 is a new platform-plane provisioning path inside
+   `platform-customers.service.ts` that does **not** call `createUser()` — it calls
+   `userRepo.createUserWithRole()` directly (per the task's own design). No bypass flag, no
+   change to `user.service.ts`, no schema change. The clinic-plane rule stays fully intact for
+   every clinic-plane creation and for CO-2 (tab create), which explicitly enforces D-2-02.
+2. **D-2-02's purpose does not apply here.** The rule exists so clinic staff are contactable /
+   credential-recoverable. The auto-created first admin is a bootstrap identity whose recovery
+   channel is the platform itself (CO-5 reset from the Clinic Admins tab). A contact channel adds
+   nothing until the real clinic administrator takes over the account and sets their own details
+   via the existing clinic-plane user-update flow (which permits adding email/phone later).
+3. **Placeholder option (c) rejected as a landmine.** Verified there is **no code path today that
+   sends email to `User.email`** (grep: nodemailer/sendMail/forgot/reset hits are per-tenant SMTP
+   *provisioning config*, settings storage, and connection tests only — no user-facing dispatch;
+   Phase 10/11 is ⏸). But Phase 10/11 will add dispatch, and a synthetic
+   `admin@<subdomain>.local` row would then silently bounce, look real in every UI/list/export,
+   and require a data-cleanup migration to unwind. Fake data outlives its intent; NULL is honest
+   and self-describing ("no contact set").
+4. **Option (b) rejected:** contradicts the human-approved Q-3 decision (no new create-customer
+   form fields). Not reopened.
+
+**Task-list corrections from R-E:**
+
+- **CO-1 AC `«R-E-DECISION»`** → replace with:
+  - [ ] Auto-created user has `email = NULL`, `phone = NULL`; no placeholder value of any form is
+        written. The D-2-02 check is not invoked on this path (CO-1 does not route through
+        `user.service.ts createUser()`); `user.service.ts` is not modified by this task.
+  - [ ] CO-2 (tab create) still enforces D-2-02 — regression test that omitting both email and
+        phone on `POST /:id/admin-users` returns 422.
+- **CO-7 (list UI):** email/phone column must render an explicit "—" / "not set" state for the
+  NULL-contact first admin (no blank cell ambiguity). Minor AC addition for @uiux-agent.
+- **Grill probe (Step 3.5):** confirm whether the clinic-plane profile/update flow should nudge a
+  NULL-contact clinic_admin to add contact details on first login (nice-to-have, not scope here).
+
+### R-B confirmation — sanctioned bounded exception, BLESSED
+
+`anemal-platform-console` states the hard boundary as: platform APIs operate on tenant
+**metadata, plan, quota, provisioning, aggregate usage** — never on `pets`, `owners`,
+`medical_records`, `invoices` (clinic clinical/customer-PII tables). Spec R5 phrases it as "not
+clinical/PII tables". The `users` table is **clinic staff identity**, not clinical or
+customer/patient PII — and identity/credential provisioning is squarely within the platform's
+existing P1/P4 provisioning mandate (the platform already creates the tenant itself and its
+provisioning records). The ongoing (not one-shot) nature of the tab does not change the category
+of data touched.
+
+**Verdict: within the sanctioned exception**, subject to these bounds (all already present as
+ACs — confirmed, keep them non-negotiable):
+
+- B-1: Platform endpoints touch only `clinic_admin`-role users (Q-8); CO-6 list must never leak
+  doctor/staff rows. This is the line that keeps the surface "provisioning" rather than "platform
+  managing clinic staff".
+- B-2: All written data originates from platform-admin input or server generation — never read
+  from or joined against clinic clinical/PII tables.
+- B-3: Every operation audited (`tenant.admin_user.*`, Q-7), no password in details (R-6).
+- B-4: Deactivate is soft (Q-9); platform never hard-deletes clinic identity rows.
+
+Flag retained for /grill-with-docs per brainstorm R-5 — grill confirms the bound, it does not
+re-litigate the verdict.
+
+### CO-6 permission decision — REUSE existing codes; no new permission code
+
+**Decision:** Reuse `platform.customers.view` (CO-6 list) and `platform.customers.manage`
+(CO-1/2/4/5 writes). No `platform.customers.manage_admin_users` code is introduced.
+
+```
+Module.Action: platform.customers.manage (existing)   Default roles: platform_super_admin
+Module.Action: platform.customers.view (existing)     Default roles: platform_super_admin, platform_support
+Configurable: no (platform plane has no custom roles)
+Rationale: Admin-user provisioning is part of the customer lifecycle (capability P1/P4 in
+anemal-platform-console). The catalogue defines exactly two platform roles
+(platform_super_admin = all, platform_support = .view only); a distinct code would only matter
+if a role needed customer-manage WITHOUT credential-provisioning — no such role exists or is
+planned before Phase 10. Auditability does not require a permission split: the three distinct
+audit actions (tenant.admin_user.create/deactivate/password_reset, Q-7) already give exact
+attribution. Adding a speculative code fails Ponytail criteria 1/4.
+Risk if wrong: if Phase 10 adds finer platform roles, split the code then — a widening→narrowing
+migration on two seeded roles, cheap and non-breaking. Revisit trigger recorded: "new platform
+role other than super_admin/support".
+```
+
+Side-effect confirmed correct: `platform_support` (`.view` only) can **see** the Clinic Admins
+tab list but cannot create/deactivate/reset — matches the view/manage split already live in
+`platform-customers.routes.ts`.
+
+### Definition-of-Ready check
+
+Objective stated · actors/roles named (platform_super_admin, platform_support read-only) ·
+permission codes assigned (existing, above) · exception cases listed (quota 409, duplicate 409,
+cross-tenant 404, wrong-plane 403, idempotent deactivate) · NFR impact noted (no new deps, no
+migration — @db-agent to confirm; R-E resolution removes the possible schema note in the Ponytail
+pre-check) · acceptance criteria testable · risks/dependencies recorded. **Ready.**
+
+### STATUS: STEP 3 APPROVED — proceeding to /grill-with-docs (Step 3.5)
+
+Mandatory grill probes carried forward: R-B bounds (confirm, not re-litigate), R-E follow-up
+nudge question, Q-3b "Administrator" name editability, Q-9 reactivate scope, Ponytail
+4-endpoint flag.
