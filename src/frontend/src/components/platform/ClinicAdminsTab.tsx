@@ -60,6 +60,45 @@ function CredentialsPanel({ username, password, onDismiss }: { username: string;
   )
 }
 
+/** Per-row reset-password dialog — reuses PasswordField for typed-or-generate (CO-10, matches create's UX). */
+function ResetPasswordDialog({ user, password, onPasswordChange, onConfirm, onCancel, isPending, error }: {
+  user: TenantAdminUser; password: string; onPasswordChange: (v: string) => void
+  onConfirm: () => void; onCancel: () => void; isPending: boolean
+  error: { response?: { data?: { code?: string } } } | null
+}) {
+  const errorCode = error?.response?.data?.code
+  return (
+    <PlatformModal title="Reset password" open onClose={onCancel} width="max-w-md">
+      <div className="space-y-md">
+        <p className="text-body-sm text-on-surface">
+          Set a new password for <strong>{user.username}</strong>. Type one or generate a new one.
+        </p>
+        <PasswordField id="ca-reset-password" value={password} onChange={onPasswordChange} />
+        {errorCode && (
+          <p className="text-label-md text-error">
+            {errorCode === 'WEAK_PASSWORD'
+              ? 'Password must be at least 8 characters.'
+              : 'Failed to reset password. Please try again.'}
+          </p>
+        )}
+        <div className="flex justify-end gap-sm">
+          <button type="button" onClick={onCancel} className="min-h-[44px] px-md border border-outline-variant rounded text-body-sm text-on-surface-variant hover:bg-surface-container transition-colors">
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isPending}
+            className="min-h-[44px] px-md bg-primary text-on-primary rounded text-body-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+          >
+            Reset password
+          </button>
+        </div>
+      </div>
+    </PlatformModal>
+  )
+}
+
 /** Per-row deactivate confirmation dialog (Q-9 — states there is no undo). */
 function DeactivateConfirmDialog({ user, onConfirm, onCancel, isPending, error }: {
   user: TenantAdminUser; onConfirm: () => void; onCancel: () => void; isPending: boolean
@@ -109,10 +148,14 @@ export default function ClinicAdminsTab({ id }: { id: number }) {
   const [form, setForm]               = useState<CreateTenantAdminUserPayload>(EMPTY_FORM)
   const [credentials, setCredentials] = useState<{ username: string; password: string } | null>(null)
   const [deactivateTarget, setDeactivateTarget] = useState<TenantAdminUser | null>(null)
-  const [resettingId, setResettingId] = useState<number | null>(null)
+  const [resetTarget, setResetTarget]   = useState<TenantAdminUser | null>(null)
+  const [resetPassword, setResetPassword] = useState('')
 
   const openCreate  = () => { setForm(EMPTY_FORM); create.reset(); setCreateOpen(true) }
   const closeCreate = () => setCreateOpen(false)
+
+  const openReset  = (user: TenantAdminUser) => { setResetPassword(''); reset.reset(); setResetTarget(user) }
+  const closeReset = () => setResetTarget(null)
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -136,14 +179,13 @@ export default function ClinicAdminsTab({ id }: { id: number }) {
     deactivate.mutate(deactivateTarget.id, { onSuccess: () => setDeactivateTarget(null) })
   }
 
-  const handleReset = (userId: number) => {
-    setResettingId(userId)
-    reset.mutate({ userId }, {
+  const handleResetConfirm = () => {
+    if (!resetTarget) return
+    reset.mutate({ userId: resetTarget.id, password: resetPassword || undefined }, {
       onSuccess: (data) => {
-        setResettingId(null)
+        setResetTarget(null)
         setCredentials({ username: data.username, password: data.password })
       },
-      onError: () => setResettingId(null),
     })
   }
 
@@ -205,8 +247,7 @@ export default function ClinicAdminsTab({ id }: { id: number }) {
                   <div className="flex items-center gap-sm justify-end">
                     <button
                       type="button"
-                      onClick={() => handleReset(u.id)}
-                      disabled={resettingId === u.id}
+                      onClick={() => openReset(u)}
                       className="min-h-[44px] px-sm text-body-sm text-secondary hover:underline disabled:opacity-50"
                     >
                       Reset password
@@ -311,6 +352,18 @@ export default function ClinicAdminsTab({ id }: { id: number }) {
           onCancel={() => setDeactivateTarget(null)}
           isPending={deactivate.isPending}
           error={deactivate.error as { response?: { data?: { code?: string } } } | null}
+        />
+      )}
+
+      {resetTarget && (
+        <ResetPasswordDialog
+          user={resetTarget}
+          password={resetPassword}
+          onPasswordChange={setResetPassword}
+          onConfirm={handleResetConfirm}
+          onCancel={closeReset}
+          isPending={reset.isPending}
+          error={reset.error as { response?: { data?: { code?: string } } } | null}
         />
       )}
     </div>

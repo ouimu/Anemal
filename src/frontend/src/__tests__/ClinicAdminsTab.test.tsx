@@ -13,10 +13,11 @@
  *    display-once credentials panel on success.
  *  - Deactivate: only on active rows, confirmation dialog states no undo,
  *    fires only after confirm.
- *  - Reset password: available on both active and deactivated rows, reuses
- *    the same credentials panel.
- *  - 409 QUOTA_EXCEEDED / USERNAME_CONFLICT / ALREADY_DEACTIVATED → inline,
- *    distinguishable errors.
+ *  - Reset password: available on both active and deactivated rows, opens a
+ *    modal reusing PasswordField (typed-or-generate, same UX as create),
+ *    reuses the same credentials panel on success.
+ *  - 409 QUOTA_EXCEEDED / USERNAME_CONFLICT / ALREADY_DEACTIVATED / 422
+ *    WEAK_PASSWORD → inline, distinguishable errors.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, within } from '@testing-library/react'
@@ -31,22 +32,24 @@ const state = vi.hoisted(() => ({
   admins:          [] as unknown[],
   createError:     null as unknown,
   deactivateError: null as unknown,
+  resetError:      null as unknown,
 }))
 
 vi.mock('../hooks/usePlatformCustomers', () => ({
   useTenantAdminUsers:            () => ({ data: state.admins, isLoading: false, isError: false }),
   useCreateTenantAdminUser:       () => ({ mutate: h.create, isPending: false, error: state.createError, reset: vi.fn() }),
   useDeactivateTenantAdminUser:   () => ({ mutate: h.deactivate, isPending: false, error: state.deactivateError, reset: vi.fn() }),
-  useResetTenantAdminUserPassword:() => ({ mutate: h.reset, isPending: false, error: null }),
+  useResetTenantAdminUserPassword:() => ({ mutate: h.reset, isPending: false, error: state.resetError, reset: vi.fn() }),
 }))
 
 import ClinicAdminsTab from '../components/platform/ClinicAdminsTab'
 
 beforeEach(() => {
-  vi.clearAllMocks()
+  vi.resetAllMocks()
   state.admins = []
   state.createError = null
   state.deactivateError = null
+  state.resetError = null
 })
 
 const ADMIN_ACTIVE = {
@@ -179,14 +182,51 @@ describe('reset password', () => {
     expect(screen.getAllByRole('button', { name: /Reset password/i })).toHaveLength(2)
   })
 
-  it('calls reset.mutate for the target row and shows credentials panel on success', () => {
+  it('opens a modal reusing PasswordField instead of resetting immediately', () => {
+    state.admins = [ADMIN_ACTIVE]
+    render(<ClinicAdminsTab id={42} />)
+    fireEvent.click(screen.getByRole('button', { name: /Reset password/i }))
+    expect(h.reset).not.toHaveBeenCalled()
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByLabelText('Password')).toBeInTheDocument()
+  })
+
+  it('generated-password reset calls reset.mutate with no password and shows credentials panel (regression)', () => {
     state.admins = [ADMIN_INACTIVE]
     h.reset.mockImplementation((_payload, opts) => {
       opts.onSuccess({ username: 'jdoe', password: 'NewPass1234' })
     })
     render(<ClinicAdminsTab id={42} />)
     fireEvent.click(screen.getByRole('button', { name: /Reset password/i }))
-    expect(h.reset).toHaveBeenCalledWith({ userId: ADMIN_INACTIVE.id }, expect.anything())
+    const dialog = screen.getByRole('dialog')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Reset password' }))
+    expect(h.reset).toHaveBeenCalledWith({ userId: ADMIN_INACTIVE.id, password: undefined }, expect.anything())
     expect(screen.getByText('NewPass1234')).toBeInTheDocument()
+  })
+
+  it('typed-password reset succeeds and displays the typed password once', () => {
+    state.admins = [ADMIN_ACTIVE]
+    h.reset.mockImplementation((payload, opts) => {
+      opts.onSuccess({ username: 'admin', password: payload.password })
+    })
+    render(<ClinicAdminsTab id={42} />)
+    fireEvent.click(screen.getByRole('button', { name: /Reset password/i }))
+    const dialog = screen.getByRole('dialog')
+    fireEvent.change(within(dialog).getByLabelText('Password'), { target: { value: 'TypedPass123' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Reset password' }))
+    expect(h.reset).toHaveBeenCalledWith({ userId: ADMIN_ACTIVE.id, password: 'TypedPass123' }, expect.anything())
+    expect(screen.getByText('TypedPass123')).toBeInTheDocument()
+  })
+
+  it('typed password <8 chars shows the 422 WEAK_PASSWORD error inline, not a false-success panel', () => {
+    state.admins = [ADMIN_ACTIVE]
+    state.resetError = { response: { data: { code: 'WEAK_PASSWORD' } } }
+    render(<ClinicAdminsTab id={42} />)
+    fireEvent.click(screen.getByRole('button', { name: /Reset password/i }))
+    const dialog = screen.getByRole('dialog')
+    fireEvent.change(within(dialog).getByLabelText('Password'), { target: { value: 'short' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Reset password' }))
+    expect(within(dialog).getAllByText(/at least 8 characters/i).length).toBeGreaterThan(0)
+    expect(screen.queryByText(/will not be shown again/i)).not.toBeInTheDocument()
   })
 })
