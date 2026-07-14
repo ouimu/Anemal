@@ -2093,3 +2093,16 @@ G-1 (no reactivate) → CO-9 dialog copy + component has no reactivate control. 
 - Audit action strings (`tenant.admin_user.create` / `.deactivate` / `.password_reset`) are identical across service code and every corresponding test assertion.
 
 **STATUS: PLAN COMPLETE. Ready for @ponytail-agent review (Step 5).**
+
+---
+
+## Ponytail Gate (Step 5, 2026-07-14) — APPROVED
+
+7-point check against real numbers (12 files [6 new], 3 subsystems, 0 migrations, 0 new deps):
+criteria 1-6 all clear. Criterion 7 (>3 new APIs) numerically trips at 4 endpoints
+(list/create/deactivate/reset) — ruled **justified, not bloat**: they map 1:1 to the
+human-signed-off Option D scope, reactivate was already deferred at grill (G-1) to hold the
+count at 4, and splitting to create+list-only would strand a locked-out customer with no
+password-recovery path — a real operational gap, not speculative building.
+
+**✅ APPROVE — proceeding to /execute-plan (Step 6).**
