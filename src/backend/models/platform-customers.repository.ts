@@ -10,6 +10,7 @@
  */
 
 import prisma from '../config/db'
+import { Prisma } from '@prisma/client'
 
 /** Lightweight tenant row returned for list views. */
 export type TenantRow = {
@@ -138,10 +139,17 @@ export function getTenantById(id: number): Promise<TenantRow | null> {
 /**
  * Create a new tenant record.
  *
- * @param data - Name, subdomain, and optional plan assignment.
+ * @param data   - Name, subdomain, and optional plan assignment.
+ * @param client - Prisma client or transaction client to run on (defaults to
+ *                 the module-level client). CO-1 passes a `$transaction`
+ *                 callback's `tx` so the tenant insert is atomic with the
+ *                 first clinic_admin user insert (ADR-0015).
  */
-export function createTenant(data: CreateTenantData): Promise<TenantRow> {
-  return prisma.tenant.create({
+export function createTenant(
+  data: CreateTenantData,
+  client: Prisma.TransactionClient | typeof prisma = prisma,
+): Promise<TenantRow> {
+  return client.tenant.create({
     data: {
       name:          data.name,
       subdomain:     data.subdomain,

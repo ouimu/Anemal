@@ -19,6 +19,9 @@ import type {
 } from '../models/platform-customers.repository'
 import * as platformAuditRepo from '../models/platform-audit.repository'
 import prisma from '../config/db'
+import bcrypt from 'bcrypt'
+import { config } from '../config/env'
+import { generateSecurePassword } from '../utils/password'
 
 /** Tenant status computed from isActive + trialEndsAt. */
 type TenantStatus = 'active' | 'trial' | 'suspended'
@@ -188,13 +191,51 @@ export async function createCustomer(data: CreateCustomerInput, performedById: n
     planId:        data.planId ?? null,
     companyTypeId: data.companyTypeId,
   }
-  const tenant = await customersRepo.createTenant(createData)
+
+  // CO-1 (ADR-0015): create the tenant and its first clinic_admin user
+  // atomically. If the user insert fails for any reason, the tenant insert
+  // rolls back too — no tenant-without-admin state is ever reachable.
+  const { tenant, adminUserId } = await prisma.$transaction(async (tx) => {
+    const createdTenant = await customersRepo.createTenant(createData, tx)
+
+    const clinicAdminRole = await tx.clinicRole.findFirst({
+      where: { key: 'clinic_admin', tenantId: null, isSystem: true },
+    })
+    if (!clinicAdminRole) {
+      throw new Error("System role 'clinic_admin' not seeded")
+    }
+
+    const passwordHash = await bcrypt.hash(generateSecurePassword(), config.bcryptRounds)
+
+    // R-E (BA sign-off, docs/superpowers/plans/2026-07-14-customer-onboarding-tasks.md):
+    // the auto-created first admin has email=NULL, phone=NULL. D-2-02 does not
+    // govern this path — this does not call user.service.ts createUser().
+    // Q-5: subscriptionService.assertCanAddUser is intentionally NOT called
+    // here — the first admin is exempt from quota enforcement.
+    const adminUser = await tx.user.create({
+      data: {
+        tenantId:     createdTenant.id,
+        name:         'Administrator',
+        username:     'admin',
+        email:        null,
+        phone:        null,
+        passwordHash,
+        role:         'admin',
+        roleId:       clinicAdminRole.id,
+      },
+    })
+    await tx.userRole.create({
+      data: { userId: adminUser.id, roleId: clinicAdminRole.id, tenantId: createdTenant.id },
+    })
+
+    return { tenant: createdTenant, adminUserId: adminUser.id }
+  })
 
   await platformAuditRepo.createPlatformAuditLog({
     action: 'customer.create',
     targetTenantId: tenant.id,
     performedByPlatformUserId: performedById,
-    details: { name: tenant.name, subdomain: tenant.subdomain, planId: tenant.planId },
+    details: { name: tenant.name, subdomain: tenant.subdomain, planId: tenant.planId, adminUserId },
   })
 
   return tenant

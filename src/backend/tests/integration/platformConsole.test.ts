@@ -64,6 +64,10 @@ beforeAll(async () => {
 afterAll(async () => {
   // Clean up quota overrides, provisioning rows, tenants, and plans created by this suite.
   if (createdTenantIds.length) {
+    // CO-1 (ADR-0015): createCustomer() now auto-creates a clinic_admin user +
+    // user_roles row per tenant; user_roles.tenantId has no cascade delete, so
+    // it must be cleared before the tenant row itself is removed.
+    await prisma.userRole.deleteMany({ where: { tenantId: { in: createdTenantIds } } })
     await prisma.tenantQuota.deleteMany({ where: { tenantId: { in: createdTenantIds } } })
     await prisma.tenantProvisioning.deleteMany({ where: { tenantId: { in: createdTenantIds } } })
     await prisma.platformAuditLog.deleteMany({ where: { targetTenantId: { in: createdTenantIds } } })
@@ -399,11 +403,14 @@ describe('T-5D-04 Quota enforcement', () => {
   let tenantId: number
 
   beforeAll(async () => {
-    // Plan with tight limits.
+    // Plan with tight limits. maxUsers=4 (not 2): CO-1 (ADR-0015) now auto-creates
+    // one real clinic_admin user per tenant at POST /platform/customers time, and
+    // this block's own fixture adds one more ('QA User 1') — headroom keeps the
+    // "unlimited override" assertion below meaningful instead of a coincidental pass.
     const planRes = await request(server)
       .post('/platform/plans')
       .set('Authorization', `Bearer ${platformToken}`)
-      .send({ key: `plan_${SFX}_quota`, name: 'QA Quota Plan', maxBranches: 1, maxUsers: 2, maxOwners: 1 })
+      .send({ key: `plan_${SFX}_quota`, name: 'QA Quota Plan', maxBranches: 1, maxUsers: 4, maxOwners: 1 })
     planId = planRes.body.data.id
     createdPlanIds.push(planId)
 
@@ -463,7 +470,7 @@ describe('T-5D-04 Quota enforcement', () => {
     ).rejects.toMatchObject({ statusCode: 409, code: 'QUOTA_EXCEEDED', resource: 'owners', limit: 1 })
   })
 
-  it('✅ override maxUsers=null (unlimited) → assertCanAddUser passes even though plan caps at 2', async () => {
+  it('✅ override maxUsers=null (unlimited) → assertCanAddUser passes even though plan caps at 4', async () => {
     await setOverride({ maxUsers: null })
     await expect(subscriptionService.assertCanAddUser(tenantId)).resolves.toBeUndefined()
   })

@@ -176,6 +176,11 @@ describe('platform contract — company-type round-trip (D2, grill FX.1)', () =>
   })
 
   afterAll(async () => {
+    // CO-1 (ADR-0015): createCustomer() now auto-creates a clinic_admin user +
+    // user_roles row per tenant; user_roles.tenantId has no cascade delete, so
+    // it must be cleared before the tenant row itself is removed.
+    if (customerId) await prisma.userRole.deleteMany({ where: { tenantId: customerId } })
+    if (customerId) await prisma.user.deleteMany({ where: { tenantId: customerId } })
     if (customerId) await prisma.platformAuditLog.deleteMany({ where: { targetTenantId: customerId } })
     if (platformUserId) await prisma.platformAuditLog.deleteMany({ where: { performedByPlatformUserId: platformUserId } })
     if (customerId) await prisma.tenant.deleteMany({ where: { id: customerId } })
