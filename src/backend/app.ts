@@ -34,6 +34,7 @@ import settingsRoutes from './routes/settings.routes'
 import systemSettingsRoutes from './routes/system-settings.routes'
 import uploadRoutes from './routes/upload.routes'
 import roleRoutes from './routes/role.routes'
+import cronRoutes from './routes/cron.routes'
 import { auditMiddleware } from './middlewares/audit.middleware'
 import { notFound, errorHandler } from './middlewares/error-handler.middleware'
 
@@ -87,6 +88,7 @@ app.use('/api/audit',           auditRoutes)
 app.use('/api/settings',        settingsRoutes)
 app.use('/api/upload',          uploadRoutes)
 app.use('/clinic/roles',        roleRoutes)
+app.use('/api/cron',            cronRoutes)
 
 // 404 fallback + global error handler (must be last)
 app.use(notFound)
