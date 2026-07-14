@@ -356,3 +356,97 @@ describe('CO-4: PATCH /platform/customers/:id/admin-users/:userId/deactivate', (
     expect(res2.status).toBe(403)
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CO-5 — PATCH /platform/customers/:id/admin-users/:userId/password
+// ─────────────────────────────────────────────────────────────────────────────
+describe('CO-5: PATCH /platform/customers/:id/admin-users/:userId/password', () => {
+  it('✅ generates a new password when body is empty; hash actually changes', async () => {
+    const tenant = await createTenantViaService('co5a')
+    const admin  = await prisma.user.findFirstOrThrow({ where: { tenantId: tenant.id, username: 'admin' } })
+    const beforeHash = admin.passwordHash
+
+    const res = await request(server)
+      .patch(`/platform/customers/${tenant.id}/admin-users/${admin.id}/password`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({})
+    expect(res.status).toBe(200)
+    expect(res.body.data.password).toHaveLength(16)
+
+    const row = await prisma.user.findUniqueOrThrow({ where: { id: admin.id } })
+    expect(row.passwordHash).not.toBe(beforeHash)
+
+    const log = await prisma.platformAuditLog.findFirstOrThrow({
+      where: { action: 'tenant.admin_user.password_reset', targetTenantId: tenant.id },
+    })
+    expect(JSON.stringify(log.details)).not.toMatch(/password/i)
+  })
+
+  it('✅ accepts a typed password (>= 8 chars) and hashes exactly what was typed', async () => {
+    const tenant = await createTenantViaService('co5b')
+    const admin  = await prisma.user.findFirstOrThrow({ where: { tenantId: tenant.id, username: 'admin' } })
+
+    const res = await request(server)
+      .patch(`/platform/customers/${tenant.id}/admin-users/${admin.id}/password`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ password: 'NewTypedPass1!' })
+    expect(res.status).toBe(200)
+    expect(res.body.data.password).toBe('NewTypedPass1!')
+
+    const row = await prisma.user.findUniqueOrThrow({ where: { id: admin.id } })
+    expect(await bcrypt.compare('NewTypedPass1!', row.passwordHash)).toBe(true)
+  })
+
+  it('✅ works on a deactivated admin (CO-10 — reset is not active-only)', async () => {
+    const tenant = await createTenantViaService('co5c')
+    const admin  = await prisma.user.findFirstOrThrow({ where: { tenantId: tenant.id, username: 'admin' } })
+    await request(server)
+      .patch(`/platform/customers/${tenant.id}/admin-users/${admin.id}/deactivate`)
+      .set('Authorization', `Bearer ${platformToken}`)
+
+    const res = await request(server)
+      .patch(`/platform/customers/${tenant.id}/admin-users/${admin.id}/password`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({})
+    expect(res.status).toBe(200)
+  })
+
+  it('❌ 422 when the typed password is shorter than 8 characters', async () => {
+    const tenant = await createTenantViaService('co5d')
+    const admin  = await prisma.user.findFirstOrThrow({ where: { tenantId: tenant.id, username: 'admin' } })
+    const res = await request(server)
+      .patch(`/platform/customers/${tenant.id}/admin-users/${admin.id}/password`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ password: 'short1' })
+    expect(res.status).toBe(422)
+  })
+
+  it('❌ 404 when userId belongs to a different tenant (BOLA)', async () => {
+    const tenantA = await createTenantViaService('co5e1')
+    const tenantB = await createTenantViaService('co5e2')
+    const adminB  = await prisma.user.findFirstOrThrow({ where: { tenantId: tenantB.id, username: 'admin' } })
+
+    const res = await request(server)
+      .patch(`/platform/customers/${tenantA.id}/admin-users/${adminB.id}/password`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({})
+    expect(res.status).toBe(404)
+  })
+
+  it('❌ 403 without platform.customers.manage; 403 with wrong plane', async () => {
+    const tenant = await createTenantViaService('co5f')
+    const admin  = await prisma.user.findFirstOrThrow({ where: { tenantId: tenant.id, username: 'admin' } })
+
+    const res1 = await request(server)
+      .patch(`/platform/customers/${tenant.id}/admin-users/${admin.id}/password`)
+      .set('Authorization', `Bearer ${supportToken}`)
+      .send({})
+    expect(res1.status).toBe(403)
+
+    const res2 = await request(server)
+      .patch(`/platform/customers/${tenant.id}/admin-users/${admin.id}/password`)
+      .set('Authorization', `Bearer ${clinicToken}`)
+      .send({})
+    expect(res2.status).toBe(403)
+  })
+})

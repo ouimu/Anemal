@@ -487,3 +487,41 @@ export async function deactivateTenantAdminUser(
   if (!user) throw new AdminUserNotFoundError() // defensive — unreachable in practice
   return user
 }
+
+/**
+ * Reset (or generate) a clinic_admin user's password (CO-5). Available on
+ * both active and deactivated admins (CO-10). Response includes the
+ * plaintext exactly once; audit details never include it (R-6).
+ *
+ * @param tenantId      - Target tenant (path param).
+ * @param userId        - Target user (path param).
+ * @param newPassword   - Typed password (>= 8 chars) or undefined to auto-generate.
+ * @param performedById - Platform user performing the action.
+ */
+export async function resetTenantAdminUserPassword(
+  tenantId: number,
+  userId: number,
+  newPassword: string | undefined,
+  performedById: number,
+): Promise<TenantAdminUserWithPassword> {
+  if (newPassword !== undefined && newPassword.length < 8) {
+    throw new WeakPasswordError()
+  }
+
+  const plaintext    = newPassword ?? generateSecurePassword()
+  const passwordHash = await bcrypt.hash(plaintext, config.bcryptRounds)
+
+  const updated = await customersRepo.setTenantAdminUserPassword(tenantId, userId, passwordHash)
+  if (updated === 0) throw new AdminUserNotFoundError()
+
+  await platformAuditRepo.createPlatformAuditLog({
+    action: 'tenant.admin_user.password_reset',
+    targetTenantId: tenantId,
+    performedByPlatformUserId: performedById,
+    details: { userId },
+  })
+
+  const user = await customersRepo.findTenantAdminUser(tenantId, userId)
+  if (!user) throw new AdminUserNotFoundError() // defensive — unreachable in practice
+  return { ...user, password: plaintext }
+}

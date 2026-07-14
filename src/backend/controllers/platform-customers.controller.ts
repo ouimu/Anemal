@@ -74,6 +74,18 @@ export const createTenantAdminUserSchema = z.object({
 }).strict()
 
 /**
+ * Zod schema for PATCH /platform/customers/:id/admin-users/:userId/password.
+ *
+ * Shape validation only. The 8-char minimum for a typed password is enforced
+ * in the service layer (→ 422, WeakPasswordError), not here — this
+ * codebase's validate.middleware always maps Zod failures to 400 (see the
+ * `createTenantAdminUserSchema` note above for the same precedent).
+ */
+export const resetTenantAdminUserPasswordSchema = z.object({
+  password: z.string().optional(),
+}).strict()
+
+/**
  * GET /platform/customers
  */
 export async function handleListCustomers(
@@ -320,6 +332,26 @@ export async function handleDeactivateTenantAdminUser(
     const userId = Number(req.params.userId)
     const performedById = req.context!.platformUserId!
     const data = await customersService.deactivateTenantAdminUser(tenantId, userId, performedById)
+    res.status(200).json({ success: true, data })
+  } catch (err) {
+    next(err)
+  }
+}
+
+/**
+ * PATCH /platform/customers/:id/admin-users/:userId/password
+ */
+export async function handleResetTenantAdminUserPassword(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const tenantId = Number(req.params.id)
+    const userId = Number(req.params.userId)
+    const body = req.body as z.infer<typeof resetTenantAdminUserPasswordSchema>
+    const performedById = req.context!.platformUserId!
+    const data = await customersService.resetTenantAdminUserPassword(tenantId, userId, body.password, performedById)
     res.status(200).json({ success: true, data })
   } catch (err) {
     next(err)
