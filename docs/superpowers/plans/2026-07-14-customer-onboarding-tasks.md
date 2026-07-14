@@ -564,3 +564,29 @@ nudge question, Q-3b "Administrator" name editability, Q-9 reactivate scope, Pon
 **No unresolved findings remain.** `/write-plan` is unblocked.
 
 ### STATUS: STEP 3.5 COMPLETE — proceeding to /write-plan
+
+---
+
+## Pipeline status (autonomous scheduled run, 2026-07-14, resumed session)
+
+STEP 4 write-plan → `docs/superpowers/plans/2026-07-14-clinic-admins-tab-implementation.md` (complete).
+STEP 5 Ponytail Gate → APPROVE (see bottom of that file).
+STEP 6 execute-plan → CO-1..CO-10 all implemented, committed (`bd60ecc`..`a9de960`).
+STEP 7 code-review (0 findings) + QA sign-off (APPROVE) → `docs/superpowers/plans/2026-07-14-clinic-admins-tab-qa-signoff.md`.
+STEP 8 `/anemal-finish-branch` → PR created: **https://github.com/ouimu/AnimalClinic/pull/23**
+(branch `feature/clinic-admins-tab` pushed, tracking `origin/feature/clinic-admins-tab`).
+
+**NOT YET DONE (blocks final completion, per `/anemal-finish-branch` skill — never
+auto-merges):** a human needs to merge PR #23. Next scheduled run: check PR #23's
+merge status first (`gh pr view 23 --json state,mergedAt`). If merged: `git checkout
+main && git pull`, re-run full test suite on `main`, then invoke `anemal-HTML-updater`
+(Step 8's mandatory last act) and stop — feature fully done. If still open: do not
+merge it yourself, do not re-run the pipeline from scratch, just report status and
+end the run (nothing else to do until a human merges).
+
+Separately flagged for human awareness (not blocking, see QA sign-off doc): the
+tenant's auto-created first admin has no recoverable initial password — the platform
+admin must do one manual "Reset password" from the Clinic Admins tab before the new
+customer can log in. This was an accepted fallback from the credential-delivery
+blocker doc (`2026-07-14-customer-onboarding-blocker-credential-delivery.md`), not
+silently reopened.
