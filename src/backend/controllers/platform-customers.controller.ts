@@ -306,3 +306,22 @@ export async function handleCreateTenantAdminUser(
     next(err)
   }
 }
+
+/**
+ * PATCH /platform/customers/:id/admin-users/:userId/deactivate
+ */
+export async function handleDeactivateTenantAdminUser(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const tenantId = Number(req.params.id)
+    const userId = Number(req.params.userId)
+    const performedById = req.context!.platformUserId!
+    const data = await customersService.deactivateTenantAdminUser(tenantId, userId, performedById)
+    res.status(200).json({ success: true, data })
+  } catch (err) {
+    next(err)
+  }
+}

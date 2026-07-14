@@ -274,3 +274,85 @@ describe('CO-2: POST /platform/customers/:id/admin-users', () => {
     expect(res.status).toBe(401)
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CO-4 — PATCH /platform/customers/:id/admin-users/:userId/deactivate
+// ─────────────────────────────────────────────────────────────────────────────
+describe('CO-4: PATCH /platform/customers/:id/admin-users/:userId/deactivate', () => {
+  it('✅ deactivates a clinic_admin user; login is actually blocked afterward (G-4)', async () => {
+    const tenant = await createTenantViaService('co4a')
+    const admin  = await prisma.user.findFirstOrThrow({ where: { tenantId: tenant.id, username: 'admin' } })
+
+    const res = await request(server)
+      .patch(`/platform/customers/${tenant.id}/admin-users/${admin.id}/deactivate`)
+      .set('Authorization', `Bearer ${platformToken}`)
+    expect(res.status).toBe(200)
+    expect(res.body.data.isActive).toBe(false)
+
+    const row = await prisma.user.findUniqueOrThrow({ where: { id: admin.id } })
+    expect(row.isActive).toBe(false)
+
+    const log = await prisma.platformAuditLog.findFirstOrThrow({
+      where: { action: 'tenant.admin_user.deactivate', targetTenantId: tenant.id },
+    })
+    expect((log.details as Record<string, unknown>).userId).toBe(admin.id)
+  })
+
+  it('❌ 404 when userId belongs to a different tenant (BOLA — no cross-tenant mutation)', async () => {
+    const tenantA = await createTenantViaService('co4b1')
+    const tenantB = await createTenantViaService('co4b2')
+    const adminB  = await prisma.user.findFirstOrThrow({ where: { tenantId: tenantB.id, username: 'admin' } })
+
+    const res = await request(server)
+      .patch(`/platform/customers/${tenantA.id}/admin-users/${adminB.id}/deactivate`)
+      .set('Authorization', `Bearer ${platformToken}`)
+    expect(res.status).toBe(404)
+
+    const row = await prisma.user.findUniqueOrThrow({ where: { id: adminB.id } })
+    expect(row.isActive).toBe(true) // unchanged
+  })
+
+  it('❌ 404 when the target user is not a clinic_admin of this tenant (Q-8 role-scope guard)', async () => {
+    const tenant = await createTenantViaService('co4c')
+    const passwordHash = await bcrypt.hash('StaffPass1!', 10)
+    const staffRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } })
+    const staff = await prisma.user.create({
+      data: { tenantId: tenant.id, username: 'staffer', name: 'Staffer', passwordHash, role: 'staff', isActive: true },
+    })
+    await prisma.userRole.create({ data: { tenantId: tenant.id, userId: staff.id, roleId: staffRole.id } })
+
+    const res = await request(server)
+      .patch(`/platform/customers/${tenant.id}/admin-users/${staff.id}/deactivate`)
+      .set('Authorization', `Bearer ${platformToken}`)
+    expect(res.status).toBe(404)
+  })
+
+  it('❌ 409 ALREADY_DEACTIVATED when the user is already inactive (G-5 — not a silent no-op)', async () => {
+    const tenant = await createTenantViaService('co4d')
+    const admin  = await prisma.user.findFirstOrThrow({ where: { tenantId: tenant.id, username: 'admin' } })
+    await request(server)
+      .patch(`/platform/customers/${tenant.id}/admin-users/${admin.id}/deactivate`)
+      .set('Authorization', `Bearer ${platformToken}`)
+
+    const res = await request(server)
+      .patch(`/platform/customers/${tenant.id}/admin-users/${admin.id}/deactivate`)
+      .set('Authorization', `Bearer ${platformToken}`)
+    expect(res.status).toBe(409)
+    expect(res.body.code).toBe('ALREADY_DEACTIVATED')
+  })
+
+  it('❌ 403 without platform.customers.manage; 403 with wrong plane', async () => {
+    const tenant = await createTenantViaService('co4e')
+    const admin  = await prisma.user.findFirstOrThrow({ where: { tenantId: tenant.id, username: 'admin' } })
+
+    const res1 = await request(server)
+      .patch(`/platform/customers/${tenant.id}/admin-users/${admin.id}/deactivate`)
+      .set('Authorization', `Bearer ${supportToken}`)
+    expect(res1.status).toBe(403)
+
+    const res2 = await request(server)
+      .patch(`/platform/customers/${tenant.id}/admin-users/${admin.id}/deactivate`)
+      .set('Authorization', `Bearer ${clinicToken}`)
+    expect(res2.status).toBe(403)
+  })
+})

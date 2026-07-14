@@ -29,6 +29,7 @@ import {
   handleUpdateProvisioning,
   handleGetCustomerUsage,
   handleCreateTenantAdminUser,
+  handleDeactivateTenantAdminUser,
 } from '../controllers/platform-customers.controller'
 
 const router = Router()
@@ -59,5 +60,6 @@ router.put('/:id/provisioning', requirePlatformPermission('platform.provisioning
 
 // Clinic admin users (bounded platform→clinic-plane exception, ADR-0015)
 router.post('/:id/admin-users', requirePlatformPermission('platform.customers.manage'), validate(createTenantAdminUserSchema), handleCreateTenantAdminUser)
+router.patch('/:id/admin-users/:userId/deactivate', requirePlatformPermission('platform.customers.manage'), handleDeactivateTenantAdminUser)
 
 export default router

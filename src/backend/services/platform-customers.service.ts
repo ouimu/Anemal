@@ -453,3 +453,37 @@ export async function createTenantAdminUser(
     throw err
   }
 }
+
+/**
+ * Deactivate a clinic_admin user for a tenant (CO-4). Soft delete only
+ * (Q-9) — sets isActive=false. The target must currently hold the
+ * clinic_admin role for this exact tenant (Q-8); otherwise 404, same as a
+ * cross-tenant userId (BOLA guard, PR #20 precedent).
+ *
+ * @param tenantId       - Target tenant (path param).
+ * @param userId         - Target user (path param).
+ * @param performedById  - Platform user performing the action.
+ */
+export async function deactivateTenantAdminUser(
+  tenantId: number,
+  userId: number,
+  performedById: number,
+): Promise<TenantAdminUser> {
+  const updated = await customersRepo.deactivateTenantAdminUser(tenantId, userId)
+  if (updated === 0) {
+    const existing = await customersRepo.findTenantAdminUser(tenantId, userId)
+    if (!existing) throw new AdminUserNotFoundError()
+    throw new AlreadyDeactivatedError()
+  }
+
+  await platformAuditRepo.createPlatformAuditLog({
+    action: 'tenant.admin_user.deactivate',
+    targetTenantId: tenantId,
+    performedByPlatformUserId: performedById,
+    details: { userId },
+  })
+
+  const user = await customersRepo.findTenantAdminUser(tenantId, userId)
+  if (!user) throw new AdminUserNotFoundError() // defensive — unreachable in practice
+  return user
+}
