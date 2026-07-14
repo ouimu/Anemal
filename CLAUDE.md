@@ -162,10 +162,11 @@ src/
 | Hospitalization branch isolation | Closed BOLA gap (OWASP API1:2023) on single-record hospitalization ops — `branchId` now derived from authenticated context and threaded through get/edit/remove/logCare/discharge; `/active` no longer trusts query-string branch override (PR #20, ADR-0014) | ✅ 912 backend tests |
 | Log Care vitals modal | Added heartRateBpm/respRateRpm/feedingStatus/medicationGiven input fields to the Log Care wizard; extracted shared `VitalStepper` component from ClinicEMR for reuse (PR #21) | ✅ 912 backend + 233 frontend tests |
 | RETEST-2026-07-13 fixes | Independent re-test of PRs #19–#21 found 3 P1 defects (unscoped `performedByUser` tenant leak risk, missing FK index on `performedBy`, undefined `text-label-lg` Tailwind token) + 4 regression-test gaps, all closed (PR #22) | ✅ 915 backend + 235 frontend tests |
+| Clinic Admins tab | New tenants had no clinic login — `createCustomer()` now auto-creates the tenant's first `clinic_admin` (`admin`/"Administrator", email/phone NULL) atomically in-transaction, plus a "Clinic Admins" tab (list/create/deactivate/reset-password) on Customer Detail — a bounded, audited platform→clinic-plane exception (PR #23, ADR-0015) | ✅ 953 backend + 256 frontend tests |
 | 10 | Payment gateway + SaaS billing | ⏸ needs credentials |
 | 11 | LINE/SMS dispatch | ⏸ needs credentials |
 
-See `.claude/roadmap/archive/bugfix-pipeline-2026-07-tracker.md` for the completed 2026-07 bugfix pipeline (all 3 items shipped — Items 1–2 via PRs #17/#18, Item 3 via PR #19), `.claude/roadmap/ACTIVE/pet-emr-inpatient-fixes.md` for Pet/EMR sub-tasks (all 4 items shipped), `.claude/roadmap/ACTIVE/remaining-tasks.md` for other sub-tasks, `docs/adr/0014-hospitalization-branch-isolation.md` for the branch-isolation BOLA fix (PR #20).
+See `.claude/roadmap/archive/bugfix-pipeline-2026-07-tracker.md` for the completed 2026-07 bugfix pipeline (all 3 items shipped — Items 1–2 via PRs #17/#18, Item 3 via PR #19), `.claude/roadmap/ACTIVE/pet-emr-inpatient-fixes.md` for Pet/EMR sub-tasks (all 4 items shipped), `.claude/roadmap/ACTIVE/remaining-tasks.md` for other sub-tasks, `docs/adr/0014-hospitalization-branch-isolation.md` for the branch-isolation BOLA fix (PR #20), `docs/adr/0015-platform-provisions-clinic-admin-identity.md` for the Clinic Admins tab / first-admin provisioning design (PR #23).
 
 ---
 
