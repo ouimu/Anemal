@@ -124,47 +124,64 @@ Edge cases for /grill-with-docs:
 
 ## 6. Solution Options Considered
 
-**Option A — Extend create-customer flow (recommended).** One modal, one API call, one transaction. Pros: atomic, simplest UX, closes the gap completely. Cons: modal grows by three fields. Complexity: L.
+**Option A — Extend create-customer flow only.** One modal, one API call, one transaction. Closes onboarding gap but no ongoing management surface — any password reset or added admin needs a script.
 
-**Option B — Separate "Provision admin user" action on CustomerDetailView.** Pros: keeps create-customer unchanged; usable for backfilling existing admin-less tenants. Cons: two-step onboarding, tenant can still exist login-less, more API surface. Complexity: M.
+**Option B — Separate "Provision admin user" single action on CustomerDetailView.** Keeps create-customer unchanged; usable for backfilling. Two-step onboarding, no edit/deactivate/reset surface.
 
-**Option C — Emailed invite link (set-your-own-password).** Pros: platform never sees a password at all. Cons: requires email dispatch (Phase 10/11, blocked on credentials) and a token/invite subsystem that does not exist. Complexity: H. **Not viable now.**
+**Option C — Emailed invite link.** Requires email dispatch (Phase 10/11, blocked on credentials) and an invite/token subsystem that doesn't exist. **Not viable now.**
 
-Recommendation: **A**, with B's "provision admin" action noted as a possible follow-up for backfill.
+**Option D — Selected (2026-07-14, human sign-off in chat).** Extend create-customer to auto-create the first `clinic_admin` (transaction, Option A's mechanics) **plus** add a new "Clinic Admins" tab on `CustomerDetailView` giving the platform admin ongoing CRUD over clinic_admin users for that tenant: create additional clinic_admin users, deactivate, and set/reset password (typed or generated) at any time. Subsumes B (tab handles backfill for existing admin-less tenants — no separate migration/script needed) and closes the "password lost before handoff" gap (R-D) since the platform admin can just reset it from the tab.
 
 ---
 
-## 7. Open Questions Requiring Human Sign-off (NOT resolved here)
+## 7. Decisions (resolved 2026-07-14, human sign-off in chat)
 
-| # | Question | Proposed default (unconfirmed) |
+| # | Question | **Decision** |
 |---|---|---|
-| Q-1 | Password generation policy: length, alphabet, generator (crypto-random 16 chars proposed). **Security-relevant — must be explicitly confirmed by a human, not decided by an unattended run.** | 16-char crypto-random, bcrypt `config.bcryptRounds` |
-| Q-2 | Credential delivery: display-once in platform UI vs email (email blocked on Phase 10/11 credentials) vs invite link. | Display-once |
-| Q-3 | Which admin fields go on the create-customer form: name + username + email all required? Username auto-defaulted to `admin`? | All three, username prefilled `admin` |
-| Q-4 | "Must change password on first login": required now (new schema field + login-flow work) or deferred? No such mechanism exists today. | Defer; track as follow-up |
-| Q-5 | Should the first-admin creation bypass `assertCanAddUser` quota, or rely on count-0 always passing? | Exempt/skip for first admin |
-| Q-6 | Backfill path for existing admin-less tenants (Option B action)? | Separate follow-up item |
-| Q-7 | Distinct audit/permission code for admin-user provisioning, or fold into existing `customer.create` audit action with an `adminUserId` detail field (never the password)? | Fold in, add `adminUserId` to details |
+| Q-1 | Password generation policy | 16-char crypto-random (unambiguous alphabet), bcrypt `config.bcryptRounds`. Applies to both initial auto-create and any later "generate" action in the tab. |
+| Q-2 | Credential delivery | Display-once in platform UI. For initial creation: shown in the new **Clinic Admins tab**, not the create-customer response/modal (create-customer flow stays a plain success, admin then opens the tab to see the generated credentials). For password reset: same display-once pattern. |
+| Q-3 | Create-customer form fields | Tenant fields only (name/subdomain/planId/companyTypeId) — **unchanged**. No admin-name/username/email fields added to the create-customer modal. The first clinic_admin is auto-generated server-side (see Q-3b) and surfaced in the tab, not entered by the platform admin at tenant-creation time. |
+| Q-3b | Auto-generated first-admin identity | Username: `admin` (per-tenant unique, safe as first user). Name: `"Administrator"` (editable later in the tab? — edit scope TBD at plan time, deactivate/reset are confirmed, rename not explicitly requested — default to not-editable for v1, flag at grill). Email: none by default (D-2-02 requires email OR phone; **need a placeholder or make email/phone optional at auto-create time** — flag for /grill-with-docs, this is a schema-rule interaction, not a UI decision). |
+| Q-4 | Forced password change on first login | Deferred — not requested, no schema field exists. Not in this scope. |
+| Q-5 | Quota (`assertCanAddUser`) for admin creation | First auto-created admin is exempt (count is 0, always passes in practice, but the transaction should not hard-block on quota=0 edge case). Additional clinic_admin users created via the tab **do** count against the tenant's user quota — normal `assertCanAddUser` check applies. |
+| Q-6 | Backfill for existing admin-less tenants | Solved by the tab: platform admin opens Clinic Admins tab on any existing tenant, uses "Create" to add a clinic_admin. No migration/backfill script needed. |
+| Q-7 | Audit logging | `customer.create` audit entry gains `adminUserId` detail (no password). New platform-audit actions for tab operations: `tenant.admin_user.create`, `tenant.admin_user.deactivate`, `tenant.admin_user.password_reset` — **never** log the plaintext password in any of them. |
+| Q-8 (new) | Tab scope — role assignable | **clinic_admin only.** Platform never assigns/manages other clinic roles (doctor/staff) — those are managed inside the clinic app by the clinic_admin. Tab lists/creates/deactivates clinic_admin-role users only. |
+| Q-9 (new) | Delete semantics | **Deactivate (soft), not hard delete.** Sets `User.isActive = false`, same mechanism as existing clinic staff deactivation. Preserves FK integrity (audit trails, createdBy references). No reactivate requested yet — flag at grill whether reactivate is in scope or a clear follow-up. |
+| Q-10 (new) | Password-set mechanism | Platform admin can **either** type a new password directly **or** click "generate" for a crypto-random one — both paths hash with `config.bcryptRounds`, both display the result once (typed: admin already knows it, so echo back is optional; generated: must be shown). |
 
 ---
 
-## 8. Risks
+## 8. New Surface — "Clinic Admins" Tab (CustomerDetailView)
 
-- **R-A (High):** Plaintext password leakage into logs/audit if implementation is careless. Mitigation: explicit QA check (R-6), never serialize the password anywhere but the one-time response field.
-- **R-B (Medium):** Plane-separation ambiguity — platform writing to the clinic `users` table. Mitigation: /grill-with-docs must explicitly bless provisioning-writes as an allowed exception (or reshape the design).
-- **R-C (Medium):** Partial provisioning without a transaction. Mitigation: §5.
-- **R-D (Low):** Displayed-once password lost by the platform admin before handoff. Mitigation: clinic-side password reset exists via clinic admin tooling? Confirm during grilling; may motivate a platform-side "reset first-admin password" follow-up.
+New tab alongside existing Customer Detail tabs (Overview/Usage/Provisioning per implementation-status-matrix). Scope: **clinic_admin-role users of this tenant only.**
+
+- **List:** username, name, email/phone, status (active/deactivated), created date.
+- **Create:** name, username, email-or-phone (server enforces D-2-02), password (typed or "generate" button) → creates `User` + `UserRole(clinic_admin)` in this tenant, counts against quota, writes `tenant.admin_user.create` audit entry, displays password once if generated.
+- **Deactivate:** sets `isActive = false`, writes `tenant.admin_user.deactivate` audit entry. Confirmation dialog (irreversible-feeling action from platform UI even though it's a soft delete).
+- **Reset password:** typed or generate, re-hashes, writes `tenant.admin_user.password_reset` audit entry (no password in details), displays once.
+- **No role picker** — role is always clinic_admin, no other roles selectable (Q-8).
+
+Endpoints (proposed, naming TBD at plan time): `GET/POST /platform/customers/:id/admin-users`, `PATCH /platform/customers/:id/admin-users/:userId/deactivate`, `PATCH /platform/customers/:id/admin-users/:userId/password`. All under existing platform-plane guard; confirm at grill whether a distinct permission code is warranted vs reusing the existing customer-management permission (Q-7 area).
 
 ---
 
-## 9. Handoff
+## 9. Risks
 
-Next pipeline steps after human approval: @pm-agent task breakdown (Step 2) → @ba-agent validation of final decisions (Step 3) → /grill-with-docs (Step 3.5, mandatory) → /write-plan.
+- **R-A (High):** Plaintext password leakage into logs/audit. Mitigation: explicit QA check, password never serialized outside the one-time response field, verified for all three flows (create, first-admin auto-create, reset).
+- **R-B (Medium):** Plane-separation ambiguity — platform plane writing to the clinic `users` table, now on an ongoing basis (not just at tenant creation). Mitigation: /grill-with-docs must explicitly bless this as a bounded platform-plane exception (identity provisioning only, never clinical/PII data).
+- **R-C (Medium):** Partial provisioning without a transaction on first-admin auto-create. Mitigation: §5 (unchanged from Option A).
+- **R-D (Resolved by Option D):** Lost displayed-once password — now recoverable via the tab's reset action.
+- **R-E (New):** D-2-02 (email OR phone required) interaction with auto-generated first admin having neither by default — must be resolved at grill (placeholder value? relax the rule for platform-provisioned first admins? require platform admin to supply email/phone at tenant-creation time after all?).
 
 ---
 
-> **STATUS: BLOCKED — awaiting human brainstorm sign-off.**
-> Pipeline Step 1 cannot proceed to @pm-agent task breakdown or /grill-with-docs until a human
-> reviews and approves this design in a live session. The open questions in §7 — password
-> generation policy, credential delivery mechanism, form fields, and forced password change —
-> must be explicitly decided by a human before any plan or code is written.
+## 10. Handoff
+
+**Step 1 brainstorm: human-approved 2026-07-14 (chat sign-off, Option D + §7 decisions).**
+
+Next: @pm-agent task breakdown (Step 2) → @ba-agent validation, in particular R-E (D-2-02 interaction) and R-B (plane-separation bound) (Step 3) → /grill-with-docs (Step 3.5, mandatory — must specifically probe R-E, Q-3b editability, Q-9 reactivate) → /write-plan.
+
+---
+
+> **STATUS: STEP 1 APPROVED.** Proceeding to Step 2 (@pm-agent task breakdown).
