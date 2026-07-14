@@ -92,7 +92,8 @@ performedById)` scoped to an existing tenant (path param `:id`, tenant looked up
 `CustomerNotFoundError` if missing, mirrors `getCustomer`/`updateCustomer` pattern). Accepts
 `{ name, username, email?, phone?, password? }` — D-2-02 enforced (email OR phone required, same
 rule as `user.service.ts`), password optional: if omitted, server generates one (CO-3); if
-provided, hash it directly (Q-10). Creates `User` + `UserRole(clinic_admin)` for the target
+provided, hash it directly, with an 8-char minimum-length check (grill decision — see Grill
+Findings §11, scoped to this feature only, not a codebase-wide password-policy change) (Q-10). Creates `User` + `UserRole(clinic_admin)` for the target
 tenant only (Q-8 — role is always `clinic_admin`, no role param accepted). Runs
 `subscriptionService.assertCanAddUser(tenantId)` (Q-5 — counts against quota, unlike CO-1).
 Writes `tenant.admin_user.create` audit entry (Q-7), response includes the plaintext password
@@ -124,7 +125,11 @@ Acceptance Criteria:
 - [ ] `tenant.admin_user.create` audit entry written with `targetTenantId`, `performedByPlatformUserId`,
       and `details` containing at minimum the new user's id/username — no password (Q-7).
 - [ ] Duplicate `username` within the same tenant → 409 (existing P2002 handling pattern from
-      `user.service.ts` reused), not a 500.
+      `user.service.ts` reused), not a 500. Note: `User.email` has no uniqueness constraint at
+      all (DB or service — confirmed only `@@unique([tenantId, username])` exists), so no
+      cross-tenant or same-tenant email-collision case exists to handle.
+- [ ] Typed `password` shorter than 8 characters → 422 (grill decision, scoped to this feature —
+      see Grill Findings §11).
 - [ ] Negative/authorization case: request from a platform user lacking `platform.customers.manage`
       is rejected 403; request bearing a **clinic-plane** JWT (wrong plane) is rejected by
       `requirePlane('platform')` before reaching the handler.
@@ -183,8 +188,8 @@ Acceptance Criteria:
 - [ ] 404 when the target user does not hold the `clinic_admin` role for this tenant (Q-8 — e.g.
       attempting to deactivate a `doctor`/`clinic_staff` user via this endpoint is rejected; this
       endpoint is admin-user-scoped only).
-- [ ] Idempotency: deactivating an already-inactive user either succeeds as a no-op or returns a
-      defined error — pick one and assert it (no undefined 500).
+- [ ] Idempotency: deactivating an already-inactive user returns `409 ALREADY_DEACTIVATED`
+      (grill decision, not a silent no-op).
 - [ ] `tenant.admin_user.deactivate` audit entry written with `targetTenantId`, `userId`,
       `performedByPlatformUserId` (Q-7).
 - [ ] Negative/authorization case: missing `platform.customers.manage` → 403; wrong plane → 403
@@ -208,10 +213,11 @@ Writes `tenant.admin_user.password_reset` audit entry with **no password in deta
 Acceptance Criteria:
 - [ ] Route: `PATCH /:id/admin-users/:userId/password`, same permission guard as CO-2/CO-4.
 - [ ] Same tenant+userId scoping and clinic_admin-role restriction as CO-4 (404 on mismatch).
-- [ ] Typed password path: body `password` is hashed with `bcrypt`/`config.bcryptRounds` and
-      persisted; response echoes it back once (Q-10 — "typed: echo back is optional" per
-      brainstorm, this task's implementation choice: echo back for UI consistency with the
-      generated path — confirm with @uiux-agent at Step 6, not a blocking decision here).
+- [ ] Typed password path: body `password` (min 8 chars, else 422 — grill decision) is hashed
+      with `bcrypt`/`config.bcryptRounds` and persisted; response echoes it back once (Q-10 —
+      "typed: echo back is optional" per brainstorm, this task's implementation choice: echo back
+      for UI consistency with the generated path — confirm with @uiux-agent at Step 6, not a
+      blocking decision here).
 - [ ] Generated path (`password` omitted): CO-3's generator produces a new password, hashed and
       persisted, returned once in the response.
 - [ ] `tenant.admin_user.password_reset` audit entry contains no password/passwordHash field
@@ -280,6 +286,9 @@ Acceptance Criteria:
       `UsageTab`.
 - [ ] No Compassionate Care design-token violations (no raw hex, Material Symbols only, existing
       Tailwind scale) — reviewed by @uiux-agent at Step 6.
+- [ ] No name/username edit action exists on this tab (grill decision, Q-3b — see Grill Findings
+      §11: renaming "Administrator" happens clinic-side via the existing profile/settings screen
+      after first login, confirmed to exist at `settings.routes.ts`/`admin.routes.ts`).
 - [ ] Negative/authorization case: a platform user without `platform.customers.view` never
       reaches `CustomerDetailView` at all (existing route guard, unchanged) — confirmed by
       inspection, not new middleware.
@@ -327,11 +336,17 @@ Actor/role: Platform admin   Device: Web
 Description: Per-row "Deactivate" action on the Clinic Admins tab table, gated to active rows
 only (deactivated rows show a disabled/absent action). Confirmation dialog before calling CO-4
 (brainstorm Q-9 — "irreversible-feeling action from platform UI even though it's a soft delete").
+**No reactivate endpoint exists (grill decision — see Grill Findings §11)**: the confirm dialog
+must warn that deactivating a tenant's only active clinic_admin removes its login and there is no
+undo button — recovery is creating a new clinic_admin via CO-8, not reactivating this one.
 
 Acceptance Criteria:
 - [ ] Deactivate action only rendered/enabled for rows with `isActive = true`.
 - [ ] Confirmation dialog requires explicit confirm before the API call fires — accidental
-      single-click cannot deactivate.
+      single-click cannot deactivate. Dialog copy explicitly states there is no reactivate action
+      and that recovery means creating a replacement clinic_admin (grill decision, §11).
+- [ ] On `409 ALREADY_DEACTIVATED` (race: two tabs open): inline/toast error, row re-fetched to
+      correct stale state.
 - [ ] On success: row status badge updates to "deactivated" (via query invalidation, not manual
       row mutation) without a full page reload.
 - [ ] On error: inline/toast error shown, row state unchanged.
@@ -531,3 +546,21 @@ pre-check) · acceptance criteria testable · risks/dependencies recorded. **Rea
 Mandatory grill probes carried forward: R-B bounds (confirm, not re-litigate), R-E follow-up
 nudge question, Q-3b "Administrator" name editability, Q-9 reactivate scope, Ponytail
 4-endpoint flag.
+
+---
+
+## §11 Grill Findings (Step 3.5, 2026-07-14, human interview in chat) — ALL RESOLVED
+
+| # | Question | Decision |
+|---|---|---|
+| G-1 (Q-9) | Reactivate endpoint — ship now or defer? | **Defer.** Not built. CO-9's confirm dialog must explicitly warn there is no undo and recovery means creating a new clinic_admin (CO-8) — the tenant is never truly locked out since CO-2/CO-8 always works regardless of existing admins' active state. Endpoint count stays at 4, not 5. |
+| G-2 (Q-3b) | Is "Administrator" (first-admin name) editable via the tab? | **No edit action.** Confirmed clinic-side profile/settings edit exists (`settings.routes.ts`, `admin.routes.ts`) — rename happens there after first login, out of this feature's scope. |
+| G-3 | `User.email` uniqueness scope — could CO-2 collide across tenants? | **Moot.** Confirmed via schema: only `@@unique([tenantId, username])` exists; no email uniqueness constraint anywhere (DB or service). No collision case to handle. |
+| G-4 | Does `isActive = false` actually block login? | **Confirmed yes** — `auth.service.ts:45`, tested in `authService.test.ts:100`. CO-4 deactivate is functionally real, not cosmetic. |
+| G-5 | Idempotency of CO-4 on an already-deactivated user | **`409 ALREADY_DEACTIVATED`**, not a silent no-op. |
+| G-6 | Typed-password strength floor on CO-2/CO-5 | **8-char minimum, 422 below that.** Scoped to this feature only — confirmed no password-strength rule exists anywhere else in the codebase; not a systemic policy change. |
+| G-7 (R-B) | Confirm the 4 plane-separation bounds (B-1..B-4) — add a 5th (rate-limiting on password reset)? | **Bounds confirmed as-is (B-1..B-4), no 5th bound added.** Rationale: no rate-limiting infra exists anywhere in the codebase; platform admin already holds equally destructive unrestricted powers (suspend/reactivate any tenant, no limit); adding a one-off limiter here would be scope disproportionate to the feature and inconsistent with the rest of the platform plane. B-3 (full audit) keeps this detectable after the fact. **Backlog note (not this feature): if platform-admin action rate-limiting/anomaly-detection is ever built, it should cover suspend/reactivate/quota-change/admin-user-reset together as one cross-cutting concern, not per-feature.** |
+
+**No unresolved findings remain.** `/write-plan` is unblocked.
+
+### STATUS: STEP 3.5 COMPLETE — proceeding to /write-plan

@@ -20,6 +20,10 @@ _Avoid_: "branch filter" (implies it's optional/client-controlled — it isn't).
 The rule keeping `Pet.weightKg` in sync with `MedicalRecord.weightKg`: any medical-record save that includes a non-null weight recomputes the pet's weight from that pet's chronologically latest medical record with a non-null weight (tenant-scoped). A null/omitted weight on a record never triggers recompute and never clears the pet's stored weight — a weight-less visit doesn't make the pet's last-known weight unknown. See ADR-0008.
 _Avoid_: "weight sync" alone (ambiguous about direction/trigger — always name which side recomputes from which).
 
+**Platform-provisioned clinic_admin**:
+A `clinic_admin`-role `User` created or managed by the platform plane (via the Customer Detail "Clinic Admins" tab), as opposed to a clinic_admin created inside the clinic plane by another clinic_admin. Platform's write access here is a bounded exception to plane separation — see ADR-0015. Distinguishing trait: the first such user (created automatically at tenant creation, username `admin`, no email/phone) has no contact channel and is exempt from D-2-02 (email-OR-phone required) precisely because that rule lives in `user.service.ts createUser()`, which this provisioning path never calls.
+_Avoid_: conflating with "clinic staff" generally — platform's write access is scoped to `clinic_admin` role only (B-1, ADR-0015); doctor/staff accounts remain exclusively clinic-managed.
+
 **Atomic conditional UPDATE pattern**:
 The codebase's convention for atomic writes under concurrency: a single raw SQL `UPDATE` (optionally with a subquery or a guard condition) run via `tx.$executeRaw` inside `prisma.$transaction`, instead of a read-then-write with an explicit row lock (`SELECT ... FOR UPDATE`). Established by `prescription.repository.ts` `deductStockAndCreate` (guarded decrement, checks `affected === 0`); reused by the weight-sync recompute (subquery form). See ADR-0008.
 _Avoid_: introducing `SELECT ... FOR UPDATE` for new conditional-write logic without checking whether a single-statement form covers it first.
