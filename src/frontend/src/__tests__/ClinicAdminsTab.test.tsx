@@ -140,6 +140,37 @@ describe('create form', () => {
     openCreateModal()
     expect(screen.getByText(/already in use/i)).toBeInTheDocument()
   })
+
+  it('409 QUOTA_EXCEEDED keeps the form open with entered values intact', () => {
+    state.createError = { response: { data: { code: 'QUOTA_EXCEEDED' } } }
+    render(<ClinicAdminsTab id={42} />)
+    openCreateModal()
+    fireEvent.change(screen.getByLabelText(/^Name/i), { target: { value: 'Keep Me' } })
+    fireEvent.change(screen.getByLabelText(/Username/i), { target: { value: 'keepme' } })
+    fireEvent.change(screen.getByLabelText(/Email/i), { target: { value: 'keep@example.com' } })
+    fireEvent.submit(screen.getByLabelText(/^Name/i).closest('form')!)
+
+    // mutate is a no-op mock (no onSuccess invoked), so the modal must not close
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByText(/quota limit/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/^Name/i)).toHaveValue('Keep Me')
+    expect(screen.getByLabelText(/Username/i)).toHaveValue('keepme')
+    expect(screen.getByLabelText(/Email/i)).toHaveValue('keep@example.com')
+  })
+
+  it('409 QUOTA_EXCEEDED and 409 USERNAME_CONFLICT render distinguishable error text', () => {
+    state.createError = { response: { data: { code: 'QUOTA_EXCEEDED' } } }
+    const { unmount } = render(<ClinicAdminsTab id={42} />)
+    openCreateModal()
+    const quotaMessage = screen.getByText(/quota limit/i).textContent
+    unmount()
+
+    state.createError = { response: { data: { code: 'USERNAME_CONFLICT' } } }
+    render(<ClinicAdminsTab id={42} />)
+    openCreateModal()
+    const conflictMessage = screen.getByText(/already in use/i).textContent
+    expect(conflictMessage).not.toBe(quotaMessage)
+  })
 })
 
 describe('deactivate', () => {
@@ -172,6 +203,38 @@ describe('deactivate', () => {
     render(<ClinicAdminsTab id={42} />)
     fireEvent.click(screen.getByRole('button', { name: /Deactivate/i }))
     expect(screen.getByText(/already deactivated/i)).toBeInTheDocument()
+  })
+
+  it('on a generic (non-409) error, shows an inline error and leaves the row/dialog state unchanged', () => {
+    state.admins = [ADMIN_ACTIVE]
+    state.deactivateError = { response: { data: { code: 'INTERNAL_ERROR' } } }
+    render(<ClinicAdminsTab id={42} />)
+    fireEvent.click(screen.getByRole('button', { name: /Deactivate/i }))
+
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByText(/failed to deactivate/i)).toBeInTheDocument()
+    // dialog stays open (mutate's onSuccess never fired) and the row is still Active
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByText('Active')).toBeInTheDocument()
+    expect(screen.queryByText('Deactivated')).not.toBeInTheDocument()
+  })
+
+  it('on success, closes the dialog but does not manually mutate the row — status only changes when the query data changes (invalidation)', () => {
+    state.admins = [ADMIN_ACTIVE]
+    h.deactivate.mockImplementation((_id, opts) => {
+      opts.onSuccess()
+    })
+    render(<ClinicAdminsTab id={42} />)
+    fireEvent.click(screen.getByRole('button', { name: /Deactivate/i }))
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Deactivate' }))
+
+    expect(h.deactivate).toHaveBeenCalledTimes(1)
+    // confirmation dialog closes on success
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    // the mocked query data was never changed by the component itself, so the
+    // row still reads "Active" — proving the UI relies on query invalidation
+    // (a refetch that would update `state.admins`), not a local/manual mutation.
+    expect(screen.getByText('Active')).toBeInTheDocument()
   })
 })
 
@@ -228,5 +291,33 @@ describe('reset password', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Reset password' }))
     expect(within(dialog).getAllByText(/at least 8 characters/i).length).toBeGreaterThan(0)
     expect(screen.queryByText(/will not be shown again/i)).not.toBeInTheDocument()
+  })
+
+  it('leaves no re-fetchable plaintext password in the DOM or a reopened dialog once the credentials panel is dismissed', () => {
+    state.admins = [ADMIN_ACTIVE, ADMIN_INACTIVE]
+    h.reset.mockImplementation((payload, opts) => {
+      opts.onSuccess({ username: 'admin', password: payload.password })
+    })
+    render(<ClinicAdminsTab id={42} />)
+
+    // perform a typed-password reset on row 1
+    fireEvent.click(screen.getAllByRole('button', { name: /Reset password/i })[0])
+    const dialog = screen.getByRole('dialog')
+    fireEvent.change(within(dialog).getByLabelText('Password'), { target: { value: 'PlaintextSecret1' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Reset password' }))
+
+    expect(screen.getByText('PlaintextSecret1')).toBeInTheDocument()
+
+    // dismiss the display-once credentials panel
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+    expect(screen.queryByText('PlaintextSecret1')).not.toBeInTheDocument()
+
+    // reopening the reset dialog for a (possibly different) row must not
+    // resurface the previously-typed plaintext password anywhere — the
+    // password input field for a fresh reset starts empty.
+    fireEvent.click(screen.getAllByRole('button', { name: /Reset password/i })[1])
+    const dialog2 = screen.getByRole('dialog')
+    expect(within(dialog2).getByLabelText('Password')).toHaveValue('')
+    expect(screen.queryByText('PlaintextSecret1')).not.toBeInTheDocument()
   })
 })
