@@ -55,12 +55,38 @@ export interface CustomerUsage {
   owners:   { current: number; limit: number | null }
 }
 
+/** A clinic_admin-role user of a tenant, as returned by the Clinic Admins tab endpoints. */
+export interface TenantAdminUser {
+  id:        number
+  username:  string
+  name:      string
+  email:     string | null
+  phone:     string | null
+  isActive:  boolean
+  createdAt: string
+}
+
+/** Response shape for create/reset — includes the plaintext password exactly once. */
+export interface TenantAdminUserWithPassword extends TenantAdminUser {
+  password: string
+}
+
+/** Payload for POST /platform/customers/:id/admin-users */
+export interface CreateTenantAdminUserPayload {
+  name:      string
+  username:  string
+  email?:    string
+  phone?:    string
+  password?: string
+}
+
 // ── Query keys ────────────────────────────────────────────────────────────────
 
 const KEYS = {
-  all:    ['platform', 'customers'] as const,
-  detail: (id: number) => ['platform', 'customers', id] as const,
-  usage:  (id: number) => ['platform', 'customers', id, 'usage'] as const,
+  all:        ['platform', 'customers'] as const,
+  detail:     (id: number) => ['platform', 'customers', id] as const,
+  usage:      (id: number) => ['platform', 'customers', id, 'usage'] as const,
+  adminUsers: (id: number) => ['platform', 'customers', id, 'admin-users'] as const,
 }
 
 // ── Hooks ─────────────────────────────────────────────────────────────────────
@@ -174,5 +200,46 @@ export function useReactivateCustomer(id: number) {
       qc.invalidateQueries({ queryKey: KEYS.all })
       qc.invalidateQueries({ queryKey: KEYS.detail(id) })
     },
+  })
+}
+
+/** Fetch clinic_admin-role users for a tenant (Clinic Admins tab). */
+export function useTenantAdminUsers(id: number) {
+  return useQuery<TenantAdminUser[]>({
+    queryKey: KEYS.adminUsers(id),
+    queryFn: () =>
+      platformApi.get(`/platform/customers/${id}/admin-users`).then((r) => r.data.data),
+    enabled: id > 0,
+  })
+}
+
+/** Create an additional clinic_admin user for a tenant. */
+export function useCreateTenantAdminUser(id: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: CreateTenantAdminUserPayload) =>
+      platformApi.post(`/platform/customers/${id}/admin-users`, payload).then((r) => r.data.data as TenantAdminUserWithPassword),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEYS.adminUsers(id) }),
+  })
+}
+
+/** Deactivate a clinic_admin user (soft delete — no reactivate, G-1). */
+export function useDeactivateTenantAdminUser(id: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (userId: number) =>
+      platformApi.patch(`/platform/customers/${id}/admin-users/${userId}/deactivate`).then((r) => r.data.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEYS.adminUsers(id) }),
+  })
+}
+
+/** Reset (or generate) a clinic_admin user's password. */
+export function useResetTenantAdminUserPassword(id: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ userId, password }: { userId: number; password?: string }) =>
+      platformApi.patch(`/platform/customers/${id}/admin-users/${userId}/password`, { password })
+        .then((r) => r.data.data as TenantAdminUserWithPassword),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEYS.adminUsers(id) }),
   })
 }
