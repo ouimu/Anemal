@@ -22,6 +22,9 @@ import prisma from '../config/db'
 import bcrypt from 'bcrypt'
 import { config } from '../config/env'
 import { generateSecurePassword } from '../utils/password'
+import { Prisma } from '@prisma/client'
+import * as roleRepo from '../models/role.repository'
+import * as subscriptionService from './subscription.service'
 
 /** Tenant status computed from isActive + trialEndsAt. */
 type TenantStatus = 'active' | 'trial' | 'suspended'
@@ -143,6 +146,69 @@ export class CompanyTypeNotFoundError extends AppError {
   constructor() {
     super(422, 'Company type not found or is inactive', 'COMPANY_TYPE_NOT_FOUND')
   }
+}
+
+/** Thrown when a target admin-user is not a clinic_admin of the given tenant (or doesn't exist). */
+export class AdminUserNotFoundError extends AppError {
+  constructor() {
+    super(404, 'Clinic admin user not found for this tenant', 'ADMIN_USER_NOT_FOUND')
+  }
+}
+
+/** Thrown when deactivating a clinic_admin user that is already inactive (G-5). */
+export class AlreadyDeactivatedError extends AppError {
+  constructor() {
+    super(409, 'User is already deactivated', 'ALREADY_DEACTIVATED')
+  }
+}
+
+/** Thrown when a typed password is shorter than the 8-char minimum (CO-2/CO-5 only, G-6). */
+export class WeakPasswordError extends AppError {
+  constructor() {
+    super(422, 'Password must be at least 8 characters', 'WEAK_PASSWORD')
+  }
+}
+
+/** Thrown on duplicate username within a tenant (CO-2). */
+export class UsernameConflictError extends AppError {
+  constructor() {
+    super(409, 'Username already in use within this tenant', 'USERNAME_CONFLICT')
+  }
+}
+
+/**
+ * Thrown when neither email nor phone is provided for a new clinic_admin
+ * (D-2-02 mirrored here — this path does not call user.service.ts createUser()).
+ */
+export class ContactRequiredError extends AppError {
+  constructor() {
+    super(422, 'At least one contact (email or phone) is required', 'CONTACT_REQUIRED')
+  }
+}
+
+/** Clinic-admin user row exposed to the Platform Console (never passwordHash). */
+export interface TenantAdminUser {
+  id:        number
+  username:  string
+  name:      string
+  email:     string | null
+  phone:     string | null
+  isActive:  boolean
+  createdAt: Date
+}
+
+/** Response shape for create/reset — includes the plaintext password exactly once. */
+export interface TenantAdminUserWithPassword extends TenantAdminUser {
+  password: string
+}
+
+/** Input for CO-2: create an additional clinic_admin user for an existing tenant. */
+export interface CreateTenantAdminUserInput {
+  name:      string
+  username:  string
+  email?:    string
+  phone?:    string
+  password?: string
 }
 
 /**
@@ -331,4 +397,59 @@ export async function reactivateCustomer(id: number, performedById: number) {
   })
 
   return updated
+}
+
+/**
+ * Create an additional clinic_admin user for an existing tenant (CO-2).
+ * Counts against the tenant's user quota (Q-5 — unlike CO-1's exempt first admin).
+ *
+ * @param tenantId       - Target tenant (path param — never trusted from body, BOLA guard).
+ * @param data           - New admin fields; password optional (server-generates if omitted).
+ * @param performedById  - Platform user performing the action.
+ */
+export async function createTenantAdminUser(
+  tenantId: number,
+  data: CreateTenantAdminUserInput,
+  performedById: number,
+): Promise<TenantAdminUserWithPassword> {
+  const tenant = await customersRepo.getTenantById(tenantId)
+  if (!tenant) throw new CustomerNotFoundError()
+
+  if (!data.email && !data.phone) {
+    throw new ContactRequiredError()
+  }
+
+  if (data.password !== undefined && data.password.length < 8) {
+    throw new WeakPasswordError()
+  }
+
+  await subscriptionService.assertCanAddUser(tenantId)
+
+  const clinicAdminRole = await roleRepo.findSystemRoleByKey('clinic_admin')
+  if (!clinicAdminRole) throw new Error("System role 'clinic_admin' not seeded")
+
+  const plaintext = data.password ?? generateSecurePassword()
+  const passwordHash = await bcrypt.hash(plaintext, config.bcryptRounds)
+
+  try {
+    const user = await customersRepo.createTenantAdminUser(
+      tenantId,
+      { name: data.name, username: data.username, email: data.email ?? null, phone: data.phone ?? null, passwordHash },
+      clinicAdminRole.id,
+    )
+
+    await platformAuditRepo.createPlatformAuditLog({
+      action: 'tenant.admin_user.create',
+      targetTenantId: tenantId,
+      performedByPlatformUserId: performedById,
+      details: { userId: user.id, username: user.username },
+    })
+
+    return { ...user, password: plaintext }
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      throw new UsernameConflictError()
+    }
+    throw err
+  }
 }

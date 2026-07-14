@@ -56,6 +56,24 @@ export const setQuotaSchema = z.object({
 }).strict()
 
 /**
+ * Zod schema for POST /platform/customers/:id/admin-users.
+ *
+ * Shape/format validation only (→ 400 on failure via validate.middleware).
+ * The "at least one of email/phone" and "password >= 8 chars" business rules
+ * are enforced in the service layer instead (→ 422), matching the existing
+ * `user.service.ts` UserError precedent — this codebase's validate.middleware
+ * always maps Zod failures to 400, so those two rules cannot be Zod-level
+ * checks if they must surface as 422.
+ */
+export const createTenantAdminUserSchema = z.object({
+  name:     z.string().trim().min(1).max(255),
+  username: z.string().trim().min(1).max(20),
+  email:    z.string().trim().email().max(255).optional(),
+  phone:    z.string().trim().max(20).optional(),
+  password: z.string().optional(),
+}).strict()
+
+/**
  * GET /platform/customers
  */
 export async function handleListCustomers(
@@ -265,6 +283,25 @@ export async function handleUpdateProvisioning(
     const performedById = req.context!.platformUserId!
     const data = await provisioningService.updateProvisioning(id, body, performedById)
     res.status(200).json({ success: true, data })
+  } catch (err) {
+    next(err)
+  }
+}
+
+/**
+ * POST /platform/customers/:id/admin-users
+ */
+export async function handleCreateTenantAdminUser(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const tenantId = Number(req.params.id)
+    const body = req.body as z.infer<typeof createTenantAdminUserSchema>
+    const performedById = req.context!.platformUserId!
+    const data = await customersService.createTenantAdminUser(tenantId, body, performedById)
+    res.status(201).json({ success: true, data })
   } catch (err) {
     next(err)
   }

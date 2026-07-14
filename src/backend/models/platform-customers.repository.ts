@@ -264,3 +264,138 @@ export async function getTenantWithPlanAndQuota(id: number): Promise<TenantWithP
     trialEndsAt:   null,
   }
 }
+
+/** Clinic-admin user row exposed to the Platform Console (never passwordHash). */
+export type TenantAdminUserRow = {
+  id:        number
+  username:  string
+  name:      string
+  email:     string | null
+  phone:     string | null
+  isActive:  boolean
+  createdAt: Date
+}
+
+const ADMIN_USER_SELECT = {
+  id:        true,
+  username:  true,
+  name:      true,
+  email:     true,
+  phone:     true,
+  isActive:  true,
+  createdAt: true,
+} as const
+
+/**
+ * List all clinic_admin-role users for a tenant (Q-8 — never doctor/staff rows).
+ *
+ * @param tenantId - Tenant scope.
+ */
+export function listTenantAdminUsers(tenantId: number): Promise<TenantAdminUserRow[]> {
+  return prisma.user.findMany({
+    where: {
+      tenantId,
+      userRoles: { some: { role: { key: 'clinic_admin', tenantId: null, isSystem: true } } },
+    },
+    select: ADMIN_USER_SELECT,
+    orderBy: { createdAt: 'asc' },
+  })
+}
+
+/**
+ * Find a single clinic_admin-role user scoped to a tenant.
+ * Returns null if the user does not exist, belongs to a different tenant, or
+ * does not hold the clinic_admin role (Q-8 role-scope guard).
+ *
+ * @param tenantId - Tenant scope (BOLA guard).
+ * @param userId   - Target user's primary key.
+ */
+export function findTenantAdminUser(tenantId: number, userId: number): Promise<TenantAdminUserRow | null> {
+  return prisma.user.findFirst({
+    where: {
+      id: userId,
+      tenantId,
+      userRoles: { some: { role: { key: 'clinic_admin', tenantId: null, isSystem: true } } },
+    },
+    select: ADMIN_USER_SELECT,
+  })
+}
+
+/**
+ * Create a new clinic_admin user for an existing tenant (CO-2).
+ *
+ * @param tenantId - Owning tenant.
+ * @param data     - User fields (password already hashed).
+ * @param roleId   - The seeded clinic_admin ClinicRole id.
+ */
+export async function createTenantAdminUser(
+  tenantId: number,
+  data: { name: string; username: string; email: string | null; phone: string | null; passwordHash: string },
+  roleId: number,
+): Promise<TenantAdminUserRow> {
+  return prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
+      data: {
+        tenantId,
+        name:         data.name,
+        username:     data.username,
+        email:        data.email,
+        phone:        data.phone,
+        passwordHash: data.passwordHash,
+        role:         'admin',
+        roleId,
+      },
+      select: ADMIN_USER_SELECT,
+    })
+    await tx.userRole.create({ data: { userId: user.id, roleId, tenantId } })
+    return user
+  })
+}
+
+/**
+ * Deactivate a clinic_admin-role user, scoped to tenantId + userId +
+ * isActive=true in one WHERE clause (BOLA guard, PR #20 precedent — no
+ * separate lookup-then-mutate race).
+ *
+ * @param tenantId - Tenant scope.
+ * @param userId   - Target user.
+ * @returns Number of rows updated (0 = not found / not a clinic_admin / already inactive).
+ */
+export async function deactivateTenantAdminUser(tenantId: number, userId: number): Promise<number> {
+  const result = await prisma.user.updateMany({
+    where: {
+      id: userId,
+      tenantId,
+      isActive: true,
+      userRoles: { some: { role: { key: 'clinic_admin', tenantId: null, isSystem: true } } },
+    },
+    data: { isActive: false },
+  })
+  return result.count
+}
+
+/**
+ * Set a new password hash for a clinic_admin-role user, scoped to
+ * tenantId + userId in one WHERE clause (BOLA guard). Works on both active
+ * and deactivated rows (CO-10 — reset is not restricted to active admins).
+ *
+ * @param tenantId     - Tenant scope.
+ * @param userId       - Target user.
+ * @param passwordHash - New bcrypt hash.
+ * @returns Number of rows updated (0 = not found / not a clinic_admin of this tenant).
+ */
+export async function setTenantAdminUserPassword(
+  tenantId: number,
+  userId: number,
+  passwordHash: string,
+): Promise<number> {
+  const result = await prisma.user.updateMany({
+    where: {
+      id: userId,
+      tenantId,
+      userRoles: { some: { role: { key: 'clinic_admin', tenantId: null, isSystem: true } } },
+    },
+    data: { passwordHash },
+  })
+  return result.count
+}

@@ -165,3 +165,112 @@ describe('CO-1: createCustomer() auto-creates first clinic_admin', () => {
     expect(admin).not.toBeNull()
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CO-2 — POST /platform/customers/:id/admin-users
+// ─────────────────────────────────────────────────────────────────────────────
+describe('CO-2: POST /platform/customers/:id/admin-users', () => {
+  it('✅ creates an additional clinic_admin with a server-generated password', async () => {
+    const tenant = await createTenantViaService('co2a')
+    const res = await request(server)
+      .post(`/platform/customers/${tenant.id}/admin-users`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ name: 'Second Admin', username: 'admin2', email: 'admin2@example.com' })
+
+    expect(res.status).toBe(201)
+    expect(res.body.data.username).toBe('admin2')
+    expect(typeof res.body.data.password).toBe('string')
+    expect(res.body.data.password).toHaveLength(16)
+    expect(res.body.data.passwordHash).toBeUndefined()
+
+    const log = await prisma.platformAuditLog.findFirstOrThrow({
+      where: { action: 'tenant.admin_user.create', targetTenantId: tenant.id },
+    })
+    expect(JSON.stringify(log.details)).not.toMatch(/password/i)
+  })
+
+  it('✅ accepts a typed password (>= 8 chars) and does not overwrite it with a generated one', async () => {
+    const tenant = await createTenantViaService('co2h')
+    const res = await request(server)
+      .post(`/platform/customers/${tenant.id}/admin-users`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ name: 'Typed Pw', username: 'typedpw', email: 'typedpw@example.com', password: 'MyOwnPass1!' })
+
+    expect(res.status).toBe(201)
+    expect(res.body.data.password).toBe('MyOwnPass1!')
+  })
+
+  it('❌ 422 when both email and phone are omitted (D-2-02)', async () => {
+    const tenant = await createTenantViaService('co2b')
+    const res = await request(server)
+      .post(`/platform/customers/${tenant.id}/admin-users`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ name: 'No Contact', username: 'nocontact' })
+    expect(res.status).toBe(422)
+  })
+
+  it('❌ 422 when a typed password is shorter than 8 characters', async () => {
+    const tenant = await createTenantViaService('co2c')
+    const res = await request(server)
+      .post(`/platform/customers/${tenant.id}/admin-users`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ name: 'Weak Pw', username: 'weakpw', email: 'weak@example.com', password: 'short1' })
+    expect(res.status).toBe(422)
+  })
+
+  it('❌ 404 when :id does not match an existing tenant', async () => {
+    const res = await request(server)
+      .post('/platform/customers/999999999/admin-users')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ name: 'Ghost', username: 'ghost', email: 'ghost@example.com' })
+    expect(res.status).toBe(404)
+  })
+
+  it('❌ 409 QUOTA_EXCEEDED when the tenant is at its user cap; no row created', async () => {
+    const tenant = await createTenantViaService('co2d')
+    await prisma.tenantQuota.create({ data: { tenantId: tenant.id, maxUsers: 1 } }) // CO-1's 'admin' already counts as 1
+    const res = await request(server)
+      .post(`/platform/customers/${tenant.id}/admin-users`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ name: 'Over Cap', username: 'overcap', email: 'overcap@example.com' })
+    expect(res.status).toBe(409)
+    expect(res.body.code).toBe('QUOTA_EXCEEDED')
+    const created = await prisma.user.findFirst({ where: { tenantId: tenant.id, username: 'overcap' } })
+    expect(created).toBeNull()
+  })
+
+  it('❌ 409 on duplicate username within the same tenant (not a 500)', async () => {
+    const tenant = await createTenantViaService('co2e')
+    const res = await request(server)
+      .post(`/platform/customers/${tenant.id}/admin-users`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ name: 'Dup', username: 'admin', email: 'dup@example.com' }) // 'admin' already exists (CO-1)
+    expect(res.status).toBe(409)
+  })
+
+  it('❌ 403 without platform.customers.manage (platform_support token)', async () => {
+    const tenant = await createTenantViaService('co2f')
+    const res = await request(server)
+      .post(`/platform/customers/${tenant.id}/admin-users`)
+      .set('Authorization', `Bearer ${supportToken}`)
+      .send({ name: 'Blocked', username: 'blocked', email: 'blocked@example.com' })
+    expect(res.status).toBe(403)
+  })
+
+  it('❌ 403 with a clinic-plane token (wrong plane)', async () => {
+    const tenant = await createTenantViaService('co2g')
+    const res = await request(server)
+      .post(`/platform/customers/${tenant.id}/admin-users`)
+      .set('Authorization', `Bearer ${clinicToken}`)
+      .send({ name: 'WrongPlane', username: 'wrongplane', email: 'wp@example.com' })
+    expect(res.status).toBe(403)
+  })
+
+  it('❌ 401 with no token', async () => {
+    const tenant = await createTenantViaService('co2i')
+    const res = await request(server)
+      .post(`/platform/customers/${tenant.id}/admin-users`)
+      .send({ name: 'NoToken', username: 'notoken', email: 'nt@example.com' })
+    expect(res.status).toBe(401)
+  })
+})
