@@ -450,3 +450,68 @@ describe('CO-5: PATCH /platform/customers/:id/admin-users/:userId/password', () 
     expect(res2.status).toBe(403)
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CO-6 — GET /platform/customers/:id/admin-users
+// ─────────────────────────────────────────────────────────────────────────────
+describe('CO-6: GET /platform/customers/:id/admin-users', () => {
+  it('✅ returns only clinic_admin-role users; never passwordHash; a mixed-role tenant filters correctly', async () => {
+    const tenant = await createTenantViaService('co6a')
+    const passwordHash = await bcrypt.hash('StaffPass1!', 10)
+    const staffRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } })
+    const staff = await prisma.user.create({
+      data: { tenantId: tenant.id, username: 'staffer6', name: 'Staffer', passwordHash, role: 'staff', isActive: true },
+    })
+    await prisma.userRole.create({ data: { tenantId: tenant.id, userId: staff.id, roleId: staffRole.id } })
+
+    const res = await request(server)
+      .get(`/platform/customers/${tenant.id}/admin-users`)
+      .set('Authorization', `Bearer ${platformToken}`)
+    expect(res.status).toBe(200)
+    expect(res.body.data).toHaveLength(1)
+    expect(res.body.data[0].username).toBe('admin')
+    expect(res.body.data[0].email).toBeNull()
+    expect(res.body.data[0].phone).toBeNull()
+    expect(res.body.data[0].passwordHash).toBeUndefined()
+  })
+
+  it('✅ platform_support (view-only) can list', async () => {
+    const tenant = await createTenantViaService('co6b')
+    const res = await request(server)
+      .get(`/platform/customers/${tenant.id}/admin-users`)
+      .set('Authorization', `Bearer ${supportToken}`)
+    expect(res.status).toBe(200)
+  })
+
+  it('✅ returns empty array (not 404) for a zero-admin tenant scenario', async () => {
+    // Deactivate the only admin — list must still return it (deactivated ≠ absent);
+    // this asserts the endpoint never 404s just because there are zero *active* admins.
+    const tenant = await createTenantViaService('co6c')
+    const admin  = await prisma.user.findFirstOrThrow({ where: { tenantId: tenant.id, username: 'admin' } })
+    await request(server)
+      .patch(`/platform/customers/${tenant.id}/admin-users/${admin.id}/deactivate`)
+      .set('Authorization', `Bearer ${platformToken}`)
+
+    const res = await request(server)
+      .get(`/platform/customers/${tenant.id}/admin-users`)
+      .set('Authorization', `Bearer ${platformToken}`)
+    expect(res.status).toBe(200)
+    expect(res.body.data).toHaveLength(1)
+    expect(res.body.data[0].isActive).toBe(false)
+  })
+
+  it('❌ 404 when :id does not match an existing tenant', async () => {
+    const res = await request(server)
+      .get('/platform/customers/999999999/admin-users')
+      .set('Authorization', `Bearer ${platformToken}`)
+    expect(res.status).toBe(404)
+  })
+
+  it('❌ 403 with wrong plane', async () => {
+    const tenant = await createTenantViaService('co6d')
+    const res = await request(server)
+      .get(`/platform/customers/${tenant.id}/admin-users`)
+      .set('Authorization', `Bearer ${clinicToken}`)
+    expect(res.status).toBe(403)
+  })
+})

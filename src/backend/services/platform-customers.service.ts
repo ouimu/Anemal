@@ -455,6 +455,18 @@ export async function createTenantAdminUser(
 }
 
 /**
+ * List all clinic_admin-role users for a tenant (CO-6). Never leaks
+ * doctor/staff rows (Q-8) or passwordHash (R-6).
+ *
+ * @param tenantId - Target tenant (path param).
+ */
+export async function listTenantAdminUsers(tenantId: number): Promise<TenantAdminUser[]> {
+  const tenant = await customersRepo.getTenantById(tenantId)
+  if (!tenant) throw new CustomerNotFoundError()
+  return customersRepo.listTenantAdminUsers(tenantId)
+}
+
+/**
  * Deactivate a clinic_admin user for a tenant (CO-4). Soft delete only
  * (Q-9) — sets isActive=false. The target must currently hold the
  * clinic_admin role for this exact tenant (Q-8); otherwise 404, same as a

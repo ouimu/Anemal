@@ -320,6 +320,23 @@ export async function handleCreateTenantAdminUser(
 }
 
 /**
+ * GET /platform/customers/:id/admin-users
+ */
+export async function handleListTenantAdminUsers(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const tenantId = Number(req.params.id)
+    const data = await customersService.listTenantAdminUsers(tenantId)
+    res.status(200).json({ success: true, data })
+  } catch (err) {
+    next(err)
+  }
+}
+
+/**
  * PATCH /platform/customers/:id/admin-users/:userId/deactivate
  */
 export async function handleDeactivateTenantAdminUser(

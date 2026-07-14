@@ -29,6 +29,7 @@ import {
   handleGetProvisioning,
   handleUpdateProvisioning,
   handleGetCustomerUsage,
+  handleListTenantAdminUsers,
   handleCreateTenantAdminUser,
   handleDeactivateTenantAdminUser,
   handleResetTenantAdminUserPassword,
@@ -61,6 +62,7 @@ router.get('/:id/provisioning', requirePlatformPermission('platform.provisioning
 router.put('/:id/provisioning', requirePlatformPermission('platform.provisioning.manage'), validate(updateProvisioningSchema), handleUpdateProvisioning)
 
 // Clinic admin users (bounded platform→clinic-plane exception, ADR-0015)
+router.get(  '/:id/admin-users',                   requirePlatformPermission('platform.customers.view'),   handleListTenantAdminUsers)
 router.post('/:id/admin-users', requirePlatformPermission('platform.customers.manage'), validate(createTenantAdminUserSchema), handleCreateTenantAdminUser)
 router.patch('/:id/admin-users/:userId/deactivate', requirePlatformPermission('platform.customers.manage'), handleDeactivateTenantAdminUser)
 router.patch('/:id/admin-users/:userId/password', requirePlatformPermission('platform.customers.manage'), validate(resetTenantAdminUserPasswordSchema), handleResetTenantAdminUserPassword)
