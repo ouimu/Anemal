@@ -1,13 +1,14 @@
 ﻿// @uiux-agent spec: user list, role badges, add/edit/deactivate modal — 44px tap targets
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { AxiosError } from 'axios'
 import api from '../../utils/api'
 import { useAuthStore } from '../../store/authStore'
 import Can from '../../components/Can'
 import RolePicker from '../../components/roles/RolePicker'
 import { useUserRolesQuery } from '../../hooks/useUserRoles'
 import { useT } from '../../i18n'
+import { describeSaveError } from '../../utils/errorMessages'
+import MaterialIcon from '../../components/MaterialIcon'
 
 interface User { id: number; name: string; username: string; email: string | null; role: string; isActive: boolean; createdAt: string; branchId: number | null }
 interface Branch { id: number; name: string }
@@ -18,23 +19,12 @@ const ROLE_COLORS: Record<string, string> = {
   staff:  'bg-secondary-container text-secondary-on-container',
 }
 
-/** Surfaces the server's actual validation/error message instead of a generic "Save failed". */
-function describeSaveError(err: unknown): string {
-  const body = (err as AxiosError<{ error?: string; details?: { fieldErrors?: Record<string, string[]> } }>)?.response?.data
-  const fieldErrors = body?.details?.fieldErrors
-  if (fieldErrors) {
-    const first = Object.entries(fieldErrors).find(([, msgs]) => msgs?.length)
-    if (first) return `${first[0]}: ${first[1][0]}`
-  }
-  return body?.error ? `Save failed — ${body.error}` : 'Save failed — check all fields.'
-}
-
 const INITIALS = (name: string) => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 const AVATAR_BG: Record<string, string> = {
   admin: 'bg-error-container text-error-on-container', doctor: 'bg-primary-fixed text-primary', staff: 'bg-secondary-container text-secondary-on-container',
 }
 
-function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; onClose: () => void }) {
+function Modal({ user, onClose, isPrimaryAdmin }: { user: Partial<User> & { isNew?: boolean }; onClose: () => void; isPrimaryAdmin: boolean }) {
   const t = useT()
   const qc = useQueryClient()
   const isNew = !!user.isNew
@@ -68,6 +58,14 @@ function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; o
       await api.patch(`/users/${uid}/branch`, { branchIds: form.branchIds }).catch(() => {})
       qc.invalidateQueries({ queryKey: ['admin', 'users'] }); onClose()
     },
+  })
+
+  const currentUserId = useAuthStore(s => s.userId)
+  const isSelf = !isNew && user.id === currentUserId
+  const [resetPasswordValue, setResetPasswordValue] = useState('')
+  const resetPw = useMutation({
+    mutationFn: () => api.patch(`/users/${user.id}/password`, { newPassword: resetPasswordValue }),
+    onSuccess: () => setResetPasswordValue(''),
   })
 
   const inputCls = 'min-h-[44px] px-3 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20'
@@ -134,9 +132,14 @@ function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; o
             )}
           </div>
           {!isNew && (
-            <label className="flex items-center gap-2 min-h-[44px] cursor-pointer">
-              <input type="checkbox" checked={form.isActive} onChange={e => setForm(p => ({ ...p, isActive: e.target.checked }))} className="w-4 h-4"/>
+            <label className={`flex items-center gap-2 min-h-[44px] ${isPrimaryAdmin ? '' : 'cursor-pointer'}`}>
+              <input
+                type="checkbox" checked={form.isActive} disabled={isPrimaryAdmin}
+                aria-label={t('admin.users.activeAccount')}
+                onChange={e => setForm(p => ({ ...p, isActive: e.target.checked }))} className="w-4 h-4"
+              />
               <span className="text-sm text-on-surface">{t('admin.users.activeAccount')}</span>
+              {isPrimaryAdmin && <span className="text-xs text-on-surface-variant">Primary admin — cannot be deactivated</span>}
             </label>
           )}
           {!isNew && (
@@ -148,6 +151,34 @@ function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; o
                   currentRoles={userRoles}
                   onRolesChanged={() => { void refetchUserRoles() }}
                 />
+              </Can>
+              <hr className="border-outline-variant my-4" />
+              <Can perm="staff.manage">
+                {isSelf ? (
+                  <p className="text-xs text-on-surface-variant">
+                    Change your own password in Settings → Preferences.
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="admin-reset-password" className="text-xs text-on-surface-variant">Reset password</label>
+                    <input
+                      id="admin-reset-password" type="password" autoComplete="new-password"
+                      value={resetPasswordValue}
+                      onChange={e => setResetPasswordValue(e.target.value)}
+                      className={inputCls}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => resetPw.mutate()}
+                      disabled={resetPw.isPending || resetPasswordValue.length === 0}
+                      className="min-h-[44px] px-4 self-start border border-outline-variant rounded-lg text-sm text-on-surface-variant hover:bg-surface-container-low disabled:opacity-50"
+                    >
+                      {resetPw.isPending ? 'Resetting…' : 'Reset password'}
+                    </button>
+                    {resetPw.isSuccess && <p className="text-xs text-secondary">Password reset.</p>}
+                    {resetPw.isError && <p className="text-xs text-error-on-container">{describeSaveError(resetPw.error)}</p>}
+                  </div>
+                )}
               </Can>
             </>
           )}
@@ -165,23 +196,73 @@ function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; o
   )
 }
 
+function DeactivateConfirmDialog({ user, onCancel, onConfirmed }: { user: User; onCancel: () => void; onConfirmed: () => void }) {
+  const qc = useQueryClient()
+  const deactivate = useMutation({
+    mutationFn: () => api.delete(`/users/${user.id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] })
+      onConfirmed()
+    },
+  })
+  return (
+    <div role="dialog" aria-label="Confirm deactivate" className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-sm p-6">
+        <p className="text-sm text-on-surface mb-4">
+          Deactivate {user.name}? They will no longer be able to log in. You can restore them later.
+        </p>
+        {deactivate.isError && <p className="text-xs text-error-on-container mb-2">{describeSaveError(deactivate.error)}</p>}
+        <div className="flex gap-2">
+          <button onClick={onCancel} className="flex-1 min-h-[44px] border border-outline-variant rounded-lg text-sm text-on-surface-variant hover:bg-surface-container-low">Cancel</button>
+          <button
+            onClick={() => deactivate.mutate()}
+            disabled={deactivate.isPending}
+            className="flex-1 min-h-[44px] bg-error text-error-on rounded-lg text-sm font-semibold disabled:opacity-50 hover:bg-error/90"
+          >
+            {deactivate.isPending ? 'Deactivating…' : 'Deactivate'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function UserManagementTab() {
   const t = useT()
+  const qc = useQueryClient()
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ['admin', 'users'],
     queryFn: () => api.get('/users').then(r => r.data.data),
   })
   const [modal, setModal] = useState<(Partial<User> & { isNew?: boolean }) | null>(null)
+  const [confirmDeactivate, setConfirmDeactivate] = useState<User | null>(null)
   const currentUserId = useAuthStore(s => s.userId)
+
+  const [restoreError, setRestoreError] = useState<string | null>(null)
+  const restore = useMutation({
+    mutationFn: (userId: number) => api.put(`/users/${userId}`, { isActive: true }),
+    onSuccess: () => { setRestoreError(null); qc.invalidateQueries({ queryKey: ['admin', 'users'] }) },
+    onError: (err: unknown) => setRestoreError(describeSaveError(err)),
+  })
 
   if (isLoading) return <p className="text-sm text-on-surface-variant py-8 text-center">{t('common.loading')}</p>
 
   const active   = users.filter(u => u.isActive)
   const inactive = users.filter(u => !u.isActive)
+  const primaryAdminId = users
+    .filter(u => u.role === 'admin')
+    .reduce<number | null>((min, u) => (min === null || u.id < min ? u.id : min), null)
 
   return (
     <>
-      {modal && <Modal user={modal} onClose={() => setModal(null)}/>}
+      {modal && <Modal user={modal} onClose={() => setModal(null)} isPrimaryAdmin={modal.id === primaryAdminId} />}
+      {confirmDeactivate && (
+        <DeactivateConfirmDialog
+          user={confirmDeactivate}
+          onCancel={() => setConfirmDeactivate(null)}
+          onConfirmed={() => setConfirmDeactivate(null)}
+        />
+      )}
       <div className="space-y-6">
         {/* Active users */}
         <section>
@@ -193,24 +274,43 @@ export default function UserManagementTab() {
             </button>
           </div>
           <div className="bg-surface border border-outline-variant rounded-xl divide-y divide-outline-variant">
-            {active.map(user => (
-              <div key={user.id} className="flex items-center gap-3 px-4 py-3 min-h-[56px]">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${AVATAR_BG[user.role] ?? 'bg-surface-container text-on-surface-variant'}`}>
-                  {INITIALS(user.name)}
+            {active.map(user => {
+              const isPrimaryAdmin = user.id === primaryAdminId
+              return (
+                <div key={user.id} className="flex items-center gap-3 px-4 py-3 min-h-[56px]">
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${AVATAR_BG[user.role] ?? 'bg-surface-container text-on-surface-variant'}`}>
+                    {INITIALS(user.name)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-on-surface truncate">
+                      {user.name} {user.id === currentUserId && <span className="text-xs text-on-surface-variant">(you)</span>}
+                    </p>
+                    <p className="text-xs text-on-surface-variant truncate font-code">@{user.username}</p>
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${ROLE_COLORS[user.role] ?? ''}`}>{user.role}</span>
+                  <Can perm="staff.manage">
+                    {isPrimaryAdmin ? (
+                      <button
+                        disabled
+                        aria-label="Primary admin — cannot be deactivated"
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center text-on-surface-variant opacity-50 cursor-not-allowed"
+                      >
+                        <MaterialIcon name="lock" size={20} />
+                      </button>
+                    ) : (
+                      <button onClick={() => setConfirmDeactivate(user)}
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center border border-outline-variant rounded-lg text-xs text-error-on-container hover:bg-surface-container-low">
+                        Deactivate
+                      </button>
+                    )}
+                  </Can>
+                  <button onClick={() => setModal(user)}
+                    className="min-h-[44px] min-w-[44px] flex items-center justify-center border border-outline-variant rounded-lg text-xs text-on-surface-variant hover:bg-surface-container-low">
+                    Edit
+                  </button>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-on-surface truncate">
-                    {user.name} {user.id === currentUserId && <span className="text-xs text-on-surface-variant">(you)</span>}
-                  </p>
-                  <p className="text-xs text-on-surface-variant truncate font-code">@{user.username}</p>
-                </div>
-                <span className={`text-xs px-2 py-1 rounded-full font-medium ${ROLE_COLORS[user.role] ?? ''}`}>{user.role}</span>
-                <button onClick={() => setModal(user)}
-                  className="min-h-[44px] min-w-[44px] flex items-center justify-center border border-outline-variant rounded-lg text-xs text-on-surface-variant hover:bg-surface-container-low">
-                  Edit
-                </button>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </section>
 
@@ -218,6 +318,7 @@ export default function UserManagementTab() {
         {inactive.length > 0 && (
           <section>
             <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Deactivated ({inactive.length})</h3>
+            {restoreError && <p className="text-xs text-error-on-container mb-2">{restoreError}</p>}
             <div className="bg-surface border border-outline-variant rounded-xl divide-y divide-outline-variant opacity-60">
               {inactive.map(user => (
                 <div key={user.id} className="flex items-center gap-3 px-4 py-3 min-h-[56px]">
@@ -229,10 +330,12 @@ export default function UserManagementTab() {
                     <p className="text-xs text-outline-variant truncate font-code">@{user.username}</p>
                   </div>
                   <span className="text-xs px-2 py-1 rounded-full bg-surface-container text-on-surface-variant">inactive</span>
-                  <button onClick={() => setModal(user)}
-                    className="min-h-[44px] min-w-[44px] flex items-center justify-center border border-outline-variant rounded-lg text-xs text-on-surface-variant hover:bg-surface-container-low">
-                    Restore
-                  </button>
+                  <Can perm="staff.manage">
+                    <button onClick={() => restore.mutate(user.id)}
+                      className="min-h-[44px] min-w-[44px] flex items-center justify-center border border-outline-variant rounded-lg text-xs text-on-surface-variant hover:bg-surface-container-low">
+                      Restore
+                    </button>
+                  </Can>
                 </div>
               ))}
             </div>

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useUiStore } from '../../store/uiStore'
 import { useSavePreferences } from '../../hooks/usePersonalPreferences'
+import { useChangePassword } from '../../hooks/useChangePassword'
+import { describeSaveError } from '../../utils/errorMessages'
 import { useT } from '../../i18n'
 import MaterialIcon from '../../components/MaterialIcon'
 
@@ -35,11 +37,34 @@ export default function PreferencesPage() {
   const toggleTheme = useUiStore(s => s.toggleTheme)
   const setLanguage = useUiStore(s => s.setLanguage)
   const { mutate: savePrefs } = useSavePreferences()
+  const changePassword = useChangePassword()
 
   const [notifs, setNotifs] = useState<NotifPrefs>(loadNotifs)
   const [saved, setSaved] = useState(false)
+  const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
+  const [pwError, setPwError] = useState<string | null>(null)
+  const [pwSuccess, setPwSuccess] = useState(false)
 
   const isDark = theme === 'dark'
+
+  function handleChangePassword() {
+    setPwSuccess(false)
+    if (pwForm.newPassword !== pwForm.confirmPassword) {
+      setPwError('New password and confirm password do not match.')
+      return
+    }
+    setPwError(null)
+    changePassword.mutate(
+      { currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword },
+      {
+        onSuccess: () => {
+          setPwSuccess(true)
+          setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+        },
+        onError: (err: unknown) => setPwError(describeSaveError(err)),
+      },
+    )
+  }
 
   // Apply instantly via uiStore, then persist to the server (cross-device sync).
   const onToggleTheme = () => {
@@ -114,6 +139,51 @@ export default function PreferencesPage() {
             <option value="th">ภาษาไทย</option>
           </select>
         </div>
+      </div>
+
+      {/* Change password (self-service, PWD-1) */}
+      <div className="bg-surface rounded-2xl border border-outline-variant p-lg flex flex-col gap-md">
+        <h2 className="text-title-md font-medium text-on-surface">Change password</h2>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="pw-current" className="text-label-md text-on-surface-variant">Current password</label>
+          <input
+            id="pw-current" type="password" autoComplete="current-password"
+            value={pwForm.currentPassword}
+            onChange={e => setPwForm(p => ({ ...p, currentPassword: e.target.value }))}
+            className="min-h-[44px] px-md border border-outline-variant rounded-xl text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary w-full"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="pw-new" className="text-label-md text-on-surface-variant">New password</label>
+          <input
+            id="pw-new" type="password" autoComplete="new-password"
+            value={pwForm.newPassword}
+            onChange={e => setPwForm(p => ({ ...p, newPassword: e.target.value }))}
+            className="min-h-[44px] px-md border border-outline-variant rounded-xl text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary w-full"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="pw-confirm" className="text-label-md text-on-surface-variant">Confirm new password</label>
+          <input
+            id="pw-confirm" type="password" autoComplete="new-password"
+            value={pwForm.confirmPassword}
+            onChange={e => setPwForm(p => ({ ...p, confirmPassword: e.target.value }))}
+            className="min-h-[44px] px-md border border-outline-variant rounded-xl text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary w-full"
+          />
+        </div>
+
+        {pwError && <p className="text-body-sm text-error-on-container">{pwError}</p>}
+        {pwSuccess && <p className="text-body-sm text-secondary">Password changed.</p>}
+
+        <button
+          type="button"
+          onClick={handleChangePassword}
+          disabled={changePassword.isPending}
+          className="min-h-[44px] px-xl self-start bg-primary text-primary-on rounded-xl text-body-md font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {changePassword.isPending ? 'Changing…' : 'Change password'}
+        </button>
       </div>
 
       {/* Personal Notifications */}
