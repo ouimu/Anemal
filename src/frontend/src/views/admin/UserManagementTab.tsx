@@ -23,7 +23,7 @@ const AVATAR_BG: Record<string, string> = {
   admin: 'bg-error-container text-error-on-container', doctor: 'bg-primary-fixed text-primary', staff: 'bg-secondary-container text-secondary-on-container',
 }
 
-function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; onClose: () => void }) {
+function Modal({ user, onClose, isPrimaryAdmin }: { user: Partial<User> & { isNew?: boolean }; onClose: () => void; isPrimaryAdmin: boolean }) {
   const t = useT()
   const qc = useQueryClient()
   const isNew = !!user.isNew
@@ -131,9 +131,14 @@ function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; o
             )}
           </div>
           {!isNew && (
-            <label className="flex items-center gap-2 min-h-[44px] cursor-pointer">
-              <input type="checkbox" checked={form.isActive} onChange={e => setForm(p => ({ ...p, isActive: e.target.checked }))} className="w-4 h-4"/>
+            <label className={`flex items-center gap-2 min-h-[44px] ${isPrimaryAdmin ? '' : 'cursor-pointer'}`}>
+              <input
+                type="checkbox" checked={form.isActive} disabled={isPrimaryAdmin}
+                aria-label={t('admin.users.activeAccount')}
+                onChange={e => setForm(p => ({ ...p, isActive: e.target.checked }))} className="w-4 h-4"
+              />
               <span className="text-sm text-on-surface">{t('admin.users.activeAccount')}</span>
+              {isPrimaryAdmin && <span className="text-xs text-on-surface-variant">Primary admin — cannot be deactivated</span>}
             </label>
           )}
           {!isNew && (
@@ -203,10 +208,13 @@ export default function UserManagementTab() {
 
   const active   = users.filter(u => u.isActive)
   const inactive = users.filter(u => !u.isActive)
+  const primaryAdminId = users
+    .filter(u => u.role === 'admin')
+    .reduce<number | null>((min, u) => (min === null || u.id < min ? u.id : min), null)
 
   return (
     <>
-      {modal && <Modal user={modal} onClose={() => setModal(null)}/>}
+      {modal && <Modal user={modal} onClose={() => setModal(null)} isPrimaryAdmin={modal.id === primaryAdminId} />}
       <div className="space-y-6">
         {/* Active users */}
         <section>

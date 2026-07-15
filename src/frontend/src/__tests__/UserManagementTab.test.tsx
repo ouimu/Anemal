@@ -103,3 +103,32 @@ describe('Admin reset-password field (Task 7)', () => {
     expect(screen.getByText(/Settings → Preferences/i)).toBeInTheDocument()
   })
 })
+
+describe('Primary-admin lock on Active-account checkbox (Task 8)', () => {
+  it('disables the Active-account checkbox with a lock note when editing the primary admin', async () => {
+    renderTab()
+    const editButtons = await screen.findAllByRole('button', { name: 'Edit' })
+    fireEvent.click(editButtons[0]) // ADMIN (id=1) is the lowest-id admin => primary
+    const checkbox = screen.getByLabelText(/Active account/i) as HTMLInputElement
+    expect(checkbox).toBeDisabled()
+    expect(screen.getByText(/Primary admin — cannot be deactivated/i)).toBeInTheDocument()
+  })
+
+  it('leaves the checkbox enabled for a second admin (non-primary)', async () => {
+    renderTab()
+    const editButtons = await screen.findAllByRole('button', { name: 'Edit' })
+    fireEvent.click(editButtons[1]) // SECOND_ADMIN (id=2)
+    const checkbox = screen.getByLabelText(/Active account/i) as HTMLInputElement
+    expect(checkbox).not.toBeDisabled()
+    expect(screen.queryByText(/Primary admin — cannot be deactivated/i)).not.toBeInTheDocument()
+  })
+
+  it('surfaces the real server error via describeSaveError if the backend 403s anyway (stale client)', async () => {
+    renderTab()
+    const editButtons = await screen.findAllByRole('button', { name: 'Edit' })
+    fireEvent.click(editButtons[1])
+    api.put.mockRejectedValue({ response: { data: { error: 'Cannot deactivate the primary clinic admin' } } })
+    fireEvent.click(screen.getByRole('button', { name: /^Save$/i }))
+    await waitFor(() => expect(screen.getByText(/Cannot deactivate the primary clinic admin/i)).toBeInTheDocument())
+  })
+})
