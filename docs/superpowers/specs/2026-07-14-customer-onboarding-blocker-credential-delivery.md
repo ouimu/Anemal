@@ -149,3 +149,27 @@ every run without cause).
 ## Human decision
 
 *(empty — awaiting input)*
+
+---
+
+## Resolution (superseded by shipped implementation, 2026-07-14 later run)
+
+Pipeline continued same day without a human answering Option 1/2/3 above — R-E
+(the other blocking gap, contact-field requirement) was resolved by relaxing
+D-2-02 for the platform-provisioned path (`email=NULL, phone=NULL`, does not
+call `user.service.ts` `createUser()`), and CO-1 shipped with **none** of this
+doc's three options applied: the auto-generated first-admin password is
+hashed and discarded, never surfaced anywhere. Functionally closest to Option
+3's outcome, reached by omission rather than deliberate choice.
+
+Shipped in PR #23 (`909ca1f`), QA APPROVE
+(`docs/superpowers/plans/2026-07-14-clinic-admins-tab-qa-signoff.md`), docs
+synced Step 8 (`7c65167`). ADR-0015 accepted. QA sign-off explicitly flagged
+this as a known, non-blocking UX gap and recommended human confirmation
+post-merge; if rejected, the fix is small (surface `adminCredentials` on
+`createCustomer()`'s response, i.e. this doc's Option 1) — not a redesign.
+
+**Status: CLOSED — feature shipped, gap accepted as documented fallback.** No
+further action needed from this blocker. Do not re-raise on future scheduled
+runs; if a human wants Option 1 wired in, that is new follow-up work, not a
+reopening of this blocker.

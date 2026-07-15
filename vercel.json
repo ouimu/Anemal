@@ -9,7 +9,7 @@
   },
   "rewrites": [
     {
-      "source": "/(auth|users|admin|clinic|platform|api)/(.*)",
+      "source": "/(auth|users|admin|clinic|platform|api)(/.*)?",
       "has": [{ "type": "header", "key": "accept", "value": "(?!.*text/html).*" }],
       "destination": "/api"
     },
