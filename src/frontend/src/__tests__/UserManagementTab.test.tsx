@@ -189,4 +189,12 @@ describe('Row-level Deactivate/Restore (Task 9)', () => {
     expect(screen.queryByRole('button', { name: /^Deactivate$/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Restore' })).not.toBeInTheDocument()
   })
+
+  it('surfaces a server error via describeSaveError if Restore fails (e.g. seat quota)', async () => {
+    api.put.mockRejectedValue({ response: { data: { error: 'Quota exceeded for users' } } })
+    renderTab()
+    const restoreButton = await screen.findByRole('button', { name: 'Restore' })
+    fireEvent.click(restoreButton)
+    await waitFor(() => expect(screen.getByText(/Quota exceeded for users/i)).toBeInTheDocument())
+  })
 })

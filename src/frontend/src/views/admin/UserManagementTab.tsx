@@ -238,9 +238,11 @@ export default function UserManagementTab() {
   const [confirmDeactivate, setConfirmDeactivate] = useState<User | null>(null)
   const currentUserId = useAuthStore(s => s.userId)
 
+  const [restoreError, setRestoreError] = useState<string | null>(null)
   const restore = useMutation({
     mutationFn: (userId: number) => api.put(`/users/${userId}`, { isActive: true }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'users'] }),
+    onSuccess: () => { setRestoreError(null); qc.invalidateQueries({ queryKey: ['admin', 'users'] }) },
+    onError: (err: unknown) => setRestoreError(describeSaveError(err)),
   })
 
   if (isLoading) return <p className="text-sm text-on-surface-variant py-8 text-center">{t('common.loading')}</p>
@@ -316,6 +318,7 @@ export default function UserManagementTab() {
         {inactive.length > 0 && (
           <section>
             <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Deactivated ({inactive.length})</h3>
+            {restoreError && <p className="text-xs text-error-on-container mb-2">{restoreError}</p>}
             <div className="bg-surface border border-outline-variant rounded-xl divide-y divide-outline-variant opacity-60">
               {inactive.map(user => (
                 <div key={user.id} className="flex items-center gap-3 px-4 py-3 min-h-[56px]">
