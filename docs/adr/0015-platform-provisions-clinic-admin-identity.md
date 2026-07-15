@@ -18,3 +18,11 @@ This is a deliberate, bounded exception to the platform/clinic plane-separation 
 **Deliberately deferred, not built:** a reactivate endpoint (recovery path is creating a replacement clinic_admin instead — the tenant is never truly locked out); rate-limiting on platform-admin actions (no such infra exists anywhere in the codebase yet; platform admin already holds equally destructive unrestricted powers like tenant suspend, so this feature isn't a uniquely elevated risk — if built, it should cover all high-risk platform actions together, not just this one).
 
 See `docs/superpowers/specs/2026-07-14-customer-onboarding-brainstorm.md` and `docs/superpowers/plans/2026-07-14-customer-onboarding-tasks.md` (§Grill Findings) for the full design history.
+
+## Amendment (2026-07-15) — provisioning-time exception extended to one `branches` row
+
+`createCustomer()`'s tenant-creation transaction was found to create zero `Branch` rows, leaving every Platform-Console-provisioned tenant unable to complete staff/doctor login or use any branch-scoped module (seed-created tenants were unaffected — `seed.ts` creates a Main Branch manually). Fixed by inserting one `Branch` row (`name: 'Main Branch'`, server-constant, no clinic-data read) inside the same transaction as the B-1–B-4 bounded exception above.
+
+This is scoped as an extension of B-2 (no clinic-data reads), not a new exception: the write is server-constant, happens once at tenant-creation time in the same transaction, and touches operational config (`branches`) rather than clinical/PII data. B-1 (role-scoped to `clinic_admin` users) does not apply to this row since it isn't a `users` write; B-3 (audited) and B-4 (soft-delete only — not applicable, branches are never deleted here) continue to hold via the existing `customer.create` audit entry, now including `branchId`.
+
+See `docs/superpowers/specs/2026-07-15-mainbranch-and-password-change-brainstorm.md` for the full design history and the companion clinic-plane password-change feature (`/auth/change-password`, `PATCH /users/:id/password`) shipped in the same branch.

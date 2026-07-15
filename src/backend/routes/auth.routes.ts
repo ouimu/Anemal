@@ -3,7 +3,7 @@ import { validate } from '../middlewares/validate.middleware'
 import { authMiddleware } from '../middlewares/auth.middleware'
 import { requirePlane, requirePermission } from '../middlewares/permission.middleware'
 import { loginRateLimiter } from '../middlewares/rate-limit.middleware'
-import { handleLogin, loginSchema, handleSwitchBranch, switchBranchSchema, handleSelectBranch, selectBranchSchema, handleMe, handleRefresh, refreshSchema, handleLogout, logoutSchema } from '../controllers/auth.controller'
+import { handleLogin, loginSchema, handleSwitchBranch, switchBranchSchema, handleSelectBranch, selectBranchSchema, handleMe, handleRefresh, refreshSchema, handleLogout, logoutSchema, changePasswordSchema, handleChangePassword } from '../controllers/auth.controller'
 
 const router = Router()
 
@@ -25,5 +25,8 @@ router.get('/me', authMiddleware, requirePlane('clinic'), handleMe)
 // POST /auth/switch-branch — re-issue token scoped to another branch (Phase 4)
 // D-2-03: only users with staff.assign_branch permission may switch branches
 router.post('/switch-branch', authMiddleware, requirePlane('clinic'), requirePermission('staff.assign_branch'), validate(switchBranchSchema), handleSwitchBranch)
+
+// POST /auth/change-password — self-service; current password required (PWD-1)
+router.post('/change-password', authMiddleware, requirePlane('clinic'), loginRateLimiter, validate(changePasswordSchema), handleChangePassword)
 
 export default router

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { z } from 'zod'
-import { login, switchBranch, selectBranch, getMe, refreshClinicToken, revokeClinicToken } from '../services/auth.service'
+import { login, switchBranch, selectBranch, getMe, refreshClinicToken, revokeClinicToken, changePassword } from '../services/auth.service'
 
 export const loginSchema = z.object({
   subdomain: z.string().min(1),
@@ -72,6 +72,32 @@ export async function handleLogout(req: Request, res: Response, next: NextFuncti
   try {
     const { refreshToken } = req.body as z.infer<typeof logoutSchema>
     await revokeClinicToken(refreshToken)
+    res.status(204).send()
+  } catch (err) { next(err) }
+}
+
+/**
+ * Zod schema for POST /auth/change-password (PWD-1).
+ * Shape validation only — the 8-char minimum for newPassword is enforced in
+ * the service layer (AuthError, 422), matching the existing WeakPasswordError
+ * pattern in platform-customers.service.ts, so it surfaces as a business-rule
+ * violation (422) rather than a generic malformed-request error (400).
+ */
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword:     z.string().min(1),
+}).strict()
+
+/**
+ * Handle POST /auth/change-password.
+ * Self-service only — userId/tenantId come from req.context (JWT), never
+ * from the body (no target-user param exists on this route by design).
+ */
+export async function handleChangePassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { userId, tenantId } = req.context!
+    const { currentPassword, newPassword } = req.body as z.infer<typeof changePasswordSchema>
+    await changePassword(tenantId, userId, currentPassword, newPassword)
     res.status(204).send()
   } catch (err) { next(err) }
 }

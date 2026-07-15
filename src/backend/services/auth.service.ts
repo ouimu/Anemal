@@ -3,6 +3,7 @@
 import crypto from 'crypto'
 import bcrypt from 'bcrypt'
 import { AppError } from '../utils/errors'
+import { config } from '../config/env'
 import { signToken, signPendingToken, verifyPendingToken } from '../config/jwt'
 import * as authRepo from '../models/auth.repository'
 import * as refreshTokenRepo from '../models/refresh-token.repository'
@@ -327,5 +328,43 @@ export async function revokeClinicToken(rawRefreshToken: string): Promise<void> 
   const record = await refreshTokenRepo.findByHash(hash)
   if (!record) return
   await refreshTokenRepo.revokeFamily(record.familyId)
+}
+
+/**
+ * Self-service password change (PWD-1, brainstorm §4.2 B-1). The caller can
+ * only ever act on their own row — userId/tenantId come from the verified
+ * JWT context, never from the request body, so BOLA is structurally
+ * impossible here (there is no target-user parameter).
+ *
+ * On success, ALL of the caller's refresh-token families are revoked
+ * (PWD-3) so a stolen 30-day refresh token stops working immediately. The
+ * 8h access JWT already in the caller's hand keeps working until it expires
+ * (Q-G3, accepted residual).
+ *
+ * @param tenantId        - From req.context (JWT), never trusted from body.
+ * @param userId          - From req.context (JWT), never trusted from body.
+ * @param currentPassword - Must match the caller's existing hash.
+ * @param newPassword     - Already validated >= 8 chars by the zod schema.
+ * @throws AuthError(401) if currentPassword does not match.
+ */
+export async function changePassword(
+  tenantId: number,
+  userId: number,
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const user = await authRepo.findUserById(tenantId, userId)
+  if (!user || !user.isActive) throw new AuthError('User not found', 404)
+
+  const matches = await bcrypt.compare(currentPassword, user.passwordHash)
+  if (!matches) throw new AuthError('Current password is incorrect', 401)
+
+  if (newPassword.length < 8) {
+    throw new AuthError('Password must be at least 8 characters', 422)
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, config.bcryptRounds)
+  await userRepo.setPasswordHash(tenantId, userId, passwordHash)
+  await refreshTokenRepo.revokeAllForUser(userId)
 }
 

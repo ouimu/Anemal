@@ -52,6 +52,7 @@ const UNMAPPED_ALLOWLIST: Array<{ method: string; path: string; reason: string }
   { method: 'POST', path: '/auth/refresh',          reason: 'Public — refresh token IS the auth.' },
   { method: 'POST', path: '/auth/logout',           reason: 'Public — revokes by refresh token, no permission needed.' },
   { method: 'GET',  path: '/auth/me',               reason: "requirePlane('clinic') only — any authenticated clinic user reads their own identity, no permission gate by design." },
+  { method: 'POST', path: '/auth/change-password',  reason: "requirePlane('clinic') only — self-service password change (PWD-1); self-scoped, no target-user param, same class as GET /auth/me. Zero new permission code per plan Q-G5/brainstorm §5." },
   { method: 'GET',  path: '/api/settings/personal', reason: 'requirePlane(\'clinic\') only — S2.3: personal preferences are self-service for any clinic role.' },
   { method: 'PUT',  path: '/api/settings/personal', reason: "requirePlane('clinic') only — same as above." },
 ]
