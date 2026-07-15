@@ -261,8 +261,19 @@ export async function createCustomer(data: CreateCustomerInput, performedById: n
   // CO-1 (ADR-0015): create the tenant and its first clinic_admin user
   // atomically. If the user insert fails for any reason, the tenant insert
   // rolls back too — no tenant-without-admin state is ever reachable.
-  const { tenant, adminUserId } = await prisma.$transaction(async (tx) => {
+  const { tenant, adminUserId, branchId } = await prisma.$transaction(async (tx) => {
     const createdTenant = await customersRepo.createTenant(createData, tx)
+
+    // PROV-1 (ADR-0015 amendment, 2026-07-15): every tenant must start with
+    // one branch so staff/doctor login and every branch-scoped module has
+    // context from day one — matches prisma/seed.ts parity. Server-constant
+    // name, no clinic-data read: within the amended B-2 bound. No
+    // user_branches row for the admin — the admin role bypasses branch
+    // selection entirely (auth.service.ts login()/selectBranch()), exactly
+    // as seed-created tenants have no admin user_branches rows either.
+    const branch = await tx.branch.create({
+      data: { tenantId: createdTenant.id, name: 'Main Branch' },
+    })
 
     const clinicAdminRole = await tx.clinicRole.findFirst({
       where: { key: 'clinic_admin', tenantId: null, isSystem: true },
@@ -294,14 +305,14 @@ export async function createCustomer(data: CreateCustomerInput, performedById: n
       data: { userId: adminUser.id, roleId: clinicAdminRole.id, tenantId: createdTenant.id },
     })
 
-    return { tenant: createdTenant, adminUserId: adminUser.id }
+    return { tenant: createdTenant, adminUserId: adminUser.id, branchId: branch.id }
   })
 
   await platformAuditRepo.createPlatformAuditLog({
     action: 'customer.create',
     targetTenantId: tenant.id,
     performedByPlatformUserId: performedById,
-    details: { name: tenant.name, subdomain: tenant.subdomain, planId: tenant.planId, adminUserId },
+    details: { name: tenant.name, subdomain: tenant.subdomain, planId: tenant.planId, adminUserId, branchId },
   })
 
   return tenant

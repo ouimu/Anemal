@@ -164,6 +164,67 @@ describe('CO-1: createCustomer() auto-creates first clinic_admin', () => {
     const admin = await prisma.user.findFirst({ where: { tenantId: tenant.id, username: 'admin' } })
     expect(admin).not.toBeNull()
   })
+
+  it('✅ creates exactly one active Branch named "Main Branch"; audit details include branchId', async () => {
+    const tenant = await createTenantViaService('prov1a')
+
+    const branches = await prisma.branch.findMany({ where: { tenantId: tenant.id } })
+    expect(branches).toHaveLength(1)
+    expect(branches[0].name).toBe('Main Branch')
+    expect(branches[0].isActive).toBe(true)
+
+    const log = await prisma.platformAuditLog.findFirstOrThrow({
+      where: { action: 'customer.create', targetTenantId: tenant.id },
+    })
+    expect((log.details as Record<string, unknown>).branchId).toBe(branches[0].id)
+  })
+
+  it('✅ rolls back tenant AND branch together if the transaction fails downstream', async () => {
+    // Reuse the existing rollback simulation (role key temporarily renamed) —
+    // the branch insert happens BEFORE the role lookup, so this proves the
+    // whole transaction — branch included — rolls back, not just the user.
+    const subdomain = `co-test-provrollback-${SFX}`
+    const clinicAdminRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
+    await prisma.clinicRole.update({ where: { id: clinicAdminRole.id }, data: { key: '__temp_missing_prov__' } })
+    try {
+      await expect(
+        customersService.createCustomer({ name: 'Prov Rollback Test', subdomain }, 1),
+      ).rejects.toThrow("System role 'clinic_admin' not seeded")
+
+      const tenant = await prisma.tenant.findUnique({ where: { subdomain } })
+      expect(tenant).toBeNull()
+      // No orphaned branch either — subdomain lookup above already proves no
+      // tenant row exists, and Branch.tenantId has an onDelete: Cascade FK,
+      // so no branch could exist without a parent tenant row.
+    } finally {
+      await prisma.clinicRole.update({ where: { id: clinicAdminRole.id }, data: { key: 'clinic_admin' } })
+    }
+  })
+
+  it('✅ a staff user created and assigned to the Main Branch can complete two-step login', async () => {
+    const tenant = await createTenantViaService('prov1c')
+    const branch = await prisma.branch.findFirstOrThrow({ where: { tenantId: tenant.id } })
+
+    const staffPasswordHash = await bcrypt.hash('StaffPass1!', 10)
+    const staffRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } })
+    const staff = await prisma.user.create({
+      data: { tenantId: tenant.id, username: 'prov1staff', name: 'Prov Staff', passwordHash: staffPasswordHash, role: 'staff', isActive: true },
+    })
+    await prisma.userRole.create({ data: { tenantId: tenant.id, userId: staff.id, roleId: staffRole.id } })
+    await prisma.userBranch.create({ data: { tenantId: tenant.id, userId: staff.id, branchId: branch.id } })
+
+    const step1 = await request(server)
+      .post('/auth/login')
+      .send({ subdomain: tenant.subdomain, username: 'prov1staff', password: 'StaffPass1!' })
+    expect(step1.body.data.requiresBranchSelection).toBe(true)
+    expect(step1.body.data.branches).toEqual([{ id: branch.id, name: 'Main Branch' }])
+
+    const step2 = await request(server)
+      .post('/auth/select-branch')
+      .send({ pendingToken: step1.body.data.pendingToken, branchId: branch.id })
+    expect(step2.status).toBe(200)
+    expect(step2.body.data.token).toBeTruthy()
+  })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
