@@ -137,9 +137,7 @@ describe('Row-level Deactivate/Restore (Task 9)', () => {
   it('shows a Deactivate button on active, non-primary-admin rows; confirming calls DELETE', async () => {
     api.delete.mockResolvedValue({ status: 200 })
     renderTab()
-    const rows = await screen.findAllByRole('listitem').catch(() => [])
-    // Fallback: locate by username text if rows aren't <li> — use the row container via testId-free text lookup.
-    const secondAdminDeactivate = screen.getAllByRole('button', { name: /^Deactivate$/i })
+    const secondAdminDeactivate = await screen.findAllByRole('button', { name: /^Deactivate$/i })
     expect(secondAdminDeactivate.length).toBeGreaterThan(0)
 
     fireEvent.click(secondAdminDeactivate[0])
