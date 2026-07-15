@@ -8,6 +8,7 @@ import RolePicker from '../../components/roles/RolePicker'
 import { useUserRolesQuery } from '../../hooks/useUserRoles'
 import { useT } from '../../i18n'
 import { describeSaveError } from '../../utils/errorMessages'
+import MaterialIcon from '../../components/MaterialIcon'
 
 interface User { id: number; name: string; username: string; email: string | null; role: string; isActive: boolean; createdAt: string; branchId: number | null }
 interface Branch { id: number; name: string }
@@ -195,14 +196,52 @@ function Modal({ user, onClose, isPrimaryAdmin }: { user: Partial<User> & { isNe
   )
 }
 
+function DeactivateConfirmDialog({ user, onCancel, onConfirmed }: { user: User; onCancel: () => void; onConfirmed: () => void }) {
+  const qc = useQueryClient()
+  const deactivate = useMutation({
+    mutationFn: () => api.delete(`/users/${user.id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] })
+      onConfirmed()
+    },
+  })
+  return (
+    <div role="dialog" aria-label="Confirm deactivate" className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-sm p-6">
+        <p className="text-sm text-on-surface mb-4">
+          Deactivate {user.name}? They will no longer be able to log in. You can restore them later.
+        </p>
+        {deactivate.isError && <p className="text-xs text-error-on-container mb-2">{describeSaveError(deactivate.error)}</p>}
+        <div className="flex gap-2">
+          <button onClick={onCancel} className="flex-1 min-h-[44px] border border-outline-variant rounded-lg text-sm text-on-surface-variant hover:bg-surface-container-low">Cancel</button>
+          <button
+            onClick={() => deactivate.mutate()}
+            disabled={deactivate.isPending}
+            className="flex-1 min-h-[44px] bg-error text-error-on rounded-lg text-sm font-semibold disabled:opacity-50 hover:bg-error/90"
+          >
+            {deactivate.isPending ? 'Deactivating…' : 'Deactivate'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function UserManagementTab() {
   const t = useT()
+  const qc = useQueryClient()
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ['admin', 'users'],
     queryFn: () => api.get('/users').then(r => r.data.data),
   })
   const [modal, setModal] = useState<(Partial<User> & { isNew?: boolean }) | null>(null)
+  const [confirmDeactivate, setConfirmDeactivate] = useState<User | null>(null)
   const currentUserId = useAuthStore(s => s.userId)
+
+  const restore = useMutation({
+    mutationFn: (userId: number) => api.put(`/users/${userId}`, { isActive: true }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'users'] }),
+  })
 
   if (isLoading) return <p className="text-sm text-on-surface-variant py-8 text-center">{t('common.loading')}</p>
 
@@ -215,6 +254,13 @@ export default function UserManagementTab() {
   return (
     <>
       {modal && <Modal user={modal} onClose={() => setModal(null)} isPrimaryAdmin={modal.id === primaryAdminId} />}
+      {confirmDeactivate && (
+        <DeactivateConfirmDialog
+          user={confirmDeactivate}
+          onCancel={() => setConfirmDeactivate(null)}
+          onConfirmed={() => setConfirmDeactivate(null)}
+        />
+      )}
       <div className="space-y-6">
         {/* Active users */}
         <section>
@@ -226,24 +272,43 @@ export default function UserManagementTab() {
             </button>
           </div>
           <div className="bg-surface border border-outline-variant rounded-xl divide-y divide-outline-variant">
-            {active.map(user => (
-              <div key={user.id} className="flex items-center gap-3 px-4 py-3 min-h-[56px]">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${AVATAR_BG[user.role] ?? 'bg-surface-container text-on-surface-variant'}`}>
-                  {INITIALS(user.name)}
+            {active.map(user => {
+              const isPrimaryAdmin = user.id === primaryAdminId
+              return (
+                <div key={user.id} className="flex items-center gap-3 px-4 py-3 min-h-[56px]">
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${AVATAR_BG[user.role] ?? 'bg-surface-container text-on-surface-variant'}`}>
+                    {INITIALS(user.name)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-on-surface truncate">
+                      {user.name} {user.id === currentUserId && <span className="text-xs text-on-surface-variant">(you)</span>}
+                    </p>
+                    <p className="text-xs text-on-surface-variant truncate font-code">@{user.username}</p>
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${ROLE_COLORS[user.role] ?? ''}`}>{user.role}</span>
+                  <Can perm="staff.manage">
+                    {isPrimaryAdmin ? (
+                      <button
+                        disabled
+                        aria-label="Primary admin — cannot be deactivated"
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center text-on-surface-variant opacity-50 cursor-not-allowed"
+                      >
+                        <MaterialIcon name="lock" size={20} />
+                      </button>
+                    ) : (
+                      <button onClick={() => setConfirmDeactivate(user)}
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center border border-outline-variant rounded-lg text-xs text-error-on-container hover:bg-surface-container-low">
+                        Deactivate
+                      </button>
+                    )}
+                  </Can>
+                  <button onClick={() => setModal(user)}
+                    className="min-h-[44px] min-w-[44px] flex items-center justify-center border border-outline-variant rounded-lg text-xs text-on-surface-variant hover:bg-surface-container-low">
+                    Edit
+                  </button>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-on-surface truncate">
-                    {user.name} {user.id === currentUserId && <span className="text-xs text-on-surface-variant">(you)</span>}
-                  </p>
-                  <p className="text-xs text-on-surface-variant truncate font-code">@{user.username}</p>
-                </div>
-                <span className={`text-xs px-2 py-1 rounded-full font-medium ${ROLE_COLORS[user.role] ?? ''}`}>{user.role}</span>
-                <button onClick={() => setModal(user)}
-                  className="min-h-[44px] min-w-[44px] flex items-center justify-center border border-outline-variant rounded-lg text-xs text-on-surface-variant hover:bg-surface-container-low">
-                  Edit
-                </button>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </section>
 
@@ -262,10 +327,12 @@ export default function UserManagementTab() {
                     <p className="text-xs text-outline-variant truncate font-code">@{user.username}</p>
                   </div>
                   <span className="text-xs px-2 py-1 rounded-full bg-surface-container text-on-surface-variant">inactive</span>
-                  <button onClick={() => setModal(user)}
-                    className="min-h-[44px] min-w-[44px] flex items-center justify-center border border-outline-variant rounded-lg text-xs text-on-surface-variant hover:bg-surface-container-low">
-                    Restore
-                  </button>
+                  <Can perm="staff.manage">
+                    <button onClick={() => restore.mutate(user.id)}
+                      className="min-h-[44px] min-w-[44px] flex items-center justify-center border border-outline-variant rounded-lg text-xs text-on-surface-variant hover:bg-surface-container-low">
+                      Restore
+                    </button>
+                  </Can>
                 </div>
               ))}
             </div>

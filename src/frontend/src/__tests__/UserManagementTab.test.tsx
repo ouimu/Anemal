@@ -132,3 +132,61 @@ describe('Primary-admin lock on Active-account checkbox (Task 8)', () => {
     await waitFor(() => expect(screen.getByText(/Cannot deactivate the primary clinic admin/i)).toBeInTheDocument())
   })
 })
+
+describe('Row-level Deactivate/Restore (Task 9)', () => {
+  it('shows a Deactivate button on active, non-primary-admin rows; confirming calls DELETE', async () => {
+    api.delete.mockResolvedValue({ status: 200 })
+    renderTab()
+    const rows = await screen.findAllByRole('listitem').catch(() => [])
+    // Fallback: locate by username text if rows aren't <li> — use the row container via testId-free text lookup.
+    const secondAdminDeactivate = screen.getAllByRole('button', { name: /^Deactivate$/i })
+    expect(secondAdminDeactivate.length).toBeGreaterThan(0)
+
+    fireEvent.click(secondAdminDeactivate[0])
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByText(/Second Admin/)).toBeInTheDocument()
+    expect(within(dialog).getByText(/You can restore them later/i)).toBeInTheDocument()
+    expect(api.delete).not.toHaveBeenCalled()
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Deactivate' }))
+    await waitFor(() => expect(api.delete).toHaveBeenCalledWith('/users/2'))
+  })
+
+  it('shows a disabled lock icon instead of Deactivate on the primary-admin row, and it fires no request', async () => {
+    renderTab()
+    await screen.findAllByRole('button', { name: 'Edit' })
+    // Only one Deactivate button should exist (for SECOND_ADMIN); STAFF also
+    // gets one, so exactly two non-primary-admin active rows => two buttons.
+    const deactivateButtons = screen.getAllByRole('button', { name: /^Deactivate$/i })
+    expect(deactivateButtons).toHaveLength(2) // SECOND_ADMIN + STAFF, not ADMIN (primary)
+    const lockIcon = screen.getByLabelText(/Primary admin — cannot be deactivated/i)
+    fireEvent.click(lockIcon)
+    expect(api.delete).not.toHaveBeenCalled()
+  })
+
+  it('Restore calls PUT /users/:id {isActive:true} directly, no confirm dialog', async () => {
+    api.put.mockResolvedValue({ status: 200 })
+    renderTab()
+    const restoreButton = await screen.findByRole('button', { name: 'Restore' })
+    fireEvent.click(restoreButton)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await waitFor(() => expect(api.put).toHaveBeenCalledWith('/users/4', { isActive: true }))
+  })
+
+  it('surfaces a server error via describeSaveError if Deactivate 403s (stale client)', async () => {
+    api.delete.mockRejectedValue({ response: { data: { error: 'Cannot deactivate the primary clinic admin' } } })
+    renderTab()
+    const deactivateButtons = await screen.findAllByRole('button', { name: /^Deactivate$/i })
+    fireEvent.click(deactivateButtons[0])
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Deactivate' }))
+    await waitFor(() => expect(screen.getByText(/Cannot deactivate the primary clinic admin/i)).toBeInTheDocument())
+  })
+
+  it('does not render Deactivate/Restore actions without staff.manage', async () => {
+    state.permissions = []
+    renderTab()
+    await screen.findByText('Second Admin')
+    expect(screen.queryByRole('button', { name: /^Deactivate$/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Restore' })).not.toBeInTheDocument()
+  })
+})
