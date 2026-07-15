@@ -110,3 +110,21 @@ export async function revokeById(id: string): Promise<void> {
     data:  { revokedAt: new Date() },
   })
 }
+
+/**
+ * Revoke every non-revoked refresh token belonging to a clinic user, across
+ * all families. Used after any password change or reset (B-1/B-2/platform
+ * reset) so a stolen or forgotten-but-valid 30-day refresh token can no
+ * longer mint new access tokens (PWD-3, gap analysis §6).
+ *
+ * Existing 8h access JWTs are NOT invalidated by this call — accepted
+ * residual (Q-G3, brainstorm §4.3), matches the deactivation residual.
+ *
+ * @param userId - Clinic `users.id` whose tokens should all be revoked.
+ */
+export async function revokeAllForUser(userId: number): Promise<void> {
+  await prisma.refreshToken.updateMany({
+    where: { userId, revokedAt: null },
+    data:  { revokedAt: new Date() },
+  })
+}
