@@ -7,6 +7,7 @@ import { config } from '../config/env'
 import prisma from '../config/db'
 import * as userRepo from '../models/user.repository'
 import * as roleRepo from '../models/role.repository'
+import * as refreshTokenRepo from '../models/refresh-token.repository'
 import * as subscriptionService from './subscription.service'
 import type { CreateUserRequest, UpdateUserRequest, UserResponse } from '../types'
 
@@ -239,6 +240,39 @@ export async function deactivateUser(tenantId: number, userId: number): Promise<
   const existing = await userRepo.findUserById(tenantId, userId)
   if (!existing) throw new UserError('User not found', 404)
   await userRepo.setActive(tenantId, userId, false)
+}
+
+/**
+ * Admin resets another clinic user's password (PWD-2, brainstorm §4.2 B-2).
+ * No current-password check (that is the point of an admin reset — Q-G2
+ * also allows self-targeting via this same route). Tenant-scoped
+ * `updateMany` (user.repository.ts `setPasswordHash`) means a cross-tenant
+ * `userId` affects 0 rows → 404, never 403 (ADR-0014 BOLA precedent).
+ *
+ * The 8-char minimum is enforced here (422) rather than via zod .min(8) in
+ * the controller schema — this codebase's shared `validate()` middleware
+ * always maps zod failures to 400 (see auth.service.ts changePassword() for
+ * the identical reasoning), and the established WeakPasswordError precedent
+ * in platform-customers.service.ts treats "password too short" as a
+ * business-rule violation (422), not a malformed request.
+ *
+ * @param tenantId    - Caller's tenant (req.context, never from body/params).
+ * @param userId      - Target user's primary key (path param).
+ * @param newPassword - New password; validated >= 8 chars here.
+ */
+export async function resetUserPassword(
+  tenantId: number,
+  userId: number,
+  newPassword: string,
+): Promise<void> {
+  if (newPassword.length < 8) {
+    throw new UserError('Password must be at least 8 characters', 422)
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, config.bcryptRounds)
+  const updated = await userRepo.setPasswordHash(tenantId, userId, passwordHash)
+  if (updated === 0) throw new UserError('User not found', 404)
+  await refreshTokenRepo.revokeAllForUser(userId)
 }
 
 export class UserError extends AppError {
