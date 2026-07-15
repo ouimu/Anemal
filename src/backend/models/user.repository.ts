@@ -65,6 +65,25 @@ export async function setActive(tenantId: number, userId: number, isActive: bool
 }
 
 /**
+ * Set a new password hash for a user, tenant-scoped (`updateMany`, BOLA
+ * guard — mirrors `setActive`/`updateUserBranch`). Used by both
+ * self-service change (PWD-1) and admin reset (PWD-2).
+ *
+ * @param tenantId     - Tenant scope (multi-tenancy isolation).
+ * @param userId       - Target user's primary key.
+ * @param passwordHash - New bcrypt hash.
+ * @returns Number of rows updated (0 = not found in this tenant).
+ */
+export async function setPasswordHash(
+  tenantId: number,
+  userId: number,
+  passwordHash: string,
+): Promise<number> {
+  const result = await prisma.user.updateMany({ where: { id: userId, tenantId }, data: { passwordHash } })
+  return result.count
+}
+
+/**
  * Replace all existing user_roles rows for a user (within a tenant) with a
  * single new role assignment, and update the legacy `roleId` FK on the User
  * row — all in one transaction.
