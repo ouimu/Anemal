@@ -21,6 +21,39 @@ const LEGACY_ROLE_TO_SYSTEM_KEY: Record<string, string> = {
   staff:  'clinic_staff',
 } as const
 
+/**
+ * Guards against lockout-equivalent actions on the tenant's primary admin
+ * (ADR-0016). The primary admin is the lowest-id `role='admin'` user in the
+ * tenant (userRepo.findPrimaryAdminId). Throws 403 when the target user IS
+ * the primary admin AND the requested change would either:
+ *   (a) set isActive to false (deactivation), or
+ *   (b) set role to anything other than 'admin' (role-demotion bypass, D-5).
+ * Reactivation, non-role/non-isActive edits (name, password) are unaffected.
+ *
+ * // ponytail: no pessimistic lock (SELECT...FOR UPDATE) on
+ * // findPrimaryAdminId — accepted TOCTOU risk (ADR-0016 D-8). A missed race
+ * // fails closed (a rare spurious 403 that a retry resolves), never open.
+ *
+ * Deliberately NOT called from platform-customers.service.ts
+ * deactivateTenantAdminUser (CO-4) — that path is the platform operator's
+ * audited recovery mechanism for a locked-out tenant (ADR-0016 D-7).
+ */
+async function assertNotPrimaryAdminDeactivation(
+  tenantId: number,
+  userId: number,
+  change: { isActive?: boolean; role?: string },
+): Promise<void> {
+  const primaryAdminId = await userRepo.findPrimaryAdminId(tenantId)
+  if (primaryAdminId === null || userId !== primaryAdminId) return
+
+  if (change.isActive === false) {
+    throw new UserError('Cannot deactivate the primary clinic admin', 403)
+  }
+  if (change.role !== undefined && change.role !== 'admin') {
+    throw new UserError("Cannot change the primary clinic admin's role", 403)
+  }
+}
+
 function safe(user: {
   id: number; tenantId: number; name: string; username: string
   email: string | null; phone?: string | null
@@ -89,6 +122,14 @@ export async function updateUser(
 ): Promise<UserResponse> {
   const existing = await userRepo.findUserById(tenantId, userId)
   if (!existing) throw new UserError('User not found', 404)
+
+  await assertNotPrimaryAdminDeactivation(tenantId, userId, { isActive: body.isActive, role: body.role })
+
+  // ADR-0016 D-6: restoring a deactivated user must re-check the seat quota,
+  // same as createUser — restore should not be a quota-enforcement bypass.
+  if (body.isActive === true && existing.isActive === false) {
+    await subscriptionService.assertCanAddUser(tenantId)
+  }
 
   if (body.role !== undefined) {
     const systemKey = LEGACY_ROLE_TO_SYSTEM_KEY[body.role]
@@ -239,6 +280,7 @@ export async function assignUserBranches(
 export async function deactivateUser(tenantId: number, userId: number): Promise<void> {
   const existing = await userRepo.findUserById(tenantId, userId)
   if (!existing) throw new UserError('User not found', 404)
+  await assertNotPrimaryAdminDeactivation(tenantId, userId, { isActive: false })
   await userRepo.setActive(tenantId, userId, false)
 }
 
