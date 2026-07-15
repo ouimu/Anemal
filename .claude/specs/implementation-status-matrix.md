@@ -6,13 +6,27 @@
 > This matrix is the canonical status source; @pm-agent updates it LAST on every
 > task (see CLAUDE.md → Tracking & Documentation).
 >
-> Current totals as of the RETEST-2026-07-13 findings closeout, 2026-07-13
-> (PR #22 — independent re-test of PRs #19–#21 found 3 P1 defects: unscoped
+> Current totals as of the Main Branch auto-provisioning + clinic password
+> change merge, 2026-07-15 (PR #26, ADR-0015 2026-07-15 amendment): every
+> platform-provisioned tenant now gets a "Main Branch" row inside
+> `createCustomer()`'s existing atomic transaction (PROV-1), plus an
+> idempotent `backfill-main-branch.ts` script (PROV-2) for tenants
+> provisioned before this fix. Clinic-plane password management added:
+> self-service `POST /auth/change-password` (PWD-1, BOLA-impossible by
+> design — no target-user param) and admin-assisted
+> `PATCH /users/:id/password` (PWD-2, `staff.manage`-gated, tenant-scoped,
+> 404-not-403 on cross-tenant per ADR-0014). All three password-affecting
+> flows (self-service, admin reset, and the existing platform-plane reset)
+> now revoke every refresh-token family via `revokeAllForUser` (PWD-3/PWD-0)
+> — closes a gap where a stolen/forgotten 30-day refresh token stayed valid
+> after a password change — on top of the Clinic Admins tab merge, PR #23,
+> ADR-0015, on top of the RETEST-2026-07-13 findings closeout, 2026-07-13,
+> PR #22 — independent re-test of PRs #19–#21 found 3 P1 defects: unscoped
 > `performedByUser` Prisma relation include with no tenantId filter on the
 > care-log performer lookup, missing FK index on
 > `DailyInpatientCare.performedBy`, undefined `text-label-lg` Tailwind token
 > in `ClinicInpatient.tsx`; plus a `VitalStepper` `+`-button max-clamp gap
-> and 4 regression-test gaps — all closed) — on top of the Log Care vitals
+> and 4 regression-test gaps — all closed — on top of the Log Care vitals
 > modal merge, PR #21, branch `fix/log-care-vitals-modal` — Package B of the
 > RecommendByCodex fixup set: heartRateBpm/respRateRpm/feedingStatus/
 > medicationGiven input fields on the Log Care wizard, shared `VitalStepper`
@@ -26,8 +40,8 @@
 > of the remember-me redesign, PR #16, on top of Pet/EMR Item 3, PR #15, on
 > top of Pet/EMR Batch A, PR #14, on top of the Codex audit closeout
 > 2026-07-09 Batches 1–5, PRs #8–#13, plus the seedCredentialSmoke
-> isolation-flake fix 4e78e0b):
-> **915 backend tests, 235 frontend tests.**
+> isolation-flake fix 4e78e0b:
+> **979 backend tests, 256 frontend tests.**
 > Route-level authorization is machine-verified by
 > `src/backend/tests/integration/roleRouteMatrix.test.ts` — that file is the source
 > of truth for per-route permission coverage; this matrix does not duplicate it.
@@ -91,5 +105,8 @@
 | Billing — Thai PDF font (PR #19, ADR-0013) | `POST /api/invoices/:id/pdf`, prescription PDF | **Fixed** — Thai invoice/prescription PDFs used a Thai-only font subset (`NotoSansThai-Regular.ttf`, later swapped to Sarabun OFL-1.1 after the primary Noto URL 404'd) with zero Latin-character/digit glyph coverage, corrupting mixed Thai/English/numeric text. Glyph-coverage smoke test added for both invoice and prescription PDFs (grill finding F1) | `services/pdf.service.ts`, `assets/fonts/*`, `docs/adr/FONT-LICENSE.txt` | — | `tests/integration/pdf-font-coverage.test.ts` (fontkit glyph assertions), `tests/integration/pdf.test.ts` | implemented |
 | Billing — Payment History receipt modal (PR #19, ADR-0013) | `GET /api/invoices/payment-history`, `GET /api/invoices/:id` | Payment History rows now open a read-only receipt modal (reuses existing `GET /:id`, no new endpoint). History-triggered modal deliberately omits the post-sale success-banner copy (grill finding F2). `payment-history` select widened to include `invoice.id` (BA correction) | `controllers/invoice.controller.ts` | `views/clinic/ClinicBilling.tsx` | `__tests__/ClinicBilling.test.tsx`, `tests/integration/invoice.test.ts` | implemented |
 | Billing — Payment History filters (PR #19, ADR-0013) | `GET /api/invoices/payment-history?method=&receivedBy=` | Method + Received-by filter dropdowns added; `receivedByOptions` embedded in the existing payment-history response (no new endpoint), tenant+branch scoped, faceted by the active date range (documented behavior, not a bug — grill finding F3) | `controllers/invoice.controller.ts`, `services/invoice.service.ts` | `views/clinic/ClinicBilling.tsx` | `tests/integration/invoice.test.ts`, `__tests__/ClinicBilling.test.tsx` | implemented |
+
+| Main Branch auto-provisioning (PROV-1/PROV-2, PR #26) | `createCustomer()` transaction (no new route); `scripts/backfill-main-branch.ts` (manual, one-time per environment) | **Fixed** — every platform-provisioned tenant previously got zero `Branch` rows, blocking all staff/doctor login. A "Main Branch" row is now created inside the existing atomic transaction, before the role lookup, so the ADR-0015 all-or-nothing guarantee still holds (rollback removes tenant + branch together via cascade FK). Idempotent backfill script covers tenants provisioned before this fix; run manually per environment (Q-G4, not wired into CI/deploy) | `services/platform-customers.service.ts`, `scripts/backfill-main-branch.ts` | — (no frontend change; existing branch-selection UI now has data to show) | `tests/integration/platform-customer-admin-users.test.ts` (CO-1 extension: branch creation, rollback, two-step staff login), `tests/integration/backfill-main-branch.test.ts` | implemented |
+| Clinic password management (PWD-0/1/2/3, PR #26) | `POST /auth/change-password`, `PATCH /users/:id/password` | **Added** — no prior way for a clinic user to change their own password or for a clinic_admin to reset a peer/staff/doctor's password. Self-service change requires current password (BOLA-impossible by design, no target-user param); admin reset is `staff.manage`-gated, tenant-scoped `updateMany`, 404-not-403 on cross-tenant (ADR-0014 precedent); a clinic_admin may reset a peer clinic_admin's password (Q-G1). All three password-affecting flows (these two plus the existing platform-plane reset) now revoke every refresh-token family (`revokeAllForUser`) so a stolen 30-day refresh token stops working immediately; the 8h access JWT residual is an accepted, documented gap (Q-G3) | `controllers/auth.controller.ts`, `services/auth.service.ts`, `controllers/user.controller.ts`, `services/user.service.ts`, `models/user.repository.ts`, `models/refresh-token.repository.ts` | — (no frontend UI this batch — backend-only per plan scope) | `tests/integration/password-management.test.ts`, `tests/unit/refresh-token.repository.test.ts`, CO-5 extension in `tests/integration/platform-customer-admin-users.test.ts` | backend-only |
 
 Implementer note: this is a starting seed (~30 rows), not exhaustive — the header rule ("expand a row before modifying that module") is the mechanism that keeps it growing accurately over time rather than trying to enumerate everything up front.
