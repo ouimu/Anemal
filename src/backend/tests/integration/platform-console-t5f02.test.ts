@@ -145,7 +145,7 @@ describe('T-5F-02 / AC2 — customer usage endpoint', () => {
     tenantId = await createCustomer({ name: 'QA Usage Tenant', subdomain: `qa-usage-${SFX}`, planId })
   })
 
-  it('✅ fresh tenant → 200 with branches/owners = 0, users = 1 (CO-1 auto-admin), caps = plan defaults', async () => {
+  it('✅ fresh tenant → 200 with branches = 1 (PROV-1 auto-branch), owners = 0, users = 1 (CO-1 auto-admin), caps = plan defaults', async () => {
     const res = await request(server)
       .get(`/platform/customers/${tenantId}/usage`)
       .set('Authorization', `Bearer ${platformToken}`)
@@ -156,7 +156,9 @@ describe('T-5F-02 / AC2 — customer usage endpoint', () => {
     // CO-1 (ADR-0015): POST /platform/customers now auto-creates the tenant's
     // first clinic_admin user in the same transaction, so a "fresh" tenant
     // always has users = 1, never 0.
-    expect(d.branches).toBe(0)
+    // PROV-1 (ADR-0015 amendment): the same transaction now also auto-creates
+    // one "Main Branch", so a "fresh" tenant always has branches = 1, never 0.
+    expect(d.branches).toBe(1)
     expect(d.users).toBe(1)
     expect(d.owners).toBe(0)
     // Effective caps surfaced for the progress bars (current vs limit on the FE).
@@ -195,7 +197,9 @@ describe('T-5F-02 / AC2 — customer usage endpoint', () => {
       .get(`/platform/customers/${tenantId}/usage`)
       .set('Authorization', `Bearer ${platformToken}`)
     expect(res.status).toBe(200)
-    expect(res.body.data.branches).toBe(2)
+    // PROV-1 (ADR-0015 amendment): 1 auto-created "Main Branch" (from
+    // beforeAll's createCustomer) + 2 seeded branches above = 3.
+    expect(res.body.data.branches).toBe(3)
     // CO-1 (ADR-0015): 1 auto-created clinic_admin (from beforeAll's createCustomer)
     // + 1 seeded staff user above = 2.
     expect(res.body.data.users).toBe(2)
