@@ -1,13 +1,13 @@
 ﻿// @uiux-agent spec: user list, role badges, add/edit/deactivate modal — 44px tap targets
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { AxiosError } from 'axios'
 import api from '../../utils/api'
 import { useAuthStore } from '../../store/authStore'
 import Can from '../../components/Can'
 import RolePicker from '../../components/roles/RolePicker'
 import { useUserRolesQuery } from '../../hooks/useUserRoles'
 import { useT } from '../../i18n'
+import { describeSaveError } from '../../utils/errorMessages'
 
 interface User { id: number; name: string; username: string; email: string | null; role: string; isActive: boolean; createdAt: string; branchId: number | null }
 interface Branch { id: number; name: string }
@@ -16,17 +16,6 @@ const ROLE_COLORS: Record<string, string> = {
   admin:  'bg-error-container text-error-on-container',
   doctor: 'bg-primary-fixed text-primary',
   staff:  'bg-secondary-container text-secondary-on-container',
-}
-
-/** Surfaces the server's actual validation/error message instead of a generic "Save failed". */
-function describeSaveError(err: unknown): string {
-  const body = (err as AxiosError<{ error?: string; details?: { fieldErrors?: Record<string, string[]> } }>)?.response?.data
-  const fieldErrors = body?.details?.fieldErrors
-  if (fieldErrors) {
-    const first = Object.entries(fieldErrors).find(([, msgs]) => msgs?.length)
-    if (first) return `${first[0]}: ${first[1][0]}`
-  }
-  return body?.error ? `Save failed — ${body.error}` : 'Save failed — check all fields.'
 }
 
 const INITIALS = (name: string) => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
