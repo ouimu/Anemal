@@ -73,3 +73,56 @@ describe('replaceUserBranches', () => {
     expect(ids).not.toContain(branchB.id)
   })
 })
+
+describe('findPrimaryAdminId', () => {
+  it('returns the lowest-id role=admin user for the tenant', async () => {
+    const admin1 = await prisma.user.create({
+      data: {
+        tenantId: tid, name: 'Primary Admin', username: `pa_${Date.now()}`,
+        email: `pa-${Date.now()}@example.com`, passwordHash: 'x', role: 'admin', isActive: true,
+      },
+    })
+    const admin2 = await prisma.user.create({
+      data: {
+        tenantId: tid, name: 'Second Admin', username: `sa_${Date.now()}`,
+        email: `sa-${Date.now()}@example.com`, passwordHash: 'x', role: 'admin', isActive: true,
+      },
+    })
+    const result = await userRepo.findPrimaryAdminId(tid)
+    expect(result).toBe(admin1.id)
+    expect(result).not.toBe(admin2.id)
+  })
+
+  it('returns null when the tenant has no role=admin user', async () => {
+    const emptyTenant = await prisma.tenant.create({
+      data: { name: 'No Admin Tenant', subdomain: `no-admin-${Date.now()}` },
+    })
+    try {
+      const result = await userRepo.findPrimaryAdminId(emptyTenant.id)
+      expect(result).toBeNull()
+    } finally {
+      await prisma.tenant.delete({ where: { id: emptyTenant.id } })
+    }
+  })
+
+  it('is tenant-isolated: an admin in another tenant never affects this tenant\'s result', async () => {
+    const otherTenant = await prisma.tenant.create({
+      data: { name: 'Other Admin Tenant', subdomain: `other-admin-${Date.now()}` },
+    })
+    try {
+      const foreignAdmin = await prisma.user.create({
+        data: {
+          tenantId: otherTenant.id, name: 'Foreign Admin', username: `fa_${Date.now()}`,
+          email: `fa-${Date.now()}@example.com`, passwordHash: 'x', role: 'admin', isActive: true,
+        },
+      })
+      const resultForThisTenant = await userRepo.findPrimaryAdminId(tid)
+      const resultForOtherTenant = await userRepo.findPrimaryAdminId(otherTenant.id)
+      expect(resultForThisTenant).not.toBe(foreignAdmin.id)
+      expect(resultForOtherTenant).toBe(foreignAdmin.id)
+    } finally {
+      await prisma.user.deleteMany({ where: { tenantId: otherTenant.id } })
+      await prisma.tenant.delete({ where: { id: otherTenant.id } })
+    }
+  })
+})

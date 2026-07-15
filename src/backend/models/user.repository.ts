@@ -234,3 +234,19 @@ export function updatePreferences(
   // updateMany keeps the write tenant-scoped (plain update matches by id alone)
   return prisma.user.updateMany({ where: { id: userId, tenantId }, data })
 }
+
+/**
+ * Return the lowest-id user with legacy `role = 'admin'` for a tenant — the
+ * tenant's "primary admin" (ADR-0016 D-1). Returns null if the tenant has no
+ * such user. Tenant-scoped `findFirst` (BOLA-safe by construction).
+ *
+ * @param tenantId - Tenant scope (multi-tenancy isolation).
+ */
+export async function findPrimaryAdminId(tenantId: number): Promise<number | null> {
+  const admin = await prisma.user.findFirst({
+    where:   { tenantId, role: 'admin' },
+    orderBy: { id: 'asc' },
+    select:  { id: true },
+  })
+  return admin?.id ?? null
+}
