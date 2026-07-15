@@ -510,6 +510,27 @@ describe('CO-5: PATCH /platform/customers/:id/admin-users/:userId/password', () 
       .send({})
     expect(res2.status).toBe(403)
   })
+
+  it('✅ revokes the target clinic_admin\'s refresh tokens (PWD-3 retrofit — previously left 30-day tokens valid)', async () => {
+    const tenant = await createTenantViaService('co5g')
+    const admin  = await prisma.user.findFirstOrThrow({ where: { tenantId: tenant.id, username: 'admin' } })
+
+    // The auto-created admin has a server-generated password we don't know,
+    // so log in via a fresh password we set directly for this test only.
+    const knownHash = await bcrypt.hash('KnownPass1!', 10)
+    await prisma.user.update({ where: { id: admin.id }, data: { passwordHash: knownHash } })
+    const loginRes = await request(server).post('/auth/login').send({ subdomain: tenant.subdomain, username: 'admin', password: 'KnownPass1!' })
+    const adminRefreshToken = loginRes.body.data.refreshToken
+
+    const res = await request(server)
+      .patch(`/platform/customers/${tenant.id}/admin-users/${admin.id}/password`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({})
+    expect(res.status).toBe(200)
+
+    const refreshAttempt = await request(server).post('/auth/refresh').send({ refreshToken: adminRefreshToken })
+    expect(refreshAttempt.status).toBe(401)
+  })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────

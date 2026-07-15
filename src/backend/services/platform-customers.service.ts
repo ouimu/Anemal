@@ -18,6 +18,7 @@ import type {
   TenantWithPlanAndQuota,
 } from '../models/platform-customers.repository'
 import * as platformAuditRepo from '../models/platform-audit.repository'
+import * as refreshTokenRepo from '../models/refresh-token.repository'
 import prisma from '../config/db'
 import bcrypt from 'bcrypt'
 import { config } from '../config/env'
@@ -536,6 +537,10 @@ export async function resetTenantAdminUserPassword(
 
   const updated = await customersRepo.setTenantAdminUserPassword(tenantId, userId, passwordHash)
   if (updated === 0) throw new AdminUserNotFoundError()
+
+  // PWD-3 retrofit (R-5, brainstorm §4.3): a platform reset used to leave the
+  // clinic_admin's 30-day refresh tokens valid. Now revoked, same as B-1/B-2.
+  await refreshTokenRepo.revokeAllForUser(userId)
 
   await platformAuditRepo.createPlatformAuditLog({
     action: 'tenant.admin_user.password_reset',
