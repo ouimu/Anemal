@@ -59,6 +59,14 @@ function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; o
     },
   })
 
+  const currentUserId = useAuthStore(s => s.userId)
+  const isSelf = !isNew && user.id === currentUserId
+  const [resetPasswordValue, setResetPasswordValue] = useState('')
+  const resetPw = useMutation({
+    mutationFn: () => api.patch(`/users/${user.id}/password`, { newPassword: resetPasswordValue }),
+    onSuccess: () => setResetPasswordValue(''),
+  })
+
   const inputCls = 'min-h-[44px] px-3 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20'
 
   return (
@@ -137,6 +145,34 @@ function Modal({ user, onClose }: { user: Partial<User> & { isNew?: boolean }; o
                   currentRoles={userRoles}
                   onRolesChanged={() => { void refetchUserRoles() }}
                 />
+              </Can>
+              <hr className="border-outline-variant my-4" />
+              <Can perm="staff.manage">
+                {isSelf ? (
+                  <p className="text-xs text-on-surface-variant">
+                    Change your own password in Settings → Preferences.
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="admin-reset-password" className="text-xs text-on-surface-variant">Reset password</label>
+                    <input
+                      id="admin-reset-password" type="password" autoComplete="new-password"
+                      value={resetPasswordValue}
+                      onChange={e => setResetPasswordValue(e.target.value)}
+                      className={inputCls}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => resetPw.mutate()}
+                      disabled={resetPw.isPending || resetPasswordValue.length === 0}
+                      className="min-h-[44px] px-4 self-start border border-outline-variant rounded-lg text-sm text-on-surface-variant hover:bg-surface-container-low disabled:opacity-50"
+                    >
+                      {resetPw.isPending ? 'Resetting…' : 'Reset password'}
+                    </button>
+                    {resetPw.isSuccess && <p className="text-xs text-secondary">Password reset.</p>}
+                    {resetPw.isError && <p className="text-xs text-error-on-container">{describeSaveError(resetPw.error)}</p>}
+                  </div>
+                )}
               </Can>
             </>
           )}
