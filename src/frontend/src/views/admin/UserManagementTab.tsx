@@ -72,9 +72,9 @@ function Modal({ user, onClose, isPrimaryAdmin }: { user: Partial<User> & { isNe
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-sm p-6">
-        <h3 className="font-semibold text-on-surface mb-4">{isNew ? 'Add user' : 'Edit user'}</h3>
-        <div className="space-y-3">
+      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-sm max-h-[90vh] flex flex-col">
+        <h3 className="font-semibold text-on-surface px-6 pt-6 pb-4 flex-shrink-0">{isNew ? 'Add user' : 'Edit user'}</h3>
+        <div className="space-y-3 px-6 pb-1 overflow-y-auto min-h-0">
           <div className="flex flex-col gap-1">
             <label className="text-xs text-on-surface-variant">{t('admin.users.fullName')}</label>
             <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className={inputCls} />
@@ -183,13 +183,15 @@ function Modal({ user, onClose, isPrimaryAdmin }: { user: Partial<User> & { isNe
             </>
           )}
         </div>
-        {save.isError && <p className="text-xs text-error-on-container mt-2">{describeSaveError(save.error)}</p>}
-        <div className="flex gap-2 mt-5">
-          <button onClick={onClose} className="flex-1 min-h-[44px] border border-outline-variant rounded-lg text-sm text-on-surface-variant hover:bg-surface-container-low">{t('common.cancel')}</button>
-          <button onClick={() => save.mutate()} disabled={save.isPending}
-            className="flex-1 min-h-[44px] bg-primary text-primary-on rounded-lg text-sm font-semibold disabled:opacity-50 hover:bg-primary/90">
-            {save.isPending ? t('common.saving') : isNew ? t('admin.users.addUser') : t('common.save')}
-          </button>
+        <div className="flex-shrink-0 px-6 pb-6 pt-3">
+          {save.isError && <p className="text-xs text-error-on-container mb-2">{describeSaveError(save.error)}</p>}
+          <div className="flex gap-2">
+            <button onClick={onClose} className="flex-1 min-h-[44px] border border-outline-variant rounded-lg text-sm text-on-surface-variant hover:bg-surface-container-low">{t('common.cancel')}</button>
+            <button onClick={() => save.mutate()} disabled={save.isPending}
+              className="flex-1 min-h-[44px] bg-primary text-primary-on rounded-lg text-sm font-semibold disabled:opacity-50 hover:bg-primary/90">
+              {save.isPending ? t('common.saving') : isNew ? t('admin.users.addUser') : t('common.save')}
+            </button>
+          </div>
         </div>
       </div>
     </div>

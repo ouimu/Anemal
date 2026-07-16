@@ -2,6 +2,7 @@
 // State lives in uiStore (shared with the Preferences page); App.tsx applies it
 // to <html>. Tokens only · all targets ≥44px · keyboard + click-outside close.
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { useUiStore, type Language } from '../store/uiStore'
 import { useLogout } from '../hooks/useAuth'
@@ -142,6 +143,19 @@ export default function ProfileMenu() {
               </span>
             </button>
           </div>
+
+          <div className="h-px bg-outline-variant mx-sm" />
+
+          {/* My Preferences (change password, notifications) */}
+          <Link
+            to="/settings/preferences"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="w-full min-h-[44px] flex items-center gap-sm px-md rounded-lg text-body-sm text-on-surface-variant hover:bg-surface-container transition-colors"
+          >
+            <MaterialIcon name="manage_accounts" size={18} />
+            {t('nav.myPreferences')}
+          </Link>
 
           <div className="h-px bg-outline-variant mx-sm" />
 

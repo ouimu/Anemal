@@ -259,7 +259,7 @@ function PermToggle({ code, isOn, isSystemRole, userHasPerm, onChange }: ToggleP
               after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all
               peer-checked:after:translate-x-full
               ${isSystemRole
-                ? 'bg-surface-variant peer-checked:bg-outline-variant cursor-not-allowed'
+                ? 'bg-surface-variant peer-checked:bg-secondary cursor-not-allowed'
                 : !userHasPerm
                   ? 'bg-surface-variant cursor-not-allowed'
                   : isOn
