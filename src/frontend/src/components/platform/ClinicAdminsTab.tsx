@@ -22,6 +22,16 @@ import MaterialIcon from '../MaterialIcon'
 
 const EMPTY_FORM: CreateTenantAdminUserPayload = { name: '', username: '', email: '', phone: '', password: '' }
 
+/** Maps create-admin error responses to a user-facing message, including the 403 permission-denied case that was previously swallowed into a generic "try again". */
+function createErrorMessage(error: unknown): string {
+  const response = (error as { response?: { status?: number; data?: { code?: string } } })?.response
+  if (response?.status === 403) return "You don't have permission to create clinic admins. Ask a platform super admin."
+  const code = response?.data?.code
+  if (code === 'QUOTA_EXCEEDED') return 'This tenant is at its user quota limit.'
+  if (code === 'USERNAME_CONFLICT') return 'That username is already in use for this tenant.'
+  return 'Failed to create clinic admin. Please try again.'
+}
+
 /** Display-once credentials panel shown after create/reset (brainstorm §3.5). */
 function CredentialsPanel({ username, password, onDismiss }: { username: string; password: string; onDismiss: () => void }) {
   const [copied, setCopied] = useState(false)
@@ -320,13 +330,7 @@ export default function ClinicAdminsTab({ id }: { id: number }) {
           <PasswordField id="ca-password" value={form.password ?? ''} onChange={(v) => setForm((f) => ({ ...f, password: v }))} />
 
           {create.error && (
-            <p className="text-label-md text-error">
-              {(create.error as { response?: { data?: { code?: string } } })?.response?.data?.code === 'QUOTA_EXCEEDED'
-                ? 'This tenant is at its user quota limit.'
-                : (create.error as { response?: { data?: { code?: string } } })?.response?.data?.code === 'USERNAME_CONFLICT'
-                  ? 'That username is already in use for this tenant.'
-                  : 'Failed to create clinic admin. Please try again.'}
-            </p>
+            <p className="text-label-md text-error">{createErrorMessage(create.error)}</p>
           )}
 
           <div className="flex items-center justify-end gap-sm pt-xs">
