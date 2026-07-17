@@ -3,8 +3,12 @@
 > Updated: 2026-07-13 — removed 3 backlog items shipped via PRs #19/#20/#21; PR #22
 > closed the RETEST-2026-07-13 findings (tenant-scoped performer lookup, FK index,
 > Tailwind token fix, VitalStepper max-clamp)
-> Everything shippable without external credentials is DONE — Phases 1–9, D-1–D-5, and
-> Codex Audit Batches 1–5 are complete (915 backend + 235 frontend tests green).
+> Updated: 2026-07-15 — PRs #23, #26, #27 shipped since (Clinic Admins tab, Main
+> Branch auto-provisioning + password change, clinic password UI + first-admin
+> lockout guard). Current totals: 993 backend + 283 frontend tests green.
+> Everything shippable without external credentials is DONE — Phases 1–9, D-1–D-5,
+> Codex Audit Batches 1–5, and all subsequent bugfix/feature batches through PR #27
+> are complete.
 > Completed session/phase task lists were removed from this file; see
 > `.claude/roadmap/archive/`, `HistoryLog.md`, and git history for the record.
 > Canonical module status: `.claude/specs/implementation-status-matrix.md`.
