@@ -9,6 +9,7 @@ import {
   type PlatformSettings,
 } from '../../hooks/usePlatformSettings'
 import MaterialIcon from '../../components/MaterialIcon'
+import { getErrorMessage } from '../../utils/errorMessage'
 
 export default function PlatformSettingsView() {
   const { data, isLoading, isError } = usePlatformSettings()
@@ -229,7 +230,7 @@ export default function PlatformSettingsView() {
             </span>
           )}
           {updateMutation.error && (
-            <span className="text-body-sm text-error">Save failed. Please try again.</span>
+            <span className="text-body-sm text-error">{getErrorMessage(updateMutation.error, 'Save failed. Please try again.')}</span>
           )}
           <button
             type="submit"

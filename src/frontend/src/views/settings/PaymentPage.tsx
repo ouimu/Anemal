@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import MaterialIcon from '../../components/MaterialIcon'
 import { useAuthStore } from '../../store/authStore'
 import { usePaymentSettings, useUpdatePayment } from '../../hooks/usePaymentSettings'
+import { getErrorMessage } from '../../utils/errorMessage'
 
 interface PaymentForm {
   promptpayId:      string
@@ -126,7 +127,7 @@ export default function PaymentPage() {
       {/* Error banner */}
       {update.error && (
         <div className="px-md py-sm bg-error/10 border border-error/30 rounded-xl text-body-md text-error">
-          Failed to save: {(update.error as Error).message}
+          Failed to save: {getErrorMessage(update.error, 'Please try again.')}
         </div>
       )}
 

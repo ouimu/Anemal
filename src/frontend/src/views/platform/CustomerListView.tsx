@@ -13,6 +13,7 @@ import { usePlatformPlans } from '../../hooks/usePlatformPlans'
 import StatusBadge from '../../components/platform/StatusBadge'
 import PlatformModal from '../../components/platform/PlatformModal'
 import MaterialIcon from '../../components/MaterialIcon'
+import { getErrorMessage } from '../../utils/errorMessage'
 
 // ── Add Customer form state ───────────────────────────────────────────────────
 
@@ -26,7 +27,7 @@ const EMPTY_FORM: CreateCustomerPayload = {
 
 export default function CustomerListView() {
   const navigate = useNavigate()
-  const { data: customers, isLoading, isError } = usePlatformCustomers()
+  const { data: customers, isLoading, isError, error: customersError } = usePlatformCustomers()
   const { data: plans }                          = usePlatformPlans()
   const createMutation                           = useCreatePlatformCustomer()
 
@@ -74,7 +75,7 @@ export default function CustomerListView() {
         {isError && (
           <div className="flex items-center gap-sm p-lg text-error">
             <MaterialIcon name="error_outline" size={20} />
-            Failed to load customers. Please refresh.
+            {getErrorMessage(customersError, 'Failed to load customers. Please refresh.')}
           </div>
         )}
 
@@ -180,7 +181,7 @@ export default function CustomerListView() {
           </div>
 
           {createMutation.error && (
-            <p className="text-label-md text-error">Failed to create customer. Please try again.</p>
+            <p className="text-label-md text-error">{getErrorMessage(createMutation.error, 'Failed to create customer. Please try again.')}</p>
           )}
 
           <div className="flex items-center justify-end gap-sm pt-xs">
