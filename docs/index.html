@@ -66,7 +66,7 @@
   .page.active { display: block; }
   .page h1 { font-size: 26px; font-weight: 800; color: var(--brand-d); margin-bottom: 8px; padding-bottom: 12px; border-bottom: 2px solid var(--brand-l); }
   .page h2 { font-size: 19px; font-weight: 700; color: var(--text); margin: 28px 0 10px; }
-  .page h3 { font-size: 15px; font-weight: 700; color: var(--brand); margin: 20px 0 8px; }
+  .page h3 { font-size: 15px; font-weight: 700; color: var(--brand); margin: 20px 0 8px; scroll-margin-top: 20px; }
   .page h4 { font-size: 13px; font-weight: 700; color: var(--muted); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: .05em; }
   .page p  { font-size: 14px; line-height: 1.7; color: #334155; margin: 8px 0; }
   .page ul, .page ol { padding-left: 20px; margin: 8px 0; }
@@ -421,7 +421,7 @@
   <!-- ── Build Status ── -->
   <div class="callout ok" style="margin-top:16px">
     <span class="callout-icon">🎉</span>
-    <span><strong>✅ Phase 9 COMPLETE (2026-06-18):</strong> Phases 1–9 done. <strong>888 backend + 225 frontend tests passing</strong> · tsc clean. <strong style="color:#16a34a">Phase 9 shipped:</strong> Full EN/TH i18n rollout — 260+ key pairs, 16 clinic screens translated (Login, ClinicDashboard, AdminDashboard, Appointments, Pets, EMR, Inventory, Billing, AdminUsers, AdminProfile, RoleEditor, RolePicker and more). Custom lightweight i18n (no external library). Language toggle persists via Zustand <code>uiStore.language</code>. Platform Console excluded (internal SaaS tool). <strong style="color:#0369a1">Codex audit remediation Batch 1 COMPLETE (2026-07-07, PR #8):</strong> 6 stop-ship findings fixed — secret redaction in audit logs, duplicate-seed cleanup, UTC audit date filters, trial-lifecycle deferral, plan payload translation, nullable SMTP settings. <strong style="color:#0369a1">Batch 2 COMPLETE (2026-07-07, PR #9):</strong> 5 findings fixed — grooming status URL, platform plane-client separation, platform login identity hydration, vaccination route-guard correction, /settings plane guard — zero backend changes. <strong style="color:#0369a1">Batch 3 COMPLETE (2026-07-07, PR #10):</strong> QA automation hardening — 148-route × 3-role RBAC sweep (zero gaps), 8 platform contract tests against real Zod schemas, seed smoke extended with platform credential + third audit-sink sentinel, manual browser-smoke formalized as the release gate (ADR-0005). <strong style="color:#0369a1">Batch 4 COMPLETE (2026-07-08, PR #11):</strong> documentation repair — canonical implementation-status matrix (38 verified evidence paths), HOW-TO-RUN credential tables fixed (email→username), README stack-table fiction corrected, 7 screen-spec files reconciled with actual routes/auth (ADR-0006). <strong style="color:#0369a1">Batch 5 COMPLETE (2026-07-09, PRs #12+#13):</strong> post-fix re-audit remediation — 5A (P1 security): direct-service platform audit-redaction gap closed via a shared choke point, company-type customer-detail DTO fixed; 5B (P2/P3 hygiene): dead featureFlags removed, plan-quota frontend validation aligned with backend, settings audit actor identity documented, test-suite hygiene (ADR-0007). <strong style="color:#16a34a">🏁 Codex Audit Remediation COMPLETE (Batches 1–5, PRs #8–#13, 5 ADRs 0003–0007):</strong> stop-ship fixes → frontend/doc fixes → QA automation → documentation repair → post-fix re-audit remediation → post-remediation closeout. Backend tests 447 → 835, frontend 138 → 143. <strong style="color:#0369a1">Pet/EMR Batch A COMPLETE (2026-07-10, PR #14):</strong> pet edit modal, pet weight ↔ EMR sync (recompute-last-known-weight, ADR-0008), EMR vitals free-text input on <code>VitalStepper</code>. Backend tests 835 → 850, frontend 143 → 168. <strong style="color:#0369a1">Pet/EMR Item 3 COMPLETE (2026-07-10, PR #15):</strong> inpatient create/edit/delete (care-log-gated hard delete, ADR-0009) plus a fix for a pre-existing bug where the Inpatient Board crashed on render for real admissions (field-name mismatch between the frontend and the API). Backend tests 850 → 864, frontend 168 → 181. <strong style="color:#16a34a">🏁 All 4 Pet/EMR items complete</strong> (1+2+4 via Batch A/PR #14, 3 via PR #15). <strong style="color:#0369a1">Remember-me redesign COMPLETE (2026-07-10, PR #16):</strong> reported "remember me does nothing" was actually the opposite — it silently kept a full JWT session alive in <code>localStorage</code> across browser restarts, which the user never noticed since a remembered session skips the login screen entirely. Redefined as username-recall: session now always ends on tab/browser/app close or 8h JWT expiry (sessionStorage-only), and the checkbox instead remembers which username(s) previously logged in on this device, per clinic subdomain (fixes a cross-tenant username-disclosure bug found during BA sign-off), with a picker popup when 2+ are remembered. See ADR-0010. Backend tests unchanged at 864, frontend 181 → 207. <strong style="color:#0369a1">Care History view COMPLETE (2026-07-10, PR #17):</strong> Inpatient Board's Log Care already had a body-temperature input (the reported "missing" field) — the real gap was no way to view previously recorded care entries. Added a read-only "View Care History" button on each CageCard, reusing the existing <code>GET /api/hospitalizations/:id</code> (no new endpoint/permission/migration). Scoped to admitted hospitalizations only — the board never renders discharged cards, so discharged-admission history is deferred to the Pet Profile Medical tab (ADR-0011). <code>performedBy</code> shown as <code>Staff #&lt;id&gt;</code>, not a resolved name (no permission-safe lookup available at <code>inpatient.view</code>). Folded in a pre-existing bug fix: the Log Care vitals field was wired to the wrong backend key (<code>temperature</code> → <code>temperatureC</code>). Backend tests unchanged at 864, frontend 207 → 213. <strong style="color:#0369a1">Pet Profile Medical tab COMPLETE (2026-07-11, PR #18, ADR-0012):</strong> the Medical tab was a silently-capped (3 records), server-side-over-fetching read-only list with no permission boundary matching the dedicated EMR/Vaccination endpoints. BA-signed-off design (Option C hybrid): <code>allergies</code>/<code>underlyingConditions</code> stay pet-level <code>crm.edit</code>-editable safety flags (FR-03-04, unchanged); the Medical/Vaccinations record lists become an explicit, permission-aware, read-only EMR rollup with a "View all in EMR" drill-in (<code>ClinicEMR.tsx?petId=</code>), closing a server-side over-fetch gap where <code>medicalRecords</code>/<code>vaccinations</code> were returned regardless of the caller's <code>emr.view</code> permission. No schema change, no new endpoints/permission codes. Backend tests 864 → 867, frontend 213 → 218. <strong style="color:#0369a1">Billing pipeline fixes COMPLETE (2026-07-11, PR #19, ADR-0013):</strong> Item 3 of the 2026-07 bugfix pipeline, 4 sub-fixes — Thai invoice/prescription PDFs were rendering with a Thai-only font subset missing Latin characters and digits (glyph-coverage-tested font swap); Payment History receipt modal now available on history rows (reuses <code>GET /api/invoices/:id</code>, no success-banner copy per grill finding); Payment History gained Method + Received-by filters (<code>receivedByOptions</code> embedded in the existing response, 0 new endpoints); and Inpatient Care History's <code>performedBy</code> now resolves to a real staff name via a new <code>DailyInpatientCare.performedBy → User</code> FK (<code>ON DELETE SET NULL</code>) instead of showing <code>Staff #&lt;id&gt;</code>. No new endpoints, no new dependencies. See <code>docs/adr/0013-billing-pipeline-thai-font-receipt-filters-staffname.md</code>. Backend tests 867 → 888, frontend 218 → 225. <strong style="color:#16a34a">🏁 All 3 items of the 2026-07 bugfix pipeline now shipped (PRs #17, #18, #19).</strong> <strong style="color:#0369a1">Hospitalization branch isolation COMPLETE (2026-07-11, PR #20, ADR-0014):</strong> closed a BOLA gap (OWASP API1:2023) — single-record hospitalization ops (get/edit/remove/logCare/discharge) were scoped by <code>tenantId</code> only, letting branch-scoped staff access another branch's admission by guessing the numeric ID; <code>branchId</code> now derived only from authenticated context, cross-branch access returns 404, <code>/active</code> no longer trusts a query-string branch override. Backend tests 888 → 912, frontend unchanged at 225. <strong style="color:#0369a1">Log Care vitals modal COMPLETE (2026-07-11, PR #21):</strong> Log Care wizard gained heart rate/respiratory rate/feeding-status/medication-given input fields (backend already accepted them); shared numeric-input logic extracted from <code>ClinicEMR.tsx</code> into a reusable <code>VitalStepper</code> component. Frontend-only. Backend tests unchanged at 912, frontend 225 → 233. <strong style="color:#0369a1">RETEST-2026-07-13 findings CLOSED (PR #22):</strong> an independent re-test of PRs #19–#21 found 3 P1 standards defects — <code>performedByUser</code> was resolved via an unscoped Prisma relation <code>include</code> (joined on <code>users.id</code> only, no <code>tenantId</code>, so malformed/legacy data could leak another tenant's staff name; now a tenant-scoped lookup), <code>DailyInpatientCare.performedBy</code> had no supporting index despite being an FK, and 3 <code>ClinicInpatient.tsx</code> labels used an undefined <code>text-label-lg</code> Tailwind token — plus a <code>VitalStepper</code> <code>+</code>-button that didn't clamp to <code>max</code> on repeated clicks. All fixed, plus 4 regression-test gaps closed. Backend tests 912 → 915, frontend 233 → 235. <strong style="color:#0369a1">Clinic Admins tab COMPLETE (2026-07-14, PR #23, ADR-0015):</strong> the scheduled-task goal "a new tenant must be able to log in" was previously unmet — <code>createCustomer()</code> only inserted a <code>Tenant</code> row, no clinic user. Platform now auto-creates the tenant's first <code>clinic_admin</code> (<code>admin</code>/"Administrator", email/phone NULL — D-2-02 doesn't govern this platform-provisioned path) atomically inside the same transaction, plus a new "Clinic Admins" tab on Customer Detail giving platform admins ongoing create/deactivate/reset-password over <code>clinic_admin</code>-role users for that tenant — a deliberate, bounded exception to platform/clinic plane separation (4 non-negotiable bounds: role-scoped, no clinic-data reads, fully audited, soft-delete only). Shared <code>generateSecurePassword()</code> util (16-char crypto-random); every password response is display-once and never appears in <code>platform_audit_logs</code>. Reactivate endpoint deliberately deferred (recovery = create a replacement admin). Ran the full Superpowers pipeline including a human-answered grill (7 findings, all resolved) and a resolved BA gap (R-E: contact-field requirement doesn't apply to the platform-bootstrap identity). Backend tests 915 → 953, frontend 235 → 256. <strong style="color:#0369a1">Main Branch + password change COMPLETE (2026-07-15, PR #26, ADR-0015 amendment):</strong> every platform-provisioned tenant got zero <code>Branch</code> rows, blocking all staff/doctor login — a "Main Branch" is now auto-created inside <code>createCustomer()</code>'s existing atomic transaction (PROV-1), plus an idempotent one-time backfill script for pre-existing tenants (PROV-2). Added clinic-plane self-service password change (<code>POST /auth/change-password</code>, PWD-1) and admin-assisted reset (<code>PATCH /users/:id/password</code>, PWD-2, <code>staff.manage</code>-gated, tenant-scoped, 404-not-403 cross-tenant); all three password-affecting flows (these two plus the existing platform-plane reset) now revoke every refresh-token family on success (PWD-3/PWD-0) — the 8h access-JWT residual is an accepted, documented gap. Backend-only, no frontend UI this batch. Backend tests 953 → 979, frontend unchanged at 256. <strong style="color:#0369a1">Clinic password UI + first-admin lockout guard COMPLETE (2026-07-15, PR #27, ADR-0016):</strong> shipped the frontend for PR #26's endpoints — an admin reset-password field inside the Edit User modal (hidden on self-edit, routed to Preferences instead, D-2) and a self-service Change Password card on <code>/settings/preferences</code>. New backend guard <code>assertNotPrimaryAdminDeactivation</code> in <code>user.service.ts</code> blocks deactivating or role-demoting-away-from-admin the tenant's primary admin (lowest-id legacy <code>role='admin'</code>) on <em>both</em> <code>DELETE /users/:id</code> and <code>PUT /users/:id</code> — the mandatory <code>/grill-with-docs</code> gate caught that only guarding one path leaves the Edit-modal deactivate-via-PUT route open (D-5), and that restore bypassed the seat-quota check createUser already enforced (D-6, now fixed). Platform-plane CO-4 deliberately left un-guarded — a documented, audited SaaS-operator recovery path for a fully-locked-out tenant, not a gap (D-7). Discoverable row-level Deactivate/Restore added to User Management with a confirm dialog and a locked icon on the primary-admin row. Backend tests 979 → 993, frontend 256 → 283. <strong style="color:#0369a1">Follow-up fixes COMPLETE (2026-07-15–17, PRs #24/#25/#28):</strong> bare-collection Vercel routing fix (PR #25), clinic-admin-create 403 now surfaces the real permission-denied message instead of a generic error (PR #24), and the Clinic Admins password field gained a typed↔generated toggle plus a finished <code>getErrorMessage()</code> rollout across platform screens (PR #28) — all doc/UX fixes, test counts unchanged at 993 backend / 283 frontend. <strong>Next: Phase 10</strong> — Payment Gateway (credential-gated). <em>See <a onclick="show('roadmap-upcoming')" href="javascript:void(0)">Upcoming Work</a>.</em></span>
+    <span><strong>✅ Phases 1–9 + Codex-audit and bugfix pipeline complete (as of 2026-07-17).</strong> <strong>993 backend + 283 frontend tests passing</strong> · tsc clean. Ship history runs from Phase 1 (multi-tenancy/auth) through Phase 9 (Thai/English i18n) and a long chain of post-launch fix batches — RBAC + Platform Console, Codex audit remediation, Pet/EMR fixes, hospitalization branch-isolation (BOLA close), and clinic password/admin-lockout hardening (PR #27, ADR-0016) most recently. <strong>Next: Phase 10</strong> — Payment Gateway (credential-gated). See the Phase Progress table below for full ship history, or <a onclick="show('roadmap-upcoming')" href="javascript:void(0)">Upcoming Work</a> for what's next.</span>
   </div>
 
   <!-- ── Stats ── -->
@@ -653,8 +653,312 @@ npm run dev            # Start Vite on :5173</code></pre>
 <!-- ══════════════════ FUNCTIONAL REQS ══════════════════ -->
 <div class="page" id="page-functional">
   <h1>📝 Functional Specification v2.0</h1>
-  <p>Merged reference: functional requirements + detailed per-module spec. All 4 phases complete as of 2026-06-10.</p>
-  <div class="callout ok" style="margin-bottom:16px"><span class="callout-icon">📄</span><span><strong>Full detailed spec:</strong> <a href="functional_spec_detailed.html" target="_blank">functional_spec_detailed.html</a> — complete per-module functional specification (106 KB standalone document).</span></div>
+  <p>Merged reference: functional requirements + detailed per-module spec. Phases 1–9 + Codex-audit and bugfix pipeline complete as of 2026-07-17 (993 backend / 283 frontend tests).</p>
+  <div class="callout info" style="margin-bottom:16px"><span class="callout-icon">📄</span><span>Detailed spec embedded below — per-module purpose, FR requirements (Must/Should/Could), API prefixes, screens, and RBAC notes. Sourced from <code>.claude/skills/anemal-functional-reqs</code>, <code>.claude/skills/anemal-rbac-matrix</code>, <code>.claude/skills/anemal-platform-console</code>, and <code>.claude/specs/implementation-status-matrix.md</code>, verified against repo evidence.</span></div>
+
+  <!-- ── Roles & Authorization Model ── -->
+  <h2>Roles &amp; Authorization Model <span style="font-size:12px;font-weight:400;color:var(--muted)">(Phase 8 RBAC)</span></h2>
+  <div class="callout danger"><span class="callout-icon">🚫</span><span><strong>Deny-by-default.</strong> Every protected route calls <code>requirePlane(...)</code> followed by either <code>requirePermission('module.action')</code> (clinic plane) or <code>requirePlatformPermission('platform.*')</code> (platform plane) — no route is reachable without an explicit grant. The server is the security boundary; frontend guards (<code>RequirePlane</code>, <code>RequirePermission</code>, <code>Can</code>) are UX convenience only, never the enforcement point. Route coverage is machine-verified by <code>src/backend/tests/integration/roleRouteMatrix.test.ts</code> — that suite, not this page, is the source of truth for per-route permission mapping.</span></div>
+
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Plane</th><th>Roles</th><th>JWT token shape</th><th>Scope</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Clinic</strong> — <code>/clinic/*</code>, <code>/clinic-admin/*</code>, <code>/settings/*</code></td><td><code>clinic_admin</code> · <code>doctor</code> · <code>clinic_staff</code> · clinic-defined custom roles (clone of a system role, capped at the assigner's permission set)</td><td><code>{ userId, tenantId, branchId, plane:'clinic', permSetVersion, roleIds[] }</code> — effective permissions resolved via <code>/auth/me</code> as the union of all assigned roles</td><td>Single tenant; branch-scoped for transactional data (appointments, EMR, inventory, invoices)</td></tr>
+      <tr><td><strong>Platform</strong> — <code>/platform/*</code></td><td><code>platform_super_admin</code> · <code>platform_support</code> (read-only, later)</td><td><code>{ platformUserId, plane:'platform', role }</code> — no <code>tenant_id</code></td><td>Cross-tenant SaaS operations; never touches clinic PII except the bounded, audited Clinic Admins exception (ADR-0015)</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout warn"><span class="callout-icon">⚠️</span><span><strong>Key role boundaries:</strong> <code>doctor</code> has no billing/POS write access — clinical only, billing belongs to <code>clinic_staff</code>/<code>clinic_admin</code>. <code>clinic_staff</code> cannot write SOAP notes (<code>emr.create</code>/<code>emr.edit</code> denied) but can <code>emr.attach</code> (lab/X-ray uploads), <code>vaccination.create</code>, and <code>prescriptions.dispense</code> (hand out what the doctor ordered). Only <code>clinic_admin</code> manages staff, roles, clinic config, revenue/cost reports, and the audit log. Custom-role assignment can never escalate above the assigner's own effective permission set — enforced server-side, not just hidden in the UI.</span></div>
+
+  <!-- ── Per-Module Functional Specification ── -->
+  <h2>Per-Module Functional Specification</h2>
+  <p style="font-size:13px;color:var(--muted)">FR-IDs, priorities (Must/Should/Could), and permission codes below are sourced verbatim from <code>.claude/skills/anemal-functional-reqs/references/functional-reqs.md</code> and <code>.claude/skills/anemal-rbac-matrix/references/permission-matrix.md</code>. Module numbers/names align with the Module Overview table above where they overlap; M0 and M14 are additions not covered by that table. <strong>Note:</strong> the <a onclick="document.getElementById('module-detail-heading').scrollIntoView()" href="javascript:void(0)">"Module Detail" section</a> further down this page covers the same M1–M13 modules from an implementation/screens-and-endpoints angle (bullet lists) — this section is the requirements/RBAC angle (FR-ID tables). They're deliberately parallel, not duplicates.</p>
+
+  <div class="tbl-wrap" style="border:none;background:#f8fafc;padding:10px 14px;margin:8px 0 16px">
+    <span style="font-size:12px;font-weight:700;color:var(--muted);margin-right:8px">Jump to:</span>
+    <a href="#m0-spec" style="font-size:12.5px;margin-right:10px">M0</a>
+    <a href="#m1-spec" style="font-size:12.5px;margin-right:10px">M1</a>
+    <a href="#m2-spec" style="font-size:12.5px;margin-right:10px">M2</a>
+    <a href="#m3-spec" style="font-size:12.5px;margin-right:10px">M3</a>
+    <a href="#m4-spec" style="font-size:12.5px;margin-right:10px">M4</a>
+    <a href="#m5-spec" style="font-size:12.5px;margin-right:10px">M5</a>
+    <a href="#m6-spec" style="font-size:12.5px;margin-right:10px">M6</a>
+    <a href="#m7-spec" style="font-size:12.5px;margin-right:10px">M7</a>
+    <a href="#m8-spec" style="font-size:12.5px;margin-right:10px">M8</a>
+    <a href="#m9-spec" style="font-size:12.5px;margin-right:10px">M9</a>
+    <a href="#m10-spec" style="font-size:12.5px;margin-right:10px">M10</a>
+    <a href="#m11-spec" style="font-size:12.5px;margin-right:10px">M11</a>
+    <a href="#m12-spec" style="font-size:12.5px;margin-right:10px">M12</a>
+    <a href="#m13-spec" style="font-size:12.5px;margin-right:10px">M13</a>
+    <a href="#m14-spec" style="font-size:12.5px">M14</a>
+  </div>
+
+  <h3 id="m0-spec">M0 — Auth &amp; Multi-Tenancy</h3>
+  <div class="task-card">
+    <p style="margin:0 0 8px"><strong>Purpose:</strong> Login, session/token lifecycle, and strict per-tenant data isolation underlying every other module.</p>
+    <p style="margin:0 0 4px"><strong>API prefix:</strong> <code>/auth/*</code> (clinic plane) · <code>/platform/auth/*</code> (platform plane)</p>
+    <p style="margin:0 0 8px"><strong>Screens:</strong> <code>LoginView.tsx</code>, <code>PlatformLoginView.tsx</code></p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>FR-ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr><td>FR-01-01</td><td>Login (username-based per D-1; FR source text predates that decision)</td><td>Must</td></tr>
+        <tr><td>FR-01-02</td><td>JWT embeds <code>tenant_id</code>, <code>branch_id</code>, <code>user_id</code>, <code>role</code></td><td>Must</td></tr>
+        <tr><td>FR-01-03</td><td>8-hour token expiry with refresh token</td><td>Must</td></tr>
+        <tr><td>FR-01-04</td><td>Role-based access control</td><td>Must</td></tr>
+        <tr><td>FR-01-05</td><td>Admin can add/remove/deactivate users and assign permissions</td><td>Must</td></tr>
+        <tr><td>FR-01-06</td><td>Per-user login time-window restriction</td><td>Should</td></tr>
+        <tr><td>FR-02-01</td><td>Per-clinic subdomain</td><td>Must</td></tr>
+        <tr><td>FR-02-02/03</td><td>Absolute <code>tenant_id</code> isolation, no cross-tenant visibility</td><td>Must</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin:8px 0 0"><strong>RBAC notes:</strong> Pre-auth is public. Post-auth, <code>plane</code> on the JWT gates clinic vs platform routing; FR-14/FR-14b (permission catalogue, multi-role union, no-escalation) are covered in the Roles &amp; Authorization Model section above.</p>
+  </div>
+
+  <h3 id="m1-spec">M1 — Pet &amp; Owner / CRM</h3>
+  <div class="task-card">
+    <p style="margin:0 0 8px"><strong>Purpose:</strong> Owner and pet master records — the identity spine every clinical/commercial module hangs off.</p>
+    <p style="margin:0 0 4px"><strong>API prefix:</strong> <code>/api/owners</code> · <code>/api/pets</code> · <code>/api/search</code></p>
+    <p style="margin:0 0 8px"><strong>Screens:</strong> <code>ClinicPets.tsx</code>, <code>PetProfile.tsx</code></p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>FR-ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr><td>FR-03-01</td><td>Owner profile create/edit/deactivate</td><td>Must</td></tr>
+        <tr><td>FR-03-03</td><td>Pet profile create/edit</td><td>Must</td></tr>
+        <tr><td>FR-03-04</td><td>Drug allergies &amp; underlying conditions recorded distinctly for prescribing safety</td><td>Must</td></tr>
+        <tr><td>FR-03-05</td><td>Tablet camera capture / photo upload</td><td>Must</td></tr>
+        <tr><td>FR-03-06</td><td>Quick search by pet/owner/phone/microchip</td><td>Must</td></tr>
+        <tr><td>FR-03-08</td><td>Vaccination timeline on pet profile</td><td>Must</td></tr>
+        <tr><td>FR-03-09</td><td>Proactive pet-care reminders</td><td>Must</td></tr>
+        <tr><td>FR-03-02</td><td>ID-card-reader smart onboarding</td><td>Should</td></tr>
+        <tr><td>FR-03-07</td><td>Watch-flag alert for infectious/isolation cases</td><td>Should</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin:8px 0 0"><strong>RBAC notes:</strong> <code>crm.view</code> (all 3 roles) · <code>crm.create</code>/<code>crm.edit</code> (admin, staff) · <code>crm.delete</code> (admin only). Doctor is read-only on CRM.</p>
+  </div>
+
+  <h3 id="m2-spec">M2 — Appointments</h3>
+  <div class="task-card">
+    <p style="margin:0 0 8px"><strong>Purpose:</strong> Scheduling and walk-in queueing across doctors, rooms, and branches.</p>
+    <p style="margin:0 0 4px"><strong>API prefix:</strong> <code>/api/appointments</code></p>
+    <p style="margin:0 0 8px"><strong>Screens:</strong> <code>ClinicAppointments.tsx</code></p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>FR-ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr><td>FR-04-01</td><td>Weekly/daily calendar, per branch</td><td>Must</td></tr>
+        <tr><td>FR-04-02</td><td>Filter by doctor, room, appointment type</td><td>Must</td></tr>
+        <tr><td>FR-04-03</td><td>Status lifecycle (Scheduled → Confirmed → In-Progress → Completed/Cancelled/No-show)</td><td>Must</td></tr>
+        <tr><td>FR-04-05</td><td>Doctor's condensed Today's Schedule on tablet</td><td>Must</td></tr>
+        <tr><td>FR-04-06</td><td>Double-booking detection/block (doctor + room)</td><td>Must</td></tr>
+        <tr><td>FR-04-07</td><td>Walk-in queue without prior booking</td><td>Must</td></tr>
+        <tr><td>FR-04-04</td><td>24h-advance LINE/SMS reminder dispatch</td><td>Should</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin:8px 0 0"><strong>RBAC notes:</strong> <code>appointments.view</code> (all 3) · <code>appointments.create</code>/<code>edit</code>/<code>delete</code> (admin, staff — doctor is view-only).</p>
+  </div>
+
+  <h3 id="m3-spec">M3 — EMR &amp; Clinical</h3>
+  <div class="task-card">
+    <p style="margin:0 0 8px"><strong>Purpose:</strong> Clinical record-keeping — SOAP notes, vitals, prescriptions, vaccinations.</p>
+    <p style="margin:0 0 4px"><strong>API prefix:</strong> <code>/api/medical-records</code> · <code>/api/prescriptions</code> · <code>/api/vaccinations</code></p>
+    <p style="margin:0 0 8px"><strong>Screens:</strong> <code>ClinicEMR.tsx</code>, <code>ClinicVaccinationsDue.tsx</code>, <code>ClinicRecordVaccination.tsx</code></p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>FR-ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr><td>FR-05-01</td><td>SOAP note (Subjective/Objective/Assessment/Plan)</td><td>Must</td></tr>
+        <tr><td>FR-05-02</td><td>Vital signs via touch-friendly steppers</td><td>Must</td></tr>
+        <tr><td>FR-05-05</td><td>Prescription auto-linked to inventory, real-time stock + allergy check</td><td>Must</td></tr>
+        <tr><td>FR-05-03</td><td>DICOM X-ray/ultrasound viewer (Cornerstone.js)</td><td>Should</td></tr>
+        <tr><td>FR-05-04</td><td>Mobile image capture into EMR</td><td>Should</td></tr>
+        <tr><td>FR-05-06</td><td>Lab test orders + trending + PDF upload</td><td>Should</td></tr>
+        <tr><td>FR-05-07</td><td>Stylus/touch visual annotation on anatomy canvas</td><td>Should</td></tr>
+        <tr><td>FR-05-08</td><td>EMR export to PDF for referral</td><td>Could</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin:8px 0 0"><strong>RBAC notes:</strong> <code>emr.view</code> (all 3) · <code>emr.create</code>/<code>edit</code> (doctor only) · <code>emr.attach</code> (doctor, staff) · <code>vaccination.create</code> (doctor, staff — separate code from <code>emr.create</code>) · <code>prescriptions.create</code> (doctor only) · <code>prescriptions.dispense</code> (doctor, staff).</p>
+  </div>
+
+  <h3 id="m4-spec">M4 — Inventory</h3>
+  <div class="task-card">
+    <p style="margin:0 0 8px"><strong>Purpose:</strong> Per-branch drug/product stock with movement tracking and alerts.</p>
+    <p style="margin:0 0 4px"><strong>API prefix:</strong> <code>/api/products</code> · <code>/api/inventory</code></p>
+    <p style="margin:0 0 8px"><strong>Screens:</strong> <code>ClinicInventory.tsx</code></p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>FR-ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr><td>FR-06-01</td><td>Product CRUD (drugs, vaccines, consumables, retail goods)</td><td>Must</td></tr>
+        <tr><td>FR-06-02</td><td>Per-branch stock tracking</td><td>Must</td></tr>
+        <tr><td>FR-06-03</td><td>Auto-deduct stock on dispense/retail sale</td><td>Must</td></tr>
+        <tr><td>FR-06-04</td><td>Stock card / stock ledger movement history</td><td>Must</td></tr>
+        <tr><td>FR-06-05</td><td>Cross-branch transfer with approve/receive flow</td><td>Must</td></tr>
+        <tr><td>FR-06-06</td><td>Min-stock and lot-level expiry alerts</td><td>Must</td></tr>
+        <tr><td>FR-06-07</td><td>Barcode scan (camera/scanner) for lookup + receiving</td><td>Should</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin:8px 0 0"><strong>RBAC notes:</strong> <code>inventory.view</code> (all 3, doctor read-only to check stock when prescribing) · <code>inventory.create</code>/<code>edit</code>/<code>adjust</code> (admin, staff).</p>
+  </div>
+
+  <h3 id="m5-spec">M5 — Billing / POS</h3>
+  <div class="task-card">
+    <p style="margin:0 0 8px"><strong>Purpose:</strong> Invoicing from EMR, retail POS, discounts, and receipts.</p>
+    <p style="margin:0 0 4px"><strong>API prefix:</strong> <code>/api/invoices</code></p>
+    <p style="margin:0 0 8px"><strong>Screens:</strong> <code>ClinicBilling.tsx</code>, <code>ClinicTransactions.tsx</code></p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>FR-ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr><td>FR-07-01</td><td>Auto-generate invoice/receipt from EMR</td><td>Must</td></tr>
+        <tr><td>FR-07-02</td><td>Retail POS mode with barcode scan + fast search</td><td>Must</td></tr>
+        <tr><td>FR-07-03</td><td>Discount engine (pre-set, membership, product-group)</td><td>Must</td></tr>
+        <tr><td>FR-07-04</td><td>Cash/card/transfer/PromptPay dynamic QR payment</td><td>Must</td></tr>
+        <tr><td>FR-07-05</td><td>VAT 7% receipt, email/LINE delivery</td><td>Must</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin:8px 0 0"><strong>RBAC notes:</strong> <code>billing.view</code> (all 3) · <code>billing.create</code>/<code>payment</code> (admin, staff) · <code>billing.void</code> (admin only). Doctor has no billing write access at all.</p>
+  </div>
+
+  <h3 id="m6-spec">M6 — Reports &amp; Analytics</h3>
+  <div class="task-card">
+    <p style="margin:0 0 8px"><strong>Purpose:</strong> Revenue, top-service, and operational-snapshot reporting for clinic management.</p>
+    <p style="margin:0 0 4px"><strong>API prefix:</strong> <code>/api/reports/*</code></p>
+    <p style="margin:0 0 8px"><strong>Screens:</strong> reports surface via the dashboard views — <code>AdminDashboard.tsx</code> (verified: calls <code>/api/reports/branch-revenue</code>) and <code>ClinicDashboard.tsx</code> (verified: revenue-today/low-stock/expiring/pending-invoices via <code>useReportSnapshot()</code>). No standalone Reports screen exists.</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>FR-ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr><td>FR-13-01</td><td>Daily/monthly revenue reports by product/service/branch</td><td>Must</td></tr>
+        <tr><td>FR-13-02</td><td>Top-services/top-products trend graphs</td><td>Should</td></tr>
+        <tr><td>FR-13-03</td><td>Real-time dashboard snapshot (appointments, queue, bed occupancy)</td><td>Should</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin:8px 0 0"><strong>RBAC notes:</strong> <code>reports.revenue.view</code> (admin write-level, staff read) · <code>reports.inventory.view</code> (all 3) · <code>reports.cost.view</code> (admin only) · <code>reports.export</code> (admin, staff).</p>
+  </div>
+
+  <h3 id="m7-spec">M7 — Multi-Branch &amp; Transfers</h3>
+  <div class="task-card">
+    <p style="margin:0 0 8px"><strong>Purpose:</strong> Branch configuration and inter-branch stock movement under one tenant.</p>
+    <p style="margin:0 0 4px"><strong>API prefix:</strong> <code>/api/branches</code> · <code>/api/inventory/transfers</code></p>
+    <p style="margin:0 0 8px"><strong>Screens:</strong> <code>AdminBranches.tsx</code>, transfer UI within <code>ClinicInventory.tsx</code></p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>FR-ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr><td>FR-02-04</td><td>Multi-branch structure under one tenant, transaction data split by <code>branch_id</code></td><td>Must</td></tr>
+        <tr><td>FR-02-05</td><td>Per-branch hours/address/phone/doctor shifts</td><td>Must</td></tr>
+        <tr><td>FR-06-05</td><td>Direct branch-to-branch transfer with approve/receive</td><td>Must</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin:8px 0 0"><strong>RBAC notes:</strong> <code>clinic.branch.view</code> (all 3) · <code>clinic.branch.manage</code> (admin only) · transfers use <code>inventory.adjust</code> (admin, staff).</p>
+  </div>
+
+  <h3 id="m8-spec">M8 — Inpatient / Hospitalization</h3>
+  <div class="task-card">
+    <p style="margin:0 0 8px"><strong>Purpose:</strong> Admission, daily nursing care logs, and discharge-to-billing for hospitalized patients.</p>
+    <p style="margin:0 0 4px"><strong>API prefix:</strong> <code>/api/hospitalizations</code> · <code>/api/inpatient-care</code></p>
+    <p style="margin:0 0 8px"><strong>Screens:</strong> <code>ClinicInpatient.tsx</code></p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>FR-ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr><td>FR-08-01</td><td>Admit inpatient — cage number + responsible doctor</td><td>Must</td></tr>
+        <tr><td>FR-08-02</td><td>Daily care time-slot logging (e.g. 08:00/12:00/16:00/20:00)</td><td>Must</td></tr>
+        <tr><td>FR-08-03</td><td>Medication, feeding, vitals logging for shift handoff</td><td>Must</td></tr>
+        <tr><td>FR-08-04</td><td>Discharge with auto-billing of admission charges</td><td>Must</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin:8px 0 0"><strong>RBAC notes:</strong> <code>inpatient.view</code>/<code>inpatient.manage</code> — uniquely, all 3 system roles hold <code>manage</code> (admin, doctor, staff all E), reflecting shared nursing-care responsibility.</p>
+  </div>
+
+  <h3 id="m9-spec">M9 — Grooming</h3>
+  <div class="task-card">
+    <p style="margin:0 0 8px"><strong>Purpose:</strong> Groomer booking queue, separate from the main clinical queue.</p>
+    <p style="margin:0 0 4px"><strong>API prefix:</strong> <code>/api/grooming-bookings</code></p>
+    <p style="margin:0 0 8px"><strong>Screens:</strong> <code>ClinicGrooming.tsx</code></p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>FR-ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr><td>FR-09-01</td><td>Grooming booking with groomer + service assignment</td><td>Must</td></tr>
+        <tr><td>FR-09-02</td><td>Daily capacity tracking per groomer</td><td>Must</td></tr>
+        <tr><td>FR-09-03</td><td>Real-time grooming queue status, separate from clinical queue</td><td>Must</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin:8px 0 0"><strong>RBAC notes:</strong> <code>grooming.view</code>/<code>grooming.manage</code> (admin, staff — doctor has no access, denied both).</p>
+  </div>
+
+  <h3 id="m10-spec">M10 — Blood Bank</h3>
+  <div class="task-card">
+    <p style="margin:0 0 8px"><strong>Purpose:</strong> Donor registry, blood collection, and transfusion logging.</p>
+    <p style="margin:0 0 4px"><strong>API prefix:</strong> <code>/api/blood-donors</code> · <code>/api/blood-donations</code> · <code>/api/blood-transfusions</code></p>
+    <p style="margin:0 0 8px"><strong>Screens:</strong> <code>AdminBloodBank.tsx</code></p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>FR-ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr><td>FR-10-01</td><td>Donor registry with blood type + physical exam result</td><td>Must</td></tr>
+        <tr><td>FR-10-02</td><td>Collection logs — volume, expiry, bag status (Available/Used/Expired)</td><td>Must</td></tr>
+        <tr><td>FR-10-03</td><td>Transfusion logs with reaction tracking + donor matching</td><td>Must</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin:8px 0 0"><strong>RBAC notes:</strong> <code>bloodbank.view</code> (all 3) · <code>bloodbank.manage</code> (admin, doctor — staff is view-only).</p>
+  </div>
+
+  <h3 id="m11-spec">M11 — Loyalty &amp; Membership</h3>
+  <div class="task-card">
+    <p style="margin:0 0 8px"><strong>Purpose:</strong> Tiered membership discounts and points accrual/redemption.</p>
+    <p style="margin:0 0 4px"><strong>API prefix:</strong> <code>/api/loyalty</code></p>
+    <p style="margin:0 0 8px"><strong>Screens:</strong> no dedicated Loyalty view exists. The membership tier/points widget and the redeem-at-checkout flow are embedded inside <code>ClinicBilling.tsx</code> (verified: reads <code>loyalty.membershipTier</code>/<code>loyalty.points</code>, posts to <code>/api/loyalty/redeem</code>) — not in <code>ClinicPets.tsx</code>, contrary to an earlier assumption for this table.</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>FR-ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr><td>FR-11-01</td><td>Tiered membership (e.g. Gold/Platinum) with discount privileges</td><td>Must</td></tr>
+        <tr><td>FR-11-02</td><td>Points accrual from service/product spend</td><td>Must</td></tr>
+        <tr><td>FR-11-03</td><td>Point redemption for cash discount/reward at checkout</td><td>Must</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin:8px 0 0"><strong>RBAC notes:</strong> <code>loyalty.view</code>/<code>loyalty.manage</code> (admin, staff — doctor has no access).</p>
+  </div>
+
+  <h3 id="m12-spec">M12 — Audit &amp; Work-Hour Restriction</h3>
+  <div class="task-card">
+    <p style="margin:0 0 8px"><strong>Purpose:</strong> Immutable activity trail for data changes and financial/prescription transactions; per-user login-window enforcement.</p>
+    <p style="margin:0 0 4px"><strong>API prefix:</strong> <code>/api/audit</code></p>
+    <p style="margin:0 0 8px"><strong>Screens:</strong> <code>AdminAudit.tsx</code></p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>FR-ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr><td>FR-12-01</td><td>Detailed audit log for every create/edit/delete of key data</td><td>Must</td></tr>
+        <tr><td>FR-12-02</td><td>Immutable retention of financial/prescription transaction trails</td><td>Must</td></tr>
+        <tr><td>FR-01-06</td><td>Login blocked outside a user's allowed time window (when set)</td><td>Should</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin:8px 0 0"><strong>RBAC notes:</strong> <code>audit.view</code> — admin only; no other role can read the audit log.</p>
+  </div>
+
+  <h3 id="m13-spec">M13 — Appointment Reminders (cron)</h3>
+  <div class="task-card">
+    <p style="margin:0 0 8px"><strong>Purpose:</strong> Scheduled advance-notice dispatch for upcoming appointments.</p>
+    <p style="margin:0 0 4px"><strong>API prefix:</strong> background worker · <code>/api/reminders/trigger</code> (manual trigger)</p>
+    <p style="margin:0 0 8px"><strong>Screens:</strong> none — background job, no dedicated UI; manual trigger is an admin-only API call.</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>FR-ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr><td>FR-04-04</td><td>24-hour-advance LINE/SMS appointment reminder, automatic</td><td>Should</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin:8px 0 0"><strong>RBAC notes:</strong> Reminder rows are created and marked <code>sent</code> by the cron job regardless of role; actual LINE/SMS dispatch is credential-gated and deferred to Phase 11. No dedicated permission code documented for this module.</p>
+  </div>
+
+  <h3 id="m14-spec">M14 — Platform Console</h3>
+  <div class="task-card">
+    <p style="margin:0 0 8px"><strong>Purpose:</strong> The SaaS operator's cross-tenant console — customer provisioning, plans/quotas, integration secrets, and platform-wide audit.</p>
+    <p style="margin:0 0 4px"><strong>API prefix:</strong> <code>/platform/*</code></p>
+    <p style="margin:0 0 8px"><strong>Screens:</strong> <code>CustomerListView.tsx</code>, <code>CustomerDetailView.tsx</code>, <code>PlatformPlansView.tsx</code>, <code>PlatformSettingsView.tsx</code>, <code>PlatformAuditView.tsx</code>, <code>PlatformLoginView.tsx</code></p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>FR-ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr><td>FR-15</td><td>Separate platform plane (<code>/platform/*</code>, <code>platform_users</code>, no <code>tenant_id</code>); customer CRUD; plan/package management; per-customer quotas; per-tenant provisioning; platform settings; cross-tenant usage/audit</td><td>Must</td></tr>
+        <tr><td>FR-16</td><td><code>plans</code> + <code>tenant_quotas</code>; effective quota = override ?? plan default; enforced at create-time → <code>409 QUOTA_EXCEEDED</code></td><td>Must</td></tr>
+        <tr><td>FR-02-06</td><td>Super Admin sees all-tenant overview</td><td>Should</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin:8px 0 0"><strong>RBAC notes:</strong> Every route uses <code>requirePlane('platform')</code> + <code>requirePlatformPermission('platform.*')</code>, never a clinic permission code. The one bounded exception is the Clinic Admins tab (<code>/platform/customers/:id/admin-users/*</code>), which writes <code>clinic_admin</code>-role users into the clinic plane under 4 documented, audited limits (role-scoped, no clinic-data reads, fully audited, soft-delete only — ADR-0015).</p>
+  </div>
+
+  <div class="callout ok"><span class="callout-icon">✅</span><span><strong>Cross-cutting:</strong> all 16 clinic screens are bilingual Thai/English (Phase 9, custom i18n — no external library). All interactive elements are touch-first, ≥44×44px tap targets, verified at the 768px (tablet portrait) and 1024px (tablet landscape/desktop) breakpoints. The full module set above is verified by <strong>993 backend + 283 frontend tests</strong>, and per-route authorization is machine-verified by <code>src/backend/tests/integration/roleRouteMatrix.test.ts</code>.</span></div>
 
   <!-- ── Foundation ── -->
   <h2>Foundation — Multi-Tenancy &amp; Auth</h2>
@@ -692,7 +996,7 @@ npm run dev            # Start Vite on :5173</code></pre>
   </table></div>
 
   <!-- ── Module Details ── -->
-  <h2>Module Detail</h2>
+  <h2 id="module-detail-heading">Module Detail</h2>
 
   <h3>M1 — Pet &amp; Owner</h3>
   <div class="task-card"><ul>
