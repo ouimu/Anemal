@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import MaterialIcon from '../../components/MaterialIcon'
 import { useAuthStore } from '../../store/authStore'
 import { useClinicSettings, useUpdateClinicProfile } from '../../hooks/useClinicSettings'
+import { getErrorMessage } from '../../utils/errorMessage'
 
 interface FormState {
   name:    string
@@ -115,7 +116,7 @@ export default function ClinicProfilePage() {
       {/* Error banner for API errors */}
       {update.error && (
         <div className="mb-md px-md py-sm bg-error/10 border border-error/30 rounded-xl text-body-md text-error">
-          Failed to save: {(update.error as Error).message}
+          Failed to save: {getErrorMessage(update.error, 'Please try again.')}
         </div>
       )}
 

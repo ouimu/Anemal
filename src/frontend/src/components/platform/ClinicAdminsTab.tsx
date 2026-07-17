@@ -17,7 +17,7 @@ import {
   type CreateTenantAdminUserPayload,
 } from '../../hooks/usePlatformCustomers'
 import PlatformModal from './PlatformModal'
-import PasswordField from './PasswordField'
+import { usePasswordField } from './PasswordField'
 import MaterialIcon from '../MaterialIcon'
 
 const EMPTY_FORM: CreateTenantAdminUserPayload = { name: '', username: '', email: '', phone: '', password: '' }
@@ -77,13 +77,14 @@ function ResetPasswordDialog({ user, password, onPasswordChange, onConfirm, onCa
   error: { response?: { data?: { code?: string } } } | null
 }) {
   const errorCode = error?.response?.data?.code
+  const { field, toggleButton } = usePasswordField({ id: 'ca-reset-password', value: password, onChange: onPasswordChange })
   return (
     <PlatformModal title="Reset password" open onClose={onCancel} width="max-w-md">
       <div className="space-y-md">
         <p className="text-body-sm text-on-surface">
           Set a new password for <strong>{user.username}</strong>. Type one or generate a new one.
         </p>
-        <PasswordField id="ca-reset-password" value={password} onChange={onPasswordChange} />
+        {field}
         {errorCode && (
           <p className="text-label-md text-error">
             {errorCode === 'WEAK_PASSWORD'
@@ -91,18 +92,21 @@ function ResetPasswordDialog({ user, password, onPasswordChange, onConfirm, onCa
               : 'Failed to reset password. Please try again.'}
           </p>
         )}
-        <div className="flex justify-end gap-sm">
-          <button type="button" onClick={onCancel} className="min-h-[44px] px-md border border-outline-variant rounded text-body-sm text-on-surface-variant hover:bg-surface-container transition-colors">
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={isPending}
-            className="min-h-[44px] px-md bg-primary text-on-primary rounded text-body-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
-          >
-            Reset password
-          </button>
+        <div className="flex items-center justify-between gap-sm">
+          {toggleButton}
+          <div className="flex gap-sm">
+            <button type="button" onClick={onCancel} className="min-h-[44px] px-md border border-outline-variant rounded text-body-sm text-on-surface-variant hover:bg-surface-container transition-colors">
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={isPending}
+              className="min-h-[44px] px-md bg-primary text-on-primary rounded text-body-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+            >
+              Reset password
+            </button>
+          </div>
         </div>
       </div>
     </PlatformModal>
@@ -160,6 +164,7 @@ export default function ClinicAdminsTab({ id }: { id: number }) {
   const [deactivateTarget, setDeactivateTarget] = useState<TenantAdminUser | null>(null)
   const [resetTarget, setResetTarget]   = useState<TenantAdminUser | null>(null)
   const [resetPassword, setResetPassword] = useState('')
+  const passwordField = usePasswordField({ id: 'ca-password', value: form.password ?? '', onChange: (v) => setForm((f) => ({ ...f, password: v })) })
 
   const openCreate  = () => { setForm(EMPTY_FORM); create.reset(); setCreateOpen(true) }
   const closeCreate = () => setCreateOpen(false)
@@ -327,24 +332,27 @@ export default function ClinicAdminsTab({ id }: { id: number }) {
           {!form.email && !form.phone && (
             <p className="text-label-md text-error">At least one of email or phone is required.</p>
           )}
-          <PasswordField id="ca-password" value={form.password ?? ''} onChange={(v) => setForm((f) => ({ ...f, password: v }))} />
+          {passwordField.field}
 
           {create.error && (
             <p className="text-label-md text-error">{createErrorMessage(create.error)}</p>
           )}
 
-          <div className="flex items-center justify-end gap-sm pt-xs">
-            <button type="button" onClick={closeCreate} className="min-h-[44px] px-md border border-outline-variant rounded text-body-sm text-on-surface-variant hover:bg-surface-container transition-colors">
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={create.isPending || (!form.email && !form.phone)}
-              className="min-h-[44px] px-md bg-primary text-on-primary rounded text-body-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center gap-sm"
-            >
-              {create.isPending && <span className="w-4 h-4 border-2 border-on-primary border-t-transparent rounded-full animate-spin" />}
-              Create
-            </button>
+          <div className="flex items-center justify-between gap-sm pt-xs">
+            {passwordField.toggleButton}
+            <div className="flex gap-sm">
+              <button type="button" onClick={closeCreate} className="min-h-[44px] px-md border border-outline-variant rounded text-body-sm text-on-surface-variant hover:bg-surface-container transition-colors">
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={create.isPending || (!form.email && !form.phone)}
+                className="min-h-[44px] px-md bg-primary text-on-primary rounded text-body-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center gap-sm"
+              >
+                {create.isPending && <span className="w-4 h-4 border-2 border-on-primary border-t-transparent rounded-full animate-spin" />}
+                Create
+              </button>
+            </div>
           </div>
         </form>
       </PlatformModal>

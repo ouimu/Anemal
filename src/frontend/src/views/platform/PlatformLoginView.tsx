@@ -10,6 +10,7 @@ import platformApi from '../../utils/platformApi'
 import { usePlatformAuthStore } from '../../store/platformAuthStore'
 import { type PlatformAuthPayload } from '../../store/platformAuthStore'
 import MaterialIcon from '../../components/MaterialIcon'
+import { getErrorMessage } from '../../utils/errorMessage'
 
 interface LoginPayload {
   email:    string
@@ -27,7 +28,7 @@ export default function PlatformLoginView() {
   const mutation = useMutation({
     mutationFn: (payload: LoginPayload) =>
       platformApi
-        .post<{ success: boolean; data: PlatformAuthPayload }>('/platform/auth/login', payload)
+        .post<{ success: boolean; data: PlatformAuthPayload }>('/platform/auth/login', payload, { skipAuthRedirect: true })
         .then((r) => r.data.data),
     onSuccess: (data) => {
       setAuth(data)
@@ -98,7 +99,7 @@ export default function PlatformLoginView() {
 
           {mutation.error && (
             <p className="text-label-md text-error">
-              Invalid credentials. Please try again.
+              {getErrorMessage(mutation.error, 'Invalid credentials. Please try again.')}
             </p>
           )}
 

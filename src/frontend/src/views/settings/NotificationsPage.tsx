@@ -7,6 +7,7 @@ import {
   useTestNotifications,
   type NotificationsInput,
 } from '../../hooks/useNotificationsSettings'
+import { getErrorMessage } from '../../utils/errorMessage'
 
 interface NotificationsForm {
   lineOaToken: string
@@ -122,7 +123,7 @@ export default function NotificationsPage() {
       {/* Error banner */}
       {update.error && (
         <div className="mb-md px-md py-sm bg-error/10 border border-error/30 rounded-xl text-body-md text-error">
-          Failed to save: {(update.error as Error).message}
+          Failed to save: {getErrorMessage(update.error, 'Please try again.')}
         </div>
       )}
 

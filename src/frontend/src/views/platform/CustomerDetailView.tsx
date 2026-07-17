@@ -20,6 +20,7 @@ import StatusBadge from '../../components/platform/StatusBadge'
 import QuotaBar from '../../components/platform/QuotaBar'
 import MaterialIcon from '../../components/MaterialIcon'
 import ClinicAdminsTab from '../../components/platform/ClinicAdminsTab'
+import { getErrorMessage } from '../../utils/errorMessage'
 
 // ── Tab type ─────────────────────────────────────────────────────────────────
 
@@ -110,7 +111,7 @@ function OverviewTab({ id }: { id: number }) {
               </div>
             )}
             {update.error && (
-              <p className="text-label-md text-error">Save failed. Please try again.</p>
+              <p className="text-label-md text-error">{getErrorMessage(update.error, 'Save failed. Please try again.')}</p>
             )}
             <div className="flex gap-sm">
               <button
@@ -258,7 +259,7 @@ function QuotaTab({ id }: { id: number }) {
           ))}
         </select>
         {updatePlan.error && (
-          <p className="text-label-md text-error">Save failed. Please try again.</p>
+          <p className="text-label-md text-error">{getErrorMessage(updatePlan.error, 'Save failed. Please try again.')}</p>
         )}
         <button
           onClick={handleSavePlan}
@@ -301,7 +302,7 @@ function QuotaTab({ id }: { id: number }) {
         ))}
 
         {updateQuota.error && (
-          <p className="text-label-md text-error">Save failed. Please try again.</p>
+          <p className="text-label-md text-error">{getErrorMessage(updateQuota.error, 'Save failed. Please try again.')}</p>
         )}
 
         <button
