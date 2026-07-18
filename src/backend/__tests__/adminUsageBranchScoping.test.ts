@@ -37,13 +37,15 @@ beforeAll(async () => {
   })
   await seedUserRoles(prisma, [{ userId: admin.id, tenantId: tid, roleKey: 'clinic_admin' }])
 
-  // 2 active pets in Branch A, 1 in Branch B
+  // 2 active pets in Branch A, 1 in Branch B, plus 1 unassigned (branchId = NULL) that must
+  // appear under every branch (the NULL-branch visibility rule).
   const owner = await prisma.owner.create({ data: { tenantId: tid, firstName: 'O', lastName: 'Wner', phone: '0800000000' } })
   await prisma.pet.createMany({
     data: [
       { tenantId: tid, ownerId: owner.id, branchId: branchAId, name: 'PetA1', species: 'dog', isActive: true },
       { tenantId: tid, ownerId: owner.id, branchId: branchAId, name: 'PetA2', species: 'dog', isActive: true },
       { tenantId: tid, ownerId: owner.id, branchId: branchBId, name: 'PetB1', species: 'cat', isActive: true },
+      { tenantId: tid, ownerId: owner.id, branchId: null,      name: 'PetNull', species: 'dog', isActive: true },
     ],
   })
 
@@ -83,21 +85,24 @@ const auth = (t: string) => ({ Authorization: `Bearer ${t}` })
 describe('GET /admin/usage — branch scoping', () => {
   test('with no branch selected (admin bypass), returns tenant-wide totals', async () => {
     const res = await request(server).get('/admin/usage').set(auth(tokenAllBranches)).expect(200)
-    expect(res.body.data.totalPets).toBe(3)
+    // 2 in A + 1 in B + 1 unassigned = 4
+    expect(res.body.data.totalPets).toBe(4)
     // 3 staff created here + the admin itself (no branchId) = 4
     expect(res.body.data.totalUsers).toBe(4)
   })
 
   test('with Branch A selected, only Branch A pets/users are counted', async () => {
     const res = await request(server).get('/admin/usage').set(auth(tokenBranchA)).expect(200)
-    expect(res.body.data.totalPets).toBe(2)
+    // 2 Branch-A pets + the unassigned (NULL-branch) pet = 3
+    expect(res.body.data.totalPets).toBe(3)
     // 2 Branch-A staff + the unassigned admin (shows in every branch) = 3
     expect(res.body.data.totalUsers).toBe(3)
   })
 
   test('with Branch B selected, only Branch B pets/users are counted', async () => {
     const res = await request(server).get('/admin/usage').set(auth(tokenBranchB)).expect(200)
-    expect(res.body.data.totalPets).toBe(1)
+    // 1 Branch-B pet + the unassigned (NULL-branch) pet = 2
+    expect(res.body.data.totalPets).toBe(2)
     // 1 Branch-B staff + the unassigned admin = 2
     expect(res.body.data.totalUsers).toBe(2)
   })
@@ -106,6 +111,18 @@ describe('GET /admin/usage — branch scoping', () => {
     const resA = await request(server).get('/admin/usage').set(auth(tokenBranchA)).expect(200)
     const resB = await request(server).get('/admin/usage').set(auth(tokenBranchB)).expect(200)
     expect(resA.body.data.totalPets).not.toBe(resB.body.data.totalPets)
+  })
+
+  test('a NULL-branch pet is counted under every branch (visibility rule)', async () => {
+    // PetNull has branchId = NULL. It must appear in the all-branches total AND under each
+    // specific branch — so its owner/vaccinations/donor records never outnumber the pet itself.
+    const all = await request(server).get('/admin/usage').set(auth(tokenAllBranches)).expect(200)
+    const inA = await request(server).get('/admin/usage').set(auth(tokenBranchA)).expect(200)
+    const inB = await request(server).get('/admin/usage').set(auth(tokenBranchB)).expect(200)
+    // Each branch total includes the NULL pet, so branch A (3) + branch B (2) exceeds all (4).
+    expect(inA.body.data.totalPets + inB.body.data.totalPets).toBeGreaterThan(all.body.data.totalPets)
+    expect(inA.body.data.totalPets).toBe(3)
+    expect(inB.body.data.totalPets).toBe(2)
   })
 
   test('owner count is derived from the branch of the owner\'s pets', async () => {
