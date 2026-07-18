@@ -28,9 +28,21 @@ export function create(entry: AuditEntry) {
   })
 }
 
-interface ListParams { skip: number; take: number; userId?: number; action?: string; from?: string; to?: string }
+interface ListParams { skip: number; take: number; userId?: number; action?: string; from?: string; to?: string; branchId?: number | null }
 
-function listWhere(tenantId: number, { userId, action, from, to }: ListParams) {
+// AuditLog.userId has no FK relation, so branch scoping is a two-step lookup: resolve which
+// users belong to the branch (or have no branch assignment — visible everywhere, same rule as
+// user.repository's findUsers), then filter logs to those actors (plus system/null-actor rows).
+async function resolveBranchUserIds(tenantId: number, branchId?: number | null): Promise<number[] | null> {
+  if (!branchId) return null
+  const rows = await prisma.user.findMany({
+    where: { tenantId, OR: [{ userBranches: { some: { branchId } } }, { userBranches: { none: {} } }] },
+    select: { id: true },
+  })
+  return rows.map(r => r.id)
+}
+
+function listWhere(tenantId: number, { userId, action, from, to }: ListParams, branchUserIds: number[] | null) {
   let createdAt: { gte?: Date; lte?: Date } | undefined
   if (from || to) {
     createdAt = {}
@@ -42,18 +54,21 @@ function listWhere(tenantId: number, { userId, action, from, to }: ListParams) {
     ...(userId ? { userId } : {}),
     ...(action ? { action: { contains: action, mode: 'insensitive' as const } } : {}),
     ...(createdAt ? { createdAt } : {}),
+    ...(branchUserIds ? { OR: [{ userId: null }, { userId: { in: branchUserIds } }] } : {}),
   }
 }
 
-export function list(tenantId: number, params: ListParams) {
+export async function list(tenantId: number, params: ListParams) {
+  const branchUserIds = await resolveBranchUserIds(tenantId, params.branchId)
   return prisma.auditLog.findMany({
-    where: listWhere(tenantId, params),
+    where: listWhere(tenantId, params, branchUserIds),
     orderBy: { createdAt: 'desc' },
     skip: params.skip,
     take: params.take,
   })
 }
 
-export function count(tenantId: number, params: ListParams) {
-  return prisma.auditLog.count({ where: listWhere(tenantId, params) })
+export async function count(tenantId: number, params: ListParams) {
+  const branchUserIds = await resolveBranchUserIds(tenantId, params.branchId)
+  return prisma.auditLog.count({ where: listWhere(tenantId, params, branchUserIds) })
 }

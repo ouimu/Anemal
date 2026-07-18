@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import api from '../../utils/api'
 import { useAdminSettings } from '../../hooks/useAdmin'
+import { useAuthStore } from '../../store/authStore'
 import MaterialIcon from '../../components/MaterialIcon'
+import BranchSwitcher from '../../components/BranchSwitcher'
 
 interface Usage {
   totalPets: number; totalOwners: number; totalUsers: number; activeUsers: number
@@ -27,8 +29,9 @@ function Bar({ value, max, color = 'bg-secondary' }: { value: number; max: numbe
 }
 
 export default function AdminUsage() {
+  const branchId = useAuthStore(s => s.branchId)
   const { data, isLoading } = useQuery<Usage>({
-    queryKey: ['admin', 'usage'],
+    queryKey: ['admin', 'usage', branchId],
     queryFn: () => api.get('/admin/usage').then(r => r.data.data),
   })
   const { data: settings } = useAdminSettings()
@@ -40,12 +43,15 @@ export default function AdminUsage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-on-surface">Usage statistics</h2>
-        <p className="text-sm text-on-surface-variant mt-1">
-          Plan: <span className="capitalize font-medium text-on-surface-variant">{tier}</span>
-          {' · '}{settings?.tenant.subdomain}.anemal.app
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-md flex-wrap">
+        <div>
+          <h2 className="text-xl font-semibold text-on-surface">Usage statistics</h2>
+          <p className="text-sm text-on-surface-variant mt-1">
+            Plan: <span className="capitalize font-medium text-on-surface-variant">{tier}</span>
+            {' · '}{settings?.tenant.subdomain}.anemal.app
+          </p>
+        </div>
+        <BranchSwitcher />
       </div>
 
       {/* KPI row */}

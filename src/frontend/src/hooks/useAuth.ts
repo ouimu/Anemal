@@ -62,7 +62,11 @@ async function applyLogin(
     plane:          'clinic',
     userId:         login.userId,
     tenantId:       login.tenantId,
-    branchId:       me?.branchId ?? login.branchId ?? null,
+    // login.branchId is what the issued JWT actually scopes requests to (null = admin
+    // bypass, all branches). me.branchId is the user's assigned home branch — a different
+    // concept — and must never be used here, or the switcher can show a branch selected
+    // while every request is actually unscoped. login.branchId is always present.
+    branchId:       login.branchId,
     roleIds:        me?.roleIds  ?? [],
     role:           login.role,
     permissions:    me?.permissions    ?? [],

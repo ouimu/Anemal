@@ -15,8 +15,16 @@ export interface CreateUserData {
   role:         CreateUserRequest['role']
 }
 
-export function findUsers(tenantId: number) {
-  return prisma.user.findMany({ where: { tenantId }, orderBy: { createdAt: 'asc' } })
+// ponytail: a user with no branch assignment shows up in every branch's list, same NULL-branch
+// rule as pets/usage counts — mirrors userBranches, the join table the "assigned branches" UI edits.
+export function findUsers(tenantId: number, branchId?: number | null) {
+  return prisma.user.findMany({
+    where: {
+      tenantId,
+      ...(branchId ? { OR: [{ userBranches: { some: { branchId } } }, { userBranches: { none: {} } }] } : {}),
+    },
+    orderBy: { createdAt: 'asc' },
+  })
 }
 
 export function findUserById(tenantId: number, userId: number) {

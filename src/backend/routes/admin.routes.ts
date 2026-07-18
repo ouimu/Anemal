@@ -14,7 +14,7 @@ router.put('/settings', requirePlane('clinic'), requirePermission('clinic.profil
 
 router.get('/usage', requirePlane('clinic'), requirePermission('clinic.profile.view'), async (req, res, next) => {
   try {
-    const data = await getClinicUsage(req.context!.tenantId)
+    const data = await getClinicUsage(req.context!.tenantId, req.context?.branchId)
     res.json({ success: true, data })
   } catch (err) { next(err) }
 })

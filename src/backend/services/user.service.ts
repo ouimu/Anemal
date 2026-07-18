@@ -69,8 +69,8 @@ function safe(user: {
   }
 }
 
-export async function listUsers(tenantId: number): Promise<UserResponse[]> {
-  const users = await userRepo.findUsers(tenantId)
+export async function listUsers(tenantId: number, branchId?: number | null): Promise<UserResponse[]> {
+  const users = await userRepo.findUsers(tenantId, branchId)
   return users.map(safe)
 }
 

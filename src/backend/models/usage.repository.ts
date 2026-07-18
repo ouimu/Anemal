@@ -7,20 +7,35 @@ export function countBranches(tenantId: number) {
   return prisma.branch.count({ where: { tenantId, isActive: true } })
 }
 
-export function countActivePets(tenantId: number) {
-  return prisma.pet.count({ where: { tenantId, isActive: true } })
+export function countActivePets(tenantId: number, branchId?: number | null) {
+  return prisma.pet.count({ where: { tenantId, isActive: true, ...(branchId ? { branchId } : {}) } })
 }
 
-export function countOwners(tenantId: number) {
-  return prisma.owner.count({ where: { tenantId } })
+// Owners have no branchId column of their own; an owner belongs to a branch through their
+// pets. When a branch is selected, count owners who have at least one pet at that branch
+// (a pet with no branch shows everywhere, same NULL rule as the pet count). No branch → all.
+export function countOwners(tenantId: number, branchId?: number | null) {
+  return prisma.owner.count({
+    where: {
+      tenantId,
+      ...(branchId ? { pets: { some: { OR: [{ branchId }, { branchId: null }] } } } : {}),
+    },
+  })
 }
 
-export function countUsers(tenantId: number) {
-  return prisma.user.count({ where: { tenantId } })
+// Staff are scoped by the userBranches assignment join (the "assigned branches" the admin
+// edits), matching the Users management page. A user with no assignment shows in every
+// branch (e.g. the admin). Keep this in sync with user.repository's findUsers filter.
+function userBranchFilter(branchId?: number | null) {
+  return branchId ? { OR: [{ userBranches: { some: { branchId } } }, { userBranches: { none: {} } }] } : {}
 }
 
-export function countActiveUsers(tenantId: number) {
-  return prisma.user.count({ where: { tenantId, isActive: true } })
+export function countUsers(tenantId: number, branchId?: number | null) {
+  return prisma.user.count({ where: { tenantId, ...userBranchFilter(branchId) } })
+}
+
+export function countActiveUsers(tenantId: number, branchId?: number | null) {
+  return prisma.user.count({ where: { tenantId, isActive: true, ...userBranchFilter(branchId) } })
 }
 
 export function countAppointmentsSince(tenantId: number, since: Date, branchId?: number | null) {
@@ -35,8 +50,8 @@ export function countAppointmentsBetween(tenantId: number, from: Date, to: Date,
   })
 }
 
-export function countInvoicesSince(tenantId: number, since: Date) {
-  return prisma.invoice.count({ where: { tenantId, createdAt: { gte: since } } })
+export function countInvoicesSince(tenantId: number, since: Date, branchId?: number | null) {
+  return prisma.invoice.count({ where: { tenantId, createdAt: { gte: since }, ...(branchId ? { branchId } : {}) } })
 }
 
 export function findSettings(tenantId: number) {

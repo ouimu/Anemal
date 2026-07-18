@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import MaterialIcon from '../../components/MaterialIcon'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { useT } from '../../i18n'
+import BranchSwitcher from '../../components/BranchSwitcher'
 
 interface Usage {
   totalPets: number; totalOwners: number; totalUsers: number; activeUsers: number
@@ -33,24 +34,27 @@ function formatTHB(n: number) {
 export default function AdminDashboard() {
   const t = useT()
   const name = useAuthStore(s => s.name)
+  const branchId = useAuthStore(s => s.branchId)
   const today = new Date()
   const todayStr = dateStr(today)
   const [revenueFrom, setRevenueFrom] = useState(dateStr(firstOfMonth(today)))
   const [revenueTo,   setRevenueTo]   = useState(todayStr)
 
+  // branchId in the query key forces a refetch the moment the admin switches
+  // branch (switching issues a new JWT but doesn't otherwise change these URLs).
   const { data, isLoading } = useQuery<Usage>({
-    queryKey: ['admin', 'usage'],
+    queryKey: ['admin', 'usage', branchId],
     queryFn: () => api.get('/admin/usage').then(r => r.data.data),
   })
 
   const { data: inpatients = [] } = useQuery<{ id: number }[]>({
-    queryKey: ['inpatient-active'],
+    queryKey: ['inpatient-active', branchId],
     queryFn: () => api.get('/api/hospitalizations/active').then(r => r.data.data),
     refetchInterval: 60_000,
   })
 
   const { data: groomingToday = [] } = useQuery<{ id: number }[]>({
-    queryKey: ['grooming', todayStr],
+    queryKey: ['grooming', todayStr, branchId],
     queryFn: () => api.get(`/api/grooming/bookings?date=${todayStr}`).then(r => r.data.data),
   })
 
@@ -61,9 +65,12 @@ export default function AdminDashboard() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <div className="mb-6">
-        <h2 className="text-headline-sm font-headline font-bold text-primary">{t('admin.dashboard.welcome').replace('{name}', name ?? '')}</h2>
-        <p className="text-body-sm text-on-surface-variant mt-1">{t('admin.dashboard.subtitle')}</p>
+      <div className="mb-6 flex items-start justify-between gap-md flex-wrap">
+        <div>
+          <h2 className="text-headline-sm font-headline font-bold text-primary">{t('admin.dashboard.welcome').replace('{name}', name ?? '')}</h2>
+          <p className="text-body-sm text-on-surface-variant mt-1">{t('admin.dashboard.subtitle')}</p>
+        </div>
+        <BranchSwitcher />
       </div>
 
       {/* Core KPI grid */}

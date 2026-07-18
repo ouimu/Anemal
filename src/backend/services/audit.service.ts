@@ -8,6 +8,7 @@ interface ListAuditParams {
   action?: string
   from?: string
   to?: string
+  branchId?: number | null
 }
 
 const MAX_LIMIT = 100
@@ -22,6 +23,7 @@ export async function listAudit(tenantId: number, params: ListAuditParams) {
     action: params.action,
     from: params.from,
     to: params.to,
+    branchId: params.branchId,
   }
   const [items, total] = await Promise.all([
     auditRepo.list(tenantId, repoParams),

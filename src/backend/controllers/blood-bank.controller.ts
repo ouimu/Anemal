@@ -7,7 +7,7 @@ export async function registerDonor(req: Request, res: Response, next: NextFunct
 }
 
 export async function listDonors(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try { res.json({ success: true, data: await svc.listDonors(req.context!.tenantId) }) }
+  try { res.json({ success: true, data: await svc.listDonors(req.context!.tenantId, req.context?.branchId) }) }
   catch (err) { next(err) }
 }
 
@@ -19,7 +19,7 @@ export async function recordCollection(req: Request, res: Response, next: NextFu
 export async function listBags(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const status = typeof req.query.status === 'string' ? req.query.status : undefined
-    res.json({ success: true, data: await svc.listBags(req.context!.tenantId, status) })
+    res.json({ success: true, data: await svc.listBags(req.context!.tenantId, status, req.context?.branchId) })
   } catch (err) { next(err) }
 }
 
@@ -29,6 +29,6 @@ export async function recordTransfusion(req: Request, res: Response, next: NextF
 }
 
 export async function listTransfusions(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try { res.json({ success: true, data: await svc.listTransfusions(req.context!.tenantId) }) }
+  try { res.json({ success: true, data: await svc.listTransfusions(req.context!.tenantId, req.context?.branchId) }) }
   catch (err) { next(err) }
 }
