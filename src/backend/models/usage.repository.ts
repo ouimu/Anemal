@@ -7,8 +7,13 @@ export function countBranches(tenantId: number) {
   return prisma.branch.count({ where: { tenantId, isActive: true } })
 }
 
+// A pet with no branch assignment (branchId = NULL) is counted under every branch, matching
+// countOwners, countVaccinationsBetween, blood-bank's petBranchFilter, and the users `none`
+// rule — so a NULL-branch pet's owner/vaccinations/donor record and the pet itself all agree.
 export function countActivePets(tenantId: number, branchId?: number | null) {
-  return prisma.pet.count({ where: { tenantId, isActive: true, ...(branchId ? { branchId } : {}) } })
+  return prisma.pet.count({
+    where: { tenantId, isActive: true, ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {}) },
+  })
 }
 
 // Owners have no branchId column of their own; an owner belongs to a branch through their
