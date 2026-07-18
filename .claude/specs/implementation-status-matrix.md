@@ -6,14 +6,43 @@
 > This matrix is the canonical status source; @pm-agent updates it LAST on every
 > task (see CLAUDE.md → Tracking & Documentation).
 >
-> Current totals as of the Main Branch auto-provisioning + clinic password
-> change merge, 2026-07-15 (PR #26, ADR-0015 2026-07-15 amendment): every
-> platform-provisioned tenant now gets a "Main Branch" row inside
-> `createCustomer()`'s existing atomic transaction (PROV-1), plus an
-> idempotent `backfill-main-branch.ts` script (PROV-2) for tenants
-> provisioned before this fix. Clinic-plane password management added:
-> self-service `POST /auth/change-password` (PWD-1, BOLA-impossible by
-> design — no target-user param) and admin-assisted
+> Current totals as of PR #28 (2026-07-17, "clinic-admin password
+> type/generate toggle + surface real error messages"): `PasswordField`
+> reworked as a `usePasswordField()` hook so the toggle can sit in the
+> dialog's action row and switch back from generated to typed mode; finished
+> the `getErrorMessage()` rollout (platform login, customer list, settings
+> pages, `platformApi` 401 interceptor) so real backend error text surfaces.
+> No new tests (verified via `tsc --noEmit` + manual check) — counts
+> unchanged at 993 backend / 283 frontend — on top of PR #24 (2026-07-16,
+> "surface 403 permission-denied on clinic-admin create"): `platform_support`
+> accounts lack `platform.customers.manage` so `POST /:id/admin-users`
+> correctly 403s, but the frontend only special-cased
+> `QUOTA_EXCEEDED`/`USERNAME_CONFLICT` and fell back to a generic error for
+> everything else; fixed to surface the real message. Also on top of PR #25
+> (2026-07-15, infra): bare-collection Vercel API routing fix
+> (`vercel.json`) plus closing the customer-onboarding credential-delivery
+> blocker doc as superseded by PR #23. Neither PR #24 nor #25 changed test
+> counts. Also on top of the Clinic password UI + first-admin lockout guard
+> merge, 2026-07-15/16 (PR #27, ADR-0016): frontend for PR #26's endpoints
+> shipped — admin reset-password field in the Edit User modal (self-edit
+> routed to Preferences, D-2) and a self-service Change Password card on
+> Preferences. New backend guard `assertNotPrimaryAdminDeactivation` blocks
+> deactivation AND role-demotion-away-from-admin on the tenant's primary
+> admin on both `DELETE /users/:id` and `PUT /users/:id` (D-5); restore
+> re-checks seat quota (D-6). Discoverable row-level Deactivate/Restore on
+> User Management; platform-plane CO-4 deliberately exempted (D-7). Backend
+> tests 979 → 993, frontend 256 → 283 (a live parallel `jest` run showed
+> 977/993 passing — 16 failures across 2 suites look like parallel-DB-race
+> artifacts, incl. a known pre-existing `roleRouteMatrix` cron-route issue;
+> re-verify with `--runInBand` before treating as a regression) — on top of
+> the Main Branch
+> auto-provisioning + clinic password change merge, PR #26, ADR-0015
+> 2026-07-15 amendment: every platform-provisioned tenant now gets a "Main
+> Branch" row inside `createCustomer()`'s existing atomic transaction
+> (PROV-1), plus an idempotent `backfill-main-branch.ts` script (PROV-2) for
+> tenants provisioned before this fix. Clinic-plane password management
+> added: self-service `POST /auth/change-password` (PWD-1, BOLA-impossible
+> by design — no target-user param) and admin-assisted
 > `PATCH /users/:id/password` (PWD-2, `staff.manage`-gated, tenant-scoped,
 > 404-not-403 on cross-tenant per ADR-0014). All three password-affecting
 > flows (self-service, admin reset, and the existing platform-plane reset)
@@ -41,7 +70,7 @@
 > top of Pet/EMR Batch A, PR #14, on top of the Codex audit closeout
 > 2026-07-09 Batches 1–5, PRs #8–#13, plus the seedCredentialSmoke
 > isolation-flake fix 4e78e0b:
-> **979 backend tests, 256 frontend tests.**
+> **993 backend tests, 283 frontend tests.**
 > Route-level authorization is machine-verified by
 > `src/backend/tests/integration/roleRouteMatrix.test.ts` — that file is the source
 > of truth for per-route permission coverage; this matrix does not duplicate it.

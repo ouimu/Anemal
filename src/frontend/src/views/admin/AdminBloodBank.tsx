@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
+import { useAuthStore } from '../../store/authStore'
 import MaterialIcon from '../../components/MaterialIcon'
+import BranchSwitcher from '../../components/BranchSwitcher'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface PetLite { id: number; name: string; species: string }
@@ -221,12 +223,13 @@ function BagStatus({ bag }: { bag: Bag }) {
 type Tab = 'donors' | 'bags' | 'transfusions'
 
 export default function AdminBloodBank() {
+  const branchId = useAuthStore(s => s.branchId)
   const [tab, setTab] = useState<Tab>('donors')
   const [modal, setModal] = useState<'donor' | 'collection' | 'transfusion' | null>(null)
 
-  const { data: donors = [] } = useQuery<Donor[]>({ queryKey: ['bb-donors'], queryFn: () => api.get('/api/blood-bank/donors').then(r => r.data.data) })
-  const { data: bags = [] } = useQuery<Bag[]>({ queryKey: ['bb-bags'], queryFn: () => api.get('/api/blood-bank/collections').then(r => r.data.data) })
-  const { data: transfusions = [] } = useQuery<Transfusion[]>({ queryKey: ['bb-transfusions'], queryFn: () => api.get('/api/blood-bank/transfusions').then(r => r.data.data) })
+  const { data: donors = [] } = useQuery<Donor[]>({ queryKey: ['bb-donors', branchId], queryFn: () => api.get('/api/blood-bank/donors').then(r => r.data.data) })
+  const { data: bags = [] } = useQuery<Bag[]>({ queryKey: ['bb-bags', branchId], queryFn: () => api.get('/api/blood-bank/collections').then(r => r.data.data) })
+  const { data: transfusions = [] } = useQuery<Transfusion[]>({ queryKey: ['bb-transfusions', branchId], queryFn: () => api.get('/api/blood-bank/transfusions').then(r => r.data.data) })
 
   const tabs: { key: Tab; label: string; icon: string; count: number }[] = [
     { key: 'donors', label: 'Donors', icon: 'volunteer_activism', count: donors.length },
@@ -247,9 +250,12 @@ export default function AdminBloodBank() {
           <h2 className="text-headline-sm font-headline font-bold text-primary">Blood Bank</h2>
           <p className="text-body-sm text-on-surface-variant mt-1">Donor registry, bag inventory &amp; transfusion records</p>
         </div>
-        {tab === 'donors' && addBtn('Register Donor', () => setModal('donor'))}
-        {tab === 'bags' && addBtn('Record Collection', () => setModal('collection'))}
-        {tab === 'transfusions' && addBtn('Record Transfusion', () => setModal('transfusion'))}
+        <div className="flex items-center gap-sm">
+          <BranchSwitcher />
+          {tab === 'donors' && addBtn('Register Donor', () => setModal('donor'))}
+          {tab === 'bags' && addBtn('Record Collection', () => setModal('collection'))}
+          {tab === 'transfusions' && addBtn('Record Transfusion', () => setModal('transfusion'))}
+        </div>
       </div>
 
       {/* Tabs */}

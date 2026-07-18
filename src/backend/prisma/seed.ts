@@ -122,9 +122,12 @@ async function main() {
   }
 
   // Task 4 (two-step login): seed user_branches for non-admin seed users
-  // so staff/doctor can complete branch selection at login.
+  // so staff/doctor can complete branch selection at login. doctor_a covers BOTH
+  // dev-clinic branches so each branch has visible staff; staff_a is Main-only.
+  // (Admins get no assignment → they appear under every branch.)
   const nonAdminSeedMap: { tenantId: number; username: string; branchId: number }[] = [
     { tenantId: tenantA.id, username: 'doctor_a', branchId: branchA.id },
+    { tenantId: tenantA.id, username: 'doctor_a', branchId: branchA2.id },
     { tenantId: tenantA.id, username: 'staff_a',  branchId: branchA.id },
     { tenantId: tenantB.id, username: 'doctor_b', branchId: branchB.id },
     { tenantId: tenantB.id, username: 'staff_b',  branchId: branchB.id },
@@ -165,6 +168,138 @@ async function main() {
     })
   }
 
+  // ── Demo clinic data for dev-clinic (Tenant A) ──────────────────────────────
+  // Small, branch-assigned dataset so the branch switcher produces clean, verifiable
+  // splits: every pet/appointment/invoice/inpatient belongs to a specific branch.
+  // Main Branch = 3 pets, Downtown Branch = 2 pets (5 total across 4 owners).
+  const doctorA = await prisma.user.findFirst({ where: { tenantId: tenantA.id, username: 'doctor_a' } })
+  const doctorAId = doctorA!.id
+
+  interface DemoOwner {
+    firstName: string; lastName: string; phone: string; email: string
+    pets: { name: string; species: string; breed: string; gender: 'male' | 'female'; weightKg: number; branchId: number }[]
+  }
+  const demoOwners: DemoOwner[] = [
+    {
+      firstName: 'Somchai', lastName: 'Prasit', phone: '081-555-0101', email: 'somchai.prasit@example.com',
+      pets: [{ name: 'Khaolek', species: 'Dog', breed: 'Thai Ridgeback', gender: 'male', weightKg: 24.0, branchId: branchA.id }],
+    },
+    {
+      firstName: 'Pranee', lastName: 'Chaowalit', phone: '081-555-0102', email: 'pranee.chaowalit@example.com',
+      pets: [{ name: 'Muffin', species: 'Cat', breed: 'Persian', gender: 'female', weightKg: 4.1, branchId: branchA.id }],
+    },
+    {
+      firstName: 'Anong', lastName: 'Ratanaporn', phone: '081-555-0103', email: 'anong.ratanaporn@example.com',
+      pets: [
+        { name: 'Thongdaeng', species: 'Dog', breed: 'Golden Retriever', gender: 'male', weightKg: 29.5, branchId: branchA2.id },
+        { name: 'Nomyen', species: 'Cat', breed: 'Siamese', gender: 'female', weightKg: 3.7, branchId: branchA2.id },
+      ],
+    },
+    {
+      firstName: 'Wichai', lastName: 'Sombat', phone: '081-555-0104', email: 'wichai.sombat@example.com',
+      pets: [{ name: 'Guagai', species: 'Dog', breed: 'Pomeranian', gender: 'male', weightKg: 3.2, branchId: branchA.id }],
+    },
+  ]
+
+  // petByName lets later demo records (appointments, invoices, inpatients, donors) link by pet name.
+  const petByName: Record<string, { id: number; branchId: number }> = {}
+  for (const o of demoOwners) {
+    let owner = await prisma.owner.findFirst({ where: { tenantId: tenantA.id, phone: o.phone } })
+    if (!owner) {
+      owner = await prisma.owner.create({
+        data: { tenantId: tenantA.id, firstName: o.firstName, lastName: o.lastName, phone: o.phone, email: o.email },
+      })
+      console.log(`  ✓ owner — ${o.firstName} ${o.lastName}`)
+    }
+    for (const petData of o.pets) {
+      let pet = await prisma.pet.findFirst({ where: { tenantId: tenantA.id, ownerId: owner.id, name: petData.name } })
+      if (!pet) {
+        pet = await prisma.pet.create({
+          data: {
+            tenantId: tenantA.id, ownerId: owner.id, branchId: petData.branchId,
+            name: petData.name, species: petData.species, breed: petData.breed, gender: petData.gender, weightKg: petData.weightKg,
+          },
+        })
+        console.log(`  ✓ pet — ${petData.name} (${o.firstName}'s ${petData.species.toLowerCase()})`)
+      }
+      petByName[petData.name] = { id: pet.id, branchId: petData.branchId }
+    }
+  }
+
+  const now = new Date()
+  const todayAt = (h: number) => new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, 0, 0)
+  const thisMonthAt = (day: number, h: number) => new Date(now.getFullYear(), now.getMonth(), day, h, 0, 0)
+
+  // Appointments — 2 at Main (1 today, 1 earlier this month), 1 at Downtown (today).
+  const demoAppointments = [
+    { pet: 'Khaolek',    scheduledAt: todayAt(10),        reason: 'Annual vaccination',    branchId: branchA.id },
+    { pet: 'Muffin',     scheduledAt: thisMonthAt(3, 14), reason: 'Skin check',            branchId: branchA.id },
+    { pet: 'Thongdaeng', scheduledAt: todayAt(11),        reason: 'Post-surgery follow-up', branchId: branchA2.id },
+  ]
+  for (const a of demoAppointments) {
+    const pet = petByName[a.pet]
+    const exists = await prisma.appointment.findFirst({ where: { tenantId: tenantA.id, petId: pet.id, reason: a.reason } })
+    if (!exists) {
+      await prisma.appointment.create({
+        data: { tenantId: tenantA.id, branchId: a.branchId, petId: pet.id, doctorId: doctorAId, scheduledAt: a.scheduledAt, reason: a.reason },
+      })
+      console.log(`  ✓ appointment — ${a.pet} (${a.reason})`)
+    }
+  }
+
+  // Invoices (paid, earlier this month) — 2 at Main, 1 at Downtown. issuedAt is backdated
+  // a few days so it falls inside the dashboard's [1st-of-month, today) revenue window
+  // (the revenue-by-branch report is exclusive of "today").
+  const demoInvoices = [
+    { pet: 'Khaolek',    invoiceNo: 'INV-DEMO-001', total: 500,  branchId: branchA.id,  day: 2 },
+    { pet: 'Muffin',     invoiceNo: 'INV-DEMO-002', total: 800,  branchId: branchA.id,  day: 4 },
+    { pet: 'Thongdaeng', invoiceNo: 'INV-DEMO-003', total: 1200, branchId: branchA2.id, day: 5 },
+  ]
+  for (const inv of demoInvoices) {
+    const pet = petByName[inv.pet]
+    const exists = await prisma.invoice.findFirst({ where: { tenantId: tenantA.id, invoiceNo: inv.invoiceNo } })
+    if (!exists) {
+      // Clamp to at most yesterday so a run on the 1st–5th of the month still lands in-window.
+      const issuedDay = Math.min(inv.day, Math.max(1, now.getDate() - 1))
+      const issuedAt = thisMonthAt(issuedDay, 12)
+      await prisma.invoice.create({
+        data: {
+          tenantId: tenantA.id, branchId: inv.branchId, petId: pet.id, invoiceNo: inv.invoiceNo,
+          subtotal: inv.total, taxAmount: 0, totalAmount: inv.total, paymentStatus: 'paid',
+          issuedAt, paidAt: issuedAt,
+          items: { create: [{ tenantId: tenantA.id, description: 'Consultation & treatment', itemType: 'service', quantity: 1, unitPrice: inv.total, totalPrice: inv.total }] },
+        },
+      })
+      console.log(`  ✓ invoice — ${inv.invoiceNo} (${inv.pet})`)
+    }
+  }
+
+  // Hospitalizations (admitted / current inpatients) — 1 at Main, 1 at Downtown.
+  const demoInpatients = [
+    { pet: 'Muffin',     reason: 'Observation after dental surgery', cageNo: 'A-01', branchId: branchA.id },
+    { pet: 'Thongdaeng', reason: 'IV fluids for recovery',           cageNo: 'D-02', branchId: branchA2.id },
+  ]
+  for (const h of demoInpatients) {
+    const pet = petByName[h.pet]
+    const exists = await prisma.hospitalization.findFirst({ where: { tenantId: tenantA.id, petId: pet.id, status: 'admitted' } })
+    if (!exists) {
+      await prisma.hospitalization.create({
+        data: { tenantId: tenantA.id, branchId: h.branchId, petId: pet.id, reason: h.reason, cageNo: h.cageNo, status: 'admitted', doctorInCharge: doctorAId, dailyRate: 800 },
+      })
+      console.log(`  ✓ inpatient — ${h.pet} (${h.cageNo})`)
+    }
+  }
+
+  // Blood-bank donors — 1 dog per branch (branch derived from the donor pet's branchId).
+  for (const donorPetName of ['Khaolek', 'Thongdaeng']) {
+    const pet = petByName[donorPetName]
+    const exists = await prisma.bloodDonor.findFirst({ where: { tenantId: tenantA.id, petId: pet.id } })
+    if (!exists) {
+      await prisma.bloodDonor.create({ data: { tenantId: tenantA.id, petId: pet.id, bloodType: 'DEA 1.1+' } })
+      console.log(`  ✓ blood donor — ${donorPetName}`)
+    }
+  }
+
   // T-5C-02 — Platform super admin (platform plane, not tenant-scoped)
   const platformEmail    = process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.app'
   const platformPassword = process.env.PLATFORM_ADMIN_PASSWORD || 'PlatformAdmin1!'
@@ -181,6 +316,10 @@ async function main() {
   console.log(`   Tenant B: ${tenantB.subdomain} (id: ${tenantB.id})`)
 }
 
-main()
-  .catch((e) => { console.error(e); process.exit(1) })
-  .finally(() => prisma.$disconnect())
+export { main }
+
+if (require.main === module) {
+  main()
+    .catch((e) => { console.error(e); process.exit(1) })
+    .finally(() => prisma.$disconnect())
+}

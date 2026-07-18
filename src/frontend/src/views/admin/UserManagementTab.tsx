@@ -9,6 +9,7 @@ import { useUserRolesQuery } from '../../hooks/useUserRoles'
 import { useT } from '../../i18n'
 import { describeSaveError } from '../../utils/errorMessages'
 import MaterialIcon from '../../components/MaterialIcon'
+import BranchSwitcher from '../../components/BranchSwitcher'
 
 interface User { id: number; name: string; username: string; email: string | null; role: string; isActive: boolean; createdAt: string; branchId: number | null }
 interface Branch { id: number; name: string }
@@ -232,8 +233,9 @@ function DeactivateConfirmDialog({ user, onCancel, onConfirmed }: { user: User; 
 export default function UserManagementTab() {
   const t = useT()
   const qc = useQueryClient()
+  const branchId = useAuthStore(s => s.branchId)
   const { data: users = [], isLoading } = useQuery<User[]>({
-    queryKey: ['admin', 'users'],
+    queryKey: ['admin', 'users', branchId],
     queryFn: () => api.get('/users').then(r => r.data.data),
   })
   const [modal, setModal] = useState<(Partial<User> & { isNew?: boolean }) | null>(null)
@@ -266,6 +268,9 @@ export default function UserManagementTab() {
         />
       )}
       <div className="space-y-6">
+        <div className="flex items-center justify-end">
+          <BranchSwitcher />
+        </div>
         {/* Active users */}
         <section>
           <div className="flex items-center justify-between mb-3">

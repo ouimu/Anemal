@@ -35,7 +35,7 @@ export const updateUserSchema = z.object({
 
 export async function listUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await userService.listUsers(req.context!.tenantId)
+    const data = await userService.listUsers(req.context!.tenantId, req.context?.branchId)
     res.json({ success: true, data })
   } catch (err) { next(err) }
 }

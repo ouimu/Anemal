@@ -15,8 +15,17 @@ export function createDonor(tenantId: number, data: { petId: number; bloodType: 
   return prisma.bloodDonor.create({ data: { tenantId, ...data } })
 }
 
-export function listDonors(tenantId: number) {
-  return prisma.bloodDonor.findMany({ where: { tenantId }, include: { pet: petSel }, orderBy: { createdAt: 'desc' } })
+// ponytail: NULL-branch pets (no branch assigned) show up in every branch's view, same rule as usage.repository's vaccination query.
+function petBranchFilter(branchId?: number | null) {
+  return branchId ? { OR: [{ branchId }, { branchId: null }] } : undefined
+}
+
+export function listDonors(tenantId: number, branchId?: number | null) {
+  return prisma.bloodDonor.findMany({
+    where: { tenantId, ...(branchId ? { pet: petBranchFilter(branchId) } : {}) },
+    include: { pet: petSel },
+    orderBy: { createdAt: 'desc' },
+  })
 }
 
 export function createDonation(
@@ -30,9 +39,13 @@ export function createDonation(
   })
 }
 
-export function listDonations(tenantId: number, status?: string) {
+export function listDonations(tenantId: number, status?: string, branchId?: number | null) {
   return prisma.bloodDonation.findMany({
-    where: { tenantId, ...(status ? { status } : {}) },
+    where: {
+      tenantId,
+      ...(status ? { status } : {}),
+      ...(branchId ? { donor: { pet: petBranchFilter(branchId) } } : {}),
+    },
     include: { donor: { include: { pet: petSel } } },
     orderBy: { collectedAt: 'desc' },
   })
@@ -55,6 +68,10 @@ export function createTransfusion(
   })
 }
 
-export function listTransfusions(tenantId: number) {
-  return prisma.bloodTransfusion.findMany({ where: { tenantId }, orderBy: { administeredAt: 'desc' }, take: 100 })
+export function listTransfusions(tenantId: number, branchId?: number | null) {
+  return prisma.bloodTransfusion.findMany({
+    where: { tenantId, ...(branchId ? { recipientPet: petBranchFilter(branchId) } : {}) },
+    orderBy: { administeredAt: 'desc' },
+    take: 100,
+  })
 }

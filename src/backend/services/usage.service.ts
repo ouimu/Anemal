@@ -32,7 +32,7 @@ export async function getPlatformCustomerUsage(
   return { branches, users, owners, caps: effectiveQuota, overPlan }
 }
 
-export async function getClinicUsage(tenantId: number) {
+export async function getClinicUsage(tenantId: number, branchId?: number | null) {
   const now   = new Date()
   const start = new Date(now.getFullYear(), now.getMonth(), 1)
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -48,13 +48,13 @@ export async function getClinicUsage(tenantId: number) {
     invoicesThisMonth,
     settings,
   ] = await Promise.all([
-    usageRepo.countActivePets(tenantId),
-    usageRepo.countOwners(tenantId),
-    usageRepo.countUsers(tenantId),
-    usageRepo.countActiveUsers(tenantId),
-    usageRepo.countAppointmentsSince(tenantId, start),
-    usageRepo.countAppointmentsBetween(tenantId, today, tomorrow),
-    usageRepo.countInvoicesSince(tenantId, start),
+    usageRepo.countActivePets(tenantId, branchId),
+    usageRepo.countOwners(tenantId, branchId),
+    usageRepo.countUsers(tenantId, branchId),
+    usageRepo.countActiveUsers(tenantId, branchId),
+    usageRepo.countAppointmentsSince(tenantId, start, branchId),
+    usageRepo.countAppointmentsBetween(tenantId, today, tomorrow, branchId),
+    usageRepo.countInvoicesSince(tenantId, start, branchId),
     usageRepo.findSettings(tenantId),
   ])
 

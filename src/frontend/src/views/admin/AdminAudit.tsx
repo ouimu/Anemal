@@ -1,7 +1,9 @@
 import { Fragment, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import api from '../../utils/api'
+import { useAuthStore } from '../../store/authStore'
 import MaterialIcon from '../../components/MaterialIcon'
+import BranchSwitcher from '../../components/BranchSwitcher'
 
 interface AuditLog {
   id: number
@@ -34,6 +36,7 @@ function formatTime(iso: string) {
 }
 
 export default function AdminAudit() {
+  const branchId = useAuthStore(s => s.branchId)
   const [page, setPage] = useState(1)
   const [userId, setUserId] = useState<number | ''>('')
   const [action, setAction] = useState('')
@@ -42,7 +45,7 @@ export default function AdminAudit() {
   const [expanded, setExpanded] = useState<number | null>(null)
 
   const { data: users = [] } = useQuery<UserLite[]>({
-    queryKey: ['admin', 'users-lite'],
+    queryKey: ['admin', 'users-lite', branchId],
     queryFn: () => api.get('/users').then(r => r.data.data),
   })
   const userName = (id: number | null) => {
@@ -57,7 +60,7 @@ export default function AdminAudit() {
   if (to)     params.set('to', to)
 
   const { data, isLoading, isError } = useQuery<AuditPage>({
-    queryKey: ['audit', page, userId, action, from, to],
+    queryKey: ['audit', page, userId, action, from, to, branchId],
     queryFn: () => api.get(`/api/audit?${params.toString()}`).then(r => r.data.data),
   })
 
@@ -71,11 +74,14 @@ export default function AdminAudit() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <div className="mb-4">
-        <h2 className="text-headline-sm font-headline font-bold text-primary">Audit Log</h2>
-        <p className="text-body-sm text-on-surface-variant mt-1">
-          Write-once activity trail · {total} record{total !== 1 ? 's' : ''}
-        </p>
+      <div className="mb-4 flex items-start justify-between gap-md flex-wrap">
+        <div>
+          <h2 className="text-headline-sm font-headline font-bold text-primary">Audit Log</h2>
+          <p className="text-body-sm text-on-surface-variant mt-1">
+            Write-once activity trail · {total} record{total !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <BranchSwitcher />
       </div>
 
       {/* Filter bar */}

@@ -47,8 +47,8 @@ export async function registerDonor(tenantId: number, data: DonorInput) {
   return bbRepo.createDonor(tenantId, data)
 }
 
-export function listDonors(tenantId: number) {
-  return bbRepo.listDonors(tenantId)
+export function listDonors(tenantId: number, branchId?: number | null) {
+  return bbRepo.listDonors(tenantId, branchId)
 }
 
 export async function recordCollection(tenantId: number, data: CollectionInput, collectedBy?: number) {
@@ -69,8 +69,8 @@ export async function recordCollection(tenantId: number, data: CollectionInput, 
   })
 }
 
-export function listBags(tenantId: number, status?: string) {
-  return bbRepo.listDonations(tenantId, status)
+export function listBags(tenantId: number, status?: string, branchId?: number | null) {
+  return bbRepo.listDonations(tenantId, status, branchId)
 }
 
 export async function recordTransfusion(tenantId: number, data: TransfusionInput, administeredBy?: number) {
@@ -97,6 +97,6 @@ export async function recordTransfusion(tenantId: number, data: TransfusionInput
   })
 }
 
-export function listTransfusions(tenantId: number) {
-  return bbRepo.listTransfusions(tenantId)
+export function listTransfusions(tenantId: number, branchId?: number | null) {
+  return bbRepo.listTransfusions(tenantId, branchId)
 }
