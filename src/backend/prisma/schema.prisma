@@ -906,6 +906,7 @@ model Plan {
   maxBranches Int     @default(1)
   maxUsers    Int     @default(5)
   maxOwners   Int? // NULL = unlimited
+  maxPets     Int? // NULL = unlimited
   features    Json    @default("{}")
   isActive    Boolean @default(true)
 
@@ -921,6 +922,7 @@ model TenantQuota {
   maxBranches Int?
   maxUsers    Int?
   maxOwners   Int?
+  maxPets     Int?
   updatedById Int? // platform_users.id (cross-plane FK intentionally not enforced at DB level)
   updatedAt   DateTime @updatedAt
 
