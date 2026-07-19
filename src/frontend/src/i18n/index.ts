@@ -51,7 +51,7 @@ const en: Dict = {
   'page./settings/payment': 'Payment',
   'page./settings/integrations': 'Integrations',
   'page./settings/preferences': 'My Preferences',
-  'page./clinic-admin/settings': 'Appointment Settings',
+  'page./clinic-admin/settings': 'Appointment',
   'page./preferences': 'My Preferences',
 
   // Sidebar nav — clinic
@@ -67,7 +67,7 @@ const en: Dict = {
   'nav.overview': 'Overview',
   'nav.users': 'Users & Roles',
   'nav.usage': 'Usage Stats',
-  'nav.appointmentSettings': 'Appointment Settings',
+  'nav.appointmentSettings': 'Appointment',
   'nav.clinicSettings': 'Clinic Settings',
   'nav.myPreferences': 'My Preferences',
   'nav.backToDashboard': 'Back to Dashboard',
@@ -370,7 +370,7 @@ const th: Dict = {
   'page./settings/payment': 'การชำระเงิน',
   'page./settings/integrations': 'การเชื่อมต่อ',
   'page./settings/preferences': 'การตั้งค่าส่วนตัว',
-  'page./clinic-admin/settings': 'ตั้งค่าการนัดหมาย',
+  'page./clinic-admin/settings': 'การนัดหมาย',
   'page./preferences': 'การตั้งค่าส่วนตัว',
 
   'nav.dashboard': 'แดชบอร์ด',
@@ -384,7 +384,7 @@ const th: Dict = {
   'nav.overview': 'ภาพรวม',
   'nav.users': 'ผู้ใช้และบทบาท',
   'nav.usage': 'สถิติการใช้งาน',
-  'nav.appointmentSettings': 'ตั้งค่าการนัดหมาย',
+  'nav.appointmentSettings': 'การนัดหมาย',
   'nav.clinicSettings': 'ตั้งค่าคลินิก',
   'nav.myPreferences': 'การตั้งค่าส่วนตัว',
   'nav.backToDashboard': 'กลับสู่แดชบอร์ด',
