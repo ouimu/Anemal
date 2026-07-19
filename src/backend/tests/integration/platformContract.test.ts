@@ -179,6 +179,67 @@ describe('platform contract — Plan CRUD maxPets (Task 3)', () => {
   })
 })
 
+describe('platform contract — maxPets in effective quota resolver (Task 4)', () => {
+  let server: Server
+  let platformToken = ''
+  let platformUserId = 0
+  let planId = 0
+  let testTenantId = 0
+
+  const auth = (token: string) => ({ Authorization: `Bearer ${token}` })
+
+  beforeAll(async () => {
+    await new Promise<void>(resolve => { server = app.listen(0, resolve) })
+    server.keepAliveTimeout = 0
+
+    const platformUser = await prisma.platformUser.create({
+      data: {
+        name:         'PlatformContractQuotaMaxPetsAdmin',
+        email:        'platform-contract-quota-maxpets@test.anemal',
+        passwordHash: 'x',
+        role:         'platform_super_admin',
+      },
+    })
+    platformUserId = platformUser.id
+    platformToken = signPlatformToken({ platformUserId: platformUser.id, plane: 'platform', role: 'platform_super_admin' })
+
+    const plan = await prisma.plan.create({
+      data: { key: `quota_maxpets_${Date.now()}`, name: 'Quota MaxPets Test Plan', priceMonth: 0, maxBranches: 1, maxUsers: 1, maxPets: 300 },
+    })
+    planId = plan.id
+
+    const tenant = await prisma.tenant.create({
+      data: { name: 'Quota MaxPets Tenant', subdomain: `quota-maxpets-${Date.now()}`, planId },
+    })
+    testTenantId = tenant.id
+  })
+
+  afterAll(async () => {
+    if (testTenantId) await prisma.tenant.deleteMany({ where: { id: testTenantId } })
+    if (planId) await prisma.plan.deleteMany({ where: { id: planId } })
+    if (platformUserId) await prisma.platformUser.deleteMany({ where: { id: platformUserId } })
+    await prisma.$disconnect()
+    server.closeAllConnections()
+    await new Promise<void>(resolve => server.close(() => resolve()))
+  }, 30000)
+
+  test('plan-maxpets-04: GET /platform/plans returns maxPets on every plan', async () => {
+    const res = await request(server).get('/platform/plans').set(auth(platformToken)).expect(200)
+    expect(res.body.data.length).toBeGreaterThan(0)
+    res.body.data.forEach((plan: any) => {
+      expect(plan).toHaveProperty('maxPets')
+    })
+  })
+
+  test('plan-maxpets-05: getEffectiveQuota resolves maxPets — override wins over plan', async () => {
+    const res = await request(server)
+      .get(`/platform/customers/${testTenantId}/quota`)
+      .set(auth(platformToken))
+      .expect(200)
+    expect(res.body.data.effective).toHaveProperty('maxPets')
+  })
+})
+
 describe('platform contract — updateAllSettingsSchema', () => {
   // KEEP IN SYNC with src/frontend/src/hooks/usePlatformSettings.ts:46 (platformApi.put('/platform/settings', payload))
   it('accepts a representative valid aggregate-settings payload', () => {
