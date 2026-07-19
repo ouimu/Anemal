@@ -151,7 +151,7 @@ export default function AdminDashboard() {
           <h3 className="font-semibold text-on-surface mb-3 text-body-sm">{t('admin.dashboard.quickActions')}</h3>
           {[
             { href: '/admin/users',    icon: 'group',      label: 'Manage users & roles' },
-            { href: '/admin/profile',  icon: 'business',   label: 'Edit clinic profile' },
+            { href: '/settings/clinic-profile', icon: 'business', label: 'Edit clinic profile' },
             { href: '/admin/usage',    icon: 'bar_chart',  label: 'View usage report' },
             { href: '/admin/branches', icon: 'apartment',  label: 'Manage branches' },
           ].map(a => (

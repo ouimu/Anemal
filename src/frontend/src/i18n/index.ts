@@ -67,7 +67,6 @@ const en: Dict = {
   // Sidebar nav — admin
   'nav.overview': 'Overview',
   'nav.users': 'Users & Roles',
-  'nav.clinicProfile': 'Clinic Profile',
   'nav.usage': 'Usage Stats',
   'nav.appointmentSettings': 'Appointment Settings',
   'nav.clinicSettings': 'Clinic Settings',
@@ -387,7 +386,6 @@ const th: Dict = {
   'nav.grooming': 'อาบน้ำตัดขน',
   'nav.overview': 'ภาพรวม',
   'nav.users': 'ผู้ใช้และบทบาท',
-  'nav.clinicProfile': 'ข้อมูลคลินิก',
   'nav.usage': 'สถิติการใช้งาน',
   'nav.appointmentSettings': 'ตั้งค่าการนัดหมาย',
   'nav.clinicSettings': 'ตั้งค่าคลินิก',

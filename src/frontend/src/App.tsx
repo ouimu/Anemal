@@ -12,7 +12,6 @@ import PlatformLayout from './layouts/PlatformLayout'
 // ── Admin pages ──────────────────────────────────────────────────────────────
 const AdminDashboard    = lazy(() => import('./views/admin/AdminDashboard'))
 const UserManagementTab = lazy(() => import('./views/admin/UserManagementTab'))
-const AdminProfile      = lazy(() => import('./views/admin/AdminProfile'))
 const AdminUsage        = lazy(() => import('./views/admin/AdminUsage'))
 const AdminSettings     = lazy(() => import('./views/admin/AdminSettings'))
 const AdminSubscription = lazy(() => import('./views/admin/AdminSubscription'))
@@ -97,7 +96,8 @@ export default function App() {
           <Route index element={<Navigate to="/clinic-admin/dashboard" replace/>}/>
           <Route path="dashboard"    element={<RequirePermission perm="clinic.profile.view"><AdminDashboard/></RequirePermission>}/>
           <Route path="users"        element={<RequirePermission perm="staff.view"><UserManagementTab/></RequirePermission>}/>
-          <Route path="profile"      element={<RequirePermission perm="clinic.profile.view"><AdminProfile/></RequirePermission>}/>
+          {/* Clinic Profile de-duplicated — the canonical editor is the Clinic Settings page */}
+          <Route path="profile"      element={<Navigate to="/settings/clinic-profile" replace/>}/>
           <Route path="usage"        element={<RequirePermission perm="clinic.profile.view"><AdminUsage/></RequirePermission>}/>
           <Route path="settings"     element={<RequirePermission perm="clinic.profile.view"><AdminSettings/></RequirePermission>}/>
           <Route path="subscription" element={<RequirePermission perm="clinic.profile.view"><AdminSubscription/></RequirePermission>}/>
