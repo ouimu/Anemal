@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
 import MaterialIcon from '../../components/MaterialIcon'
-import Toggle from '../../components/Toggle'
 import { useAuthStore } from '../../store/authStore'
 import {
   useNotificationsSettings,
@@ -10,22 +9,20 @@ import {
 } from '../../hooks/useNotificationsSettings'
 import { getErrorMessage } from '../../utils/errorMessage'
 
+// Reminder on/off flags (sms/lineRemindersEnabled) deliberately live on the
+// appointment settings page, not here — this page owns provider credentials only.
 interface NotificationsForm {
   lineOaToken: string
-  lineRemindersEnabled: boolean
   smsProvider: 'thaibulksms' | 'thsms' | ''
   smsApiKey: string
   smsSenderName: string
-  smsRemindersEnabled: boolean
 }
 
 const EMPTY_FORM: NotificationsForm = {
   lineOaToken: '',
-  lineRemindersEnabled: false,
   smsProvider: '',
   smsApiKey: '',
   smsSenderName: '',
-  smsRemindersEnabled: false,
 }
 
 export default function NotificationsPage() {
@@ -49,11 +46,9 @@ export default function NotificationsPage() {
     if (!data) return
     setForm({
       lineOaToken: data.lineOaToken ?? '',
-      lineRemindersEnabled: data.lineRemindersEnabled ?? false,
       smsProvider: (data.smsProvider ?? '') as 'thaibulksms' | 'thsms' | '',
       smsApiKey: data.smsApiKey ?? '',
       smsSenderName: data.smsSenderName ?? '',
-      smsRemindersEnabled: data.smsRemindersEnabled ?? false,
     })
   }, [data])
 
@@ -75,10 +70,8 @@ export default function NotificationsPage() {
     e.preventDefault()
     const MASK_PREFIX = '••••'
     const payload: NotificationsInput = {
-      lineRemindersEnabled: form.lineRemindersEnabled,
-      smsProvider:          form.smsProvider,
-      smsSenderName:        form.smsSenderName,
-      smsRemindersEnabled:  form.smsRemindersEnabled,
+      smsProvider:   form.smsProvider,
+      smsSenderName: form.smsSenderName,
     }
     if (!form.lineOaToken.startsWith(MASK_PREFIX)) payload.lineOaToken = form.lineOaToken
     if (!form.smsApiKey.startsWith(MASK_PREFIX))   payload.smsApiKey   = form.smsApiKey
@@ -168,16 +161,6 @@ export default function NotificationsPage() {
           </div>
         </div>
 
-        {/* LINE Reminders toggle */}
-        <div className="flex items-center justify-between">
-          <span className="text-body-md text-on-surface">Send appointment reminders via LINE</span>
-          <Toggle
-            checked={form.lineRemindersEnabled}
-            onChange={v => setForm(p => ({ ...p, lineRemindersEnabled: v }))}
-            ariaLabel="Toggle LINE reminders"
-          />
-        </div>
-
         {/* Test LINE button */}
         <button
           type="button"
@@ -241,16 +224,6 @@ export default function NotificationsPage() {
             onChange={e => setForm(p => ({ ...p, smsSenderName: e.target.value }))}
             placeholder="e.g. ClinicName"
             className="min-h-[44px] px-md border border-outline-variant rounded-xl text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary w-full"
-          />
-        </div>
-
-        {/* SMS Reminders toggle */}
-        <div className="flex items-center justify-between">
-          <span className="text-body-md text-on-surface">Send appointment reminders via SMS</span>
-          <Toggle
-            checked={form.smsRemindersEnabled}
-            onChange={v => setForm(p => ({ ...p, smsRemindersEnabled: v }))}
-            ariaLabel="Toggle SMS reminders"
           />
         </div>
 
