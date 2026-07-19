@@ -332,9 +332,6 @@ export default function UserManagementTab() {
         />
       )}
       <div className="space-y-6">
-        <Can perm="clinic.profile.edit">
-          <SecurityCard />
-        </Can>
         <div className="flex items-center justify-end">
           <BranchSwitcher />
         </div>
@@ -415,6 +412,11 @@ export default function UserManagementTab() {
             </div>
           </section>
         )}
+
+        {/* Security (idle timeout) — below the user list */}
+        <Can perm="clinic.profile.edit">
+          <SecurityCard />
+        </Can>
       </div>
     </>
   )
