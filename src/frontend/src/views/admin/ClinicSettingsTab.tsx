@@ -32,7 +32,7 @@ export default function ClinicSettingsTab() {
   if (isLoading) return <p className="text-sm text-on-surface-variant py-8 text-center">Loading…</p>
 
   return (
-    <form onSubmit={handleSave} className="space-y-6">
+    <form onSubmit={handleSave} className="max-w-5xl mx-auto p-6 space-y-6">
       {/* Appointments */}
       <section>
         <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Appointment defaults</h3>
