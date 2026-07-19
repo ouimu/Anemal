@@ -148,7 +148,7 @@ export default function ProfileMenu() {
 
           {/* My Preferences (change password, notifications) */}
           <Link
-            to="/settings/preferences"
+            to="/preferences"
             role="menuitem"
             onClick={() => setOpen(false)}
             className="w-full min-h-[44px] flex items-center gap-sm px-md rounded-lg text-body-sm text-on-surface-variant hover:bg-surface-container transition-colors"

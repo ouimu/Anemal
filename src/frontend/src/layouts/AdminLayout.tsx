@@ -10,10 +10,13 @@ import TopNav from '../components/TopNav'
 
 const NAV = [
   { to: '/clinic-admin/dashboard',    icon: 'dashboard',    label: 'nav.overview' },
+  // Clinic-wide settings shell (/settings/*) surfaced from the dashboard sidebar,
+  // directly under Overview — distinct from the appointment/notification config below.
+  { to: '/settings/clinic-profile',   icon: 'tune',         label: 'nav.clinicSettings' },
   { to: '/clinic-admin/users',        icon: 'group',        label: 'nav.users' },
   { to: '/clinic-admin/profile',      icon: 'business',     label: 'nav.clinicProfile' },
   { to: '/clinic-admin/usage',        icon: 'bar_chart',    label: 'nav.usage' },
-  { to: '/clinic-admin/settings',     icon: 'settings',     label: 'nav.settings' },
+  { to: '/clinic-admin/settings',     icon: 'event',        label: 'nav.appointmentSettings' },
   { to: '/clinic-admin/subscription', icon: 'credit_card',  label: 'nav.subscription' },
   { to: '/clinic-admin/branches',     icon: 'apartment',    label: 'nav.branches' },
   { to: '/clinic-admin/blood-bank',   icon: 'bloodtype',    label: 'nav.bloodBank' },

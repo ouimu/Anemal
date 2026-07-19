@@ -1,22 +1,15 @@
 ﻿// @uiux-agent spec: toggle rows, time pickers, slot duration — tablet-friendly
 import React, { useState, useEffect } from 'react'
 import { useAdminSettings, useUpdateSettings } from '../../hooks/useAdmin'
-
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button type="button" onClick={() => onChange(!checked)} aria-pressed={checked}
-      className={`w-11 h-6 rounded-full relative transition-colors flex-shrink-0 ${checked ? 'bg-secondary' : 'bg-surface-container-high'}`}>
-      <span className={`absolute top-1 w-4 h-4 bg-surface rounded-full shadow transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`}/>
-    </button>
-  )
-}
+import Toggle from '../../components/Toggle'
 
 export default function ClinicSettingsTab() {
   const { data, isLoading } = useAdminSettings()
   const update = useUpdateSettings()
+  // Idle timeout lives on the Users & Roles page now (it is a session/security policy).
   const [form, setForm] = useState({
     defaultSlotMinutes: 30, workStartTime: '08:00', workEndTime: '18:00',
-    smsRemindersEnabled: true, lineRemindersEnabled: true, idleTimeoutMinutes: 15,
+    smsRemindersEnabled: true, lineRemindersEnabled: true,
   })
   const [saved, setSaved] = useState(false)
 
@@ -27,7 +20,6 @@ export default function ClinicSettingsTab() {
       workEndTime:         data.workEndTime,
       smsRemindersEnabled: data.smsRemindersEnabled,
       lineRemindersEnabled:data.lineRemindersEnabled,
-      idleTimeoutMinutes:  data.idleTimeoutMinutes,
     })
   }, [data])
 
@@ -81,30 +73,10 @@ export default function ClinicSettingsTab() {
                 <p className="text-xs text-on-surface-variant mt-0.5">{sub}</p>
               </div>
               <Toggle checked={form[key as keyof typeof form] as boolean}
-                onChange={v => setForm(p => ({ ...p, [key]: v }))}/>
+                onChange={v => setForm(p => ({ ...p, [key]: v }))}
+                ariaLabel={`Toggle ${label}`}/>
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* Security */}
-      <section>
-        <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Security</h3>
-        <div className="bg-surface border border-outline-variant rounded-xl p-5">
-          <div className="flex flex-col gap-1 max-w-xs">
-            <label htmlFor="idleTimeoutMinutes" className="text-xs text-on-surface-variant">
-              Idle timeout (minutes)
-            </label>
-            <input
-              id="idleTimeoutMinutes" type="number" min={5} max={120}
-              value={form.idleTimeoutMinutes}
-              onChange={e => setForm(p => ({ ...p, idleTimeoutMinutes: Number(e.target.value) }))}
-              className="min-h-[44px] px-3 border border-outline-variant rounded-lg text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-            <p className="text-xs text-on-surface-variant mt-1">
-              Automatically log out any user after this many minutes of inactivity. 5–120 minutes.
-            </p>
-          </div>
         </div>
       </section>
 

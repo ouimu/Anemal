@@ -156,8 +156,19 @@ export default function App() {
           <Route path="notifications" element={<RequirePermission perm="clinic.integrations.edit"><NotificationsPage/></RequirePermission>}/>
           <Route path="payment"       element={<RequirePermission perm="clinic.payment.edit"><PaymentPage/></RequirePermission>}/>
           <Route path="integrations"  element={<RequirePermission perm="clinic.integrations.edit"><IntegrationsPage/></RequirePermission>}/>
-          <Route path="preferences"   element={<PreferencesPage/>}/>
         </Route>
+
+        {/* ── My Preferences (personal, all clinic roles) ── standalone, outside the clinic settings shell */}
+        <Route
+          path="/preferences"
+          element={
+            <RequireAuth><RequirePlane plane="clinic">
+              <div className="min-h-screen bg-background"><PreferencesPage/></div>
+            </RequirePlane></RequireAuth>
+          }
+        />
+        {/* Back-compat: old in-shell path → standalone page */}
+        <Route path="/settings/preferences" element={<Navigate to="/preferences" replace/>}/>
 
         {/* Access denied stub — target of RequirePermission on deny */}
         <Route path="/403" element={<ForbiddenView/>}/>

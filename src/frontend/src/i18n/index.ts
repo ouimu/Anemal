@@ -52,6 +52,8 @@ const en: Dict = {
   'page./settings/payment': 'Payment',
   'page./settings/integrations': 'Integrations',
   'page./settings/preferences': 'My Preferences',
+  'page./clinic-admin/settings': 'Appointment Settings',
+  'page./preferences': 'My Preferences',
 
   // Sidebar nav — clinic
   'nav.dashboard': 'Dashboard',
@@ -67,8 +69,10 @@ const en: Dict = {
   'nav.users': 'Users & Roles',
   'nav.clinicProfile': 'Clinic Profile',
   'nav.usage': 'Usage Stats',
-  'nav.settings': 'Settings',
+  'nav.appointmentSettings': 'Appointment Settings',
+  'nav.clinicSettings': 'Clinic Settings',
   'nav.myPreferences': 'My Preferences',
+  'nav.backToDashboard': 'Back to Dashboard',
   'nav.subscription': 'Subscription',
   'nav.branches': 'Branches',
   'nav.bloodBank': 'Blood Bank',
@@ -128,9 +132,6 @@ const en: Dict = {
   'login.privacy': 'Privacy Policy',
   'login.terms': 'Terms of Service',
   'login.idleLogoutMessage': 'You were logged out due to inactivity.',
-  'login.rememberedUsersTitle': 'Choose a username',
-  'login.forgetRememberedUser': 'Forget this username',
-  'login.rememberedUsersHint': 'Saved on this device',
 
   // Clinic dashboard
   'clinic.dashboard.title': 'Clinic Overview',
@@ -373,6 +374,8 @@ const th: Dict = {
   'page./settings/payment': 'การชำระเงิน',
   'page./settings/integrations': 'การเชื่อมต่อ',
   'page./settings/preferences': 'การตั้งค่าส่วนตัว',
+  'page./clinic-admin/settings': 'ตั้งค่าการนัดหมาย',
+  'page./preferences': 'การตั้งค่าส่วนตัว',
 
   'nav.dashboard': 'แดชบอร์ด',
   'nav.pets': 'สัตว์เลี้ยงและเจ้าของ',
@@ -386,8 +389,10 @@ const th: Dict = {
   'nav.users': 'ผู้ใช้และบทบาท',
   'nav.clinicProfile': 'ข้อมูลคลินิก',
   'nav.usage': 'สถิติการใช้งาน',
-  'nav.settings': 'ตั้งค่า',
+  'nav.appointmentSettings': 'ตั้งค่าการนัดหมาย',
+  'nav.clinicSettings': 'ตั้งค่าคลินิก',
   'nav.myPreferences': 'การตั้งค่าส่วนตัว',
+  'nav.backToDashboard': 'กลับสู่แดชบอร์ด',
   'nav.subscription': 'แพ็กเกจ',
   'nav.branches': 'สาขา',
   'nav.bloodBank': 'ธนาคารเลือด',
@@ -446,9 +451,6 @@ const th: Dict = {
   'login.privacy': 'นโยบายความเป็นส่วนตัว',
   'login.terms': 'ข้อกำหนดการใช้บริการ',
   'login.idleLogoutMessage': 'คุณถูกออกจากระบบเนื่องจากไม่มีการใช้งาน',
-  'login.rememberedUsersTitle': 'เลือกชื่อผู้ใช้',
-  'login.forgetRememberedUser': 'ลืมชื่อผู้ใช้นี้',
-  'login.rememberedUsersHint': 'บันทึกไว้บนอุปกรณ์นี้',
 
   // Clinic dashboard
   'clinic.dashboard.title': 'ภาพรวมคลินิก',

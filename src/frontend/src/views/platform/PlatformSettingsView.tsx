@@ -9,6 +9,7 @@ import {
   type PlatformSettings,
 } from '../../hooks/usePlatformSettings'
 import MaterialIcon from '../../components/MaterialIcon'
+import Toggle from '../../components/Toggle'
 import { getErrorMessage } from '../../utils/errorMessage'
 
 export default function PlatformSettingsView() {
@@ -137,22 +138,15 @@ export default function PlatformSettingsView() {
                 When on, clinic users see a maintenance notice. Platform console remains accessible.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                const next = !maintenanceMode
+            <Toggle
+              checked={maintenanceMode}
+              onChange={(next) => {
                 setMaintenanceMode(next)
                 updateMutation.mutate({ maintenanceMode: next })
               }}
-              className={`relative min-w-[52px] h-7 rounded-full transition-colors ${maintenanceMode ? 'bg-error' : 'bg-outline'}`}
-              aria-checked={maintenanceMode}
-              role="switch"
-              aria-label="Maintenance mode toggle"
-            >
-              <span
-                className={`absolute top-0.5 w-6 h-6 rounded-full bg-surface shadow transition-transform ${maintenanceMode ? 'translate-x-6' : 'translate-x-0.5'}`}
-              />
-            </button>
+              tone="danger"
+              ariaLabel="Maintenance mode toggle"
+            />
           </div>
           {maintenanceMode && (
             <div className="mt-md flex items-center gap-sm p-md bg-error/10 rounded border border-error/20">

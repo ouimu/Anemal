@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 
 const { mutateAsync, settingsData } = vi.hoisted(() => ({
   mutateAsync: vi.fn().mockResolvedValue({}),
@@ -17,16 +17,16 @@ vi.mock('@tanstack/react-query', () => ({
 
 import ClinicSettingsTab from '../views/admin/ClinicSettingsTab'
 
-describe('ClinicSettingsTab — Security section', () => {
-  it('renders the idle-timeout input with the loaded value', () => {
+describe('ClinicSettingsTab (Appointment Settings)', () => {
+  it('renders appointment defaults', () => {
     render(<ClinicSettingsTab />)
-    expect(screen.getByLabelText(/idle timeout/i)).toHaveValue(15)
+    expect(screen.getByText(/Appointment defaults/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /save settings/i })).toBeInTheDocument()
   })
 
-  it('submits the updated idle-timeout value on save', async () => {
+  it('no longer renders the idle-timeout Security field (moved to Users & Roles)', () => {
     render(<ClinicSettingsTab />)
-    fireEvent.change(screen.getByLabelText(/idle timeout/i), { target: { value: '45' } })
-    fireEvent.click(screen.getByRole('button', { name: /save settings/i }))
-    expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ idleTimeoutMinutes: 45 }))
+    expect(screen.queryByLabelText(/idle timeout/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/^Security$/i)).not.toBeInTheDocument()
   })
 })

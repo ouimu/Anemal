@@ -1,26 +1,33 @@
 // Settings shell — role-filtered sidebar; no hard redirect (all roles may visit /settings)
 import { useEffect } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Link, Outlet } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { useLogout } from '../hooks/useAuth'
 import { useUiStore } from '../store/uiStore'
+import { useT } from '../i18n'
 import MaterialIcon from '../components/MaterialIcon'
 import TopNav from '../components/TopNav'
 
+// Clinic-wide settings only. Per-user "My Preferences" is now its own standalone
+// page (/preferences), reached from the profile menu — not this clinic shell.
 const ALL_NAV = [
-  { to: '/settings/clinic-profile', icon: 'business',             label: 'Clinic Profile',   roles: ['admin'] },
-  { to: '/settings/hours',          icon: 'schedule',             label: 'Operating Hours',  roles: ['admin'] },
-  { to: '/settings/notifications',  icon: 'notifications',        label: 'Notifications',    roles: ['admin'] },
-  { to: '/settings/payment',        icon: 'payments',             label: 'Payment',          roles: ['admin'] },
-  { to: '/settings/integrations',   icon: 'hub',                  label: 'Integrations',     roles: ['admin'] },
-  { to: '/settings/preferences',    icon: 'manage_accounts',      label: 'My Preferences',   roles: ['admin', 'doctor', 'staff'] },
+  { to: '/settings/clinic-profile', icon: 'business',      label: 'Clinic Profile',  roles: ['admin'] },
+  { to: '/settings/hours',          icon: 'schedule',      label: 'Operating Hours', roles: ['admin'] },
+  { to: '/settings/notifications',  icon: 'notifications', label: 'Notifications',   roles: ['admin'] },
+  { to: '/settings/payment',        icon: 'payments',      label: 'Payment',         roles: ['admin'] },
+  { to: '/settings/integrations',   icon: 'hub',           label: 'Integrations',    roles: ['admin'] },
 ]
 
 export default function SettingsLayout() {
   const role   = useAuthStore(s => s.role)
   const name   = useAuthStore(s => s.name)
   const logout = useLogout()
+  const t      = useT()
   const { sidebarOpen, toggleSidebar } = useUiStore()
+
+  // Exit target for the Back button: admins return to the clinic-admin console,
+  // everyone else to the clinic app dashboard.
+  const dashboardPath = role === 'admin' ? '/clinic-admin/dashboard' : '/clinic/dashboard'
 
   // LAYOUT-04: auto-collapse sidebar on mount for narrow viewports (tablet portrait)
   useEffect(() => {
@@ -70,6 +77,23 @@ export default function SettingsLayout() {
 
         {/* Nav */}
         <nav className="flex flex-col flex-1 py-sm overflow-y-auto">
+          {/* Back to Dashboard — exit the settings shell (fixes no-exit trap) */}
+          <Link
+            to={dashboardPath}
+            className={
+              sidebarOpen
+                ? 'flex items-center gap-md px-lg min-h-[44px] mx-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors'
+                : 'flex items-center justify-center min-h-[44px] mx-1 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors'
+            }
+          >
+            <MaterialIcon name="arrow_back" size={22} className="flex-shrink-0" />
+            {sidebarOpen && (
+              <span className="text-body-md whitespace-nowrap">{t('nav.backToDashboard')}</span>
+            )}
+          </Link>
+
+          <div className="h-px bg-outline-variant mx-sm my-sm" />
+
           {NAV.map(item => (
             <NavLink
               key={item.to}
