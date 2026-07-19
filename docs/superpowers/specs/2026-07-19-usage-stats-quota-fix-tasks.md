@@ -2,7 +2,7 @@
 
 Date: 2026-07-19 · Step 2 (@pm-agent)
 Input: `docs/superpowers/specs/2026-07-19-usage-stats-quota-fix-design.md` (Status: Approved — brainstorm)
-Status: Draft for Step 3 `@ba-agent` sign-off. Next after sign-off: Step 3.5 `/grill-with-docs` (MANDATORY, non-skippable per CLAUDE.md).
+Status: BA sign-off APPROVED (`2026-07-19-usage-stats-quota-fix-ba-signoff.md`). Grilled and amended (`2026-07-19-usage-stats-quota-fix-grill.md`) — all findings resolved. Ready for Step 4 `/write-plan`.
 
 FR reference: FR-16 (Plan & Quota — `plans` + `tenant_quotas`, effective quota = override ?? plan) and FR-15 (Platform Console — per-customer quotas). This work extends the existing FR-16 quota engine with a 4th dimension (`maxPets`) and closes a real defect: the clinic-facing Usage Stats screen currently shows fabricated numbers instead of the FR-16 effective-quota values that already govern `maxBranches`/`maxUsers`/`maxOwners`.
 
@@ -12,14 +12,16 @@ FR reference: FR-16 (Plan & Quota — `plans` + `tenant_quotas`, effective quota
 |---|---|---|
 | New endpoints | **0** (`GET /admin/usage` extended with existing `getEffectiveQuota()`; no new routes) | ≤3 |
 | Migrations | 1 (`maxPets Int?` on `Plan` + `TenantQuota`, seeded for 3 existing plans) | — |
-| Subsystems | 3 (DB schema, backend quota/usage services, frontend Admin/Platform UI) | ≤3 |
-| Core files touched | ~11 (per design spec "Scope check") | ≤10 → **flag for BA/Ponytail**: spec lists 11; confirm during grill whether `usePlatformCustomers.ts`/`usePlatformPlans.ts` type-only edits count toward the file cap, or fold under scope-note below |
+| Subsystems | 3 (DB schema, backend quota/usage/enforcement services, frontend Admin/Platform UI) | ≤3 |
+| Core files touched | **13** (post-grill, see grill doc F4: added `subscription.service.ts` + `pet.service.ts`) | ≤15 |
 | New dependencies | 0 | ≤5 |
-| New abstractions | 0 — mirrors existing 3-field quota pattern exactly | — |
+| New abstractions | 0 — mirrors existing 3-field quota + `assertCanAddOwner` enforcement pattern exactly | — |
 
-**Scope note for Ponytail Gate:** the ~11-file count is inflated by pure type-plumbing (`usePlatformPlans.ts`, `usePlatformCustomers.ts` add one optional field to existing TS interfaces — no new hooks/queries). Actual new logic surface is: 1 migration, 1 resolution-line change (`getEffectiveQuota`), 1 route-merge change (`admin.routes.ts`), 3 form/table UI additions (`AdminUsage.tsx` deletion + read, `PlatformPlansView.tsx` field, `CustomerDetailView.tsx` field). No new endpoints, no new components, no new dependencies — recommend APPROVE at Ponytail Gate (Step 5) on these grounds, to be confirmed by `@ponytail-agent` at that step.
+**Scope note for Ponytail Gate (updated post-grill):** file count is 13 — `schema.prisma`+migration, `platform-plans.repository.ts`, `platform-plans.service.ts`, `subscription.service.ts`, `usage.service.ts`, `admin.routes.ts`, `platform-plans.controller.ts`, `pet.service.ts`, `AdminUsage.tsx`, `PlatformPlansView.tsx`, `CustomerDetailView.tsx`, `usePlatformPlans.ts`, `usePlatformCustomers.ts`. No new endpoints (0), no new dependencies (0). The two files added during grill (`subscription.service.ts`, `pet.service.ts`) both extend an existing pattern (`assertCanAddOwner`) rather than introduce a new abstraction. Recommend APPROVE at Ponytail Gate (Step 5) with this full count, per `docs/superpowers/specs/2026-07-19-usage-stats-quota-fix-grill.md` F4.
 
-**Out of scope (backlog, do NOT touch):** enforcement/blocking of `maxPets` at create-time (informational only, matches existing `maxBranches`/`maxUsers`/`maxOwners` behavior — no hard block exists for any of the 3 today); any change to how the 3 existing caps are computed or displayed elsewhere (Platform Console customer list, subscription tab).
+**Resolved during grill (see grill doc):** `maxPets` enforcement at create-time is now IN SCOPE — `assertCanAddPet()` added to `subscription.service.ts` mirroring `assertCanAddOwner` exactly, called from `pet.service.ts`'s `createPet()`. The original "no hard block exists for any of the 3 today" claim was false — `assertCanAddUser`/`assertCanAddBranch`/`assertCanAddOwner` all enforce at creation time already; pets were the sole gap. See T-USQ-2.6.
+
+**Still out of scope (backlog, do NOT touch):** any change to how the 3 existing caps are computed or displayed elsewhere (Platform Console customer list, subscription tab) beyond adding the parallel `maxPets` field.
 
 ---
 
@@ -47,24 +49,30 @@ Verified AS-IS (per design spec): `Plan.maxOwners Int?` and `TenantQuota.maxOwne
 - **Files:** `src/backend/models/platform-plans.repository.ts` — add `maxPets` to `PlanRow`, `CreatePlanData`, `UpdatePlanData`, `QuotaOverrideData` interfaces; include in the `createPlan`/`updatePlan` Prisma `create`/`update` calls (default `500` on create, matching how `maxUsers` defaults to `5` today — confirm exact default-injection point during BA validation).
 - **Test proves done:** extend existing repository-level test (or `platformConsole.test.ts` if repository is exercised through it) asserting a created `Plan` persists and returns `maxPets`; an updated `Plan` changes `maxPets`; a `TenantQuota` override row persists `maxPets` distinct from its plan's default.
 
-### T-USQ-2.2 Service: `maxPets` in response shapes + resolution
+### T-USQ-2.2 Service: `maxPets` in response shapes + resolution (BOTH resolvers)
 - **Files:** `src/backend/services/platform-plans.service.ts` — add `maxPets` to `PlanResponse` and `EffectiveQuota` (all three of `plan` / `override` / `effective` sub-shapes) and to `normalizePlan()`; add the resolution line in `getEffectiveQuota()`:
-  `maxPets: override?.maxPets ?? plan?.maxPets ?? null`.
-- **Test proves done:** unit test on `getEffectiveQuota()` — (1) no override present → returns plan's `maxPets`; (2) override present with `maxPets` set → override wins; (3) override row exists but its `maxPets` is `NULL` → falls through to plan default (not treated as "override to unlimited" — this is the same ambiguity already resolved for `maxOwners`, confirm identical behavior, do not diverge); (4) plan `maxPets` is `NULL` and no override → effective is `null` (unlimited).
+  `maxPets: override?.maxPets ?? plan?.maxPets ?? null`. Still needed post-grill: this resolver powers `PlatformPlansView.tsx` (plan CRUD) and the Platform Console's per-customer usage view — it is not being replaced, only `/admin/usage`'s wiring changes (see T-USQ-2.4).
+- **Files (added post-grill, F2):** `src/backend/services/subscription.service.ts` — add `maxPets` to `EffectiveTenantQuota` and the resolution line in its own `getEffectiveQuota()`: `maxPets: tenant?.quota?.maxPets ?? tenant?.plan?.maxPets ?? null`. This is a **second, independent resolver** (clinic-plane, powers `assertCanAdd*` and `GET /subscription/status`) — verified as real, separate code at `subscription.service.ts:63`, not a duplicate to skip.
+- **Test proves done:** unit tests on **both** `getEffectiveQuota()` functions — (1) no override present → returns plan's `maxPets`; (2) override present with `maxPets` set → override wins; (3) override row exists but its `maxPets` is `NULL` → falls through to plan default (not treated as "override to unlimited" — this is the same ambiguity already resolved for `maxOwners`, confirm identical behavior, do not diverge); (4) plan `maxPets` is `NULL` and no override → effective is `null` (unlimited). Also extend `subscription.test.ts`'s existing `getStatus()`/`EffectiveTenantQuota` coverage with the same 4 cases for `maxPets`.
 
 ### T-USQ-2.3 Backend: pet count into usage response
 - **Files:** `src/backend/services/usage.service.ts` — `getPlatformCustomerUsage()` gains a `pets` count via existing `usageRepo.countActivePets(tenantId)` (verify this repository function already exists per design spec; if it does not, this is a BA-flagged gap — see Open Question OQ-1 below), and folds `maxPets` into the existing `overPlan` boolean alongside the other 3 caps.
 - **Test proves done:** extend `subscription.test.ts` (or equivalent usage-service test) — tenant with pet count exceeding effective `maxPets` sets `overPlan: true`; tenant within cap sets `overPlan: false`; `maxPets: null` (unlimited) never triggers `overPlan` regardless of pet count.
 
 ### T-USQ-2.4 Backend: `/admin/usage` returns real caps, no new endpoint
-- **Files:** `src/backend/routes/admin.routes.ts` — `GET /admin/usage` handler: after calling `getClinicUsage()`, also call `getEffectiveQuota(tenantId)` and merge into the response: `{ ...clinicUsageData, caps: effective }`. Route guard unchanged: `clinic.profile.view` (verified — matches existing `settings.routes` and `subscription.routes` convention, permission-matrix.md:70,145,156).
+- **Files:** `src/backend/routes/admin.routes.ts` — `GET /admin/usage` handler: after calling `getClinicUsage()`, also call **`subscription.service.ts`'s `getEffectiveQuota(tenantId)`** (changed post-grill, F2 — NOT `platform-plans.service.ts`'s version) and merge into the response: `{ ...clinicUsageData, caps: effective }`. Rationale: better plane hygiene (clinic route shouldn't import platform-console service code) and `subscription.service`'s resolver degrades to unlimited via optional chaining rather than throwing `CustomerNotFoundError` on edge-state tenants. Route guard unchanged: `clinic.profile.view` (verified — matches existing `settings.routes` and `subscription.routes` convention, permission-matrix.md:70,145,156).
 - **Test proves done:** new/extended test in `adminSettings.test.ts` (or a new `adminUsage.test.ts`) asserting: (1) response includes `caps.maxUsers`, `caps.maxBranches`, `caps.maxOwners`, `caps.maxPets`; (2) a tenant with a `tenant_quotas` override (e.g. `maxUsers: 10`) returns `caps.maxUsers: 10` in `/admin/usage`, not the plan default — this is the exact regression the design spec's "user-reported symptom" describes (UI showed 3/3 when actual override was 10); (3) tenant-isolation: caller only ever sees their own tenant's effective quota (JWT `tenantId`-scoped, no query-param override possible).
+
+### T-USQ-2.6 Backend: `assertCanAddPet` enforcement (added post-grill, F1)
+- **Files:** `src/backend/services/subscription.service.ts` — add `assertCanAddPet(tenantId: number): Promise<void>`, mirroring `assertCanAddOwner` exactly (lines 118-126): resolve quota via the local `getEffectiveQuota()`, return early if `maxPets === null` (unlimited), else count active pets tenant-wide (`prisma.pet.count({ where: { tenantId, isActive: true } })` — matches `usageRepo.countActivePets`'s tenant-wide semantics when called with no `branchId`) and throw `QuotaExceededError('pets', quota.maxPets, current)` at/over cap.
+- **Files:** `src/backend/services/pet.service.ts` — import `assertCanAddPet` from `./subscription.service`; call `await assertCanAddPet(tenantId)` as the first line of `createPet()` (line 48), before any repository write — mirrors `owner.service.ts:92`'s placement in `createOwner()` exactly.
+- **Test proves done:** extend `subscription.test.ts` with the same shape as its existing `assertCanAddOwner` tests — (1) under cap: `createPet` succeeds; (2) at cap: `createPet` throws `QuotaExceededError` (409, `resource: 'pets'`); (3) `maxPets: null` (unlimited): never throws regardless of count; (4) grandfathering: a tenant already over cap can still read/update/delete existing pets — only the *next create* is blocked (verified in the grill doc F3 — inherited behavior, no new code needed for this, but the test should assert it explicitly for the new resource).
 
 ### T-USQ-2.5 Backend: `maxPets` through Plan create/update validation
 - **Files:** `src/backend/controllers/platform-plans.controller.ts` — pass `maxPets` through `createPlanSchema`/`updatePlanSchema` validation (mirrors existing `maxOwners` handling: nullable integer, optional on update).
 - **Test proves done:** extend `platformContract.test.ts` — `POST /platform/plans` with `maxPets: 500` persists and returns it; `PUT /platform/plans/:id` with `maxPets: null` sets unlimited; invalid value (negative number, non-integer) is rejected with existing validation-error shape (same as `maxOwners`'s existing invalid-value test, if one exists — mirror it).
 
-**AC-USQ-2:** Given a tenant with an active `tenant_quotas` override on `maxUsers` (e.g. 10) and no override on `maxPets` (inherits plan default), when the clinic calls `GET /admin/usage`, then `caps.maxUsers` reflects the override (10) and `caps.maxPets` reflects the plan default — both computed by the single existing `getEffectiveQuota()` function, no duplicated resolution logic. **Negative/authorization case:** a user without `clinic.profile.view` (or from a different tenant/plane) calling `/admin/usage` gets the existing deny-by-default response (401/403, unchanged by this change) — confirm no new gap is introduced by the added `caps` merge.
+**AC-USQ-2:** Given a tenant with an active `tenant_quotas` override on `maxUsers` (e.g. 10) and no override on `maxPets` (inherits plan default), when the clinic calls `GET /admin/usage`, then `caps.maxUsers` reflects the override (10) and `caps.maxPets` reflects the plan default — both computed by `subscription.service.ts`'s `getEffectiveQuota()` (the clinic-plane resolver, per T-USQ-2.4/F2 — not `platform-plans.service.ts`'s, which remains solely for the platform-plane views). **Negative/authorization case:** a user without `clinic.profile.view` (or from a different tenant/plane) calling `/admin/usage` gets the existing deny-by-default response (401/403, unchanged by this change) — confirm no new gap is introduced by the added `caps` merge. **Enforcement case (added post-grill, F1):** a tenant at its effective `maxPets` cap attempting to create a new pet gets a 409 `QUOTA_EXCEEDED` from `assertCanAddPet` (T-USQ-2.6), matching the existing `assertCanAddOwner` behavior exactly.
 
 ---
 
@@ -73,7 +81,7 @@ Verified AS-IS (per design spec): `Plan.maxOwners Int?` and `TenantQuota.maxOwne
 **Objective:** Usage Stats page shows the tenant's actual effective quota, not a hardcoded/mismatched lookup table (whose `'enterprise'` key doesn't even match the real `clinic_plus` plan key).
 
 ### T-USQ-3.1 `AdminUsage.tsx` — delete fake table, read real caps
-- **Files:** `src/frontend/src/views/clinic/AdminUsage.tsx` (or wherever this view lives — confirm exact path during implementation; design spec references it by filename only) — delete the `PLAN_LIMITS` map entirely (including the broken `'enterprise'` key and the stale `starter: 3` value). Read `data.caps.maxUsers` and `data.caps.maxPets` from the `/admin/usage` response. Render `∞` when a cap is `null` (matches existing null-as-unlimited convention in `PlatformPlansView.tsx`).
+- **Files:** `src/frontend/src/views/admin/AdminUsage.tsx` (path confirmed — CORR-1, not `views/clinic/` as originally guessed) — delete the `PLAN_LIMITS` map entirely (including the broken `'enterprise'` key and the stale `starter: 3` value). Read `data.caps.maxUsers` and `data.caps.maxPets` from the `/admin/usage` response. Render `∞` when a cap is `null` (matches existing null-as-unlimited convention in `PlatformPlansView.tsx`).
 - **Test proves done:** new/updated frontend test asserting: (1) `AdminUsage` renders `data.caps.maxUsers`/`data.caps.maxPets` values from the mocked API response, not any hardcoded constant; (2) a `null` cap renders `∞`; (3) grep-level regression guard — `PLAN_LIMITS` identifier no longer exists in the file (prevents silent reintroduction).
 
 ### T-USQ-3.2 `PlatformPlansView.tsx` — Max Pets field in Plan editor
@@ -102,7 +110,9 @@ Verified AS-IS (per design spec): `Plan.maxOwners Int?` and `TenantQuota.maxOwne
 
 ---
 
-## Open questions for `@ba-agent` (Step 3 validation)
+## Open questions for `@ba-agent` (Step 3 validation) — ALL RESOLVED, see ba-signoff + grill docs
+
+Resolutions: OQ-1 YES (confirmed at `usage.repository.ts:13`). OQ-2 application-code default, `=== undefined` check not `??` (CORR-3, applied to T-USQ-2.1). OQ-3 paths confirmed and applied above (CORR-1). OQ-4 YES, identical to `maxOwners`, no new handling (backlogged as RES-2 in ba-signoff, non-blocking).
 
 | # | Question | Why it matters |
 |---|---|---|
@@ -116,5 +126,6 @@ Verified AS-IS (per design spec): `Plan.maxOwners Int?` and `TenantQuota.maxOwne
 ## Dependencies
 
 - T-USQ-2.* depends on T-USQ-1.1 (migration) landing first.
+- T-USQ-2.6 (`assertCanAddPet`) depends on T-USQ-2.2's `subscription.service.ts` resolution line landing first.
 - T-USQ-3.* depends on T-USQ-2.4 (`/admin/usage` returning `caps`) and T-USQ-2.5 (Plan CRUD accepting `maxPets`) landing first.
-- Full task list depends on OQ-1 through OQ-4 being resolved during `@ba-agent` sign-off (Step 3) and stress-tested at `/grill-with-docs` (Step 3.5) before `/write-plan` (Step 4) — per CLAUDE.md, `/write-plan` is BLOCKED until both gates pass.
+- OQ-1 through OQ-4 resolved at Step 3 (`@ba-agent` sign-off, see ba-signoff doc). F1–F4 resolved at Step 3.5 (`/grill-with-docs`, see grill doc). Both gates passed — `/write-plan` (Step 4) unblocked.
