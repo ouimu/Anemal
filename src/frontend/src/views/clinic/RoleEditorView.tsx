@@ -50,7 +50,8 @@ export default function RoleEditorView() {
   const isError   = rolesQuery.isError || catalogQuery.isError
 
   return (
-    <div className="pt-16 p-margin-desktop space-y-xl min-h-screen bg-background">
+    <div className="pt-16 min-h-screen bg-background">
+     <div className="max-w-5xl mx-auto p-6 space-y-xl">
 
       {/* Page header */}
       <div className="flex flex-col gap-md sm:flex-row sm:justify-between sm:items-end">
@@ -125,6 +126,7 @@ export default function RoleEditorView() {
           />
         )}
       </div>
+     </div>
     </div>
   )
 }

@@ -100,7 +100,7 @@ export default function ClinicProfilePage() {
   )
 
   return (
-    <div className="p-xl max-w-2xl">
+    <div className="max-w-5xl mx-auto p-6">
       <h1 className="text-headline-md font-headline font-bold text-on-surface mb-lg">
         Clinic Profile
       </h1>

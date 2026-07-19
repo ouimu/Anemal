@@ -21,7 +21,7 @@ export default function SubscriptionTab() {
   const usagePct = maxUsers ? Math.min(100, Math.round((usedUsers / maxUsers) * 100)) : 0
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-5xl mx-auto p-6 space-y-6">
       {/* Plan usage */}
       {sub && (
         <section>
