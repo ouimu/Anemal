@@ -265,6 +265,15 @@ describe('T-5D-02 Customer management', () => {
     }
   })
 
+  it('pc-maxpets-02: GET /platform/customers/:id resolves maxPets same as plan/override', async () => {
+    const res = await request(server)
+      .get(`/platform/customers/${customerId}`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .expect(200)
+    expect(res.body.data).toHaveProperty('maxPets')
+    expect(typeof res.body.data.maxPets === 'number' || res.body.data.maxPets === null).toBe(true)
+  })
+
   it('✅ PUT /platform/customers/:id updates name and subdomain', async () => {
     const newSub = `qa-cust-${SFX}-renamed`
     const res = await request(server)

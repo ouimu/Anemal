@@ -60,6 +60,7 @@ export interface CustomerDetail extends CustomerListItem {
   maxBranches:   number | null
   maxUsers:      number | null
   maxOwners:     number | null
+  maxPets:       number | null
   email:         string | null
   phone:         string | null
   address:       string | null
@@ -87,6 +88,7 @@ function toDetailItem(row: TenantWithPlanAndQuota): CustomerDetail {
   const maxBranches = row.quota?.maxBranches ?? row.plan?.maxBranches ?? null
   const maxUsers    = row.quota?.maxUsers    ?? row.plan?.maxUsers    ?? null
   const maxOwners   = row.quota?.maxOwners   ?? row.plan?.maxOwners   ?? null
+  const maxPets     = row.quota?.maxPets     ?? row.plan?.maxPets     ?? null
   return {
     id:          row.id,
     name:        row.name,
@@ -100,6 +102,7 @@ function toDetailItem(row: TenantWithPlanAndQuota): CustomerDetail {
     maxBranches,
     maxUsers,
     maxOwners,
+    maxPets,
     email:         row.settings?.email   ?? null,
     phone:         row.settings?.phone   ?? null,
     address:       row.settings?.address ?? null,
