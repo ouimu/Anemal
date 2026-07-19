@@ -12,7 +12,6 @@ import PlatformLayout from './layouts/PlatformLayout'
 // ── Admin pages ──────────────────────────────────────────────────────────────
 const AdminDashboard    = lazy(() => import('./views/admin/AdminDashboard'))
 const UserManagementTab = lazy(() => import('./views/admin/UserManagementTab'))
-const AdminProfile      = lazy(() => import('./views/admin/AdminProfile'))
 const AdminUsage        = lazy(() => import('./views/admin/AdminUsage'))
 const AdminSettings     = lazy(() => import('./views/admin/AdminSettings'))
 const AdminSubscription = lazy(() => import('./views/admin/AdminSubscription'))
@@ -97,11 +96,13 @@ export default function App() {
           <Route index element={<Navigate to="/clinic-admin/dashboard" replace/>}/>
           <Route path="dashboard"    element={<RequirePermission perm="clinic.profile.view"><AdminDashboard/></RequirePermission>}/>
           <Route path="users"        element={<RequirePermission perm="staff.view"><UserManagementTab/></RequirePermission>}/>
-          <Route path="profile"      element={<RequirePermission perm="clinic.profile.view"><AdminProfile/></RequirePermission>}/>
+          {/* Clinic Profile de-duplicated — the canonical editor is the Clinic Settings page */}
+          <Route path="profile"      element={<Navigate to="/settings/clinic-profile" replace/>}/>
           <Route path="usage"        element={<RequirePermission perm="clinic.profile.view"><AdminUsage/></RequirePermission>}/>
           <Route path="settings"     element={<RequirePermission perm="clinic.profile.view"><AdminSettings/></RequirePermission>}/>
           <Route path="subscription" element={<RequirePermission perm="clinic.profile.view"><AdminSubscription/></RequirePermission>}/>
-          <Route path="branches"     element={<RequirePermission perm="clinic.branch.view"><AdminBranches/></RequirePermission>}/>
+          {/* Branches relocated into the Clinic Settings shell → /settings/branches */}
+          <Route path="branches"     element={<Navigate to="/settings/branches" replace/>}/>
           <Route path="blood-bank"   element={<RequirePermission perm="bloodbank.view"><AdminBloodBank/></RequirePermission>}/>
           <Route path="audit"        element={<RequirePermission perm="audit.view"><AdminAudit/></RequirePermission>}/>
           <Route path="roles"        element={<RequirePermission perm="roles.view"><RoleEditorView/></RequirePermission>}/>
@@ -115,7 +116,7 @@ export default function App() {
         <Route path="/admin/usage"        element={<Navigate to="/clinic-admin/usage" replace/>}/>
         <Route path="/admin/settings"     element={<Navigate to="/clinic-admin/settings" replace/>}/>
         <Route path="/admin/subscription" element={<Navigate to="/clinic-admin/subscription" replace/>}/>
-        <Route path="/admin/branches"     element={<Navigate to="/clinic-admin/branches" replace/>}/>
+        <Route path="/admin/branches"     element={<Navigate to="/settings/branches" replace/>}/>
         <Route path="/admin/blood-bank"   element={<Navigate to="/clinic-admin/blood-bank" replace/>}/>
         <Route path="/admin/audit"        element={<Navigate to="/clinic-admin/audit" replace/>}/>
 
@@ -156,8 +157,20 @@ export default function App() {
           <Route path="notifications" element={<RequirePermission perm="clinic.integrations.edit"><NotificationsPage/></RequirePermission>}/>
           <Route path="payment"       element={<RequirePermission perm="clinic.payment.edit"><PaymentPage/></RequirePermission>}/>
           <Route path="integrations"  element={<RequirePermission perm="clinic.integrations.edit"><IntegrationsPage/></RequirePermission>}/>
-          <Route path="preferences"   element={<PreferencesPage/>}/>
+          <Route path="branches"      element={<RequirePermission perm="clinic.branch.view"><AdminBranches/></RequirePermission>}/>
         </Route>
+
+        {/* ── My Preferences (personal, all clinic roles) ── standalone, outside the clinic settings shell */}
+        <Route
+          path="/preferences"
+          element={
+            <RequireAuth><RequirePlane plane="clinic">
+              <div className="min-h-screen bg-background"><PreferencesPage/></div>
+            </RequirePlane></RequireAuth>
+          }
+        />
+        {/* Back-compat: old in-shell path → standalone page */}
+        <Route path="/settings/preferences" element={<Navigate to="/preferences" replace/>}/>
 
         {/* Access denied stub — target of RequirePermission on deny */}
         <Route path="/403" element={<ForbiddenView/>}/>

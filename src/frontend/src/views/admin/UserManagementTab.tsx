@@ -1,11 +1,12 @@
 ﻿// @uiux-agent spec: user list, role badges, add/edit/deactivate modal — 44px tap targets
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import { useAuthStore } from '../../store/authStore'
 import Can from '../../components/Can'
 import RolePicker from '../../components/roles/RolePicker'
 import { useUserRolesQuery } from '../../hooks/useUserRoles'
+import { useAdminSettings, useUpdateSettings } from '../../hooks/useAdmin'
 import { useT } from '../../i18n'
 import { describeSaveError } from '../../utils/errorMessages'
 import MaterialIcon from '../../components/MaterialIcon'
@@ -157,7 +158,7 @@ function Modal({ user, onClose, isPrimaryAdmin }: { user: Partial<User> & { isNe
               <Can perm="staff.manage">
                 {isSelf ? (
                   <p className="text-xs text-on-surface-variant">
-                    Change your own password in Settings → Preferences.
+                    Change your own password in My Preferences (profile menu).
                   </p>
                 ) : (
                   <div className="flex flex-col gap-1">
@@ -227,6 +228,69 @@ function DeactivateConfirmDialog({ user, onCancel, onConfirmed }: { user: User; 
         </div>
       </div>
     </div>
+  )
+}
+
+// Idle-timeout (session security policy) relocated here from Appointment Settings —
+// it governs when any user is auto-logged-out, so it sits with user management.
+// Persists via the shared /admin/settings partial update (only idleTimeoutMinutes is sent).
+function SecurityCard() {
+  const { data, isLoading } = useAdminSettings()
+  const update = useUpdateSettings()
+  const [idleTimeoutMinutes, setIdleTimeoutMinutes] = useState<number>(15)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (data) setIdleTimeoutMinutes(data.idleTimeoutMinutes)
+  }, [data])
+
+  async function handleSave(e: FormEvent) {
+    e.preventDefault()
+    // Clamp to the backend-accepted range (Zod min5/max120) — an empty field is Number('')=0.
+    const clamped = Math.min(120, Math.max(5, Number(idleTimeoutMinutes) || 5))
+    setIdleTimeoutMinutes(clamped)
+    setError(null)
+    try {
+      await update.mutateAsync({ idleTimeoutMinutes: clamped })
+      setSaved(true); setTimeout(() => setSaved(false), 2500)
+    } catch (err) {
+      setError(describeSaveError(err))
+    }
+  }
+
+  if (isLoading) return null
+
+  return (
+    <section>
+      <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Security</h3>
+      <form onSubmit={handleSave} className="bg-surface border border-outline-variant rounded-xl p-5 flex flex-col gap-3">
+        <div className="flex flex-col gap-1 max-w-xs">
+          <label htmlFor="idleTimeoutMinutes" className="text-xs text-on-surface-variant">
+            Idle timeout (minutes)
+          </label>
+          <input
+            id="idleTimeoutMinutes" type="number" min={5} max={120}
+            value={idleTimeoutMinutes}
+            onChange={e => setIdleTimeoutMinutes(Number(e.target.value))}
+            className="min-h-[44px] px-3 border border-outline-variant rounded-lg text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+          <p className="text-xs text-on-surface-variant mt-1">
+            Automatically log out any user after this many minutes of inactivity. 5–120 minutes.
+          </p>
+        </div>
+        {error && <p className="text-xs text-error-on-container">{error}</p>}
+        <div className="flex items-center gap-3">
+          <button
+            type="submit" disabled={update.isPending}
+            className="min-h-[44px] px-6 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-on text-sm font-semibold rounded-lg transition-colors"
+          >
+            {update.isPending ? 'Saving…' : 'Save'}
+          </button>
+          {saved && <span className="text-sm text-secondary-on-container">✓ Saved</span>}
+        </div>
+      </form>
+    </section>
   )
 }
 
@@ -348,6 +412,11 @@ export default function UserManagementTab() {
             </div>
           </section>
         )}
+
+        {/* Security (idle timeout) — below the user list */}
+        <Can perm="clinic.profile.edit">
+          <SecurityCard />
+        </Can>
       </div>
     </>
   )

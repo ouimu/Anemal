@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const h = vi.hoisted(() => ({ mutate: vi.fn() }))
@@ -20,7 +21,9 @@ import PreferencesPage from '../views/settings/PreferencesPage'
 
 function renderPage() {
   const qc = new QueryClient()
-  return render(<QueryClientProvider client={qc}><PreferencesPage /></QueryClientProvider>)
+  return render(
+    <MemoryRouter><QueryClientProvider client={qc}><PreferencesPage /></QueryClientProvider></MemoryRouter>,
+  )
 }
 
 beforeEach(() => {

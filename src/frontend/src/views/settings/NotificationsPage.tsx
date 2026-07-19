@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import MaterialIcon from '../../components/MaterialIcon'
+import Toggle from '../../components/Toggle'
 import { useAuthStore } from '../../store/authStore'
 import {
   useNotificationsSettings,
@@ -170,18 +171,11 @@ export default function NotificationsPage() {
         {/* LINE Reminders toggle */}
         <div className="flex items-center justify-between">
           <span className="text-body-md text-on-surface">Send appointment reminders via LINE</span>
-          <button
-            type="button"
-            onClick={() => setForm(p => ({ ...p, lineRemindersEnabled: !p.lineRemindersEnabled }))}
-            className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-colors
-              ${form.lineRemindersEnabled
-                ? 'bg-primary text-surface'
-                : 'bg-surface-container-low text-on-surface-variant border border-outline-variant'}`}
-            aria-label="Toggle LINE reminders"
-            aria-pressed={form.lineRemindersEnabled}
-          >
-            <MaterialIcon name={form.lineRemindersEnabled ? 'toggle_on' : 'toggle_off'} size={24} />
-          </button>
+          <Toggle
+            checked={form.lineRemindersEnabled}
+            onChange={v => setForm(p => ({ ...p, lineRemindersEnabled: v }))}
+            ariaLabel="Toggle LINE reminders"
+          />
         </div>
 
         {/* Test LINE button */}
@@ -253,18 +247,11 @@ export default function NotificationsPage() {
         {/* SMS Reminders toggle */}
         <div className="flex items-center justify-between">
           <span className="text-body-md text-on-surface">Send appointment reminders via SMS</span>
-          <button
-            type="button"
-            onClick={() => setForm(p => ({ ...p, smsRemindersEnabled: !p.smsRemindersEnabled }))}
-            className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-colors
-              ${form.smsRemindersEnabled
-                ? 'bg-primary text-surface'
-                : 'bg-surface-container-low text-on-surface-variant border border-outline-variant'}`}
-            aria-label="Toggle SMS reminders"
-            aria-pressed={form.smsRemindersEnabled}
-          >
-            <MaterialIcon name={form.smsRemindersEnabled ? 'toggle_on' : 'toggle_off'} size={24} />
-          </button>
+          <Toggle
+            checked={form.smsRemindersEnabled}
+            onChange={v => setForm(p => ({ ...p, smsRemindersEnabled: v }))}
+            ariaLabel="Toggle SMS reminders"
+          />
         </div>
 
         {/* Test SMS button */}

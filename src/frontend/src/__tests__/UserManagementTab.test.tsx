@@ -100,7 +100,61 @@ describe('Admin reset-password field (Task 7)', () => {
     const editButtons = await screen.findAllByRole('button', { name: 'Edit' })
     fireEvent.click(editButtons[0]) // ADMIN's own row
     expect(screen.queryByLabelText(/Reset password/i)).not.toBeInTheDocument()
-    expect(screen.getByText(/Settings → Preferences/i)).toBeInTheDocument()
+    expect(screen.getByText(/My Preferences/i)).toBeInTheDocument()
+  })
+})
+
+describe('Security card — idle timeout (moved from Appointment Settings)', () => {
+  const SETTINGS = {
+    defaultSlotMinutes: 30, workStartTime: '08:00', workEndTime: '18:00',
+    smsRemindersEnabled: true, lineRemindersEnabled: true, idleTimeoutMinutes: 15,
+    tenant: { name: 'Dev Clinic', subdomain: 'dev-clinic' },
+  }
+
+  function mockWithSettings() {
+    api.get.mockImplementation((url: string) => {
+      if (url === '/users') return Promise.resolve({ data: { data: [ADMIN, STAFF] } })
+      if (url === '/admin/settings') return Promise.resolve({ data: { data: SETTINGS } })
+      if (url === '/api/branches') return Promise.resolve({ data: { data: [] } })
+      return Promise.resolve({ data: { data: [] } })
+    })
+  }
+
+  it('renders the idle-timeout input with the loaded value when the user has clinic.profile.edit', async () => {
+    state.permissions = ['staff.manage', 'clinic.profile.edit']
+    mockWithSettings()
+    renderTab()
+    expect(await screen.findByLabelText(/idle timeout/i)).toHaveValue(15)
+  })
+
+  it('saves the updated idle-timeout via PUT /admin/settings', async () => {
+    state.permissions = ['staff.manage', 'clinic.profile.edit']
+    api.put.mockResolvedValue({ data: {} })
+    mockWithSettings()
+    renderTab()
+    const input = await screen.findByLabelText(/idle timeout/i)
+    fireEvent.change(input, { target: { value: '45' } })
+    fireEvent.click(screen.getByRole('button', { name: /^Save$/i }))
+    await waitFor(() => expect(api.put).toHaveBeenCalledWith('/admin/settings', { idleTimeoutMinutes: 45 }))
+  })
+
+  it('surfaces the server error on a failed save instead of failing silently', async () => {
+    state.permissions = ['staff.manage', 'clinic.profile.edit']
+    api.put.mockRejectedValue({ response: { data: { error: 'Idle timeout must be between 5 and 120' } } })
+    mockWithSettings()
+    renderTab()
+    const input = await screen.findByLabelText(/idle timeout/i)
+    fireEvent.change(input, { target: { value: '45' } })
+    fireEvent.click(screen.getByRole('button', { name: /^Save$/i }))
+    await waitFor(() => expect(screen.getByText(/between 5 and 120/i)).toBeInTheDocument())
+  })
+
+  it('is hidden without clinic.profile.edit', async () => {
+    state.permissions = ['staff.manage']
+    mockWithSettings()
+    renderTab()
+    await screen.findByText('Staff One')
+    expect(screen.queryByLabelText(/idle timeout/i)).not.toBeInTheDocument()
   })
 })
 

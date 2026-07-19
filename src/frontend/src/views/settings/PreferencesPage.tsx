@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useUiStore } from '../../store/uiStore'
+import { useAuthStore } from '../../store/authStore'
 import { useSavePreferences } from '../../hooks/usePersonalPreferences'
 import { useChangePassword } from '../../hooks/useChangePassword'
 import { describeSaveError } from '../../utils/errorMessages'
@@ -38,6 +40,9 @@ export default function PreferencesPage() {
   const setLanguage = useUiStore(s => s.setLanguage)
   const { mutate: savePrefs } = useSavePreferences()
   const changePassword = useChangePassword()
+
+  const role = useAuthStore(s => s.role)
+  const dashboardPath = role === 'admin' ? '/clinic-admin/dashboard' : '/clinic/dashboard'
 
   const [notifs, setNotifs] = useState<NotifPrefs>(loadNotifs)
   const [saved, setSaved] = useState(false)
@@ -89,6 +94,15 @@ export default function PreferencesPage() {
 
   return (
     <div className="max-w-2xl mx-auto p-xl flex flex-col gap-lg">
+      {/* Standalone page — own exit back to the dashboard (role-aware). */}
+      <Link
+        to={dashboardPath}
+        className="self-start min-h-[44px] flex items-center gap-sm px-md -ml-md rounded-lg text-body-md text-on-surface-variant hover:bg-surface-container transition-colors"
+      >
+        <MaterialIcon name="arrow_back" size={20} />
+        {t('nav.backToDashboard')}
+      </Link>
+
       <h1 className="text-headline-md font-headline text-on-surface">{t('prefs.title')}</h1>
 
       {saved && (

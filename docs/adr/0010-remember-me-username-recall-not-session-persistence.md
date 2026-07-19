@@ -1,7 +1,7 @@
 # "Remember me" recalls a username, it does not extend the session
 
 Date: 2026-07-10
-Status: Accepted
+Status: Accepted (2+ username chooser UI superseded by [0017](0017-remember-me-single-username-prefill.md); session-lifetime decision still in force)
 
 Reported bug: clinic login's "Remember me" checkbox appeared to do nothing. Root cause:
 it silently persisted the full JWT session in `localStorage` (surviving browser restart

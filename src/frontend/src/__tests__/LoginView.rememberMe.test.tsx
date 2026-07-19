@@ -1,9 +1,8 @@
 /**
- * Remember Me: Username Recall (RM-7, RM-8, RM-9) — recall-on-mount,
- * RememberedUsersModal popup, and dismiss-on-type. Kept separate from
- * LoginView.i18n.test.tsx per the plan's file-split convention.
- * See docs/superpowers/specs/2026-07-10-remember-me-username-design.md
- * and docs/adr/0010-remember-me-username-recall-not-session-persistence.md.
+ * Remember Me: Username Recall — single most-recent username prefill.
+ * Supersedes the earlier multi-username "Choose a username" chooser modal
+ * (RM-7/8/9). See docs/adr/0017-remember-me-single-username-prefill.md
+ * (supersedes docs/adr/0010-remember-me-username-recall-not-session-persistence.md).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
@@ -40,108 +39,48 @@ import LoginView from '../views/LoginView'
 // detection logic maps to 'dev-clinic' — seed fixtures accordingly.
 const SUBDOMAIN = 'dev-clinic'
 
-describe('LoginView — remembered-username recall (RM-7, RM-8, RM-9)', () => {
+describe('LoginView — remembered-username recall (single-username prefill)', () => {
   beforeEach(() => {
     localStorage.clear()
   })
 
-  it('0 remembered usernames — renders blank form, checkbox unchecked, no popup', () => {
+  it('0 remembered usernames — renders blank form, checkbox unchecked', () => {
     render(<LoginView />)
     expect(screen.getByLabelText('Username')).toHaveValue('')
     expect(screen.getByRole('checkbox')).not.toBeChecked()
-    expect(screen.queryByText('Choose a username')).not.toBeInTheDocument()
   })
 
-  it('1 remembered username — pre-fills username, checks remember, no popup', () => {
+  it('1 remembered username — pre-fills username, checks remember', () => {
     rememberedUsernames.upsert(SUBDOMAIN, 'alice')
     render(<LoginView />)
     expect(screen.getByLabelText('Username')).toHaveValue('alice')
     expect(screen.getByRole('checkbox')).toBeChecked()
-    expect(screen.queryByText('Choose a username')).not.toBeInTheDocument()
   })
 
-  it('2+ remembered usernames — popup renders, form stays blank until a pick is made', () => {
+  it('2+ remembered usernames — pre-fills the most-recent, checks remember, shows no chooser modal', () => {
     rememberedUsernames.upsert(SUBDOMAIN, 'alice')
-    rememberedUsernames.upsert(SUBDOMAIN, 'bob')
+    rememberedUsernames.upsert(SUBDOMAIN, 'bob') // bob is most-recent (upsert unshifts)
     render(<LoginView />)
-    expect(screen.getByText('Choose a username')).toBeInTheDocument()
-    expect(screen.getByLabelText('Username')).toHaveValue('')
-  })
-
-  it('2+ remembered — popup lists all entries most-recent-first', () => {
-    rememberedUsernames.upsert(SUBDOMAIN, 'alice')
-    rememberedUsernames.upsert(SUBDOMAIN, 'bob')
-    rememberedUsernames.upsert(SUBDOMAIN, 'carol')
-    render(<LoginView />)
-    const rows = screen.getAllByRole('button', { name: /^(alice|bob|carol)$/ })
-    expect(rows.map(r => r.textContent)).toEqual(['carol', 'bob', 'alice'])
-  })
-
-  it('clicking a popup row fills username, checks remember, closes popup, focuses password field', async () => {
-    const user = userEvent.setup()
-    rememberedUsernames.upsert(SUBDOMAIN, 'alice')
-    rememberedUsernames.upsert(SUBDOMAIN, 'bob')
-    render(<LoginView />)
-
-    await user.click(screen.getByRole('button', { name: 'bob' }))
-
     expect(screen.getByLabelText('Username')).toHaveValue('bob')
     expect(screen.getByRole('checkbox')).toBeChecked()
     expect(screen.queryByText('Choose a username')).not.toBeInTheDocument()
-    expect(screen.getByLabelText('Password')).toHaveFocus()
   })
 
-  it('X on a popup row removes just that entry and keeps the popup open with the remaining entries', async () => {
+  it('user can type over the pre-filled username', async () => {
     const user = userEvent.setup()
     rememberedUsernames.upsert(SUBDOMAIN, 'alice')
-    rememberedUsernames.upsert(SUBDOMAIN, 'bob')
     render(<LoginView />)
 
-    await user.click(screen.getByRole('button', { name: /forget this username: bob/i }))
-
-    expect(screen.getByText('Choose a username')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'bob' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'alice' })).toBeInTheDocument()
-    expect(rememberedUsernames.list(SUBDOMAIN).map(e => e.username)).toEqual(['alice'])
+    const input = screen.getByLabelText('Username')
+    await user.clear(input)
+    await user.type(input, 'zoe')
+    expect(input).toHaveValue('zoe')
   })
 
-  it('dismissing the popup via backdrop or the close button falls back to blank form; user can still type an arbitrary username', async () => {
-    const user = userEvent.setup()
-    rememberedUsernames.upsert(SUBDOMAIN, 'alice')
-    rememberedUsernames.upsert(SUBDOMAIN, 'bob')
-    render(<LoginView />)
-
-    await user.click(screen.getByRole('button', { name: 'Close' }))
-
-    expect(screen.queryByText('Choose a username')).not.toBeInTheDocument()
-    expect(screen.getByLabelText('Username')).toHaveValue('')
-
-    await user.type(screen.getByLabelText('Username'), 'zoe')
-    expect(screen.getByLabelText('Username')).toHaveValue('zoe')
-  })
-
-  it('typing directly into the username field while the popup is open dismisses the popup and the keystroke is not lost', async () => {
-    const user = userEvent.setup()
-    rememberedUsernames.upsert(SUBDOMAIN, 'alice')
-    rememberedUsernames.upsert(SUBDOMAIN, 'bob')
-    render(<LoginView />)
-
-    expect(screen.getByText('Choose a username')).toBeInTheDocument()
-    await user.type(screen.getByLabelText('Username'), 'z')
-
-    expect(screen.queryByText('Choose a username')).not.toBeInTheDocument()
-    expect(screen.getByLabelText('Username')).toHaveValue('z')
-  })
-
-  it('list is filtered to the detected subdomain — a remembered entry saved under a different subdomain is neither pre-filled nor shown in the popup', () => {
+  it('list is filtered to the detected subdomain — an entry saved under a different subdomain is not pre-filled', () => {
     rememberedUsernames.upsert('other-clinic', 'carol')
     rememberedUsernames.upsert(SUBDOMAIN, 'alice')
-    rememberedUsernames.upsert(SUBDOMAIN, 'bob')
     render(<LoginView />)
-
-    expect(screen.getByText('Choose a username')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'carol' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'alice' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'bob' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Username')).toHaveValue('alice')
   })
 })
