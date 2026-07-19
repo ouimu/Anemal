@@ -19,6 +19,7 @@ export type PlanRow = {
   maxBranches: number
   maxUsers: number
   maxOwners: number | null
+  maxPets: number | null
   features: import('@prisma/client').Prisma.JsonValue
   isActive: boolean
 }
@@ -31,6 +32,7 @@ export interface CreatePlanData {
   maxBranches?: number
   maxUsers?: number
   maxOwners?: number | null
+  maxPets?: number | null
   features?: Prisma.InputJsonValue
 }
 
@@ -41,6 +43,7 @@ export interface UpdatePlanData {
   maxBranches?: number
   maxUsers?: number
   maxOwners?: number | null
+  maxPets?: number | null
   features?: Prisma.InputJsonValue
   isActive?: boolean
 }
@@ -50,6 +53,7 @@ export interface QuotaOverrideData {
   maxBranches?: number | null
   maxUsers?: number | null
   maxOwners?: number | null
+  maxPets?: number | null
 }
 
 /**
@@ -82,6 +86,7 @@ export function createPlan(data: CreatePlanData): Promise<PlanRow> {
       maxBranches: data.maxBranches ?? 1,
       maxUsers: data.maxUsers ?? 5,
       maxOwners: data.maxOwners ?? null,
+      maxPets: data.maxPets === undefined ? 500 : data.maxPets,
       features: data.features ?? {},
     },
   })
