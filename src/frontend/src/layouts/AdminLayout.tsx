@@ -17,7 +17,6 @@ const NAV = [
   { to: '/clinic-admin/usage',        icon: 'bar_chart',    label: 'nav.usage' },
   { to: '/clinic-admin/settings',     icon: 'event',        label: 'nav.appointmentSettings' },
   { to: '/clinic-admin/subscription', icon: 'credit_card',  label: 'nav.subscription' },
-  { to: '/clinic-admin/branches',     icon: 'apartment',    label: 'nav.branches' },
   { to: '/clinic-admin/blood-bank',   icon: 'bloodtype',    label: 'nav.bloodBank' },
   { to: '/clinic-admin/audit',        icon: 'policy',       label: 'nav.auditLog' },
   { to: '/clinic-admin/roles',        icon: 'admin_panel_settings', label: 'nav.roles' },

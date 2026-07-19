@@ -153,7 +153,7 @@ export default function AdminDashboard() {
             { href: '/admin/users',    icon: 'group',      label: 'Manage users & roles' },
             { href: '/settings/clinic-profile', icon: 'business', label: 'Edit clinic profile' },
             { href: '/admin/usage',    icon: 'bar_chart',  label: 'View usage report' },
-            { href: '/admin/branches', icon: 'apartment',  label: 'Manage branches' },
+            { href: '/settings/branches', icon: 'apartment', label: 'Manage branches' },
           ].map(a => (
             <Link key={a.href} to={a.href}
               className="flex items-center gap-3 min-h-[44px] px-2 rounded-lg hover:bg-surface-container-low text-body-sm text-on-surface transition-colors">
