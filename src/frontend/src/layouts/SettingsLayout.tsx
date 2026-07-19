@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { NavLink, Link, Outlet } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { useLogout } from '../hooks/useAuth'
+import { useAdminSettings } from '../hooks/useAdmin'
 import { useUiStore } from '../store/uiStore'
 import { useT } from '../i18n'
 import MaterialIcon from '../components/MaterialIcon'
@@ -23,6 +24,7 @@ export default function SettingsLayout() {
   const name   = useAuthStore(s => s.name)
   const logout = useLogout()
   const t      = useT()
+  const { data } = useAdminSettings()
   const { sidebarOpen, toggleSidebar } = useUiStore()
 
   // Exit target for the Back button: admins return to the clinic-admin console,
@@ -61,9 +63,9 @@ export default function SettingsLayout() {
           {sidebarOpen && (
             <div className="pl-sm min-w-0">
               <p className="text-headline-sm font-headline font-bold text-primary leading-tight truncate">
-                Anemal
+                {data?.tenant.name ?? 'Anemal'}
               </p>
-              <p className="text-label-md text-on-surface-variant mt-0.5">Settings</p>
+              <p className="text-label-md text-on-surface-variant mt-0.5">{t('nav.clinicSettings')}</p>
             </div>
           )}
           <button
