@@ -43,6 +43,7 @@ export interface EffectiveTenantQuota {
   maxBranches: number | null
   maxUsers: number | null
   maxOwners: number | null
+  maxPets: number | null
 }
 
 /**
@@ -73,6 +74,7 @@ export async function getEffectiveQuota(tenantId: number): Promise<EffectiveTena
     maxBranches: tenant?.quota?.maxBranches ?? tenant?.plan?.maxBranches ?? FALLBACK_BRANCHES,
     maxUsers:    tenant?.quota?.maxUsers    ?? tenant?.plan?.maxUsers    ?? FALLBACK_USERS,
     maxOwners:   tenant?.quota?.maxOwners   ?? tenant?.plan?.maxOwners   ?? null, // null = unlimited
+    maxPets:     tenant?.quota?.maxPets     ?? tenant?.plan?.maxPets     ?? null, // null = unlimited
   }
 }
 
@@ -122,6 +124,23 @@ export async function assertCanAddOwner(tenantId: number): Promise<void> {
   const current = await prisma.owner.count({ where: { tenantId } })
   if (current >= quota.maxOwners) {
     throw new QuotaExceededError('owners', quota.maxOwners, current)
+  }
+}
+
+/**
+ * Assert that a new active pet can be created for this tenant.
+ * Throws QuotaExceededError (409) when the pet limit is reached.
+ * A null limit (unlimited) always passes.
+ *
+ * @param tenantId - Tenant to check.
+ */
+export async function assertCanAddPet(tenantId: number): Promise<void> {
+  const quota = await getEffectiveQuota(tenantId)
+  if (quota.maxPets === null) return
+
+  const current = await prisma.pet.count({ where: { tenantId, isActive: true } })
+  if (current >= quota.maxPets) {
+    throw new QuotaExceededError('pets', quota.maxPets, current)
   }
 }
 
