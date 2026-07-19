@@ -22,6 +22,7 @@ import app from '../../app'
 import * as subscriptionService from '../../services/subscription.service'
 import * as branchService from '../../services/branch.service'
 import * as ownerService from '../../services/owner.service'
+import { getTenantWithPlanAndQuota } from '../../models/platform-customers.repository'
 
 const prisma = new PrismaClient()
 let server: Server
@@ -251,6 +252,17 @@ describe('T-5D-02 Customer management', () => {
     // Service normalizes to flat CustomerDetail shape (no nested plan object)
     expect(res.body.data.maxUsers).toBe(3)
     expect(res.body.data.planName).toBeDefined()
+  })
+
+  it('pc-maxpets-01: getTenantWithPlanAndQuota includes maxPets from plan and override', async () => {
+    const row = await getTenantWithPlanAndQuota(customerId)
+    expect(row).not.toBeNull()
+    expect(row!.plan).toHaveProperty('maxPets')
+    expect(typeof row!.plan!.maxPets === 'number' || row!.plan!.maxPets === null).toBe(true)
+    if (row!.quota) {
+      expect(row!.quota).toHaveProperty('maxPets')
+      expect(typeof row!.quota.maxPets === 'number' || row!.quota.maxPets === null).toBe(true)
+    }
   })
 
   it('✅ PUT /platform/customers/:id updates name and subdomain', async () => {

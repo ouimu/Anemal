@@ -40,11 +40,13 @@ export type TenantWithPlanAndQuota = TenantRow & {
     maxBranches: number
     maxUsers: number
     maxOwners: number | null
+    maxPets: number | null
   } | null
   quota: {
     maxBranches: number | null
     maxUsers: number | null
     maxOwners: number | null
+    maxPets: number | null
     updatedById: number | null
     updatedAt: Date
   } | null
@@ -207,6 +209,7 @@ export async function getTenantWithPlanAndQuota(id: number): Promise<TenantWithP
           maxBranches: true,
           maxUsers: true,
           maxOwners: true,
+          maxPets: true,
         },
       },
       quota: {
@@ -214,6 +217,7 @@ export async function getTenantWithPlanAndQuota(id: number): Promise<TenantWithP
           maxBranches: true,
           maxUsers: true,
           maxOwners: true,
+          maxPets: true,
           updatedById: true,
           updatedAt: true,
         },
