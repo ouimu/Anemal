@@ -117,3 +117,36 @@ quotas, and IA cleanup. Spec: `.claude/specs/RBAC_Platform_Restructure_Spec.md`.
 - Test commits: `roleEditor-t5f01.test.ts`, `platform-console-t5f02.test.ts`, `user-roles-t5f03.test.ts`, `RoleEditorView.test.tsx` (28), `PlatformConsole.test.tsx`, `RolePicker.test.tsx`. ~394 total tests.
 
 **Phase 8 is COMPLETE. Next: Phase 9 — i18n Rollout.**
+
+---
+
+## Deferred Add-ons
+
+Items intentionally postponed — not blocking any current phase, revisit when the
+triggering condition below is met.
+
+### ADD-01 — Durable audit writes (both planes)
+
+**Trigger:** an audit-completeness or compliance requirement appears (enterprise
+customer, security review, regulated tenant). Not needed at dev/pilot scale.
+
+**Problem:** `auditMiddleware` writes audit rows from a `res.on('finish')` handler
+without awaiting them (`src/backend/middlewares/audit.middleware.ts`). Applies to
+both branches — `PlatformAuditLog` (platform plane) and `AuditLog` (clinic plane).
+Consequences:
+- Process crash / restart / deploy between response and insert → the audit row is
+  silently lost; the action itself already succeeded and returned 200.
+- A failed insert is only `logger.error`'d — no retry, no alert, no surfacing to the caller.
+- Net effect: the action happened, but no evidence it did.
+
+**Options:**
+1. `await` the audit write before sending the response — simplest, costs one extra
+   round-trip of latency per mutating request.
+2. Transactional outbox / durable queue with retry — no added latency, survives
+   crashes, but adds a moving part to operate.
+
+**Note:** the current behavior is deliberate (see the middleware's header comment),
+not an oversight. `TC-S011` in `settings-api.test.ts` polls for the row because of
+this — if this item ships, that poll can go back to a single read.
+
+**Discovered:** 2026-07-20, while root-causing the TC-S011 flake (PR #35).

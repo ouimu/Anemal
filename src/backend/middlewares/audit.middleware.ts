@@ -15,6 +15,10 @@ const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 export function auditMiddleware(req: Request, res: Response, next: NextFunction): void {
   if (!MUTATING.has(req.method)) { next(); return }
 
+  // ponytail: fire-and-forget audit write — an audit row can be lost if the process
+  // dies between response and insert, and a failed insert is only logged, never retried.
+  // Deliberate at current scale; upgrade path (await-before-response, or outbox+retry)
+  // tracked as ADD-01 in .planning/ROADMAP.md.
   res.on('finish', () => {
     const ctx = req.context
     if (!ctx || res.statusCode >= 400) return // only successful, authenticated mutations
