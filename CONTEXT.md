@@ -11,6 +11,11 @@ _Avoid_: "vet", "practitioner" — code and schema use "doctor" throughout.
 **Role lineage** (`ClinicRole.sourceRoleId`):
 A pointer from a tenant's custom role back to the system role it was cloned from (e.g. a renamed/customized "Doctor" role). Direct pointer only, not transitive — a clone-of-a-clone is not currently possible since `cloneRole` only clones system roles.
 _Avoid_: "role parent", "base role".
+_Note_: role-lineage-aware matching is deliberately **not** universal — see "Single role per user" below. "Bookable doctor" (appointments) uses lineage; the Admin Branches doctor picker intentionally does not (ADR-0019).
+
+**Single role per user** (ADR-0019, 2026-07-20):
+Every `User` holds exactly one role (`User.roleId`, `NOT NULL`) — never zero, never more than one. Combined access is achieved by cloning a role with the desired permission mix, not by assigning multiple roles to one user. This retires the earlier multi-role model (FR-14b/CR-01), which allowed a user's effective permissions to be the union of several assigned roles via the `user_roles` join table.
+_Avoid_: "assign a role" implying additive/stacking behavior — assigning a new role **replaces** the user's current one. Avoid "roles" (plural) when referring to what one user holds; a user has "a role", the tenant has "roles" (plural, the catalogue).
 
 **Branch scope (server-derived)**:
 The branch a request is scoped to, taken exclusively from the authenticated session (`req.context.branchId`), never from client-supplied input (query/body). `null` means an all-branches admin session — no branch filter applied, not an error.
