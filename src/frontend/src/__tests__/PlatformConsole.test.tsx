@@ -210,13 +210,14 @@ describe('AC-F3 — CustomerDetailView tabs + usage', () => {
     expect(screen.getByRole('button', { name: 'Usage' })).toBeInTheDocument()
   })
 
-  it('✅ Usage tab renders Branches/Staff/Customers progress bars (component-expected shape)', () => {
+  it('✅ Usage tab renders Branches/Staff/Customers/Pets progress bars (component-expected shape)', () => {
     // Shape the COMPONENT expects (nested current/limit). See contract test below
     // for why the live backend payload does NOT match this.
     state.usage = {
       branches: { current: 2, limit: 3 },
       staff:    { current: 5, limit: 10 },
       owners:   { current: 40, limit: 100 },
+      pets:     { current: 12, limit: 50 },
     }
     render(<CustomerDetailView />)
     fireEvent.click(screen.getByRole('button', { name: 'Usage' }))
@@ -224,6 +225,7 @@ describe('AC-F3 — CustomerDetailView tabs + usage', () => {
     expect(screen.getByText('Branches')).toBeInTheDocument()
     expect(screen.getByText('Staff')).toBeInTheDocument()
     expect(screen.getByText('Customers')).toBeInTheDocument()
+    expect(screen.getByText('Pets')).toBeInTheDocument()
   })
 
   it('fetches company-types via platformApi, never the clinic api client (BUG-007)', async () => {

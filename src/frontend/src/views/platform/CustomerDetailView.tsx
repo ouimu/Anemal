@@ -365,6 +365,7 @@ function UsageTab({ id }: { id: number }) {
       <QuotaBar label="Branches"  current={usage.branches.current} limit={usage.branches.limit} />
       <QuotaBar label="Staff"     current={usage.staff.current}    limit={usage.staff.limit} />
       <QuotaBar label="Customers" current={usage.owners.current}   limit={usage.owners.limit} />
+      <QuotaBar label="Pets"      current={usage.pets.current}     limit={usage.pets.limit} />
     </div>
   )
 }
