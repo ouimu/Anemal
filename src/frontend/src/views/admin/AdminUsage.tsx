@@ -5,25 +5,32 @@ import { useAuthStore } from '../../store/authStore'
 import MaterialIcon from '../../components/MaterialIcon'
 import BranchSwitcher from '../../components/BranchSwitcher'
 
+interface QuotaCaps {
+  maxBranches: number | null
+  maxUsers: number | null
+  maxOwners: number | null
+  maxPets: number | null
+}
+
 interface Usage {
   totalPets: number; totalOwners: number; totalUsers: number; activeUsers: number
   appointmentsThisMonth: number; appointmentsToday: number; invoicesThisMonth: number; planTier: string
+  caps: QuotaCaps
 }
 
-const PLAN_LIMITS: Record<string, { users: number; pets: number }> = {
-  starter:      { users: 3,   pets: 500 },
-  professional: { users: 999, pets: 999999 },
-  enterprise:   { users: 999, pets: 999999 },
+function formatCap(cap: number | null): string {
+  return cap === null ? '∞' : String(cap)
 }
 
-function Bar({ value, max, color = 'bg-secondary' }: { value: number; max: number; color?: string }) {
-  const pct = Math.min(100, Math.round((value / Math.max(max, 1)) * 100))
+function Bar({ value, max, color = 'bg-secondary' }: { value: number; max: number | null; color?: string }) {
+  const effectiveMax = max === null ? Math.max(value, 1) : max
+  const pct = max === null ? 0 : Math.min(100, Math.round((value / Math.max(effectiveMax, 1)) * 100))
   return (
     <div className="flex items-center gap-3">
       <div className="flex-1 bg-surface-container rounded-full h-2">
         <div className={`${color} h-2 rounded-full transition-all`} style={{ width: `${pct}%` }}/>
       </div>
-      <span className="text-xs text-on-surface-variant w-10 text-right">{pct}%</span>
+      <span className="text-xs text-on-surface-variant w-10 text-right">{max === null ? '—' : `${pct}%`}</span>
     </div>
   )
 }
@@ -36,10 +43,11 @@ export default function AdminUsage() {
   })
   const { data: settings } = useAdminSettings()
   const tier = data?.planTier ?? 'starter'
-  const limits = PLAN_LIMITS[tier] ?? PLAN_LIMITS.starter
 
   if (isLoading) return <div className="p-6 text-sm text-on-surface-variant">Loading…</div>
   if (!data) return null
+
+  const caps = data.caps
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
@@ -54,7 +62,6 @@ export default function AdminUsage() {
         <BranchSwitcher />
       </div>
 
-      {/* KPI row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
           { label: 'Patients',          value: data.totalPets,             icon: 'pets' },
@@ -70,30 +77,28 @@ export default function AdminUsage() {
         ))}
       </div>
 
-      {/* Quota bars */}
       <div className="bg-surface border border-outline-variant rounded-2xl p-5 mb-6">
         <h3 className="text-sm font-semibold text-on-surface mb-4">Plan quota</h3>
         <div className="space-y-4">
           <div>
             <div className="flex justify-between text-xs text-on-surface-variant mb-1">
               <span>Users</span>
-              <span>{data.activeUsers} / {limits.users === 999 ? '∞' : limits.users}</span>
+              <span>{data.activeUsers} / {formatCap(caps.maxUsers)}</span>
             </div>
-            <Bar value={data.activeUsers} max={limits.users}
-              color={data.activeUsers / limits.users > 0.9 ? 'bg-error' : 'bg-secondary'}/>
+            <Bar value={data.activeUsers} max={caps.maxUsers}
+              color={caps.maxUsers !== null && data.activeUsers / caps.maxUsers > 0.9 ? 'bg-error' : 'bg-secondary'}/>
           </div>
           <div>
             <div className="flex justify-between text-xs text-on-surface-variant mb-1">
               <span>Registered patients</span>
-              <span>{data.totalPets} / {limits.pets === 999999 ? '∞' : limits.pets}</span>
+              <span>{data.totalPets} / {formatCap(caps.maxPets)}</span>
             </div>
-            <Bar value={data.totalPets} max={limits.pets}
-              color={data.totalPets / limits.pets > 0.9 ? 'bg-warning' : 'bg-success'}/>
+            <Bar value={data.totalPets} max={caps.maxPets}
+              color={caps.maxPets !== null && data.totalPets / caps.maxPets > 0.9 ? 'bg-warning' : 'bg-success'}/>
           </div>
         </div>
       </div>
 
-      {/* Clinic info */}
       <div className="bg-surface border border-outline-variant rounded-2xl p-5">
         <h3 className="text-sm font-semibold text-on-surface mb-3">Clinic summary</h3>
         <div className="divide-y divide-outline-variant">
