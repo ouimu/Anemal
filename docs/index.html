@@ -4578,6 +4578,7 @@ cd ../frontend &amp;&amp; rm -rf node_modules &amp;&amp; npm install</code></pre
         <tr><td><span class="badge phase">Main Branch + password change</span></td><td>Platform-provisioned tenants auto-get a "Main Branch" (was zero, blocking staff/doctor login); clinic self-service password change + admin-assisted reset, both revoking all refresh tokens on success (PR #26, ADR-0015 amendment)</td><td><span class="cl-status complete">Complete</span></td><td>979 backend / 256 frontend</td><td>2026-07-15</td></tr>
         <tr><td><span class="badge phase">Clinic password UI + first-admin lockout</span></td><td>Frontend for PR #26's endpoints (admin reset field in Edit User modal, self-service Change Password card on Preferences); new backend guard blocks deactivating/demoting a tenant's primary admin on both DELETE and PUT paths, restore re-checks seat quota; discoverable row Deactivate/Restore with locked icon on primary-admin row (PR #27, ADR-0016)</td><td><span class="cl-status complete">Complete</span></td><td>993 backend / 283 frontend</td><td>2026-07-15</td></tr>
         <tr><td><span class="badge phase">Settings IA restructure</span></td><td>Admin "Settings" renamed to "Appointment" (appointment defaults + reminders only); idle-timeout Security policy moved to Users &amp; Roles (below the user list); My Preferences split into a standalone <code>/preferences</code> page (role-aware Back-to-dashboard, profile-menu repointed); "Clinic Settings" surfaced on the admin dashboard sidebar; Clinic Profile and Branches de-duplicated out of the admin sidebar into Clinic Settings; TopNav titles rekeyed to match <code>/clinic-admin/*</code> routes; remember-me collapsed to single most-recent-username prefill (ADR-0017 supersedes ADR-0010's chooser-modal UI) (PR #31)</td><td><span class="cl-status complete">Complete</span></td><td>993 backend / 283 frontend</td><td>2026-07-19</td></tr>
+        <tr><td><span class="badge phase">Usage Stats quota fix</span></td><td>maxPets quota field mirroring maxOwners across schema, all 3 quota resolvers, and enforcement; fixes AdminUsage.tsx rendering fake hardcoded PLAN_LIMITS (PR #33, ADR-0018)</td><td><span class="cl-status complete">Complete</span></td><td>1021 backend / 291 frontend</td><td>2026-07-20</td></tr>
         <tr><td><span class="badge phase">Phase 10</span></td><td>Payment gateway + SaaS billing</td><td><span class="cl-status paused">Paused</span></td><td>—</td><td>Needs credentials</td></tr>
         <tr><td><span class="badge phase">Phase 11</span></td><td>LINE/SMS dispatch</td><td><span class="cl-status paused">Paused</span></td><td>—</td><td>Needs credentials</td></tr>
       </tbody>
@@ -4585,6 +4586,33 @@ cd ../frontend &amp;&amp; rm -rf node_modules &amp;&amp; npm install</code></pre
   </div>
 
   <hr/>
+
+  <!-- USAGE_STATS_QUOTA_FIX_BLOCK -->
+  <div class="cl-phase-block" id="cl-usage-stats-quota-fix" style="border-left:4px solid #16a34a">
+    <div class="cl-phase-header">
+      <div class="cl-phase-num">🐾</div>
+      <div>
+        <div class="cl-phase-title">Usage Stats Quota Fix — Real maxPets Across All 3 Resolvers</div>
+        <div class="cl-phase-subtitle">PR #33 · ADR-0018 · user-reported bug: clinic Usage Stats page showed fake hardcoded quota numbers</div>
+      </div>
+      <div class="cl-phase-meta">
+        <div class="cl-phase-date">2026-07-20</div>
+        <span class="cl-status complete">Complete</span>
+      </div>
+    </div>
+    <div class="cl-phase-body">
+      <p>The clinic Usage Stats page (<code>AdminUsage.tsx</code>) rendered a hardcoded fake <code>PLAN_LIMITS</code> constant instead of the tenant's real effective quota, and quota itself only tracked branches/users/owners — pets weren't capped or shown anywhere. Added a 4th quota dimension (<code>maxPets</code>) mirroring the existing <code>maxOwners</code> pattern end-to-end, executed as a 16-task subagent-driven-development plan (each task independently TDD'd and code-reviewed) plus one QA-driven follow-up fix.</p>
+      <ul class="cl-deliverables">
+        <li><strong>Schema</strong> — <code>maxPets</code> added to <code>Plan</code> and <code>TenantQuota</code> (migration <code>20260719120000_add_max_pets_quota</code>).</li>
+        <li><strong>All 3 independent quota resolvers updated</strong> — platform-plane (<code>platform-plans.service.ts</code>), customer-detail override site (<code>platform-customers.service.ts</code>), and clinic-plane (<code>subscription.service.ts</code>), each following the existing <code>override ?? plan ?? null</code> precedence already used for the other 3 dimensions.</li>
+        <li><strong>Enforcement</strong> — new <code>assertCanAddPet</code> wired into <code>pet.service.ts</code>'s <code>createPet</code>, same shape as the existing owner-quota guard.</li>
+        <li><strong><code>AdminUsage.tsx</code> fixed</strong> — fake <code>PLAN_LIMITS</code> constant deleted entirely; page now renders the real effective caps returned by <code>GET /admin/usage</code>.</li>
+        <li><strong>Platform Console</strong> — Max Pets field + table column on the Plan editor, Max Pets override field on per-tenant quota editor, and a 4th Pets <code>QuotaBar</code> on the Customer Detail Usage tab (this last one was a gap QA caught after the other 15 tasks landed — backend/hook already had the data, the bar just wasn't wired in the JSX; fixed same-day, re-verified clean).</li>
+      </ul>
+      <span class="cl-test-count">993 → 1021 backend · 283 → 291 frontend · tsc clean both sides · @qa-agent sign-off (tenant isolation, RBAC/plane isolation, null-quota edge cases, cross-resolver consistency) APPROVE · live browser smoke walkthrough both rounds</span>
+    </div>
+  </div>
+  <!-- /USAGE_STATS_QUOTA_FIX_BLOCK -->
 
   <!-- SETTINGS_IA_RESTRUCTURE_BLOCK -->
   <div class="cl-phase-block" id="cl-settings-ia-restructure" style="border-left:4px solid #16a34a">

@@ -6,8 +6,19 @@
 > This matrix is the canonical status source; @pm-agent updates it LAST on every
 > task (see CLAUDE.md → Tracking & Documentation).
 >
-> Current totals as of PR #28 (2026-07-17, "clinic-admin password
-> type/generate toggle + surface real error messages"): `PasswordField`
+> Current totals as of PR #33 (2026-07-20, "Usage Stats page renders real
+> quota instead of fake hardcoded numbers", ADR-0018): added a 4th quota
+> field `maxPets` mirroring `maxOwners` across schema, all 3 independent
+> quota resolvers (platform-plane, customer-detail override, clinic-plane
+> subscription), and enforcement (`assertCanAddPet` on pet creation).
+> Fixed the actual reported bug: `AdminUsage.tsx` rendered a hardcoded fake
+> `PLAN_LIMITS` constant instead of the tenant's real effective quota — now
+> consumes real `caps` from `GET /admin/usage`. Added Max Pets to the
+> Platform Console Plan editor + table, per-tenant quota override editor,
+> and a 4th Pets `QuotaBar` on the Customer Detail Usage tab (QA-caught gap,
+> fixed same-day). Backend 993 → 1021, frontend 283 → 291 — on top of PR
+> #28 (2026-07-17, "clinic-admin password type/generate toggle + surface
+> real error messages"): `PasswordField`
 > reworked as a `usePasswordField()` hook so the toggle can sit in the
 > dialog's action row and switch back from generated to typed mode; finished
 > the `getErrorMessage()` rollout (platform login, customer list, settings
@@ -105,11 +116,11 @@
 | Platform — customers | `/platform/customers/*` | Tenant metadata, suspend/reactivate, quotas, per-customer usage (company-type detail contract fixed, ADR-0007 D2) | `routes/platform-customers.routes.ts` | `views/platform/CustomerDetailView.tsx` | `tests/integration/platformContract.test.ts` | implemented |
 | Platform — trial lifecycle | customer create/edit/status | `default_trial_days` setting exists; `Tenant.trialEndsAt` schema/write flow deferred | `controllers/system-settings.controller.ts` | read-only `trialEndsAt` display only when present | `tests/integration/platformContract.test.ts` | deferred (Phase 10, ADR-0003 D2) |
 | Platform — company types | `/platform/company-types` | Plane client/path fixed; Customer Detail's `companyTypeId` scalar + picker label bug fixed (ADR-0007 D2) | `routes/platform-company-type.routes.ts` | `views/platform/CustomerDetailView.tsx:42` | `tests/integration/platformContract.test.ts` | implemented |
-| Platform — plans/quotas | `/platform/plans/*` | Package + per-tenant quota mgmt (branches/users require min=1 — ADR-0007 D4) | `routes/platform-plans.routes.ts` | `views/platform/PlatformPlansView.tsx` | `tests/integration/platformContract.test.ts` | implemented |
+| Platform — plans/quotas | `/platform/plans/*` | Package + per-tenant quota mgmt (branches/users require min=1 — ADR-0007 D4); 4th dimension `maxPets` added mirroring `maxOwners` (PR #33, ADR-0018) | `routes/platform-plans.routes.ts` | `views/platform/PlatformPlansView.tsx` | `tests/integration/platformContract.test.ts` | implemented |
 | Platform — settings | `/platform/settings/*` | Integration secrets, AES-256-GCM; featureFlags removed (ADR-0007 D3) | `controllers/system-settings.controller.ts` | `views/platform/PlatformSettingsView.tsx` | `tests/integration/auditRedaction.test.ts` | implemented |
 | Platform — audit log | `/platform/audit/*` | Cross-tenant audit sink | `routes/platform-audit.routes.ts` | `views/platform/PlatformAuditView.tsx` | `tests/integration/auditRedaction.test.ts` | implemented |
 | Platform — users CRUD | — | 2-role static enum via seed only | — | — | — | deferred (ADR-0004 D6) |
-| Platform — per-customer usage | `/platform/customers/:id/usage` | Live branches/users/owners vs effective quota | `routes/platform-customers.routes.ts`, `services/usage.service.ts` | `views/platform/CustomerDetailView.tsx` | — | implemented |
+| Platform — per-customer usage | `/platform/customers/:id/usage` | Live branches/users/owners/pets vs effective quota (`maxPets` added PR #33, ADR-0018 — was fake hardcoded `PLAN_LIMITS` on the clinic-side `AdminUsage.tsx` before this fix) | `routes/platform-customers.routes.ts`, `services/usage.service.ts`, `routes/admin.routes.ts` | `views/platform/CustomerDetailView.tsx`, `views/admin/AdminUsage.tsx` | `tests/integration/platformConsole.test.ts`, `__tests__/adminSettings.test.ts` | implemented |
 | Platform — clinic admin users | `/platform/customers/:id/admin-users/*` | First `clinic_admin` auto-created in `createCustomer()`'s transaction; ongoing create/list/deactivate/reset-password scoped to `clinic_admin`-role users only (bounded plane-separation exception, ADR-0015) | `routes/platform-customers.routes.ts`, `services/platform-customers.service.ts` | `components/platform/ClinicAdminsTab.tsx` | `tests/integration/platform-customer-admin-users.test.ts` | implemented |
 | Platform — cross-tenant usage aggregate | `/platform/usage` | Aggregate dashboard not built | — | — | — | deferred (ADR-0004 D6) |
 | Platform — per-tenant provisioning API | `/platform/customers/:id/provisioning` | Backend GET/PUT with encrypted/masked secrets | `routes/platform-customers.routes.ts`, `services/platform-provisioning.service.ts` | — | — | backend-only |
