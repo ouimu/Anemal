@@ -1,19 +1,32 @@
 // Subscription & tenant info — multi-tenant expansion panel
 import { useAdminSettings } from '../../hooks/useAdmin'
-import { useSubscriptionStatus } from '../../hooks/useSubscription'
+import { useSubscriptionStatus, type SubscriptionPlan } from '../../hooks/useSubscription'
 
-const PLANS = [
-  { tier: 'starter',      label: 'Starter',      price: '฿990/mo',   features: ['1 clinic','Up to 3 users','Basic reports'] },
-  { tier: 'professional', label: 'Professional', price: '฿2,490/mo', features: ['1 clinic','Unlimited users','Advanced reports','LINE & SMS'] },
-  { tier: 'enterprise',   label: 'Enterprise',   price: 'Custom',    features: ['Multiple clinics','Multi-tenant','API access','Dedicated support'] },
-]
+function formatPrice(price: number): string {
+  return `฿${price.toLocaleString()}/mo`
+}
+
+function formatCount(n: number | null): string {
+  return n === null ? 'Unlimited' : n.toLocaleString()
+}
+
+function planFeatures(plan: SubscriptionPlan): string[] {
+  return [
+    `Up to ${plan.maxBranches} ${plan.maxBranches === 1 ? 'clinic' : 'clinics'}`,
+    `Up to ${plan.maxUsers} users`,
+    `${formatCount(plan.maxOwners)} customers`,
+    `${formatCount(plan.maxPets)} patients`,
+    ...plan.features,
+  ]
+}
 
 export default function SubscriptionTab() {
   const { data, isLoading } = useAdminSettings()
   const { data: sub } = useSubscriptionStatus()
   if (isLoading) return <p className="text-sm text-on-surface-variant py-8 text-center">Loading…</p>
 
-  const current = data?.planTier ?? 'starter'
+  const current = sub?.currentPlanKey ?? data?.planTier ?? 'starter'
+  const plans = sub?.plans ?? []
 
   const maxUsers = sub?.quota?.maxUsers ?? null
   const usedUsers = sub?.usage?.users ?? 0
@@ -52,7 +65,7 @@ export default function SubscriptionTab() {
           {[
             { label: 'Clinic name',  value: data?.tenant.name ?? '—' },
             { label: 'Subdomain',    value: `${data?.tenant.subdomain ?? ''}.anemal.app` },
-            { label: 'Current plan', value: current.charAt(0).toUpperCase() + current.slice(1) },
+            { label: 'Current plan', value: plans.find(p => p.key === current)?.name ?? (current.charAt(0).toUpperCase() + current.slice(1)) },
           ].map(({ label, value }) => (
             <div key={label} className="flex items-center justify-between px-5 py-3 min-h-[44px]">
               <span className="text-sm text-on-surface-variant">{label}</span>
@@ -65,33 +78,37 @@ export default function SubscriptionTab() {
       {/* Plan cards */}
       <section>
         <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Plans</h3>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {PLANS.map(plan => {
-            const isCurrent = plan.tier === current
-            return (
-              <div key={plan.tier}
-                className={`bg-surface border rounded-xl p-5 flex flex-col gap-3 ${isCurrent ? 'border-primary ring-1 ring-primary/20' : 'border-outline-variant'}`}>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-on-surface">{plan.label}</span>
-                  {isCurrent && <span className="text-xs px-2 py-0.5 rounded-full bg-secondary-container text-secondary-on-container font-medium">Current</span>}
+        {plans.length === 0 ? (
+          <p className="text-sm text-on-surface-variant">No plans configured yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {plans.map(plan => {
+              const isCurrent = plan.key === current
+              return (
+                <div key={plan.key}
+                  className={`bg-surface border rounded-xl p-5 flex flex-col gap-3 ${isCurrent ? 'border-primary ring-1 ring-primary/20' : 'border-outline-variant'}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-on-surface">{plan.name}</span>
+                    {isCurrent && <span className="text-xs px-2 py-0.5 rounded-full bg-secondary-container text-secondary-on-container font-medium">Current</span>}
+                  </div>
+                  <p className="text-xl font-bold text-on-surface">{formatPrice(plan.price)}</p>
+                  <ul className="space-y-1 flex-1">
+                    {planFeatures(plan).map(f => (
+                      <li key={f} className="text-xs text-on-surface-variant flex items-center gap-1.5">
+                        <span className="text-success">✓</span>{f}
+                      </li>
+                    ))}
+                  </ul>
+                  {!isCurrent && (
+                    <button className="min-h-[44px] w-full border border-primary text-primary text-sm rounded-lg font-medium hover:bg-surface-container-low transition-colors">
+                      Upgrade
+                    </button>
+                  )}
                 </div>
-                <p className="text-xl font-bold text-on-surface">{plan.price}</p>
-                <ul className="space-y-1 flex-1">
-                  {plan.features.map(f => (
-                    <li key={f} className="text-xs text-on-surface-variant flex items-center gap-1.5">
-                      <span className="text-success">✓</span>{f}
-                    </li>
-                  ))}
-                </ul>
-                {!isCurrent && (
-                  <button className="min-h-[44px] w-full border border-primary text-primary text-sm rounded-lg font-medium hover:bg-surface-container-low transition-colors">
-                    {plan.tier === 'enterprise' ? 'Contact us' : 'Upgrade'}
-                  </button>
-                )}
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        )}
       </section>
 
       {/* Multi-tenant note */}

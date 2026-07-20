@@ -25,29 +25,31 @@ function renderWithClient() {
   )
 }
 
-test('renders real caps.maxUsers and caps.maxPets from the API response, not a hardcoded constant', async () => {
+test('renders real caps.maxUsers, caps.maxOwners and caps.maxPets from the API response, not a hardcoded constant', async () => {
   mockedApiGet.mockResolvedValue({
     data: { data: {
-      totalPets: 5, totalOwners: 3, totalUsers: 3, activeUsers: 3,
+      totalPets: 5, totalOwners: 4, totalUsers: 3, activeUsers: 3,
       appointmentsThisMonth: 0, appointmentsToday: 0, invoicesThisMonth: 0, planTier: 'starter',
       caps: { maxBranches: 1, maxUsers: 10, maxOwners: 500, maxPets: 500 },
     } },
   })
   renderWithClient()
   expect(await screen.findByText('3 / 10')).toBeInTheDocument()
+  expect(await screen.findByText('4 / 500')).toBeInTheDocument()
   expect(await screen.findByText('5 / 500')).toBeInTheDocument()
 })
 
 test('renders infinity for a null cap', async () => {
   mockedApiGet.mockResolvedValue({
     data: { data: {
-      totalPets: 5, totalOwners: 3, totalUsers: 3, activeUsers: 3,
+      totalPets: 5, totalOwners: 4, totalUsers: 3, activeUsers: 3,
       appointmentsThisMonth: 0, appointmentsToday: 0, invoicesThisMonth: 0, planTier: 'clinic_plus',
       caps: { maxBranches: null, maxUsers: null, maxOwners: null, maxPets: null },
     } },
   })
   renderWithClient()
   expect(await screen.findByText('3 / ∞')).toBeInTheDocument()
+  expect(await screen.findByText('4 / ∞')).toBeInTheDocument()
   expect(await screen.findByText('5 / ∞')).toBeInTheDocument()
 })
 
