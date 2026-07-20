@@ -374,6 +374,21 @@ describe('T-5D-02 Customer management', () => {
     expect(get.body.data.override.maxUsers).toBe(10)
     expect(get.body.data.effective.maxUsers).toBe(10) // override wins over plan default 3
   })
+
+  it('pc-maxpets-04: PUT /platform/customers/:id/quota accepts maxPets override', async () => {
+    const put = await request(server)
+      .put(`/platform/customers/${customerId}/quota`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ maxPets: 750 })
+    expect(put.status).toBe(200)
+
+    const get = await request(server)
+      .get(`/platform/customers/${customerId}/quota`)
+      .set('Authorization', `Bearer ${platformToken}`)
+    expect(get.status).toBe(200)
+    expect(get.body.data.override.maxPets).toBe(750)
+    expect(get.body.data.effective.maxPets).toBe(750)
+  })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────

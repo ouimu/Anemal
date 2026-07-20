@@ -53,6 +53,7 @@ export const setQuotaSchema = z.object({
   maxBranches: z.number().int().positive().optional().nullable(),
   maxUsers:    z.number().int().positive().optional().nullable(),
   maxOwners:   z.number().int().positive().optional().nullable(),
+  maxPets:     z.number().int().positive().optional().nullable(),
 }).strict()
 
 /**
