@@ -27,6 +27,7 @@ export interface CustomerDetail extends Customer {
   maxBranches:   number | null
   maxUsers:      number | null
   maxOwners:     number | null
+  maxPets:       number | null
   companyTypeId: number | null
 }
 
@@ -47,12 +48,14 @@ export interface UpdateQuotaPayload {
   maxBranches?: number | null
   maxUsers?:    number | null
   maxOwners?:   number | null
+  maxPets?:     number | null
 }
 
 export interface CustomerUsage {
   branches: { current: number; limit: number | null }
   staff:    { current: number; limit: number | null }
   owners:   { current: number; limit: number | null }
+  pets:     { current: number; limit: number | null }
 }
 
 /** A clinic_admin-role user of a tenant, as returned by the Clinic Admins tab endpoints. */
@@ -115,10 +118,12 @@ interface RawUsage {
   branches: number
   users:    number
   owners:   number
+  pets:     number
   caps: {
     maxBranches: number | null
     maxUsers:    number | null
     maxOwners:   number | null
+    maxPets:     number | null
   }
   overPlan: boolean
 }
@@ -134,6 +139,7 @@ export function usePlatformCustomerUsage(id: number) {
           branches: { current: raw.branches, limit: raw.caps.maxBranches },
           staff:    { current: raw.users,    limit: raw.caps.maxUsers },
           owners:   { current: raw.owners,   limit: raw.caps.maxOwners },
+          pets:     { current: raw.pets,     limit: raw.caps.maxPets },
         }
         return usage
       }),
@@ -164,7 +170,7 @@ export function useUpdatePlatformCustomer(id: number) {
   })
 }
 
-/** Set per-tenant quota overrides (maxBranches/maxUsers/maxOwners). */
+/** Set per-tenant quota overrides (maxBranches/maxUsers/maxOwners/maxPets). */
 export function useSetCustomerQuota(id: number) {
   const qc = useQueryClient()
   return useMutation({

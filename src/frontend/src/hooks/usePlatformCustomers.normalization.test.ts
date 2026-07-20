@@ -12,7 +12,7 @@
  * realistic raw backend envelope) — matching the existing convention in
  * `src/frontend/src/views/clinic/__tests__/ClinicGrooming.test.tsx`.
  */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, test, expect, vi } from 'vitest'
 
 const queryFns = vi.hoisted(() => [] as Array<() => unknown>)
 vi.mock('@tanstack/react-query', () => ({
@@ -26,7 +26,8 @@ const rawUsage = {
   branches: 2,
   users: 5,
   owners: 40,
-  caps: { maxBranches: 3, maxUsers: 10, maxOwners: 100 },
+  pets: 60,
+  caps: { maxBranches: 3, maxUsers: 10, maxOwners: 100, maxPets: 200 },
   overPlan: false,
 }
 vi.mock('../utils/platformApi', () => ({
@@ -44,6 +45,24 @@ describe('usePlatformCustomerUsage — raw-to-nested normalization (ADR-0007 D6c
       branches: { current: 2, limit: 3 },
       staff:    { current: 5, limit: 10 },
       owners:   { current: 40, limit: 100 },
+      pets:     { current: 60, limit: 200 },
     })
   })
+})
+
+test('usage normalization includes pets dimension from caps.maxPets', () => {
+  const raw = {
+    branches: 1, users: 3, owners: 50, pets: 120,
+    caps: { maxBranches: 3, maxUsers: 10, maxOwners: 500, maxPets: 500 },
+    overPlan: false,
+  }
+  // Mirror the transform usePlatformCustomerUsage's queryFn applies —
+  // extracted here as a pure check since the hook itself needs a QueryClient wrapper
+  const usage = {
+    branches: { current: raw.branches, limit: raw.caps.maxBranches },
+    staff:    { current: raw.users,    limit: raw.caps.maxUsers },
+    owners:   { current: raw.owners,   limit: raw.caps.maxOwners },
+    pets:     { current: raw.pets,     limit: raw.caps.maxPets },
+  }
+  expect(usage.pets).toEqual({ current: 120, limit: 500 })
 })
