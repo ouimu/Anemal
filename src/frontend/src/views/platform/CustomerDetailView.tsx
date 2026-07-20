@@ -214,6 +214,7 @@ function QuotaTab({ id }: { id: number }) {
   const [maxBranches, setMaxBranches] = useState<string>('')
   const [maxUsers,    setMaxUsers]    = useState<string>('')
   const [maxOwners,   setMaxOwners]   = useState<string>('')
+  const [maxPets,     setMaxPets]     = useState<string>('')
 
   const [initialized, setInitialized] = useState(false)
   if (customer && !initialized) {
@@ -221,6 +222,7 @@ function QuotaTab({ id }: { id: number }) {
     setMaxBranches(customer.maxBranches !== null ? String(customer.maxBranches) : '')
     setMaxUsers(customer.maxUsers !== null ? String(customer.maxUsers) : '')
     setMaxOwners(customer.maxOwners !== null ? String(customer.maxOwners) : '')
+    setMaxPets(customer.maxPets !== null ? String(customer.maxPets) : '')
     setInitialized(true)
   }
 
@@ -239,6 +241,7 @@ function QuotaTab({ id }: { id: number }) {
       maxBranches: maxBranches !== '' ? Number(maxBranches) : null,
       maxUsers:    maxUsers    !== '' ? Number(maxUsers)    : null,
       maxOwners:   maxOwners   !== '' ? Number(maxOwners)   : null,
+      maxPets:     maxPets     !== '' ? Number(maxPets)     : null,
     }
     updateQuota.mutate(payload)
   }
@@ -284,6 +287,7 @@ function QuotaTab({ id }: { id: number }) {
           { id: 'maxBranches', label: 'Max Branches', value: maxBranches, set: setMaxBranches },
           { id: 'maxUsers',    label: 'Max Users',    value: maxUsers,    set: setMaxUsers },
           { id: 'maxOwners',   label: 'Max Clients',  value: maxOwners,   set: setMaxOwners },
+          { id: 'maxPets',     label: 'Max Pets',     value: maxPets,     set: setMaxPets },
         ] as const).map((field) => (
           <div key={field.id}>
             <label className="block text-label-md text-on-surface-variant mb-xs" htmlFor={field.id}>

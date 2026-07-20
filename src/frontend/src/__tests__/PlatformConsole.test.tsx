@@ -52,13 +52,14 @@ vi.mock('../utils/platformApi', () => ({
 
 // ── Hoisted mutation spies ──────────────────────────────────────────────────
 const h = vi.hoisted(() => ({
-  createCustomer: vi.fn(),
-  suspend:        vi.fn(),
-  reactivate:     vi.fn(),
-  createPlan:     vi.fn(),
-  retirePlan:     vi.fn(),
-  navigate:       vi.fn(),
-  auditQueryFn:   vi.fn(),
+  createCustomer:   vi.fn(),
+  suspend:          vi.fn(),
+  reactivate:       vi.fn(),
+  createPlan:       vi.fn(),
+  retirePlan:       vi.fn(),
+  navigate:         vi.fn(),
+  auditQueryFn:     vi.fn(),
+  setCustomerQuota: vi.fn(),
 }))
 
 // ── react-router-dom mock ───────────────────────────────────────────────────
@@ -84,6 +85,7 @@ vi.mock('../hooks/usePlatformCustomers', () => ({
   useUpdatePlatformCustomer: () => ({ mutate: vi.fn(), isPending: false, error: null }),
   useSuspendCustomer:        () => ({ mutate: h.suspend, isPending: false }),
   useReactivateCustomer:     () => ({ mutate: h.reactivate, isPending: false }),
+  useSetCustomerQuota:       () => ({ mutate: h.setCustomerQuota, isPending: false, error: null }),
 }))
 
 vi.mock('../hooks/usePlatformPlans', () => ({
@@ -236,6 +238,28 @@ describe('AC-F3 — CustomerDetailView tabs + usage', () => {
 
     expect(platformApiModule.default.get).toHaveBeenCalledWith('/platform/company-types')
     expect(apiModule.default.get).not.toHaveBeenCalled()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Plan & Quota tab — Max Pets per-tenant override
+// ─────────────────────────────────────────────────────────────────────────────
+describe('Quota tab — Max Pets override', () => {
+  it('✅ setting a Max Pets override submits it via PUT quota, and shows the effective value on load', () => {
+    state.customer = {
+      id: 42, name: 'Detail Co', subdomain: 'detailco', status: 'active',
+      planId: 1, maxBranches: null, maxUsers: null, maxOwners: null, maxPets: 300,
+    }
+    render(<CustomerDetailView />)
+    fireEvent.click(screen.getByRole('button', { name: /Plan & Quota/i }))
+
+    expect(screen.getByLabelText('Max Pets')).toHaveValue(300)
+    fireEvent.change(screen.getByLabelText('Max Pets'), { target: { value: '400' } })
+    fireEvent.click(screen.getByText('Save Quotas'))
+
+    expect(h.setCustomerQuota).toHaveBeenCalledWith(
+      expect.objectContaining({ maxPets: 400 }),
+    )
   })
 })
 
