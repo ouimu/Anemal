@@ -291,6 +291,30 @@ describe('AC-F5 — PlatformPlansView CRUD', () => {
     fireEvent.click(screen.getByRole('button', { name: /Retire Professional/i }))
     expect(h.retirePlan).toHaveBeenCalledTimes(1)
   })
+
+  it('✅ creating a plan with a Max Pets value submits maxPets in the payload', () => {
+    render(<PlatformPlansView />)
+    fireEvent.click(screen.getByRole('button', { name: /New Plan/i }))
+    fireEvent.change(screen.getByLabelText(/^Key/),          { target: { value: 'test_plan' } })
+    fireEvent.change(screen.getByLabelText(/Display Name/),  { target: { value: 'Test Plan' } })
+    fireEvent.change(screen.getByLabelText(/Max Branches/),  { target: { value: '2' } })
+    fireEvent.change(screen.getByLabelText(/Max Users/),     { target: { value: '10' } })
+    fireEvent.change(screen.getByLabelText(/Max Pets/),      { target: { value: '500' } })
+    const form = screen.getByText(/^Create Plan$/).closest('form')!
+    fireEvent.submit(form)
+    expect(h.createPlan).toHaveBeenCalledTimes(1)
+    const payload = h.createPlan.mock.calls[0][0] as { maxPets: number }
+    expect(payload.maxPets).toBe(500)
+  })
+
+  it('✅ plans table renders a Pets column with correct values, including infinity for null', () => {
+    state.plans = [
+      { id: 1, key: 'clinic_plus', name: 'Clinic Plus', price: 0, maxBranches: 10, maxUsers: 100, maxOwners: null, maxPets: null, features: [], isRetired: false, createdAt: null },
+    ]
+    render(<PlatformPlansView />)
+    // Both Clients and Pets columns render '∞' for their null values.
+    expect(screen.getAllByText('∞')).toHaveLength(2)
+  })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────

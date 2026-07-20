@@ -23,6 +23,7 @@ const EMPTY_FORM: CreatePlanPayload = {
   maxBranches: 1,
   maxUsers:    5,
   maxOwners:   500,
+  maxPets:     500,
   features:    [],
 }
 
@@ -89,11 +90,12 @@ function PlanForm({ value, onChange, isEdit = false }: PlanFormProps) {
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-sm">
+      <div className="grid grid-cols-4 gap-sm">
         {([
           { id: 'plan-branches', label: 'Max Branches', key: 'maxBranches' as const, min: 1, required: true,  placeholder: undefined },
           { id: 'plan-users',    label: 'Max Users',    key: 'maxUsers'    as const, min: 1, required: true,  placeholder: undefined },
           { id: 'plan-owners',   label: 'Max Clients',  key: 'maxOwners'   as const, min: 0, required: false, placeholder: 'Unlimited' },
+          { id: 'plan-pets',     label: 'Max Pets',     key: 'maxPets'     as const, min: 0, required: false, placeholder: 'Unlimited' },
         ]).map((field) => (
           <div key={field.id}>
             <label className="block text-label-md text-on-surface-variant mb-xs" htmlFor={field.id}>
@@ -148,6 +150,7 @@ export default function PlatformPlansView() {
       maxBranches: plan.maxBranches,
       maxUsers:    plan.maxUsers,
       maxOwners:   plan.maxOwners,
+      maxPets:     plan.maxPets,
       features:    plan.features,
     })
     setModalMode('edit')
@@ -210,6 +213,7 @@ export default function PlatformPlansView() {
                 <th className="text-right px-md py-sm text-label-md text-on-surface-variant">Branches</th>
                 <th className="text-right px-md py-sm text-label-md text-on-surface-variant">Users</th>
                 <th className="text-right px-md py-sm text-label-md text-on-surface-variant">Clients</th>
+                <th className="text-right px-md py-sm text-label-md text-on-surface-variant">Pets</th>
                 <th className="text-left px-md py-sm text-label-md text-on-surface-variant">Status</th>
                 <th className="px-md py-sm" />
               </tr>
@@ -233,6 +237,9 @@ export default function PlatformPlansView() {
                   </td>
                   <td className="px-md py-sm text-body-sm text-on-surface-variant text-right">
                     {plan.maxOwners ?? '∞'}
+                  </td>
+                  <td className="px-md py-sm text-body-sm text-on-surface-variant text-right">
+                    {plan.maxPets ?? '∞'}
                   </td>
                   <td className="px-md py-sm">
                     {plan.isRetired ? (
@@ -271,7 +278,7 @@ export default function PlatformPlansView() {
               ))}
               {(plans ?? []).length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-md py-xl text-center text-on-surface-variant text-body-sm">
+                  <td colSpan={9} className="px-md py-xl text-center text-on-surface-variant text-body-sm">
                     No plans defined yet.
                   </td>
                 </tr>
