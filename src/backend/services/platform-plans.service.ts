@@ -29,6 +29,7 @@ export interface PlanResponse {
   maxBranches: number
   maxUsers:    number
   maxOwners:   number | null
+  maxPets:     number | null
   features:    string[]
   isRetired:   boolean
   createdAt:   null
@@ -58,6 +59,7 @@ function normalizePlan(row: PlanRow): PlanResponse {
     maxBranches: row.maxBranches,
     maxUsers:    row.maxUsers,
     maxOwners:   row.maxOwners,
+    maxPets:     row.maxPets,
     features,
     isRetired:   !row.isActive,
     createdAt:   null,
@@ -88,16 +90,19 @@ export interface EffectiveQuota {
     maxBranches: number
     maxUsers: number
     maxOwners: number | null
+    maxPets: number | null
   } | null
   override: {
     maxBranches: number | null
     maxUsers: number | null
     maxOwners: number | null
+    maxPets: number | null
   } | null
   effective: {
     maxBranches: number | null
     maxUsers: number | null
     maxOwners: number | null
+    maxPets: number | null
   }
 }
 
@@ -205,14 +210,15 @@ export async function getEffectiveQuota(tenantId: number): Promise<EffectiveQuot
     maxBranches: override?.maxBranches ?? plan?.maxBranches ?? null,
     maxUsers:    override?.maxUsers    ?? plan?.maxUsers    ?? null,
     maxOwners:   override?.maxOwners   ?? plan?.maxOwners   ?? null,
+    maxPets:     override?.maxPets     ?? plan?.maxPets     ?? null,
   }
 
   return {
     plan: plan
-      ? { maxBranches: plan.maxBranches, maxUsers: plan.maxUsers, maxOwners: plan.maxOwners }
+      ? { maxBranches: plan.maxBranches, maxUsers: plan.maxUsers, maxOwners: plan.maxOwners, maxPets: plan.maxPets }
       : null,
     override: override
-      ? { maxBranches: override.maxBranches, maxUsers: override.maxUsers, maxOwners: override.maxOwners }
+      ? { maxBranches: override.maxBranches, maxUsers: override.maxUsers, maxOwners: override.maxOwners, maxPets: override.maxPets }
       : null,
     effective,
   }

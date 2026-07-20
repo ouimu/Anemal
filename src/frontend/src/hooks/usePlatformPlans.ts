@@ -15,6 +15,7 @@ export interface Plan {
   maxBranches:  number | null
   maxUsers:     number | null
   maxOwners:    number | null
+  maxPets:      number | null
   features:     string[]
   isRetired:    boolean
   createdAt:    string | null
@@ -28,6 +29,7 @@ export interface CreatePlanPayload {
   maxBranches:  number | null
   maxUsers:     number | null
   maxOwners:    number | null
+  maxPets:      number | null
   features?:    string[]
 }
 
@@ -41,6 +43,7 @@ interface PlanWirePayload {
   maxBranches?: number | null
   maxUsers?:    number | null
   maxOwners?:   number | null
+  maxPets?:     number | null
   features?:    Record<string, true>
 }
 

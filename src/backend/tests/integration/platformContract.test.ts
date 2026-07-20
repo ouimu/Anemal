@@ -110,6 +110,136 @@ describe('platform contract — updatePlanSchema', () => {
   })
 })
 
+describe('platform contract — Plan CRUD maxPets (Task 3)', () => {
+  let server: Server
+  let platformToken = ''
+  let platformUserId = 0
+  const createdPlanIds: number[] = []
+
+  const auth = (token: string) => ({ Authorization: `Bearer ${token}` })
+
+  beforeAll(async () => {
+    await new Promise<void>(resolve => { server = app.listen(0, resolve) })
+    server.keepAliveTimeout = 0
+
+    const platformUser = await prisma.platformUser.create({
+      data: {
+        name:         'PlatformContractMaxPetsAdmin',
+        email:        'platform-contract-maxpets@test.anemal',
+        passwordHash: 'x',
+        role:         'platform_super_admin',
+      },
+    })
+    platformUserId = platformUser.id
+    platformToken = signPlatformToken({ platformUserId: platformUser.id, plane: 'platform', role: 'platform_super_admin' })
+  })
+
+  afterAll(async () => {
+    if (createdPlanIds.length) await prisma.plan.deleteMany({ where: { id: { in: createdPlanIds } } })
+    if (platformUserId) await prisma.platformAuditLog.deleteMany({ where: { performedByPlatformUserId: platformUserId } })
+    if (platformUserId) await prisma.platformUser.deleteMany({ where: { id: platformUserId } })
+    await prisma.$disconnect()
+    server.closeAllConnections()
+    await new Promise<void>(resolve => server.close(() => resolve()))
+  }, 30000)
+
+  test('plan-maxpets-01: POST /platform/plans persists and returns maxPets', async () => {
+    const res = await request(server)
+      .post('/platform/plans')
+      .set(auth(platformToken))
+      .send({ key: `test_pets_${Date.now()}`, name: 'Pets Test Plan', maxBranches: 1, maxUsers: 5, maxOwners: 100, maxPets: 250 })
+      .expect(201)
+    if (res.body?.data?.id) createdPlanIds.push(res.body.data.id)
+    expect(res.body.data.maxPets).toBe(250)
+  })
+
+  test('plan-maxpets-02: PUT /platform/plans/:id with maxPets:null sets unlimited', async () => {
+    const created = await request(server)
+      .post('/platform/plans')
+      .set(auth(platformToken))
+      .send({ key: `test_pets_null_${Date.now()}`, name: 'Pets Null Plan', maxBranches: 1, maxUsers: 5, maxOwners: 100, maxPets: 250 })
+      .expect(201)
+    if (created.body?.data?.id) createdPlanIds.push(created.body.data.id)
+    const res = await request(server)
+      .put(`/platform/plans/${created.body.data.id}`)
+      .set(auth(platformToken))
+      .send({ maxPets: null })
+      .expect(200)
+    expect(res.body.data.maxPets).toBeNull()
+  })
+
+  test('plan-maxpets-03: POST /platform/plans without maxPets defaults to 500', async () => {
+    const res = await request(server)
+      .post('/platform/plans')
+      .set(auth(platformToken))
+      .send({ key: `test_pets_default_${Date.now()}`, name: 'Pets Default Plan', maxBranches: 1, maxUsers: 5 })
+      .expect(201)
+    if (res.body?.data?.id) createdPlanIds.push(res.body.data.id)
+    expect(res.body.data.maxPets).toBe(500)
+  })
+})
+
+describe('platform contract — maxPets in effective quota resolver (Task 4)', () => {
+  let server: Server
+  let platformToken = ''
+  let platformUserId = 0
+  let planId = 0
+  let testTenantId = 0
+
+  const auth = (token: string) => ({ Authorization: `Bearer ${token}` })
+
+  beforeAll(async () => {
+    await new Promise<void>(resolve => { server = app.listen(0, resolve) })
+    server.keepAliveTimeout = 0
+
+    const platformUser = await prisma.platformUser.create({
+      data: {
+        name:         'PlatformContractQuotaMaxPetsAdmin',
+        email:        'platform-contract-quota-maxpets@test.anemal',
+        passwordHash: 'x',
+        role:         'platform_super_admin',
+      },
+    })
+    platformUserId = platformUser.id
+    platformToken = signPlatformToken({ platformUserId: platformUser.id, plane: 'platform', role: 'platform_super_admin' })
+
+    const plan = await prisma.plan.create({
+      data: { key: `quota_maxpets_${Date.now()}`, name: 'Quota MaxPets Test Plan', priceMonth: 0, maxBranches: 1, maxUsers: 1, maxPets: 300 },
+    })
+    planId = plan.id
+
+    const tenant = await prisma.tenant.create({
+      data: { name: 'Quota MaxPets Tenant', subdomain: `quota-maxpets-${Date.now()}`, planId },
+    })
+    testTenantId = tenant.id
+  })
+
+  afterAll(async () => {
+    if (testTenantId) await prisma.tenant.deleteMany({ where: { id: testTenantId } })
+    if (planId) await prisma.plan.deleteMany({ where: { id: planId } })
+    if (platformUserId) await prisma.platformUser.deleteMany({ where: { id: platformUserId } })
+    await prisma.$disconnect()
+    server.closeAllConnections()
+    await new Promise<void>(resolve => server.close(() => resolve()))
+  }, 30000)
+
+  test('plan-maxpets-04: GET /platform/plans returns maxPets on every plan', async () => {
+    const res = await request(server).get('/platform/plans').set(auth(platformToken)).expect(200)
+    expect(res.body.data.length).toBeGreaterThan(0)
+    res.body.data.forEach((plan: any) => {
+      expect(plan).toHaveProperty('maxPets')
+    })
+  })
+
+  test('plan-maxpets-05: getEffectiveQuota resolves maxPets — override wins over plan', async () => {
+    const res = await request(server)
+      .get(`/platform/customers/${testTenantId}/quota`)
+      .set(auth(platformToken))
+      .expect(200)
+    expect(res.body.data.effective).toHaveProperty('maxPets')
+  })
+})
+
 describe('platform contract — updateAllSettingsSchema', () => {
   // KEEP IN SYNC with src/frontend/src/hooks/usePlatformSettings.ts:46 (platformApi.put('/platform/settings', payload))
   it('accepts a representative valid aggregate-settings payload', () => {

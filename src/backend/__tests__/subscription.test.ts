@@ -29,8 +29,8 @@ beforeAll(async () => {
   // Create a starter plan with maxUsers=3 so enforcement fires at 3 active users
   const plan = await prisma.plan.upsert({
     where: { key: 'test_starter' },
-    update: { maxUsers: 3 },
-    create: { key: 'test_starter', name: 'Test Starter', maxBranches: 1, maxUsers: 3, maxOwners: 500 },
+    update: { maxUsers: 3, maxPets: 2 },
+    create: { key: 'test_starter', name: 'Test Starter', maxBranches: 1, maxUsers: 3, maxOwners: 500, maxPets: 2 },
   })
 
   const t = await prisma.tenant.create({ data: { name: 'Sub Clinic', subdomain: SUB, planId: plan.id } })
@@ -52,6 +52,8 @@ afterAll(async () => {
   server.closeAllConnections()
   await new Promise<void>((resolve) => server.close(() => resolve()))
   await cleanupUserRoles(prisma, [tid])
+  await prisma.pet.deleteMany({ where: { tenantId: tid } })
+  await prisma.owner.deleteMany({ where: { tenantId: tid } })
   await prisma.user.deleteMany({ where: { tenantId: tid } })
   await prisma.tenantQuota.deleteMany({ where: { tenantId: tid } })
   await prisma.tenant.deleteMany({ where: { id: tid } })
@@ -82,5 +84,28 @@ describe('sub-3.4 — Subscription status & quota enforcement', () => {
     expect(res.body.code).toBe('QUOTA_EXCEEDED')
     expect(res.body.details.resource).toBe('users')
     expect(res.body.details.limit).toBe(3)
+  })
+
+  test('sub-04: pet creation blocked once quota is reached → 409 QUOTA_EXCEEDED', async () => {
+    // Need an owner to attach pets to
+    const owner = await prisma.owner.create({ data: { tenantId: tid, firstName: 'Pet', lastName: 'Owner', phone: `0800000${Date.now() % 10000}` } })
+    await prisma.pet.create({ data: { tenantId: tid, ownerId: owner.id, name: 'Pet 1', species: 'Dog', isActive: true } })
+    await request(server).post('/api/pets').set(auth(adminToken))
+      .send({ ownerId: owner.id, name: 'Pet 2', species: 'Cat' }).expect(201)
+    const res = await request(server).post('/api/pets').set(auth(adminToken))
+      .send({ ownerId: owner.id, name: 'Pet 3', species: 'Cat' }).expect(409)
+    expect(res.body.code).toBe('QUOTA_EXCEEDED')
+    expect(res.body.details.resource).toBe('pets')
+    expect(res.body.details.limit).toBe(2)
+  })
+
+  test('sub-05: unlimited maxPets (null) never blocks pet creation', async () => {
+    await prisma.plan.update({ where: { key: 'test_starter' }, data: { maxPets: null } })
+    const owner = await prisma.owner.create({ data: { tenantId: tid, firstName: 'Unlimited', lastName: 'Owner', phone: `0900000${Date.now() % 10000}` } })
+    await prisma.pet.create({ data: { tenantId: tid, ownerId: owner.id, name: 'P1', species: 'Dog', isActive: true } })
+    await prisma.pet.create({ data: { tenantId: tid, ownerId: owner.id, name: 'P2', species: 'Dog', isActive: true } })
+    await request(server).post('/api/pets').set(auth(adminToken))
+      .send({ ownerId: owner.id, name: 'P3', species: 'Dog' }).expect(201)
+    await prisma.plan.update({ where: { key: 'test_starter' }, data: { maxPets: 2 } }) // restore for other tests
   })
 })

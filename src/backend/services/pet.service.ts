@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { AppError } from '../utils/errors'
 import * as petRepo from '../models/pet.repository'
+import { assertCanAddPet } from './subscription.service'
 
 export const createPetSchema = z.object({
   ownerId:             z.number().int().positive(),
@@ -46,6 +47,7 @@ export async function getPet(tenantId: number, id: number, includeEmr = true) {
 }
 
 export async function createPet(tenantId: number, data: CreatePetInput) {
+  await assertCanAddPet(tenantId)
   const owner = await petRepo.findOwner(tenantId, data.ownerId)
   if (!owner) throw new PetError('Owner not found', 404)
   return petRepo.createPet(tenantId, data)

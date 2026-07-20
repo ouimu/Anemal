@@ -5,6 +5,7 @@ import { requirePlane, requirePermission } from '../middlewares/permission.middl
 import { validate } from '../middlewares/validate.middleware'
 import { getSettings, updateSettings, updateSettingsSchema } from '../controllers/tenant-settings.controller'
 import { getClinicUsage } from '../services/usage.service'
+import { getEffectiveQuota } from '../services/subscription.service'
 
 const router = Router()
 router.use(authMiddleware)
@@ -14,8 +15,12 @@ router.put('/settings', requirePlane('clinic'), requirePermission('clinic.profil
 
 router.get('/usage', requirePlane('clinic'), requirePermission('clinic.profile.view'), async (req, res, next) => {
   try {
-    const data = await getClinicUsage(req.context!.tenantId, req.context?.branchId)
-    res.json({ success: true, data })
+    const tenantId = req.context!.tenantId
+    const [data, caps] = await Promise.all([
+      getClinicUsage(tenantId, req.context?.branchId),
+      getEffectiveQuota(tenantId),
+    ])
+    res.json({ success: true, data: { ...data, caps } })
   } catch (err) { next(err) }
 })
 

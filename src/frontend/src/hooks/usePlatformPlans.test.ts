@@ -27,4 +27,13 @@ describe('toWirePayload (BUG-003)', () => {
     updatePayload.key = 'new-key'
     expect(updatePayload.name).toBe('Renamed')
   })
+
+  it('toWirePayload passes maxPets through unchanged', () => {
+    const payload: import('./usePlatformPlans').CreatePlanPayload = {
+      key: 'test', name: 'Test', price: 0,
+      maxBranches: 1, maxUsers: 5, maxOwners: 100, maxPets: 500,
+    }
+    const wire = toWirePayload(payload)
+    expect(wire.maxPets).toBe(500)
+  })
 })

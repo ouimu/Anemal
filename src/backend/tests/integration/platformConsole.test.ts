@@ -22,6 +22,7 @@ import app from '../../app'
 import * as subscriptionService from '../../services/subscription.service'
 import * as branchService from '../../services/branch.service'
 import * as ownerService from '../../services/owner.service'
+import { getTenantWithPlanAndQuota } from '../../models/platform-customers.repository'
 
 const prisma = new PrismaClient()
 let server: Server
@@ -253,6 +254,36 @@ describe('T-5D-02 Customer management', () => {
     expect(res.body.data.planName).toBeDefined()
   })
 
+  it('pc-maxpets-01: getTenantWithPlanAndQuota includes maxPets from plan and override', async () => {
+    const row = await getTenantWithPlanAndQuota(customerId)
+    expect(row).not.toBeNull()
+    expect(row!.plan).toHaveProperty('maxPets')
+    expect(typeof row!.plan!.maxPets === 'number' || row!.plan!.maxPets === null).toBe(true)
+    if (row!.quota) {
+      expect(row!.quota).toHaveProperty('maxPets')
+      expect(typeof row!.quota.maxPets === 'number' || row!.quota.maxPets === null).toBe(true)
+    }
+  })
+
+  it('pc-maxpets-02: GET /platform/customers/:id resolves maxPets same as plan/override', async () => {
+    const res = await request(server)
+      .get(`/platform/customers/${customerId}`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .expect(200)
+    expect(res.body.data).toHaveProperty('maxPets')
+    expect(typeof res.body.data.maxPets === 'number' || res.body.data.maxPets === null).toBe(true)
+  })
+
+  it('pc-maxpets-03: GET /platform/customers/:id/usage includes pets count and caps.maxPets', async () => {
+    const res = await request(server)
+      .get(`/platform/customers/${customerId}/usage`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .expect(200)
+    expect(res.body.data).toHaveProperty('pets')
+    expect(typeof res.body.data.pets).toBe('number')
+    expect(res.body.data.caps).toHaveProperty('maxPets')
+  })
+
   it('✅ PUT /platform/customers/:id updates name and subdomain', async () => {
     const newSub = `qa-cust-${SFX}-renamed`
     const res = await request(server)
@@ -342,6 +373,21 @@ describe('T-5D-02 Customer management', () => {
     expect(get.status).toBe(200)
     expect(get.body.data.override.maxUsers).toBe(10)
     expect(get.body.data.effective.maxUsers).toBe(10) // override wins over plan default 3
+  })
+
+  it('pc-maxpets-04: PUT /platform/customers/:id/quota accepts maxPets override', async () => {
+    const put = await request(server)
+      .put(`/platform/customers/${customerId}/quota`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ maxPets: 750 })
+    expect(put.status).toBe(200)
+
+    const get = await request(server)
+      .get(`/platform/customers/${customerId}/quota`)
+      .set('Authorization', `Bearer ${platformToken}`)
+    expect(get.status).toBe(200)
+    expect(get.body.data.override.maxPets).toBe(750)
+    expect(get.body.data.effective.maxPets).toBe(750)
   })
 })
 

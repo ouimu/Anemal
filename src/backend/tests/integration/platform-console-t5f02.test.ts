@@ -162,7 +162,7 @@ describe('T-5F-02 / AC2 — customer usage endpoint', () => {
     expect(d.users).toBe(1)
     expect(d.owners).toBe(0)
     // Effective caps surfaced for the progress bars (current vs limit on the FE).
-    expect(d.caps).toEqual({ maxBranches: 3, maxUsers: 10, maxOwners: 100 })
+    expect(d.caps).toEqual({ maxBranches: 3, maxUsers: 10, maxOwners: 100, maxPets: 500 })
     expect(d.overPlan).toBe(false)
   })
 

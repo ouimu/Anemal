@@ -296,4 +296,36 @@ describe('admin-1.4 — GET /admin/usage', () => {
     expect(res.body.data.totalPets).toBe(0)
     expect(res.body.data.totalOwners).toBe(0)
   })
+
+  test('settings-17: /admin/usage returns real caps from the clinic-plane quota resolver', async () => {
+    // Type: happy_path
+    const res = await request(server)
+      .get('/admin/usage')
+      .set('Authorization', adminToken())
+      .expect(200)
+
+    expect(res.body.data).toHaveProperty('caps')
+    expect(res.body.data.caps).toHaveProperty('maxUsers')
+    expect(res.body.data.caps).toHaveProperty('maxBranches')
+    expect(res.body.data.caps).toHaveProperty('maxOwners')
+    expect(res.body.data.caps).toHaveProperty('maxPets')
+  })
+
+  test('settings-18: /admin/usage caps reflect a tenant_quotas override, not the plan default', async () => {
+    // Type: happy_path
+    await prisma.tenantQuota.upsert({
+      where: { tenantId },
+      update: { maxUsers: 10 },
+      create: { tenantId, maxUsers: 10 },
+    })
+
+    const res = await request(server)
+      .get('/admin/usage')
+      .set('Authorization', adminToken())
+      .expect(200)
+
+    expect(res.body.data.caps.maxUsers).toBe(10)
+
+    await prisma.tenantQuota.delete({ where: { tenantId } }).catch(() => {})
+  })
 })
