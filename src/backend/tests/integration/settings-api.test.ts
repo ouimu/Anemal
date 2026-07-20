@@ -341,10 +341,16 @@ describe('TC-S011 — PUT /platform/settings aggregate update', () => {
     })
     expect(auditRow?.changedBy).toBeNull()
 
-    const platformAuditRow = await prisma.platformAuditLog.findFirst({
-      where: { performedByPlatformUserId: platformUserId },
-      orderBy: { id: 'desc' },
-    })
+    // auditMiddleware writes the platform-audit row fire-and-forget on res 'finish',
+    // so it can land just after supertest resolves — poll instead of reading once.
+    let platformAuditRow = null
+    for (let attempt = 0; attempt < 20 && platformAuditRow === null; attempt++) {
+      platformAuditRow = await prisma.platformAuditLog.findFirst({
+        where: { performedByPlatformUserId: platformUserId },
+        orderBy: { id: 'desc' },
+      })
+      if (platformAuditRow === null) await new Promise(r => setTimeout(r, 50))
+    }
     expect(platformAuditRow).not.toBeNull()
     expect(platformAuditRow!.performedByPlatformUserId).toBe(platformUserId)
   })
