@@ -43,6 +43,7 @@ interface PlanWirePayload {
   maxBranches?: number | null
   maxUsers?:    number | null
   maxOwners?:   number | null
+  maxPets?:     number | null
   features?:    Record<string, true>
 }
 
