@@ -230,8 +230,8 @@ export async function handleSetQuotaOverride(
 /**
  * GET /platform/customers/:id/usage
  *
- * Returns live usage counts (branches, users, owners) and plan caps for a
- * tenant, plus an `overPlan` flag when any count exceeds its cap.
+ * Returns live usage counts (branches, users, owners, pets) and plan caps
+ * for a tenant, plus an `overPlan` flag when any count exceeds its cap.
  * A null cap means unlimited — that dimension never triggers overPlan.
  */
 export async function handleGetCustomerUsage(

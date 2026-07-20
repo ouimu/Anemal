@@ -15,21 +15,24 @@ export async function getPlatformCustomerUsage(
   branches: number
   users: number
   owners: number
+  pets: number
   caps: EffectiveQuota['effective']
   overPlan: boolean
 }> {
-  const [branches, users, owners] = await Promise.all([
+  const [branches, users, owners, pets] = await Promise.all([
     usageRepo.countBranches(tenantId),
     usageRepo.countUsers(tenantId),
     usageRepo.countOwners(tenantId),
+    usageRepo.countActivePets(tenantId),
   ])
 
   const overPlan =
     (effectiveQuota.maxBranches !== null && branches > effectiveQuota.maxBranches) ||
     (effectiveQuota.maxUsers    !== null && users    > effectiveQuota.maxUsers)    ||
-    (effectiveQuota.maxOwners   !== null && owners   > effectiveQuota.maxOwners)
+    (effectiveQuota.maxOwners   !== null && owners   > effectiveQuota.maxOwners)   ||
+    (effectiveQuota.maxPets     !== null && pets     > effectiveQuota.maxPets)
 
-  return { branches, users, owners, caps: effectiveQuota, overPlan }
+  return { branches, users, owners, pets, caps: effectiveQuota, overPlan }
 }
 
 export async function getClinicUsage(tenantId: number, branchId?: number | null) {
