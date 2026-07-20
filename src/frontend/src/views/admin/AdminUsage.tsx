@@ -90,7 +90,15 @@ export default function AdminUsage() {
           </div>
           <div>
             <div className="flex justify-between text-xs text-on-surface-variant mb-1">
-              <span>Registered patients</span>
+              <span>Customer (Pet's Owners)</span>
+              <span>{data.totalOwners} / {formatCap(caps.maxOwners)}</span>
+            </div>
+            <Bar value={data.totalOwners} max={caps.maxOwners}
+              color={caps.maxOwners !== null && data.totalOwners / caps.maxOwners > 0.9 ? 'bg-warning' : 'bg-success'}/>
+          </div>
+          <div>
+            <div className="flex justify-between text-xs text-on-surface-variant mb-1">
+              <span>Registered patients (Pets)</span>
               <span>{data.totalPets} / {formatCap(caps.maxPets)}</span>
             </div>
             <Bar value={data.totalPets} max={caps.maxPets}

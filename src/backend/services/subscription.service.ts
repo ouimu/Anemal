@@ -15,6 +15,7 @@
 
 import { AppError } from '../utils/errors'
 import prisma from '../config/db'
+import { listPlans } from './platform-plans.service'
 
 /** Quota exceeded error — maps to HTTP 409 in controllers. */
 export class QuotaExceededError extends AppError {
@@ -151,11 +152,13 @@ export async function assertCanAddPet(tenantId: number): Promise<void> {
  * @param tenantId - Tenant whose status is being queried.
  */
 export async function getStatus(tenantId: number) {
-  const [quota, users, branches, owners] = await Promise.all([
+  const [quota, users, branches, owners, allPlans, tenant] = await Promise.all([
     getEffectiveQuota(tenantId),
     prisma.user.count({ where: { tenantId, isActive: true } }),
     prisma.branch.count({ where: { tenantId, isActive: true } }),
     prisma.owner.count({ where: { tenantId } }),
+    listPlans(),
+    prisma.tenant.findUnique({ where: { id: tenantId }, include: { plan: true } }),
   ])
 
   return {
@@ -166,5 +169,8 @@ export async function getStatus(tenantId: number) {
       branches: quota.maxBranches === null || branches <= quota.maxBranches,
       owners:   quota.maxOwners   === null || owners   <= quota.maxOwners,
     },
+    plans: allPlans.filter(p => !p.isRetired),
+    // Real plan assignment (Platform Console), not the legacy TenantSettings.planTier string.
+    currentPlanKey: tenant?.plan?.key ?? null,
   }
 }
