@@ -121,7 +121,10 @@ Columns are the three **system clinic roles**. Custom roles start as a clone of 
 | | PUT | `crm.edit` |
 | `medical-record.routes` | GET | `emr.view` |
 | | POST `/` , PUT `/:id` | `emr.create` / `emr.edit` |
+| | POST `/:id/attachments/presign` | `emr.attach` |
 | | POST `/:id/attachments` | `emr.attach` |
+| | GET `/:id/attachments/:attId/download` | `emr.view` |
+| | DELETE `/:id/attachments/:attId` | `emr.attach` |
 | `vaccination.routes` | GET | `emr.view` |
 | | POST `/` | `vaccination.create` |
 | `prescription.routes` | GET | `prescriptions.view` |
