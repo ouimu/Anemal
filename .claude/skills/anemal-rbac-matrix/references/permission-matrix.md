@@ -42,7 +42,7 @@ Columns are the three **system clinic roles**. Custom roles start as a clone of 
 | `emr.view` | EMR / Clinical | V | V | V |
 | `emr.create` | EMR / Clinical | - | E | - |
 | `emr.edit` | EMR / Clinical | - | E | - |
-| `emr.attach` | EMR (lab/X-ray files) | - | E | V |
+| `emr.attach` | EMR (lab/X-ray files) | E | E | V |
 | `vaccination.create` | EMR / Clinical (vaccination only) | - | E | E |
 | `prescriptions.view` | Prescriptions | V | V | V |
 | `prescriptions.create` | Prescriptions (write Rx) | - | E | - |
