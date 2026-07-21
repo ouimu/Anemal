@@ -51,14 +51,14 @@ beforeAll(async () => {
   const passwordHash = await bcrypt.hash(PASSWORD, 10)
 
   const staffUser = await prisma.user.create({
-    data: { tenantId: tid, username: 'staff_own', name: 'Staff Own', passwordHash, role: 'staff', branchId, isActive: true },
+    data: { tenantId: tid, username: 'staff_own', name: 'Staff Own', passwordHash, roleId: staffRole.id, branchId, isActive: true },
   })
   await prisma.userBranch.create({ data: { tenantId: tid, userId: staffUser.id, branchId } })
   await prisma.userRole.create({ data: { tenantId: tid, userId: staffUser.id, roleId: staffRole.id } })
   staffToken = await login('staff_own')
 
   const ownDoctor = await prisma.user.create({
-    data: { tenantId: tid, username: 'doctor_own', name: 'Dr. Own', passwordHash, role: 'doctor', branchId, isActive: true },
+    data: { tenantId: tid, username: 'doctor_own', name: 'Dr. Own', passwordHash, roleId: doctorRole.id, branchId, isActive: true },
   })
   await prisma.userBranch.create({ data: { tenantId: tid, userId: ownDoctor.id, branchId } })
   await prisma.userRole.create({ data: { tenantId: tid, userId: ownDoctor.id, roleId: doctorRole.id } })
@@ -69,7 +69,7 @@ beforeAll(async () => {
   ownPetId = ownPet.id
 
   const otherDoctor = await prisma.user.create({
-    data: { tenantId: otherTid, username: 'doctor_other', name: 'Dr. Other', passwordHash, role: 'doctor', branchId: otherBranch.id, isActive: true },
+    data: { tenantId: otherTid, username: 'doctor_other', name: 'Dr. Other', passwordHash, roleId: doctorRole.id, branchId: otherBranch.id, isActive: true },
   })
   await prisma.userBranch.create({ data: { tenantId: otherTid, userId: otherDoctor.id, branchId: otherBranch.id } })
   await prisma.userRole.create({ data: { tenantId: otherTid, userId: otherDoctor.id, roleId: doctorRole.id } })

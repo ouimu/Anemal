@@ -34,7 +34,7 @@ beforeAll(async () => {
 
   const adminRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
   const adminUser = await prisma.user.create({
-    data: { tenantId: tid, branchId: branch.id, name: 'Admin AM', username: 'admin_am', email: 'admin@am.test', passwordHash, role: 'admin', roleId: adminRole.id },
+    data: { tenantId: tid, branchId: branch.id, name: 'Admin AM', username: 'admin_am', email: 'admin@am.test', passwordHash, roleId: adminRole.id },
   })
   await prisma.userRole.create({ data: { userId: adminUser.id, roleId: adminRole.id, tenantId: tid } })
 
