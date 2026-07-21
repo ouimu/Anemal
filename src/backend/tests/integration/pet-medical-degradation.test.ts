@@ -30,7 +30,7 @@ beforeAll(async () => {
 
   const doctorRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
   const doctorUserForRecord = await prisma.user.create({
-    data: { tenantId: tid, branchId: branch.id, name: 'Doctor Owner PMD', username: 'doctor_owner_pmd', email: 'doctor_owner@pmd.test', passwordHash, role: 'doctor', roleId: doctorRole.id },
+    data: { tenantId: tid, branchId: branch.id, name: 'Doctor Owner PMD', username: 'doctor_owner_pmd', email: 'doctor_owner@pmd.test', passwordHash, roleId: doctorRole.id },
   })
   await prisma.medicalRecord.create({ data: { tenantId: tid, petId, doctorId: doctorUserForRecord.id, assessment: 'Checkup' } })
   await prisma.vaccination.create({ data: { tenantId: tid, petId, vaccineName: 'Rabies', administeredAt: new Date() } })
@@ -46,20 +46,20 @@ beforeAll(async () => {
   }
 
   const doctorUser = await prisma.user.create({
-    data: { tenantId: tid, branchId: branch.id, name: 'Doctor PMD', username: 'doctor_pmd', email: 'doctor@pmd.test', passwordHash, role: 'doctor', roleId: doctorRole.id },
+    data: { tenantId: tid, branchId: branch.id, name: 'Doctor PMD', username: 'doctor_pmd', email: 'doctor@pmd.test', passwordHash, roleId: doctorRole.id },
   })
   await prisma.userRole.create({ data: { userId: doctorUser.id, roleId: doctorRole.id, tenantId: tid } })
   await prisma.userBranch.create({ data: { userId: doctorUser.id, branchId: branch.id, tenantId: tid } })
 
   const noEmrUser = await prisma.user.create({
-    data: { tenantId: tid, branchId: branch.id, name: 'Staff PMD', username: 'staff_pmd', email: 'staff@pmd.test', passwordHash, role: 'staff', roleId: noEmrRole.id },
+    data: { tenantId: tid, branchId: branch.id, name: 'Staff PMD', username: 'staff_pmd', email: 'staff@pmd.test', passwordHash, roleId: noEmrRole.id },
   })
   await prisma.userRole.create({ data: { userId: noEmrUser.id, roleId: noEmrRole.id, tenantId: tid } })
   await prisma.userBranch.create({ data: { userId: noEmrUser.id, branchId: branch.id, tenantId: tid } })
 
   // Multi-role union (PET-MED-2 AC / CR-01): custom no-emr role + doctor role → emr.view resolves via union.
   const unionUser = await prisma.user.create({
-    data: { tenantId: tid, branchId: branch.id, name: 'Union PMD', username: 'union_pmd', email: 'union@pmd.test', passwordHash, role: 'staff', roleId: noEmrRole.id },
+    data: { tenantId: tid, branchId: branch.id, name: 'Union PMD', username: 'union_pmd', email: 'union@pmd.test', passwordHash, roleId: noEmrRole.id },
   })
   await prisma.userRole.create({ data: { userId: unionUser.id, roleId: noEmrRole.id, tenantId: tid } })
   await prisma.userRole.create({ data: { userId: unionUser.id, roleId: doctorRole.id, tenantId: tid } })
