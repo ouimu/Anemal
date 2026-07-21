@@ -35,9 +35,10 @@ export class AuthError extends AppError {
  *
  * NOT exported — deliberately private to this file.
  */
-function toLegacyRoleString(roleKey: string): 'admin' | 'doctor' | 'staff' {
-  if (roleKey === 'clinic_admin') return 'admin'
-  if (roleKey === 'doctor') return 'doctor'
+function toLegacyRoleString(roleRef: { key: string } | null | undefined): 'admin' | 'doctor' | 'staff' {
+  if (!roleRef) throw new AuthError('User has no role assigned — data integrity error', 500)
+  if (roleRef.key === 'clinic_admin') return 'admin'
+  if (roleRef.key === 'doctor') return 'doctor'
   return 'staff'
 }
 
@@ -76,7 +77,7 @@ export async function login(body: LoginRequest): Promise<LoginResponse> {
 
   // 5. Compute permission version and check role
   const permSetVersion = await computePermSetVersion(user.id, tenant.id)
-  const legacyRole = toLegacyRoleString(user.roleRef!.key)
+  const legacyRole = toLegacyRoleString(user.roleRef)
   const isAdmin = legacyRole === 'admin'
 
   // Admin bypass — skip branch selection, issue full JWT immediately
@@ -152,7 +153,7 @@ export async function selectBranch(
   // Verify user still active
   const user = await authRepo.findUserById(tenantId, userId)
   if (!user || !user.isActive) throw new AuthError('User not found or inactive.', 401)
-  const legacyRole = toLegacyRoleString(user.roleRef!.key)
+  const legacyRole = toLegacyRoleString(user.roleRef)
 
   // Verify branch exists and is active in this tenant
   const branch = await authRepo.findBranchById(tenantId, branchId)
@@ -213,7 +214,7 @@ export async function switchBranch(
 ): Promise<SwitchBranchResponse> {
   const user = await authRepo.findUserById(tenantId, userId)
   if (!user || !user.isActive) throw new AuthError('User not found', 404)
-  const legacyRole = toLegacyRoleString(user.roleRef!.key)
+  const legacyRole = toLegacyRoleString(user.roleRef)
 
   // null = reset to all-branches (admin only)
   if (targetBranchId === null) {
@@ -324,7 +325,7 @@ export async function refreshClinicToken(rawRefreshToken: string): Promise<Refre
     branchId:       record.branchId ?? user.branchId ?? undefined,
     plane:          'clinic',
     permSetVersion,
-    role:           toLegacyRoleString(user.roleRef!.key),
+    role:           toLegacyRoleString(user.roleRef),
   })
 
   const newRaw      = crypto.randomBytes(32).toString('hex')

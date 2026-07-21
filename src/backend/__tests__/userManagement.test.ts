@@ -498,7 +498,7 @@ describe('user-1.5 — roleId-based create/update (ADR-0019/D-7)', () => {
     await expect(userService.updateUser(
       tenantId, target.id, { roleId: otherTenantRole.id },
       fullPerms, true,
-    )).rejects.toMatchObject({ statusCode: 403 })
+    )).rejects.toMatchObject({ statusCode: 404 })
 
     await prisma.clinicRole.delete({ where: { id: otherTenantRole.id } })
     await prisma.tenant.delete({ where: { id: otherTenant.id } })

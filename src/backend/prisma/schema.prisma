@@ -175,6 +175,7 @@ model User {
   @@unique([tenantId, username])
   @@index([tenantId])
   @@index([tenantId, branchId])
+  @@index([roleId])
   @@map("users")
 }
 

@@ -154,6 +154,10 @@ function assertNoRoleEscalation(
  * assign it, since `assertNoRoleEscalation`'s `roles.manage` exemption never
  * blocks on tenant ownership. Mirrors the ownership check that existed on
  * the now-removed `role.service.ts assignRoleToUser` path.
+ *
+ * 404, not 403: a 403 would confirm to the caller that a role with this ID
+ * exists in some other tenant (BOLA existence-leak, ADR-0014 precedent) — the
+ * same reasoning `findRoleById` callers already apply for `Unknown role`.
  */
 function assertRoleBelongsToCallerTenant(
   roleRow: { isSystem: boolean; tenantId: number | null },
@@ -161,7 +165,7 @@ function assertRoleBelongsToCallerTenant(
 ): void {
   if (roleRow.isSystem) return
   if (roleRow.tenantId !== tenantId) {
-    throw new UserError('Role does not belong to your tenant', 403)
+    throw new UserError('Role not found', 404)
   }
 }
 
