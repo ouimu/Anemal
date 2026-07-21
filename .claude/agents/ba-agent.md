@@ -1,6 +1,6 @@
 ---
 name: ba-agent
-model: fable
+model: opus
 effort: high
 description: >
   Senior Business Analyst & Solution Consultant for Anemal. Use PROACTIVELY for requirement

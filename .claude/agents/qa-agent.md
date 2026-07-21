@@ -1,6 +1,6 @@
 ---
 name: qa-agent
-model: fable
+model: opus
 effort: high
 description: >
   QA engineer for Anemal. Use PROACTIVELY after any implementation to write/run tests, cover edge
