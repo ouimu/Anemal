@@ -151,13 +151,12 @@ describe('emr-attachments — POST /:id/attachments/presign', () => {
       .expect(201)
   })
 
-  test('EA-03: clinic_admin is denied (403) — admin lacks emr.attach by design (A1)', async () => {
-    const res = await request(server)
+  test('EA-03: clinic_admin holds emr.attach per live RBAC seed → 201 (ADR-0021 A1 corrected)', async () => {
+    await request(server)
       .post(`/api/medical-records/${medicalRecordId}/attachments/presign`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ fileName: 'lab-result.pdf', contentType: 'application/pdf', fileSizeBytes: 1024 })
-      .expect(403)
-    expect(res.body.success).toBe(false)
+      .expect(201)
   })
 
   test('EA-04: no token → 401', async () => {
@@ -388,14 +387,14 @@ describe('emr-attachments — DELETE /:id/attachments/:attId', () => {
     expect(stillThere).not.toBeNull()
   })
 
-  test('EA-20: role without emr.attach (clinic_admin) → 403', async () => {
+  test('EA-20: clinic_admin holds emr.attach per live RBAC seed → delete succeeds (ADR-0021 A1 corrected)', async () => {
     const a = await prisma.attachment.create({
-      data: { tenantId, medicalRecordId, fileName: 'admin-cant-delete.pdf', storageKey: `tenants/${tenantId}/emr/${medicalRecordId}/uuid-admin.pdf`, mimeType: 'application/pdf', fileSize: 10, uploadedByUserId: doctorUserId },
+      data: { tenantId, medicalRecordId, fileName: 'admin-can-delete.pdf', storageKey: `tenants/${tenantId}/emr/${medicalRecordId}/uuid-admin.pdf`, mimeType: 'application/pdf', fileSize: 10, uploadedByUserId: doctorUserId },
     })
     await request(server)
       .delete(`/api/medical-records/${medicalRecordId}/attachments/${a.id}`)
       .set('Authorization', `Bearer ${adminToken}`)
-      .expect(403)
+      .expect(204)
   })
 
   test('EA-21: presign/confirm/delete each produce an AuditLog row via the existing global audit middleware (G-11)', async () => {
