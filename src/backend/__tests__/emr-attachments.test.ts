@@ -31,6 +31,7 @@ const MOCK_SIGNED_URL = 'https://mock-bucket.s3.mock-region.amazonaws.com/signed
 
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
+import crypto from 'crypto'
 
 const mockGetSignedUrl      = getSignedUrl as jest.MockedFunction<typeof getSignedUrl>
 const mockPutObjectCommand  = PutObjectCommand as jest.MockedClass<typeof PutObjectCommand>
@@ -226,6 +227,71 @@ describe('emr-attachments — POST /:id/attachments/presign', () => {
       .send({ fileName: 'lab-result.pdf', contentType: 'application/pdf', fileSizeBytes: 1024 })
       .expect(503)
     expect(res.body.code).toBe('STORAGE_NOT_CONFIGURED')
+  })
+
+})
+
+describe('emr-attachments — POST /:id/attachments (confirm, extended)', () => {
+
+  test('EA-09: storageKey path persists mimeType/fileSize/uploadedByUserId', async () => {
+    const storageKey = `tenants/${tenantId}/emr/${medicalRecordId}/${crypto.randomUUID()}-lab.pdf`
+    const res = await request(server)
+      .post(`/api/medical-records/${medicalRecordId}/attachments`)
+      .set('Authorization', `Bearer ${doctorToken}`)
+      .send({ fileName: 'lab.pdf', storageKey, mimeType: 'application/pdf', fileSizeBytes: 4096, fileType: 'lab' })
+      .expect(201)
+
+    expect(res.body.data.storageKey).toBe(storageKey)
+    expect(res.body.data.mimeType).toBe('application/pdf')
+    expect(res.body.data.fileSize).toBe(4096)
+    expect(res.body.data.uploadedByUserId).toBe(doctorUserId)
+  })
+
+  test('EA-10: legacy fileUrl-only path still works (F3 backward-compat regression guard)', async () => {
+    const res = await request(server)
+      .post(`/api/medical-records/${medicalRecordId}/attachments`)
+      .set('Authorization', `Bearer ${doctorToken}`)
+      .send({ fileName: 'referral.pdf', fileUrl: 'https://portal.example.com/referral.pdf', fileType: 'other' })
+      .expect(201)
+
+    expect(res.body.data.fileUrl).toBe('https://portal.example.com/referral.pdf')
+    expect(res.body.data.storageKey).toBeNull()
+  })
+
+  test('EA-11: both fileUrl and storageKey → 400 (XOR violation)', async () => {
+    const res = await request(server)
+      .post(`/api/medical-records/${medicalRecordId}/attachments`)
+      .set('Authorization', `Bearer ${doctorToken}`)
+      .send({ fileName: 'x.pdf', fileUrl: 'https://x.example.com/x.pdf', storageKey: `tenants/${tenantId}/emr/${medicalRecordId}/x`, mimeType: 'application/pdf', fileSizeBytes: 100 })
+      .expect(400)
+    expect(res.body.code).toBe('VALIDATION_ERROR')
+  })
+
+  test('EA-12: neither fileUrl nor storageKey → 400', async () => {
+    const res = await request(server)
+      .post(`/api/medical-records/${medicalRecordId}/attachments`)
+      .set('Authorization', `Bearer ${doctorToken}`)
+      .send({ fileName: 'x.pdf' })
+      .expect(400)
+    expect(res.body.code).toBe('VALIDATION_ERROR')
+  })
+
+  test('EA-13: storageKey with mismatched tenant/record prefix → 400 INVALID_STORAGE_KEY', async () => {
+    const res = await request(server)
+      .post(`/api/medical-records/${medicalRecordId}/attachments`)
+      .set('Authorization', `Bearer ${doctorToken}`)
+      .send({ fileName: 'x.pdf', storageKey: `tenants/99999/emr/1/forged-x.pdf`, mimeType: 'application/pdf', fileSizeBytes: 100 })
+      .expect(400)
+    expect(res.body.code).toBe('INVALID_STORAGE_KEY')
+  })
+
+  test('EA-14: mimeType outside allow-list (text/html) → 400 VALIDATION_ERROR (schema-level, EMR-ATTACH-8)', async () => {
+    const res = await request(server)
+      .post(`/api/medical-records/${medicalRecordId}/attachments`)
+      .set('Authorization', `Bearer ${doctorToken}`)
+      .send({ fileName: 'x.html', storageKey: `tenants/${tenantId}/emr/${medicalRecordId}/x.html`, mimeType: 'text/html', fileSizeBytes: 100 })
+      .expect(400)
+    expect(res.body.code).toBe('VALIDATION_ERROR')
   })
 
 })

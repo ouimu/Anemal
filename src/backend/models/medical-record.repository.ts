@@ -44,7 +44,10 @@ export function findById(tenantId: number, branchId: number | null | undefined, 
       pet:    { include: { owner: { select: { firstName: true, lastName: true, phone: true } } } },
       doctor: { select: { id: true, name: true } },
       prescriptions: { include: { drug: true } },
-      attachments: true,
+      attachments: {
+        include: { uploadedByUser: { select: { id: true, name: true } } },
+        orderBy: { createdAt: 'desc' },
+      },
       invoices: { select: { paymentStatus: true } },
     },
   })
@@ -95,6 +98,31 @@ export function updateRecord(tenantId: number, id: number, data: UpdateMedicalRe
   })
 }
 
-export function createAttachment(tenantId: number, medicalRecordId: number, data: AddAttachmentInput) {
-  return prisma.attachment.create({ data: { ...data, tenantId, medicalRecordId } })
+export function createAttachment(
+  tenantId: number,
+  medicalRecordId: number,
+  data: AddAttachmentInput,
+  uploadedByUserId: number | null,
+) {
+  return prisma.attachment.create({
+    data: {
+      tenantId,
+      medicalRecordId,
+      fileName:   data.fileName,
+      fileUrl:    data.fileUrl ?? null,
+      fileType:   data.fileType ?? null,
+      storageKey: data.storageKey ?? null,
+      mimeType:   data.mimeType ?? null,
+      fileSize:   data.fileSizeBytes ?? null,
+      uploadedByUserId,
+    },
+  })
+}
+
+export function findAttachmentById(tenantId: number, medicalRecordId: number, attachmentId: number) {
+  return prisma.attachment.findFirst({ where: { id: attachmentId, tenantId, medicalRecordId } })
+}
+
+export function deleteAttachmentById(tenantId: number, medicalRecordId: number, attachmentId: number) {
+  return prisma.attachment.delete({ where: { id: attachmentId, tenantId, medicalRecordId } })
 }
