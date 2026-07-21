@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import MaterialIcon from '../../components/MaterialIcon'
 import { useAuthStore } from '../../store/authStore'
-import { useClinicSettings, useUpdateClinicProfile } from '../../hooks/useClinicSettings'
+import { useClinicSettings, useUpdateClinicProfile, type VatMode } from '../../hooks/useClinicSettings'
 import { getErrorMessage } from '../../utils/errorMessage'
 
 interface FormState {
@@ -12,6 +12,8 @@ interface FormState {
   website: string
   email:   string
   logoUrl: string
+  vatMode: VatMode
+  vatRate: string
 }
 
 export default function ClinicProfilePage() {
@@ -21,6 +23,7 @@ export default function ClinicProfilePage() {
 
   const [form, setForm] = useState<FormState>({
     name: '', phone: '', address: '', taxId: '', website: '', email: '', logoUrl: '',
+    vatMode: 'exclusive', vatRate: '7',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [saved, setSaved] = useState(false)
@@ -37,6 +40,8 @@ export default function ClinicProfilePage() {
       website: data.website  ?? '',
       email:   data.email    ?? '',
       logoUrl: data.logoUrl  ?? '',
+      vatMode: data.vatMode  ?? 'exclusive',
+      vatRate: data.vatRate  ?? '7',
     })
   }, [data])
 
@@ -79,7 +84,7 @@ export default function ClinicProfilePage() {
     e.preventDefault()
     if (!validate()) return
     try {
-      await update.mutateAsync(form)
+      await update.mutateAsync({ ...form, vatRate: Number(form.vatRate) })
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } catch {
@@ -190,6 +195,40 @@ export default function ClinicProfilePage() {
             onChange={e => setForm(p => ({ ...p, taxId: e.target.value }))}
             className="min-h-[44px] px-md border border-outline-variant rounded-xl text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary"
           />
+        </div>
+
+        {/* VAT Configuration (ADR-0020) */}
+        <div className="flex flex-col gap-xs">
+          <label className="text-body-sm font-medium text-on-surface-variant">VAT</label>
+          <div className="flex gap-sm">
+            {([['none', 'No VAT'], ['exclusive', 'VAT Exclusive'], ['inclusive', 'VAT Inclusive']] as const).map(([mode, label]) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setForm(p => ({ ...p, vatMode: mode }))}
+                className={`min-h-[44px] px-md rounded-xl text-body-sm font-medium border transition-colors ${
+                  form.vatMode === mode ? 'border-primary bg-surface-container-low text-primary' : 'border-outline-variant text-on-surface-variant'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {form.vatMode !== 'none' && (
+            <div className="flex items-center gap-sm mt-xs">
+              <label className="text-body-sm text-on-surface-variant" htmlFor="vatRate">Rate (%)</label>
+              <input
+                id="vatRate"
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                value={form.vatRate}
+                onChange={e => setForm(p => ({ ...p, vatRate: e.target.value }))}
+                className="w-28 min-h-[44px] px-md border border-outline-variant rounded-xl text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary"
+              />
+            </div>
+          )}
         </div>
 
         {/* Website URL */}

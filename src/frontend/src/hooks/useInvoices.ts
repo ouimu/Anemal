@@ -52,7 +52,6 @@ export interface CreateInvoicePayload {
   items:            NewInvoiceItem[]
   discount?:        number
   discountReason?:  string | null
-  taxRate?:         number
   notes?:           string | null
 }
 

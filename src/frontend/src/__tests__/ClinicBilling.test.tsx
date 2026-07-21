@@ -16,8 +16,30 @@ vi.mock('../utils/api', () => ({
   default: { get: (...args: unknown[]) => getMock(...(args as [string, unknown])) },
 }))
 
-import { SuccessModal, ReceiptModal, PaymentHistoryTab } from '../views/clinic/ClinicBilling'
+import { SuccessModal, ReceiptModal, PaymentHistoryTab, calcVat } from '../views/clinic/ClinicBilling'
 import type { Invoice } from '../hooks/useInvoices'
+
+describe('calcVat — mirrors backend computeVat() 3-mode formula (ADR-0020)', () => {
+  it('none: zero tax, total = taxable', () => {
+    expect(calcVat('none', 7, 1000)).toEqual({ taxAmount: 0, total: 1000 })
+  })
+
+  it('exclusive: tax added on top', () => {
+    expect(calcVat('exclusive', 7, 1000)).toEqual({ taxAmount: 70, total: 1070 })
+  })
+
+  it('inclusive: tax extracted, total unchanged', () => {
+    const r = calcVat('inclusive', 7, 1070)
+    expect(r.total).toBe(1070)
+    expect(r.taxAmount).toBeCloseTo(70, 1)
+  })
+
+  it('inclusive + discount: discount subtracted from inclusive price before VAT extraction', () => {
+    const r = calcVat('inclusive', 7, 970) // 1070 - 100 discount
+    expect(r.total).toBe(970)
+    expect(r.taxAmount).toBeCloseTo(63.46, 1)
+  })
+})
 
 function withClient(ui: ReactElement) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })

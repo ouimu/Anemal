@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../utils/api'
 
+export type VatMode = 'none' | 'exclusive' | 'inclusive'
+
 export interface ClinicSettingsData {
   id:                   number
   tenantId:             number
@@ -10,6 +12,8 @@ export interface ClinicSettingsData {
   website:              string | null
   address:              string | null
   taxId:                string | null
+  vatMode:               VatMode
+  vatRate:                string
   updatedBy:            number | null
   updatedAt:            string
   tenant:               { name: string; subdomain: string }
@@ -45,6 +49,8 @@ export interface ClinicProfileInput {
   email?:   string
   taxId?:   string
   website?: string
+  vatMode?: VatMode
+  vatRate?: number
 }
 
 export function useClinicSettings() {
