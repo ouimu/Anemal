@@ -349,3 +349,80 @@ describe('emr-attachments — GET /:id/attachments/:attId/download', () => {
     expect(res.body.success).toBe(false)
   })
 })
+
+describe('emr-attachments — DELETE /:id/attachments/:attId', () => {
+
+  test('EA-18: doctor deletes an attachment successfully (204), row removed', async () => {
+    const a = await prisma.attachment.create({
+      data: { tenantId, medicalRecordId, fileName: 'to-delete.pdf', storageKey: `tenants/${tenantId}/emr/${medicalRecordId}/del-uuid-to-delete.pdf`, mimeType: 'application/pdf', fileSize: 10, uploadedByUserId: doctorUserId },
+    })
+    await request(server)
+      .delete(`/api/medical-records/${medicalRecordId}/attachments/${a.id}`)
+      .set('Authorization', `Bearer ${doctorToken}`)
+      .expect(204)
+
+    const stillThere = await prisma.attachment.findUnique({ where: { id: a.id } })
+    expect(stillThere).toBeNull()
+  })
+
+  test('EA-19: delete blocked (403) when parent record has a paid invoice (BR-6)', async () => {
+    const billedOwner = await prisma.owner.create({ data: { tenantId, firstName: 'Ann', lastName: 'Lee', phone: '0822222222' } })
+    const billedPet = await prisma.pet.create({
+      data: { tenantId, ownerId: billedOwner.id, name: 'Billed Pet', species: 'feline' },
+    })
+    const billedRecord = await prisma.medicalRecord.create({ data: { tenantId, branchId, petId: billedPet.id, doctorId: doctorUserId } })
+    await prisma.invoice.create({
+      data: { tenantId, medicalRecordId: billedRecord.id, petId: billedPet.id, invoiceNo: `INV-EMR-TEST-${Date.now()}`, subtotal: 100, taxRate: 7, taxAmount: 7, totalAmount: 107, paymentStatus: 'paid' },
+    })
+    const a = await prisma.attachment.create({
+      data: { tenantId, medicalRecordId: billedRecord.id, fileName: 'billed.pdf', storageKey: `tenants/${tenantId}/emr/${billedRecord.id}/uuid-billed.pdf`, mimeType: 'application/pdf', fileSize: 10, uploadedByUserId: doctorUserId },
+    })
+
+    const res = await request(server)
+      .delete(`/api/medical-records/${billedRecord.id}/attachments/${a.id}`)
+      .set('Authorization', `Bearer ${doctorToken}`)
+      .expect(403)
+    expect(res.body.success).toBe(false)
+
+    const stillThere = await prisma.attachment.findUnique({ where: { id: a.id } })
+    expect(stillThere).not.toBeNull()
+  })
+
+  test('EA-20: role without emr.attach (clinic_admin) → 403', async () => {
+    const a = await prisma.attachment.create({
+      data: { tenantId, medicalRecordId, fileName: 'admin-cant-delete.pdf', storageKey: `tenants/${tenantId}/emr/${medicalRecordId}/uuid-admin.pdf`, mimeType: 'application/pdf', fileSize: 10, uploadedByUserId: doctorUserId },
+    })
+    await request(server)
+      .delete(`/api/medical-records/${medicalRecordId}/attachments/${a.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(403)
+  })
+
+  test('EA-21: presign/confirm/delete each produce an AuditLog row via the existing global audit middleware (G-11)', async () => {
+    const before = await prisma.auditLog.count({ where: { tenantId } })
+
+    const presignRes = await request(server)
+      .post(`/api/medical-records/${medicalRecordId}/attachments/presign`)
+      .set('Authorization', `Bearer ${doctorToken}`)
+      .send({ fileName: 'audited.pdf', contentType: 'application/pdf', fileSizeBytes: 100 })
+      .expect(201)
+
+    const confirmRes = await request(server)
+      .post(`/api/medical-records/${medicalRecordId}/attachments`)
+      .set('Authorization', `Bearer ${doctorToken}`)
+      .send({ fileName: 'audited.pdf', storageKey: presignRes.body.data.storageKey, mimeType: 'application/pdf', fileSizeBytes: 100 })
+      .expect(201)
+
+    await request(server)
+      .delete(`/api/medical-records/${medicalRecordId}/attachments/${confirmRes.body.data.id}`)
+      .set('Authorization', `Bearer ${doctorToken}`)
+      .expect(204)
+
+    // audit writes are fire-and-forget on res.on('finish') — give the event loop a tick
+    await new Promise((r) => setTimeout(r, 50))
+
+    const after = await prisma.auditLog.count({ where: { tenantId } })
+    expect(after).toBeGreaterThanOrEqual(before + 3)
+  })
+
+})

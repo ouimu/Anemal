@@ -6,7 +6,7 @@ import {
   handleListMedicalRecords, handleGetMedicalRecord,
   handleCreateMedicalRecord, handleUpdateMedicalRecord, handleAddAttachment,
 } from '../controllers/medical-record.controller'
-import { handlePresignAttachment, handleDownloadAttachment } from '../controllers/emr-attachment.controller'
+import { handlePresignAttachment, handleDownloadAttachment, handleDeleteAttachment } from '../controllers/emr-attachment.controller'
 import { createMedicalRecordSchema, updateMedicalRecordSchema, addAttachmentSchema } from '../services/medical-record.service'
 import { emrPresignSchema } from '../services/emr-attachment.service'
 
@@ -20,5 +20,6 @@ router.put('/:id',                       requirePlane('clinic'), requirePermissi
 router.post('/:id/attachments/presign',  requirePlane('clinic'), requirePermission('emr.attach'), validate(emrPresignSchema),          handlePresignAttachment)
 router.post('/:id/attachments',          requirePlane('clinic'), requirePermission('emr.attach'), validate(addAttachmentSchema),       handleAddAttachment)
 router.get('/:id/attachments/:attId/download', requirePlane('clinic'), requirePermission('emr.view'), handleDownloadAttachment)
+router.delete('/:id/attachments/:attId', requirePlane('clinic'), requirePermission('emr.attach'), handleDeleteAttachment)
 
 export default router

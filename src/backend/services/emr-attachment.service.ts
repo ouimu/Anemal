@@ -1,5 +1,5 @@
 // src/backend/services/emr-attachment.service.ts
-import { PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
+import { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { randomUUID } from 'crypto'
 import { z } from 'zod'
@@ -94,4 +94,39 @@ export async function generateAttachmentDownloadUrl(
   })
   const downloadUrl = await getSignedUrl(client, command, { expiresIn: 60 })
   return { downloadUrl, fileName: attachment.fileName }
+}
+
+/**
+ * Delete an EMR attachment. Mirrors `updateMedicalRecord`'s billed-record
+ * guard (BR-6) — once the parent medical record has a paid invoice, its
+ * attachments are frozen. Best-effort S3 object removal: a surviving S3
+ * object after a successful DB delete is the accepted orphan risk (R7/F4),
+ * not a new failure mode.
+ */
+export async function deleteAttachment(
+  tenantId: number,
+  branchId: number | null | undefined,
+  medicalRecordId: number,
+  attachmentId: number,
+): Promise<void> {
+  const record = await getMedicalRecord(tenantId, branchId, medicalRecordId)
+
+  const hasPaidInvoice = record.invoices?.some((inv: { paymentStatus: string }) => inv.paymentStatus === 'paid')
+  if (hasPaidInvoice) throw new MedicalRecordError('Cannot delete an attachment on a billed medical record', 403)
+
+  const attachment = await recordRepo.findAttachmentById(tenantId, medicalRecordId, attachmentId)
+  if (!attachment) throw new MedicalRecordError('Attachment not found', 404)
+
+  await recordRepo.deleteAttachmentById(tenantId, medicalRecordId, attachmentId)
+
+  if (attachment.storageKey && isStorageConfigured()) {
+    const cfg    = getStorageConfig()
+    const client = createS3Client()
+    try {
+      await client.send(new DeleteObjectCommand({ Bucket: cfg.bucket, Key: attachment.storageKey }))
+    } catch {
+      // Best-effort: the DB row is already gone; a surviving S3 object is
+      // the accepted orphan risk (R7 / F4), not a new failure mode.
+    }
+  }
 }
