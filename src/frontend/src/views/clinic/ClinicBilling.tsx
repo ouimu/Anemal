@@ -27,6 +27,9 @@ export function calcVat(mode: VatMode, rate: number, taxable: number): { taxAmou
 const VAT_PRICE_LABEL_KEY: Record<VatMode, 'clinic.billing.priceExVat' | 'clinic.billing.priceIncVat' | null> = {
   none: null, exclusive: 'clinic.billing.priceExVat', inclusive: 'clinic.billing.priceIncVat',
 }
+const VAT_SUFFIX_KEY: Record<VatMode, 'clinic.billing.vatSuffixEx' | 'clinic.billing.vatSuffixInc' | null> = {
+  none: null, exclusive: 'clinic.billing.vatSuffixEx', inclusive: 'clinic.billing.vatSuffixInc',
+}
 
 interface Loyalty { ownerId: number; points: number; membershipTier: string }
 
@@ -321,7 +324,10 @@ export default function ClinicBilling() {
 
             {/* Totals */}
             <div className="bg-surface-container-low p-md space-y-xs">
-              <Row label={t('clinic.billing.subtotal')} value={baht(subtotal)} />
+              <Row
+                label={`${t('clinic.billing.subtotal')}${VAT_SUFFIX_KEY[vatMode] ? ` ${t(VAT_SUFFIX_KEY[vatMode]!)}` : ''}`}
+                value={baht(subtotal)}
+              />
               <div className="flex items-center justify-between">
                 <span className="text-body-sm text-on-surface-variant">{t('clinic.billing.discount')}</span>
                 <input type="number" min="0" step="0.01" value={discount} onChange={(e) => setDiscount(e.target.value)}
@@ -329,7 +335,7 @@ export default function ClinicBilling() {
               </div>
               {vatMode !== 'none' && (
                 <Row
-                  label={`${t('clinic.billing.vatLabel')} (${vatRate}%)${vatMode === 'inclusive' ? ` ${t('clinic.billing.vatInclusiveSuffix')}` : ''}`}
+                  label={`${t('clinic.billing.vatLabel')} (${vatRate}%)`}
                   value={baht(tax)}
                 />
               )}

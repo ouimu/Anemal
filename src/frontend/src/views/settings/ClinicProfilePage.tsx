@@ -4,6 +4,7 @@ import { useAuthStore } from '../../store/authStore'
 import { useClinicSettings, useUpdateClinicProfile, type VatMode } from '../../hooks/useClinicSettings'
 import { getErrorMessage } from '../../utils/errorMessage'
 import { useT } from '../../i18n'
+import Toggle from '../../components/Toggle'
 
 interface FormState {
   name:    string
@@ -201,39 +202,48 @@ export default function ClinicProfilePage() {
 
         {/* VAT Configuration (ADR-0020) */}
         <div className="flex flex-col gap-xs">
-          <label className="text-body-sm font-medium text-on-surface-variant">{t('clinic.settings.vatSection')}</label>
-          <div className="flex gap-sm">
-            {([
-              ['none', t('clinic.settings.vatNone')],
-              ['exclusive', t('clinic.settings.vatExclusive')],
-              ['inclusive', t('clinic.settings.vatInclusive')],
-            ] as const).map(([mode, label]) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => setForm(p => ({ ...p, vatMode: mode }))}
-                className={`min-h-[44px] px-md rounded-xl text-body-sm font-medium border transition-colors ${
-                  form.vatMode === mode ? 'border-primary bg-surface-container-low text-primary' : 'border-outline-variant text-on-surface-variant'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="flex items-center gap-sm">
+            <label className="text-body-sm font-medium text-on-surface-variant">{t('clinic.settings.vatSection')}</label>
+            <Toggle
+              checked={form.vatMode !== 'none'}
+              onChange={(on) => setForm(p => ({ ...p, vatMode: on ? 'exclusive' : 'none' }))}
+              ariaLabel={t('clinic.settings.vatSection')}
+            />
           </div>
           {form.vatMode !== 'none' && (
-            <div className="flex items-center gap-sm mt-xs">
-              <label className="text-body-sm text-on-surface-variant" htmlFor="vatRate">{t('clinic.settings.vatRate')}</label>
-              <input
-                id="vatRate"
-                type="number"
-                min="0"
-                max="100"
-                step="0.01"
-                value={form.vatRate}
-                onChange={e => setForm(p => ({ ...p, vatRate: e.target.value }))}
-                className="w-28 min-h-[44px] px-md border border-outline-variant rounded-xl text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary"
-              />
-            </div>
+            <>
+              <div role="radiogroup" aria-label={t('clinic.settings.vatSection')} className="flex gap-md mt-xs">
+                {([
+                  ['exclusive', t('clinic.settings.vatExclusive')],
+                  ['inclusive', t('clinic.settings.vatInclusive')],
+                ] as const).map(([mode, label]) => (
+                  <label key={mode} className="flex items-center gap-xs min-h-[44px] text-body-sm text-on-surface cursor-pointer">
+                    <input
+                      type="radio"
+                      name="vatMode"
+                      value={mode}
+                      checked={form.vatMode === mode}
+                      onChange={() => setForm(p => ({ ...p, vatMode: mode }))}
+                      className="w-5 h-5 accent-primary"
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+              <div className="flex items-center gap-sm mt-xs">
+                <label className="text-body-sm text-on-surface-variant" htmlFor="vatRate">{t('clinic.settings.vatRate')}</label>
+                <input
+                  id="vatRate"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={form.vatRate}
+                  onChange={e => setForm(p => ({ ...p, vatRate: e.target.value }))}
+                  className="w-28 min-h-[44px] px-md border border-outline-variant rounded-xl text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary"
+                />
+              </div>
+            </>
           )}
         </div>
 
