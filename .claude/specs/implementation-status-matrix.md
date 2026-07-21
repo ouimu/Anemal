@@ -6,29 +6,34 @@
 > This matrix is the canonical status source; @pm-agent updates it LAST on every
 > task (see CLAUDE.md → Tracking & Documentation).
 >
-> Current totals as of PR #37 (2026-07-21, "unify user role assignment,
-> Plan A: backend", ADR-0019): retired the shipped-but-superseded
-> multi-role-per-user capability and the legacy `User.role` enum column —
-> `roleId` (RBAC Role table, `role.repository.ts`) is now the sole source of
-> truth for a user's role everywhere (`user.service.ts`, `auth.service.ts`
-> JWT claim mapping, `permission.service.ts` resolution). Closed a
-> cross-tenant BOLA gap (existence-leak precedent, ADR-0014): assigning a
-> foreign-tenant `roleId` now 404s, not 403s; added `@@index([roleId])` on
-> `users`. Migration script (`prisma/scripts/collapse-multi-role.ts`)
-> classifies and collapses pre-existing multi-role users, auto-collapsing
-> unambiguous cases and emitting a manual-resolution report + audit log for
-> ambiguous ones. Deleted 3 now-dead multi-role assign/remove endpoints and
-> the dead `rbac.middleware.ts` (superseded by `permission.middleware.ts`).
-> Backend + migration + docs only — zero frontend blast radius confirmed
-> (`git diff --stat` empty on `src/frontend`); the legacy `<select>`-based
-> Edit User modal keeps working unmodified against the new `roleId`-based
-> API. Plan B (unifying the Edit User modal's two conflicting
-> role-assignment UIs on the frontend) is designed and Ponytail-approved
-> but not yet executed — see
-> `docs/superpowers/plans/2026-07-20-unify-user-role-assignment-plan-b-frontend.md`.
-> Backend 1021 → 1015 (net decrease — test files for the 3 deleted
-> multi-role endpoints were removed), frontend 291 (unchanged) — on top of
-> PR #33 (2026-07-20, "Usage Stats page renders real
+> Current totals as of PR #38 (2026-07-21, "unify user role assignment,
+> Plan B: frontend", ADR-0019): replaced Clinic Admin's two conflicting
+> role-assignment UIs (legacy hardcoded enum listbox + separate RBAC
+> "Roles" section) with a single `ClinicRole`-backed listbox
+> (`UserManagementTab.tsx`), fixing the reported bug where cloned custom
+> roles were invisible in the picker. `GET /users` now returns
+> `role: {id,name,key,isSystem}` + `isPrimaryAdmin: boolean`
+> (`user.service.ts` `safe()`), retiring Plan A's transitional
+> legacy-string shape — bundled in the same PR as its two consumers
+> (`UserManagementTab.tsx`, `AdminBranches.tsx`'s doctor picker, which
+> stays key-match-only per ADR-0019) per the Ponytail-prescribed coupling
+> fix. The Admin system role is sealed against Clone and self-assignment
+> in the UI (D-4: `RoleList.tsx`, `RolePermissionEditor.tsx`). A QA-caught
+> P1 regression — a real clinic_admin unable to assign doctor/staff roles
+> via the new listbox, because the frontend's grantability check lacked
+> the backend's `roles.manage` exemption — was fixed to mirror
+> `assertNoRoleEscalation` exactly (`useUserRoles.ts` `isGrantable`).
+> Deleted `RolePicker.tsx`, the unrouted dead `AdminUsers.tsx` screen, and
+> 3 retired multi-role hooks. Two-axis code review (Standards + Spec) and
+> Protocol 5 browser-smoke QA sign-off both attached — see
+> `docs/superpowers/specs/2026-07-21-unify-user-role-assignment-plan-b-qa-signoff.md`.
+> Plan A (PR #37, backend — retired the multi-role-per-user capability and
+> the legacy `User.role` enum column, `roleId` now the sole source of
+> truth, cross-tenant BOLA fix on role assignment) merged first as its
+> prerequisite. Backend 1015 → 1017 (Task 1's shape-change tests),
+> frontend 291 → 279 (net decrease — `RolePicker.tsx`'s and dead
+> `AdminUsers.tsx`'s dedicated test files removed, exceeding the new tests
+> added) — on top of PR #33 (2026-07-20, "Usage Stats page renders real
 > quota instead of fake hardcoded numbers", ADR-0018): added a 4th quota
 > field `maxPets` mirroring `maxOwners` across schema, all 3 independent
 > quota resolvers (platform-plane, customer-detail override, clinic-plane
@@ -125,7 +130,7 @@
 | Auth (clinic) | `/auth/login`, `/auth/select-branch` | Username + two-step branch select. "Remember me" recalls username(s) per subdomain (localStorage, picker popup for 2+) — session itself always ends on tab/browser/app close or 8h JWT expiry (sessionStorage-only, no persistent-session opt-in), ADR-0010 | `controllers/auth.controller.ts`, `services/auth.service.ts` | `views/LoginView.tsx`, `utils/rememberedUsernames.ts`, `store/authStore.ts` | `tests/integration/auth.test.ts`, `__tests__/LoginView.rememberMe.test.tsx`, `utils/rememberedUsernames.test.ts`, `store/__tests__/authStore.test.ts` | implemented |
 | Auth (platform) | `/platform/auth/login` | Email-based, single-step | `controllers/platform-auth.controller.ts` | `views/platform/PlatformLoginView.tsx` | `tests/integration/seedCredentialSmoke.test.ts` | implemented |
 | RBAC — clinic roles | `/clinic/roles/*` | Role editor, custom roles | `routes/role.routes.ts` | `views/clinic/RoleEditorView.tsx` | `tests/integration/roleEditor-t5f01.test.ts` | implemented |
-| RBAC — user role assignment | `PUT /users/:id`, `POST /users` | Single-role-per-user model — `roleId` (RBAC Role table) is the sole source of truth, `User.role` enum column retired (ADR-0019, PR #37). Cross-tenant `roleId` 404s (not 403s, existence-leak precedent ADR-0014). `users.roleId` indexed. Frontend still uses the legacy `<select>`-based Edit User modal unmodified (works against the new API); unifying it with the newer role-assignment UI is Plan B, not yet executed | `services/user.service.ts`, `models/user.repository.ts`, `models/role.repository.ts` | `views/admin/UserManagementTab.tsx` (unmodified, legacy `<select>` UI) | `__tests__/userManagement.test.ts`, `tests/scripts/collapse-multi-role.test.ts` | implemented |
+| RBAC — user role assignment | `PUT /users/:id`, `POST /users` | Single-role-per-user model — `roleId` (RBAC Role table) is the sole source of truth, `User.role` enum column retired (ADR-0019, PR #37). Cross-tenant `roleId` 404s (not 403s, existence-leak precedent ADR-0014). `users.roleId` indexed. `GET /users` response `role` is now an object `{id,name,key,isSystem}` + `isPrimaryAdmin: boolean` (was a transitional legacy string). Edit User modal unified into one `ClinicRole`-backed listbox (`RolePicker.tsx` and the old separate "Roles" section deleted) — fixes the cloned-custom-role-invisible bug; Admin system role sealed against Clone/self-assignment (D-4); frontend grantability check (`isGrantable`) mirrors the backend's `roles.manage` exemption exactly (ADR-0019, PR #38, Plan B) | `services/user.service.ts`, `models/user.repository.ts`, `models/role.repository.ts` | `views/admin/UserManagementTab.tsx`, `hooks/useUserRoles.ts`, `components/roles/RoleList.tsx`, `components/roles/RolePermissionEditor.tsx`, `views/admin/AdminBranches.tsx` | `__tests__/userManagement.test.ts`, `tests/scripts/collapse-multi-role.test.ts`, `__tests__/UserManagementTab.test.tsx`, `__tests__/RoleList.test.tsx`, `__tests__/AdminBranches.test.tsx` | implemented |
 | RBAC — route authorization | all clinic-mounted routes | Per-role allow/deny sweep, CI-enforced | `middlewares/permission.middleware.ts` | — | `tests/integration/roleRouteMatrix.test.ts` | implemented |
 | Vaccination recording | `POST /api/vaccinations` | `vaccination.create` canonical (doctor + clinic_staff, not admin) | `routes/vaccination.routes.ts` | `views/clinic/ClinicEMR.tsx` | `tests/integration/vaccination-create-permission.test.ts` | implemented |
 | Grooming status update | `PUT /api/grooming/bookings/:id/status` | Fixed Batch 2 D1 (frontend URL) | `routes/grooming.routes.ts` | `views/clinic/ClinicGrooming.tsx:278` | — | implemented |
