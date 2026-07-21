@@ -94,6 +94,22 @@ describe('UserManagementTab — unified role listbox (Bug fix + CORR-3)', () => 
     await screen.findAllByRole('button', { name: 'Edit' })
     expect(screen.getByLabelText('Primary admin — cannot be deactivated')).toBeInTheDocument()
   })
+
+  // Regression: a real clinic_admin intentionally lacks clinical-only codes
+  // (emr.create, vaccination.create), so a strict-subset isGrantable would
+  // hide the Doctor/Staff roles from them entirely — breaking the core admin
+  // workflow. The listbox must mirror the backend roles.manage exemption
+  // (assertNoRoleEscalation / BA CORR-3 anti-drift).
+  it('lists a role whose permissions the caller lacks, when the caller holds roles.manage (mirrors backend exemption)', async () => {
+    // clinic_admin-like caller: manages roles but does NOT hold Doctor's emr.edit
+    state.permissions = ['staff.manage', 'staff.assign_role', 'roles.manage']
+    renderTab()
+    const editButtons = await screen.findAllByRole('button', { name: 'Edit' })
+    fireEvent.click(editButtons[1]) // SECOND_ADMIN (non-self, non-new)
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: 'Doctor' })).toBeInTheDocument()
+    })
+  })
 })
 
 describe('UserManagementTab — role listbox permission gating (CORR-3)', () => {

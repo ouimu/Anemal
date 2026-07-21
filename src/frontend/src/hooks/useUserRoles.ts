@@ -33,9 +33,24 @@ export function useClinicRolesQuery() {
 /** D-4: the Admin system role — sealed against clone/reassignment-of-scope UI affordances. */
 export const SEALED_ROLE_KEY = 'clinic_admin'
 
-/** Can the caller grant this role, given the permissions they themselves hold? */
-export function isGrantable(role: Pick<Role, 'permissions'>, callerPermissions: ReadonlySet<string>): boolean {
-  return role.permissions.every((code) => callerPermissions.has(code))
+/**
+ * Can the caller grant this role, given the permissions they themselves hold?
+ *
+ * Mirrors the authoritative backend gate (`assertNoRoleEscalation` in
+ * user.service.ts) so the listbox shows exactly the roles the server will
+ * accept (anti-drift, BA CORR-3 / T-URA-2.7):
+ *   - A caller holding `roles.manage` may grant any NON-sealed role. Without
+ *     this exemption a real clinic_admin — who intentionally lacks clinical-
+ *     only codes (emr.create, vaccination.create, prescriptions.create) —
+ *     could not assign the doctor or clinic_staff role, a core-workflow
+ *     regression the backend deliberately prevents.
+ *   - The sealed clinic_admin role (D-4) never gets the exemption: it requires
+ *     the caller to actually hold every one of its permissions.
+ */
+export function isGrantable(role: Pick<Role, 'key' | 'permissions'>, callerPermissions: ReadonlySet<string>): boolean {
+  const holdsEveryPermission = role.permissions.every((code) => callerPermissions.has(code))
+  if (role.key === SEALED_ROLE_KEY) return holdsEveryPermission
+  return holdsEveryPermission || callerPermissions.has('roles.manage')
 }
 
 /** Does this role carry admin-level authority (used for the self-demotion confirm)? */
