@@ -117,16 +117,51 @@ export async function getUserById(tenantId: number, userId: number): Promise<Use
  * @param callerPerms - The caller's own resolved permission set.
  */
 function assertNoRoleEscalation(
-  roleRow: { permissions: { permissionCode: string }[] },
+  roleRow: { key: string; permissions: { permissionCode: string }[] },
   callerPerms: Set<string>,
 ): void {
-  if (callerPerms.has('roles.manage')) return
-
   const escalations = roleRow.permissions
     .map(p => p.permissionCode)
     .filter(code => !callerPerms.has(code))
+
+  // D-4: clinic_admin is sealed — the roles.manage exemption below must
+  // NEVER apply to it, or a custom role merely granted roles.manage (without
+  // actually holding every clinic_admin permission) could assign the real
+  // Admin role to itself/anyone, recreating exactly the escalation path D-4's
+  // clone-rejection (role.service.ts cloneRole) closes on the clone side.
+  // A caller who already holds every clinic_admin permission (i.e. is
+  // already admin-equivalent) has no escalations here and passes normally.
+  if (roleRow.key === 'clinic_admin') {
+    if (escalations.length > 0) {
+      throw new UserError(`Cannot assign a role whose permissions exceed your own: ${escalations.join(', ')}`, 403)
+    }
+    return
+  }
+
+  if (callerPerms.has('roles.manage')) return
+
   if (escalations.length > 0) {
     throw new UserError(`Cannot assign a role whose permissions exceed your own: ${escalations.join(', ')}`, 403)
+  }
+}
+
+/**
+ * Tenant-isolation guard for role assignment (multi-tenancy ABSOLUTE rule,
+ * CLAUDE.md). `findRoleById` is a global, non-tenant-scoped lookup — system
+ * roles (`isSystem: true`, `tenantId: null`) are assignable by any tenant,
+ * but a tenant-custom role must belong to the caller's own tenant. Without
+ * this, a caller could pass another tenant's custom `roleId` by number and
+ * assign it, since `assertNoRoleEscalation`'s `roles.manage` exemption never
+ * blocks on tenant ownership. Mirrors the ownership check that existed on
+ * the now-removed `role.service.ts assignRoleToUser` path.
+ */
+function assertRoleBelongsToCallerTenant(
+  roleRow: { isSystem: boolean; tenantId: number | null },
+  tenantId: number,
+): void {
+  if (roleRow.isSystem) return
+  if (roleRow.tenantId !== tenantId) {
+    throw new UserError('Role does not belong to your tenant', 403)
   }
 }
 
@@ -150,6 +185,7 @@ export async function createUser(
   const roleRow = await roleRepo.findRoleById(body.roleId)
   if (!roleRow) throw new UserError(`Unknown role: ${body.roleId}`, 400)
 
+  assertRoleBelongsToCallerTenant(roleRow, tenantId)
   assertNoRoleEscalation(roleRow, callerPerms)
 
   const passwordHash = await bcrypt.hash(body.password, config.bcryptRounds)
@@ -197,6 +233,7 @@ export async function updateUser(
     const roleRow = await roleRepo.findRoleById(body.roleId)
     if (!roleRow) throw new UserError(`Unknown role: ${body.roleId}`, 400)
 
+    assertRoleBelongsToCallerTenant(roleRow, tenantId)
     assertNoRoleEscalation(roleRow, callerPerms)
 
     await userRepo.replaceUserRole(tenantId, userId, roleRow.id)

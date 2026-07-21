@@ -464,4 +464,43 @@ describe('user-1.5 — roleId-based create/update (ADR-0019/D-7)', () => {
     )
     expect(updated.role).toBe('admin')
   })
+
+  test('a roles.manage holder who is NOT admin-equivalent still cannot assign the sealed clinic_admin role (D-4 assign-path seal)', async () => {
+    const adminRole  = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
+    const doctorRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
+    const target = await userService.createUser(tenantId, {
+      name: 'Target5', username: `tgt5_${Date.now() % 100000}`, email: `t5-gate-${Date.now()}@test.com`,
+      password: 'TestPass1!', roleId: doctorRole.id,
+    }, fullPerms, true)
+
+    // roles.manage would blanket-exempt the general subset check, but must
+    // NOT exempt assigning the sealed clinic_admin role itself.
+    const rolesManageOnlyPerms = new Set(['staff.manage', 'staff.assign_role', 'roles.manage'])
+    await expect(userService.updateUser(
+      tenantId, target.id, { roleId: adminRole.id },
+      rolesManageOnlyPerms, true,
+    )).rejects.toMatchObject({ statusCode: 403 })
+  })
+
+  test('rejects assigning a custom role that belongs to a different tenant (tenant isolation)', async () => {
+    const otherTenant = await prisma.tenant.create({
+      data: { name: `Other Tenant ${Date.now()}`, subdomain: `other-ura-${Date.now() % 100000}` },
+    })
+    const otherTenantRole = await prisma.clinicRole.create({
+      data: { tenantId: otherTenant.id, key: `tenant_${otherTenant.id}_foreign_${Date.now()}`, name: 'Foreign Role', isSystem: false, permVersion: 1 },
+    })
+    const doctorRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
+    const target = await userService.createUser(tenantId, {
+      name: 'Target6', username: `tgt6_${Date.now() % 100000}`, email: `t6-gate-${Date.now()}@test.com`,
+      password: 'TestPass1!', roleId: doctorRole.id,
+    }, fullPerms, true)
+
+    await expect(userService.updateUser(
+      tenantId, target.id, { roleId: otherTenantRole.id },
+      fullPerms, true,
+    )).rejects.toMatchObject({ statusCode: 403 })
+
+    await prisma.clinicRole.delete({ where: { id: otherTenantRole.id } })
+    await prisma.tenant.delete({ where: { id: otherTenant.id } })
+  })
 })
