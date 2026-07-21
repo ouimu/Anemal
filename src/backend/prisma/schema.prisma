@@ -81,6 +81,7 @@ model Tenant {
   paymentHistory      PaymentHistory[]
   userBranches        UserBranch[]
 
+  @@index([companyTypeId])
   @@map("tenants")
 }
 
