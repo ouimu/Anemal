@@ -79,9 +79,9 @@ beforeAll(async () => {
   staffRoleId = staffRole.id
 
   const [uAdmin, uDoctor, uStaff] = await Promise.all([
-    prisma.user.create({ data: { tenantId: tidA, branchId: branchA.id, name: 'Admin A', username: 'admin_t5f03a',  email: 'admin@a.test', passwordHash, role: 'admin',  roleId: adminRoleId  } }),
-    prisma.user.create({ data: { tenantId: tidA, branchId: branchA.id, name: 'Doc A',   username: 'doctor_t5f03a', email: 'doc@a.test',   passwordHash, role: 'doctor', roleId: doctorRoleId } }),
-    prisma.user.create({ data: { tenantId: tidA, branchId: branchA.id, name: 'Staff A', username: 'staff_t5f03a',  email: 'staff@a.test', passwordHash, role: 'staff',  roleId: staffRoleId  } }),
+    prisma.user.create({ data: { tenantId: tidA, branchId: branchA.id, name: 'Admin A', username: 'admin_t5f03a',  email: 'admin@a.test', passwordHash, roleId: adminRoleId  } }),
+    prisma.user.create({ data: { tenantId: tidA, branchId: branchA.id, name: 'Doc A',   username: 'doctor_t5f03a', email: 'doc@a.test',   passwordHash, roleId: doctorRoleId } }),
+    prisma.user.create({ data: { tenantId: tidA, branchId: branchA.id, name: 'Staff A', username: 'staff_t5f03a',  email: 'staff@a.test', passwordHash, roleId: staffRoleId  } }),
   ])
   adminUserId = uAdmin.id
   doctorUserId = uDoctor.id
@@ -103,7 +103,7 @@ beforeAll(async () => {
   tidB = tenantB.id
   const branchB = await prisma.branch.create({ data: { tenantId: tidB, name: 'Main B' } })
   const uB = await prisma.user.create({
-    data: { tenantId: tidB, branchId: branchB.id, name: 'User B', username: 'user_t5f03b', email: 'user@b.test', passwordHash, role: 'staff', roleId: staffRoleId },
+    data: { tenantId: tidB, branchId: branchB.id, name: 'User B', username: 'user_t5f03b', email: 'user@b.test', passwordHash, roleId: staffRoleId },
   })
   userBId = uB.id
   await prisma.userRole.create({ data: { userId: userBId, roleId: staffRoleId, tenantId: tidB } })
