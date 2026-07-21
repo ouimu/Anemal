@@ -47,6 +47,17 @@ async function assertNotPrimaryAdminDeactivation(
   }
 }
 
+/**
+ * Legacy 3-value ('admin'|'doctor'|'staff') role-string mapper, kept for the
+ * one response shape Plan B deliberately left unmigrated: AssignBranchesResponse
+ * (T-URA-2.3 — nothing in src/frontend reads that response body).
+ */
+function toLegacyRoleString3Way(roleKey: string | undefined): 'admin' | 'doctor' | 'staff' {
+  if (roleKey === 'clinic_admin') return 'admin'
+  if (roleKey === 'doctor') return 'doctor'
+  return 'staff'
+}
+
 function safe(user: {
   id: number; tenantId: number; name: string; username: string
   email: string | null; phone?: string | null
@@ -368,9 +379,8 @@ export async function assignUserBranches(
     // Plan B (T-URA-2.3): AssignBranchesResponse deliberately keeps the
     // legacy 3-value string shape — nothing in src/frontend reads this
     // response body (confirmed by grep), so it is out of scope for the
-    // role-object migration; this inline map replaces the now-deleted
-    // toLegacyRoleStringTransitional helper for this one call site only.
-    role: user.roleRef?.key === 'clinic_admin' ? 'admin' : user.roleRef?.key === 'doctor' ? 'doctor' : 'staff',
+    // role-object migration.
+    role: toLegacyRoleString3Way(user.roleRef?.key),
     assignedBranches,
   }
 }

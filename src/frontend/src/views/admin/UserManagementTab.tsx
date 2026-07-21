@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import { useAuthStore } from '../../store/authStore'
 import Can from '../../components/Can'
-import { useClinicRolesQuery, type Role as RoleOption } from '../../hooks/useUserRoles'
+import { useClinicRolesQuery, isGrantable, isAdminLevelRole, SEALED_ROLE_KEY } from '../../hooks/useUserRoles'
 import { useAdminSettings, useUpdateSettings } from '../../hooks/useAdmin'
 import { useT } from '../../i18n'
 import { describeSaveError } from '../../utils/errorMessages'
@@ -32,14 +32,6 @@ const AVATAR_BG: Record<string, string> = {
   clinic_staff: 'bg-secondary-container text-secondary-on-container',
 }
 const AVATAR_BG_FALLBACK = 'bg-surface-container text-on-surface-variant'
-
-/** Mirrors isGrantable/isAdminLevelRole formerly in RolePicker.tsx (deleted, Task 3). */
-function isGrantable(role: RoleOption, callerPermissions: ReadonlySet<string>): boolean {
-  return role.permissions.every((code) => callerPermissions.has(code))
-}
-function isAdminLevelRole(role: RoleOption): boolean {
-  return role.key === 'clinic_admin' || role.permissions.includes('staff.assign_role') || role.permissions.includes('staff.manage')
-}
 
 function Modal({ user, onClose, isPrimaryAdmin }: { user: Partial<User> & { isNew?: boolean }; onClose: () => void; isPrimaryAdmin: boolean }) {
   const t = useT()
@@ -80,7 +72,7 @@ function Modal({ user, onClose, isPrimaryAdmin }: { user: Partial<User> & { isNe
   const hasAssignRole = useAuthStore(s => s.hasPermission('staff.assign_role'))
   const callerPermSet = new Set(authPermissions)
   const grantableRoles = allRoles.filter(r => isGrantable(r, callerPermSet))
-  const listableRoles = grantableRoles.filter(r => !(isNew && r.key === 'clinic_admin'))
+  const listableRoles = grantableRoles.filter(r => !(isNew && r.key === SEALED_ROLE_KEY))
 
   function handleRoleChange(newRoleId: number) {
     if (isSelf) {
@@ -141,7 +133,7 @@ function Modal({ user, onClose, isPrimaryAdmin }: { user: Partial<User> & { isNe
                 onChange={e => handleRoleChange(Number(e.target.value))}
                 className="min-h-[44px] px-3 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 bg-surface"
               >
-                <option value={0} disabled>Select…</option>
+                <option value={0} disabled>{t('common.select')}</option>
                 {listableRoles.map(r => (
                   <option key={r.id} value={r.id}>{r.name}</option>
                 ))}

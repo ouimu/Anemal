@@ -22,7 +22,7 @@ interface SearchResult {
   petId: number; petName: string; species: string; ownerId: number; ownerName: string; phone: string
 }
 
-interface StaffUser { id: number; name: string; role: string }
+interface StaffUser { id: number; name: string; role: { key: string } }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const STATUS_COLORS: Record<string, string> = {

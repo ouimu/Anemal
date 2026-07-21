@@ -93,6 +93,7 @@ const en: Dict = {
 
   // Common UI actions and labels
   'common.save': 'Save',
+  'common.select': 'Select…',
   'common.cancel': 'Cancel',
   'common.done': 'Done',
   'common.delete': 'Delete',
@@ -409,6 +410,7 @@ const th: Dict = {
 
   // Common UI actions and labels
   'common.save': 'บันทึก',
+  'common.select': 'เลือก…',
   'common.cancel': 'ยกเลิก',
   'common.done': 'เสร็จสิ้น',
   'common.delete': 'ลบ',

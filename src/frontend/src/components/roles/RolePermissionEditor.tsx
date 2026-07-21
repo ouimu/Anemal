@@ -136,7 +136,9 @@ export default function RolePermissionEditor({
           <div className="flex items-center gap-md">
             <MaterialIcon name="lock" size={20} className="text-secondary flex-shrink-0" />
             <span className="text-body-sm text-on-surface-container font-bold">
-              System roles are read-only. Clone to create a customisable version.
+              {onClone
+                ? 'System roles are read-only. Clone to create a customisable version.'
+                : 'System roles are read-only.'}
             </span>
           </div>
           {onClone && (

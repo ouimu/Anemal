@@ -29,3 +29,18 @@ export function useClinicRolesQuery() {
     staleTime: 60_000,
   })
 }
+
+/** D-4: the Admin system role — sealed against clone/reassignment-of-scope UI affordances. */
+export const SEALED_ROLE_KEY = 'clinic_admin'
+
+/** Can the caller grant this role, given the permissions they themselves hold? */
+export function isGrantable(role: Pick<Role, 'permissions'>, callerPermissions: ReadonlySet<string>): boolean {
+  return role.permissions.every((code) => callerPermissions.has(code))
+}
+
+/** Does this role carry admin-level authority (used for the self-demotion confirm)? */
+export function isAdminLevelRole(role: Pick<Role, 'key' | 'permissions'>): boolean {
+  return role.key === SEALED_ROLE_KEY
+    || role.permissions.includes('staff.assign_role')
+    || role.permissions.includes('staff.manage')
+}
