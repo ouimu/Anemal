@@ -34,7 +34,7 @@ describe('classifyMultiRoleUsers', () => {
 
   it('classifies a system+custom user as auto-collapsible, keeping the system role', async () => {
     const user = await prisma.user.create({
-      data: { tenantId, name: 'Doctor A', username: 'doctor_a_collapse', passwordHash: 'x', role: 'doctor', roleId: systemDoctorRoleId },
+      data: { tenantId, name: 'Doctor A', username: 'doctor_a_collapse', passwordHash: 'x', roleId: systemDoctorRoleId },
     })
     await prisma.userRole.createMany({
       data: [
@@ -54,7 +54,7 @@ describe('classifyMultiRoleUsers', () => {
 
   it('classifies a 2-system-role user as ambiguous', async () => {
     const user = await prisma.user.create({
-      data: { tenantId, name: 'Two System', username: 'two_system_collapse', passwordHash: 'x', role: 'doctor', roleId: systemDoctorRoleId },
+      data: { tenantId, name: 'Two System', username: 'two_system_collapse', passwordHash: 'x', roleId: systemDoctorRoleId },
     })
     await prisma.userRole.createMany({
       data: [
@@ -73,7 +73,7 @@ describe('classifyMultiRoleUsers', () => {
 
   it('classifies a 2-custom-role user with no system role as ambiguous', async () => {
     const user = await prisma.user.create({
-      data: { tenantId, name: 'Two Custom', username: 'two_custom_collapse', passwordHash: 'x', role: 'staff', roleId: customRoleAId },
+      data: { tenantId, name: 'Two Custom', username: 'two_custom_collapse', passwordHash: 'x', roleId: customRoleAId },
     })
     await prisma.userRole.createMany({
       data: [
@@ -91,7 +91,7 @@ describe('classifyMultiRoleUsers', () => {
 
   it('does not classify a single-role user at all', async () => {
     const user = await prisma.user.create({
-      data: { tenantId, name: 'Single Role', username: 'single_role_collapse', passwordHash: 'x', role: 'doctor', roleId: systemDoctorRoleId },
+      data: { tenantId, name: 'Single Role', username: 'single_role_collapse', passwordHash: 'x', roleId: systemDoctorRoleId },
     })
     await prisma.userRole.create({ data: { userId: user.id, roleId: systemDoctorRoleId, tenantId } })
 
@@ -127,7 +127,7 @@ describe('collapseMultiRoleUsers', () => {
 
   it('collapses an auto-collapsible user to the system role and logs it', async () => {
     const user = await prisma.user.create({
-      data: { tenantId, name: 'Collapse Me', username: 'collapse_me', passwordHash: 'x', role: 'doctor', roleId: systemDoctorRoleId },
+      data: { tenantId, name: 'Collapse Me', username: 'collapse_me', passwordHash: 'x', roleId: systemDoctorRoleId },
     })
     await prisma.userRole.createMany({
       data: [
@@ -153,7 +153,7 @@ describe('collapseMultiRoleUsers', () => {
 
   it('leaves an ambiguous user untouched and reports it', async () => {
     const user = await prisma.user.create({
-      data: { tenantId, name: 'Ambiguous', username: 'ambiguous_user', passwordHash: 'x', role: 'doctor', roleId: systemDoctorRoleId },
+      data: { tenantId, name: 'Ambiguous', username: 'ambiguous_user', passwordHash: 'x', roleId: systemDoctorRoleId },
     })
     await prisma.userRole.createMany({
       data: [
