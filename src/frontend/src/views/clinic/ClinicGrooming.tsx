@@ -75,7 +75,7 @@ function BookingModal({ date, onClose, onSaved }: {
 
   const { data: staff = [] } = useQuery<StaffUser[]>({
     queryKey: ['staff-list'],
-    queryFn: () => api.get('/users?role=staff').then(r => r.data.data),
+    queryFn: () => api.get('/users').then(r => r.data.data),
   })
 
   const qc = useQueryClient()
