@@ -346,7 +346,6 @@ export async function createTenantAdminUser(
         email:        data.email,
         phone:        data.phone,
         passwordHash: data.passwordHash,
-        role:         'admin',
         roleId,
       },
       select: ADMIN_USER_SELECT,

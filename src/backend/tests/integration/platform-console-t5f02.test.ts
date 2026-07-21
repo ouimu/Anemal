@@ -184,8 +184,9 @@ describe('T-5F-02 / AC2 — customer usage endpoint', () => {
       { tenantId, name: 'B1', isActive: true },
       { tenantId, name: 'B2', isActive: true },
     ] })
+    const staffRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } })
     await prisma.user.create({ data: {
-      tenantId, name: 'U1', username: `u1_${SFX}`, email: `u1-${SFX}@x.test`, passwordHash: 'x', role: 'staff', isActive: true,
+      tenantId, name: 'U1', username: `u1_${SFX}`, email: `u1-${SFX}@x.test`, passwordHash: 'x', roleId: staffRole.id, isActive: true,
     } })
     await prisma.owner.createMany({ data: [
       { tenantId, firstName: 'O', lastName: '1', phone: '0810000001' },
@@ -329,10 +330,11 @@ describe('T-5F-02 / AC5 — suspend blocks clinic /auth/me', () => {
     const passwordHash = await bcrypt.hash(clinicPassword, 4)
     const branch = await prisma.branch.create({ data: { tenantId, name: 'Main', isActive: true } })
     clinicUsername = `sadm_${SFX.slice(-10)}`
+    const clinicAdminRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
     await prisma.user.create({
       data: {
         tenantId, branchId: branch.id, name: 'Susp Admin',
-        username: clinicUsername, email: clinicEmail, passwordHash, role: 'admin', isActive: true,
+        username: clinicUsername, email: clinicEmail, passwordHash, roleId: clinicAdminRole.id, isActive: true,
       },
     })
 
