@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { AppError } from '../utils/errors'
 import * as invoiceRepo from '../models/invoice.repository'
 import type { BuiltItem } from '../models/invoice.repository'
+import * as tenantSettingsRepo from '../models/tenant-settings.repository'
 import { earnOnPayment } from './loyalty.service'
 
 const ITEM_TYPES = ['service', 'medicine', 'vaccine', 'lab', 'supply', 'grooming', 'retail', 'other'] as const
@@ -22,7 +23,6 @@ export const createInvoiceSchema = z.object({
   items:           z.array(invoiceItemSchema).default([]),
   discount:        z.number().nonnegative().default(0),
   discountReason:  z.string().max(255).optional().nullable(),
-  taxRate:         z.number().nonnegative().max(100).default(7),
   notes:           z.string().optional().nullable(),
 }).strict()
 
@@ -39,6 +39,31 @@ export class InvoiceError extends AppError {
 }
 
 const round2 = (n: number): number => Math.round(n * 100) / 100
+
+export type VatMode = 'none' | 'exclusive' | 'inclusive'
+
+/**
+ * Pure 3-mode VAT formula (ADR-0020). The server is the sole source of truth for VAT
+ * (D2) — never trust a client-supplied rate. `taxable = subtotal - discount` in all
+ * three modes. Rate is defensively clamped to [0,100] even though the settings PUT
+ * already validates it (BA Finding F4 — this function is the security boundary, not
+ * the UI).
+ */
+export function computeVat(
+  mode: VatMode, rate: number, taxable: number,
+): { taxRate: number; taxAmount: number; totalAmount: number } {
+  const safeRate = Math.min(100, Math.max(0, Number(rate) || 0))
+  if (mode === 'none') {
+    return { taxRate: 0, taxAmount: 0, totalAmount: round2(taxable) }
+  }
+  if (mode === 'inclusive') {
+    const taxAmount = round2(taxable - taxable / (1 + safeRate / 100))
+    return { taxRate: safeRate, taxAmount, totalAmount: round2(taxable) }
+  }
+  // exclusive
+  const taxAmount = round2((taxable * safeRate) / 100)
+  return { taxRate: safeRate, taxAmount, totalAmount: round2(taxable + taxAmount) }
+}
 
 export async function createInvoice(tenantId: number, branchId: number, data: CreateInvoiceInput, createdBy?: number) {
   const builtItems: BuiltItem[] = []
@@ -76,11 +101,18 @@ export async function createInvoice(tenantId: number, branchId: number, data: Cr
 
   if (builtItems.length === 0) throw new InvoiceError('Invoice must have at least one item', 400)
 
-  const subtotal    = round2(builtItems.reduce((sum, i) => sum + i.totalPrice, 0))
-  const discount    = Math.min(round2(data.discount), subtotal)
-  const taxable     = subtotal - discount
-  const taxAmount   = round2((taxable * data.taxRate) / 100)
-  const totalAmount = round2(taxable + taxAmount)
+  const subtotal = round2(builtItems.reduce((sum, i) => sum + i.totalPrice, 0))
+  const discount = Math.min(round2(data.discount), subtotal)
+  const taxable  = subtotal - discount
+
+  // Resolve VAT server-side from tenant settings — never from the request body
+  // (ADR-0020 D2, closes the cashier taxRate-tampering vector). getOrCreateSettings
+  // upserts a row with schema defaults (vatMode='exclusive', vatRate=7) if none exists
+  // yet for this tenant, so this never throws for a tenant with no settings row (BA F3).
+  const settings = await tenantSettingsRepo.getOrCreateSettings(tenantId)
+  const { taxRate, taxAmount, totalAmount } = computeVat(
+    settings.vatMode as VatMode, Number(settings.vatRate), taxable,
+  )
 
   return invoiceRepo.createInvoice(tenantId, {
     branchId,
@@ -90,7 +122,7 @@ export async function createInvoice(tenantId: number, branchId: number, data: Cr
     subtotal,
     discount,
     discountReason:  data.discountReason ?? null,
-    taxRate:         data.taxRate,
+    taxRate,
     taxAmount,
     totalAmount,
     notes:           data.notes ?? null,

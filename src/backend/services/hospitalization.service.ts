@@ -96,7 +96,7 @@ export async function discharge(tenantId: number, branchId: number, id: number, 
     invoice = await invoiceService.createInvoice(tenantId, branchId, {
       petId: h.petId,
       items: [{ description: `Hospitalization (${days} day${days > 1 ? 's' : ''})`, itemType: 'service', qty: days, unitPrice: rate }],
-      discount: 0, taxRate: 7,
+      discount: 0,
     }, createdBy)
   }
   return { hospitalization: discharged, invoice }

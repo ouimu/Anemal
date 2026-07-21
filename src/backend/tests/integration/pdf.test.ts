@@ -60,7 +60,6 @@ beforeAll(async () => {
     .send({
       petId: petRes.body.data.id,
       items: [{ description: 'Consultation', itemType: 'service', qty: 1, unitPrice: 500 }],
-      taxRate: 7,
     })
   expect(invRes.status).toBe(201)
   invoiceId = invRes.body.data.id
@@ -184,7 +183,6 @@ describe('PDF — Thai+Latin+digit glyph smoke test (T-3a.2, ADR-0013 D1/F1)', (
       .send({
         petId: petRes.body.data.id,
         items: [{ description: 'ค่าตรวจ Exam 250', itemType: 'service', qty: 1, unitPrice: 250 }],
-        taxRate: 7,
       })
     expect(invRes.status).toBe(201)
 

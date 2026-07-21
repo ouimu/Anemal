@@ -5,11 +5,31 @@ import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
 import { useProducts, type Product } from '../../hooks/useInventory'
 import { useCreateInvoice, useRecordPayment, type Invoice } from '../../hooks/useInvoices'
+import { useClinicSettings, type VatMode } from '../../hooks/useClinicSettings'
 import { useAuthStore } from '../../store/authStore'
 
 const baht = (n: number) => '฿' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const TAX_RATE = 7
+const round2 = (n: number) => Math.round(n * 100) / 100
 const LOYALTY_REDEEM_RATIO = 0.2 // points can cover at most 20% of an invoice
+
+// Mirrors backend computeVat() in invoice.service.ts (ADR-0020) — used for the live
+// cart preview before the invoice exists server-side. Exported for unit testing.
+export function calcVat(mode: VatMode, rate: number, taxable: number): { taxAmount: number; total: number } {
+  if (mode === 'none') return { taxAmount: 0, total: round2(taxable) }
+  if (mode === 'inclusive') {
+    const taxAmount = round2(taxable - taxable / (1 + rate / 100))
+    return { taxAmount, total: round2(taxable) }
+  }
+  const taxAmount = round2((taxable * rate) / 100)
+  return { taxAmount, total: round2(taxable + taxAmount) }
+}
+
+const VAT_PRICE_LABEL_KEY: Record<VatMode, 'clinic.billing.priceExVat' | 'clinic.billing.priceIncVat' | null> = {
+  none: null, exclusive: 'clinic.billing.priceExVat', inclusive: 'clinic.billing.priceIncVat',
+}
+const VAT_SUFFIX_KEY: Record<VatMode, 'clinic.billing.vatSuffixEx' | 'clinic.billing.vatSuffixInc' | null> = {
+  none: null, exclusive: 'clinic.billing.vatSuffixEx', inclusive: 'clinic.billing.vatSuffixInc',
+}
 
 interface Loyalty { ownerId: number; points: number; membershipTier: string }
 
@@ -42,6 +62,10 @@ export default function ClinicBilling() {
   const qc = useQueryClient()
   const createInvoice = useCreateInvoice()
   const recordPayment = useRecordPayment()
+
+  const { data: clinicSettings } = useClinicSettings()
+  const vatMode: VatMode = clinicSettings?.vatMode ?? 'exclusive'
+  const vatRate = Number(clinicSettings?.vatRate ?? 7)
 
   // Loyalty balance for the selected pet's owner.
   const { data: loyalty } = useQuery<Loyalty>({
@@ -97,8 +121,8 @@ export default function ClinicBilling() {
   const redeemDiscount = Math.min(redeemPts, maxRedeemable)
   const manualDiscount = Number(discount || 0)
   const discountNum = Math.min(manualDiscount + redeemDiscount, subtotal)
-  const tax = ((subtotal - discountNum) * TAX_RATE) / 100
-  const total = subtotal - discountNum + tax
+  const taxable = subtotal - discountNum
+  const { taxAmount: tax, total } = calcVat(vatMode, vatRate, taxable)
   const change = method === 'cash' ? Number(tendered || 0) - total : 0
   const hasLines = previewLines.length > 0 || cart.length > 0
 
@@ -129,7 +153,6 @@ export default function ClinicBilling() {
         petId: pet?.petId ?? null,
         items: cart.map((c) => ({ description: c.description || '(item)', itemType: c.itemType, qty: c.qty, unitPrice: c.unitPrice, productId: c.productId ?? null })),
         discount: discountNum,
-        taxRate: TAX_RATE,
       })
       if (method === 'qr_promptpay') {
         setPendingInvoiceId(invoice.id)
@@ -265,6 +288,17 @@ export default function ClinicBilling() {
                 </div>
               ))}
 
+              {cart.length > 0 && (
+                <div className="flex items-center gap-sm px-md py-xs text-label-md text-on-surface-variant uppercase tracking-wider">
+                  <span className="w-[18px] flex-shrink-0" />
+                  <span className="flex-1">{t('clinic.billing.description')}</span>
+                  <span className="w-16 text-center">{t('clinic.billing.qty')}</span>
+                  <span className="w-24 text-right">{VAT_PRICE_LABEL_KEY[vatMode] ? t(VAT_PRICE_LABEL_KEY[vatMode]!) : t('clinic.billing.price')}</span>
+                  <span className="w-24 text-right">{t('clinic.billing.total')}</span>
+                  <span className="w-[44px]" />
+                </div>
+              )}
+
               {/* Editable cart rows */}
               {cart.map((c) => (
                 <div key={c.key} className="flex items-center gap-sm px-md py-sm min-h-[48px]">
@@ -290,13 +324,21 @@ export default function ClinicBilling() {
 
             {/* Totals */}
             <div className="bg-surface-container-low p-md space-y-xs">
-              <Row label={t('clinic.billing.subtotal')} value={baht(subtotal)} />
+              <Row
+                label={`${t('clinic.billing.subtotal')}${VAT_SUFFIX_KEY[vatMode] ? ` ${t(VAT_SUFFIX_KEY[vatMode]!)}` : ''}`}
+                value={baht(subtotal)}
+              />
               <div className="flex items-center justify-between">
                 <span className="text-body-sm text-on-surface-variant">{t('clinic.billing.discount')}</span>
                 <input type="number" min="0" step="0.01" value={discount} onChange={(e) => setDiscount(e.target.value)}
                        className="w-28 min-h-[40px] bg-surface border border-outline-variant rounded-lg px-sm text-body-sm text-right font-code focus:outline-none focus:border-primary" />
               </div>
-              <Row label={`Tax (${TAX_RATE}%)`} value={baht(tax)} />
+              {vatMode !== 'none' && (
+                <Row
+                  label={`${t('clinic.billing.vatLabel')} (${vatRate}%)`}
+                  value={baht(tax)}
+                />
+              )}
               <div className="flex items-center justify-between border-t border-outline-variant pt-sm mt-xs">
                 <span className="text-headline-xs font-headline font-semibold text-on-surface">{t('clinic.billing.totalDue')}</span>
                 <span className="text-headline-md font-headline font-bold text-primary font-code">{baht(total)}</span>
@@ -657,7 +699,7 @@ function printReceipt(invoice: Invoice, petLabel: string | undefined, method: st
     <table><thead><tr><th>Item</th><th style="text-align:center">Qty</th><th style="text-align:right">Unit</th><th style="text-align:right">Total</th></tr></thead><tbody>${items}</tbody></table>
     <div style="margin-top:16px"><div class="tot"><span>Subtotal</span><span>${baht(Number(invoice.subtotal))}</span></div>
     <div class="tot"><span>Discount</span><span>-${baht(Number(invoice.discount))}</span></div>
-    <div class="tot"><span>Tax (${Number(invoice.taxRate)}%)</span><span>${baht(Number(invoice.taxAmount))}</span></div>
+    ${Number(invoice.taxAmount) > 0 ? `<div class="tot"><span>Tax (${Number(invoice.taxRate)}%)</span><span>${baht(Number(invoice.taxAmount))}</span></div>` : ''}
     <div class="tot grand"><span>Total</span><span>${baht(Number(invoice.totalAmount))}</span></div>
     <p class="muted" style="margin-top:8px">Paid by ${method.replace('_', ' ')} · Thank you!</p></div>
     <script>window.onload=function(){window.print()}</script></body></html>`
@@ -686,7 +728,7 @@ function ReceiptBody({ invoice, method }: { invoice: Invoice; method: string }) 
       <div className="space-y-xs">
         <Row label="Subtotal" value={baht(Number(invoice.subtotal))} />
         {Number(invoice.discount) > 0 && <Row label="Discount" value={`-${baht(Number(invoice.discount))}`} />}
-        <Row label={`Tax (${Number(invoice.taxRate)}%)`} value={baht(Number(invoice.taxAmount))} />
+        {Number(invoice.taxAmount) > 0 && <Row label={`Tax (${Number(invoice.taxRate)}%)`} value={baht(Number(invoice.taxAmount))} />}
         <div className="flex items-center justify-between border-t border-outline-variant pt-xs mt-xs">
           <span className="text-body-md font-semibold text-on-surface">Total</span>
           <span className="text-body-md font-bold text-primary font-code">{baht(Number(invoice.totalAmount))}</span>

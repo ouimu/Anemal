@@ -96,7 +96,7 @@ describe('Phase 4 — Loyalty (earn on payment, redeem caps)', () => {
 
     // Invoice of 1,000 (+7% VAT = 1,070) → floor(1070/100) = 10 points.
     const inv = await request(server).post('/api/invoices').set('Authorization', `Bearer ${adminA}`)
-      .send({ petId, items: [{ description: 'Consult', itemType: 'service', qty: 1, unitPrice: 1000 }], taxRate: 7 })
+      .send({ petId, items: [{ description: 'Consult', itemType: 'service', qty: 1, unitPrice: 1000 }] })
     expect(inv.status).toBe(201)
     const pay = await request(server).put(`/api/invoices/${inv.body.data.id}/payment`)
       .set('Authorization', `Bearer ${adminA}`).send({ paymentMethod: 'cash' })
