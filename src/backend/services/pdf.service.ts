@@ -126,6 +126,7 @@ export async function generateInvoicePdf(tenantId: number, branchId: number | nu
   const taxRate     = Number(inv.taxRate)
   const taxAmount   = Number(inv.taxAmount)
   const totalAmount = Number(inv.totalAmount)
+  const taxable     = subtotal - discount
 
   row2(doc, y,      'Subtotal',               baht(subtotal))
   y += 16
@@ -133,8 +134,16 @@ export async function generateInvoicePdf(tenantId: number, branchId: number | nu
     row2(doc, y, `Discount${inv.discountReason ? ` (${inv.discountReason})` : ''}`, `-${baht(discount)}`)
     y += 16
   }
-  row2(doc, y, `VAT ${taxRate}%`, baht(taxAmount))
-  y += 16
+  // Hide the VAT line entirely for vatMode='none' invoices (taxAmount is 0) — ADR-0020 F6.
+  // Mode isn't stored on Invoice itself; inclusive vs exclusive is derived from whether
+  // totalAmount equals taxable (inclusive: tax was already in the price) or exceeds it
+  // (exclusive: tax was added on top) — no schema change needed for the label.
+  if (taxAmount > 0) {
+    const isInclusive = Math.abs(totalAmount - taxable) < 0.01
+    const label = isInclusive ? `VAT ${taxRate}% (incl.)` : `VAT ${taxRate}%`
+    row2(doc, y, label, baht(taxAmount))
+    y += 16
+  }
   hRule(doc, y)
   y += 8
   row2(doc, y, 'Total', baht(totalAmount), { bold: true, large: true })
