@@ -179,6 +179,58 @@ describe('TC-S003 — RBAC on clinic settings', () => {
   })
 })
 
+describe('TC-S008 — VAT config rides on the existing clinic settings endpoints (ADR-0020)', () => {
+  it('admin PUT vatMode/vatRate → 200, roundtrips on GET', async () => {
+    const put = await request(server)
+      .put('/api/settings/clinic')
+      .set('Authorization', `Bearer ${adminA}`)
+      .send({ vatMode: 'inclusive', vatRate: 8.5 })
+    expect(put.status).toBe(200)
+    expect(put.body.data.vatMode).toBe('inclusive')
+    expect(Number(put.body.data.vatRate)).toBe(8.5)
+
+    const get = await request(server).get('/api/settings/clinic').set('Authorization', `Bearer ${adminA}`)
+    expect(get.status).toBe(200)
+    expect(get.body.data.vatMode).toBe('inclusive')
+    expect(Number(get.body.data.vatRate)).toBe(8.5)
+
+    // Reset to defaults so later tests (invoice creation) see the standard 7% exclusive.
+    await request(server).put('/api/settings/clinic').set('Authorization', `Bearer ${adminA}`)
+      .send({ vatMode: 'exclusive', vatRate: 7 })
+  })
+
+  it('staff can read vatMode/vatRate via GET (clinic.profile.view)', async () => {
+    const res = await request(server).get('/api/settings/clinic').set('Authorization', `Bearer ${staffA}`)
+    expect(res.status).toBe(200)
+    expect(res.body.data).toHaveProperty('vatMode')
+    expect(res.body.data).toHaveProperty('vatRate')
+  })
+
+  it('staff PUT vatMode → 403 (no clinic.profile.edit)', async () => {
+    const res = await request(server)
+      .put('/api/settings/clinic')
+      .set('Authorization', `Bearer ${staffA}`)
+      .send({ vatMode: 'none' })
+    expect(res.status).toBe(403)
+  })
+
+  it('invalid vatMode → 400', async () => {
+    const res = await request(server)
+      .put('/api/settings/clinic')
+      .set('Authorization', `Bearer ${adminA}`)
+      .send({ vatMode: 'bogus' })
+    expect(res.status).toBe(400)
+  })
+
+  it('vatRate out of 0-100 range → 400', async () => {
+    const res = await request(server)
+      .put('/api/settings/clinic')
+      .set('Authorization', `Bearer ${adminA}`)
+      .send({ vatRate: 150 })
+    expect(res.status).toBe(400)
+  })
+})
+
 describe('TC-S004 — system settings restricted to platform plane (T-5C-03)', () => {
   it('platform token GET /platform/settings → 200 with named object shape', async () => {
     const res = await request(server).get('/platform/settings').set('Authorization', `Bearer ${platformToken}`)
