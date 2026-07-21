@@ -1,7 +1,7 @@
 /**
- * UserManagementTab — admin-reset-password field (Task 7), primary-admin lock
- * (Task 8), and row Deactivate/Restore actions (Task 9). One shared test file,
- * grown task-by-task per docs/superpowers/plans/2026-07-15-clinic-password-ui-and-user-management.md.
+ * UserManagementTab — admin-reset-password field, primary-admin lock,
+ * row Deactivate/Restore actions, and the unified RBAC-backed role listbox
+ * (Plan B, docs/superpowers/plans/2026-07-20-unify-user-role-assignment-plan-b-frontend.md).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
@@ -12,14 +12,22 @@ const api = vi.hoisted(() => ({
 }))
 vi.mock('../utils/api', () => ({ default: api }))
 
-const state = vi.hoisted(() => ({ userId: 1, permissions: ['staff.manage', 'staff.assign_role'] }))
+const state = vi.hoisted(() => ({
+  userId: 1,
+  permissions: ['staff.manage', 'staff.assign_role', 'emr.edit', 'billing.view'],
+}))
 vi.mock('../store/authStore', () => ({
-  useAuthStore: (selector: (s: { userId: number; hasPermission: (p: string) => boolean }) => unknown) =>
-    selector({ userId: state.userId, hasPermission: (p: string) => state.permissions.includes(p) }),
+  useAuthStore: (selector: (s: {
+    userId: number; branchId: number | null; permissions: string[]; hasPermission: (p: string) => boolean
+  }) => unknown) =>
+    selector({
+      userId: state.userId,
+      branchId: null,
+      permissions: state.permissions,
+      hasPermission: (p: string) => state.permissions.includes(p),
+    }),
 }))
 
-vi.mock('../hooks/useUserRoles', () => ({ useUserRolesQuery: () => ({ data: [], refetch: vi.fn() }) }))
-vi.mock('../components/roles/RolePicker', () => ({ default: () => null }))
 vi.mock('../i18n', async () => {
   const actual = await vi.importActual<typeof import('../i18n')>('../i18n')
   return { useT: () => (key: string) => actual.en[key] ?? key }
@@ -27,10 +35,15 @@ vi.mock('../i18n', async () => {
 
 import UserManagementTab from '../views/admin/UserManagementTab'
 
-const ADMIN = { id: 1, name: 'Primary Admin', username: 'admin', email: null, role: 'admin', isActive: true, createdAt: '2026-01-01T00:00:00.000Z', branchId: null }
-const SECOND_ADMIN = { id: 2, name: 'Second Admin', username: 'admin2', email: null, role: 'admin', isActive: true, createdAt: '2026-01-02T00:00:00.000Z', branchId: null }
-const STAFF = { id: 3, name: 'Staff One', username: 'staff1', email: null, role: 'staff', isActive: true, createdAt: '2026-01-03T00:00:00.000Z', branchId: null }
-const INACTIVE_STAFF = { id: 4, name: 'Staff Two', username: 'staff2', email: null, role: 'staff', isActive: false, createdAt: '2026-01-04T00:00:00.000Z', branchId: null }
+const ADMIN_ROLE      = { id: 1, name: 'Admin',      key: 'clinic_admin',           isSystem: true,  permissions: ['staff.manage', 'staff.assign_role'], assignedUserCount: 2 }
+const DOCTOR_ROLE     = { id: 2, name: 'Doctor',     key: 'doctor',                 isSystem: true,  permissions: ['emr.edit'], assignedUserCount: 1 }
+const ACCOUNTANT_ROLE = { id: 3, name: 'Accountant', key: 'tenant_1_accountant',    isSystem: false, permissions: ['billing.view'], assignedUserCount: 1 }
+const ROLES = [ADMIN_ROLE, DOCTOR_ROLE, ACCOUNTANT_ROLE]
+
+const ADMIN          = { id: 1, name: 'Primary Admin', username: 'admin',  email: null, role: { id: 1, name: 'Admin', key: 'clinic_admin', isSystem: true }, isPrimaryAdmin: true,  isActive: true,  createdAt: '2026-01-01T00:00:00.000Z', branchId: null }
+const SECOND_ADMIN    = { id: 2, name: 'Second Admin', username: 'admin2', email: null, role: { id: 1, name: 'Admin', key: 'clinic_admin', isSystem: true }, isPrimaryAdmin: false, isActive: true,  createdAt: '2026-01-02T00:00:00.000Z', branchId: null }
+const STAFF           = { id: 3, name: 'Staff One',    username: 'staff1', email: null, role: { id: 3, name: 'Accountant', key: 'tenant_1_accountant', isSystem: false }, isPrimaryAdmin: false, isActive: true,  createdAt: '2026-01-03T00:00:00.000Z', branchId: null }
+const INACTIVE_STAFF  = { id: 4, name: 'Staff Two',    username: 'staff2', email: null, role: { id: 2, name: 'Doctor', key: 'doctor', isSystem: true }, isPrimaryAdmin: false, isActive: false, createdAt: '2026-01-04T00:00:00.000Z', branchId: null }
 
 function renderTab() {
   const qc = new QueryClient()
@@ -40,19 +53,82 @@ function renderTab() {
 beforeEach(() => {
   vi.resetAllMocks()
   state.userId = 1
-  state.permissions = ['staff.manage', 'staff.assign_role']
+  state.permissions = ['staff.manage', 'staff.assign_role', 'emr.edit', 'billing.view']
   api.get.mockImplementation((url: string) => {
     if (url === '/users') return Promise.resolve({ data: { data: [ADMIN, SECOND_ADMIN, STAFF, INACTIVE_STAFF] } })
     if (url === '/api/branches') return Promise.resolve({ data: { data: [] } })
+    if (url === '/clinic/roles') return Promise.resolve({ data: { data: ROLES } })
     if (/\/users\/\d+\/branches/.test(url)) return Promise.resolve({ data: { data: [] } })
     return Promise.resolve({ data: { data: [] } })
   })
 })
 
-describe('Admin reset-password field (Task 7)', () => {
+describe('UserManagementTab — unified role listbox (Bug fix + CORR-3)', () => {
+  it('shows a cloned custom role in the Edit User listbox (reported-bug regression)', async () => {
+    renderTab()
+    const editButtons = await screen.findAllByRole('button', { name: 'Edit' })
+    fireEvent.click(editButtons[2]) // STAFF (Accountant, custom role)
+    await waitFor(() => {
+      expect(screen.getByText('Accountant')).toBeInTheDocument()
+    })
+  })
+
+  it('hides the Admin option when creating a new user', async () => {
+    renderTab()
+    fireEvent.click(await screen.findByRole('button', { name: /add user/i }))
+    await waitFor(() => {
+      const listbox = screen.getByLabelText(/role/i)
+      expect(listbox.textContent).not.toMatch(/Admin/)
+    })
+  })
+
+  it('does not render the old separate Roles section anywhere', async () => {
+    renderTab()
+    const editButtons = await screen.findAllByRole('button', { name: 'Edit' })
+    fireEvent.click(editButtons[0])
+    expect(screen.queryByText('Effective permissions are the union of all assigned roles.')).toBeNull()
+  })
+
+  it('renders the primary-admin lock icon from the server isPrimaryAdmin flag, not a local role comparison', async () => {
+    renderTab()
+    await screen.findAllByRole('button', { name: 'Edit' })
+    expect(screen.getByLabelText('Primary admin — cannot be deactivated')).toBeInTheDocument()
+  })
+
+  // Regression: a real clinic_admin intentionally lacks clinical-only codes
+  // (emr.create, vaccination.create), so a strict-subset isGrantable would
+  // hide the Doctor/Staff roles from them entirely — breaking the core admin
+  // workflow. The listbox must mirror the backend roles.manage exemption
+  // (assertNoRoleEscalation / BA CORR-3 anti-drift).
+  it('lists a role whose permissions the caller lacks, when the caller holds roles.manage (mirrors backend exemption)', async () => {
+    // clinic_admin-like caller: manages roles but does NOT hold Doctor's emr.edit
+    state.permissions = ['staff.manage', 'staff.assign_role', 'roles.manage']
+    renderTab()
+    const editButtons = await screen.findAllByRole('button', { name: 'Edit' })
+    fireEvent.click(editButtons[1]) // SECOND_ADMIN (non-self, non-new)
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: 'Doctor' })).toBeInTheDocument()
+    })
+  })
+})
+
+describe('UserManagementTab — role listbox permission gating (CORR-3)', () => {
+  it('disables the role listbox for a caller without staff.assign_role', async () => {
+    state.permissions = ['staff.manage']
+    renderTab()
+    const editButtons = await screen.findAllByRole('button', { name: 'Edit' })
+    fireEvent.click(editButtons[1])
+    await waitFor(() => {
+      const listbox = screen.queryByLabelText(/role/i) as HTMLSelectElement | null
+      expect(listbox === null || listbox.disabled).toBe(true)
+    })
+  })
+})
+
+describe('Admin reset-password field', () => {
   it('renders in edit mode for a non-self user, calls PATCH /users/:id/password, shows success', async () => {
     renderTab()
-    fireEvent.click(await screen.findAllByRole('button', { name: 'Edit' }).then(btns => btns[1])) // SECOND_ADMIN row (2nd active row)
+    fireEvent.click(await screen.findAllByRole('button', { name: 'Edit' }).then(btns => btns[1])) // SECOND_ADMIN row
     expect(screen.getByLabelText(/Reset password/i)).toBeInTheDocument()
 
     api.patch.mockResolvedValue({ status: 204 })
@@ -73,9 +149,6 @@ describe('Admin reset-password field (Task 7)', () => {
     state.permissions = []
     renderTab()
     const editButtons = await screen.findAllByRole('button', { name: 'Edit' }).catch(() => [])
-    // Without staff.manage the row action area itself is gated (existing <Can>
-    // pattern); if any Edit-equivalent surface remains reachable, the
-    // reset-password field still must not appear.
     if (editButtons.length > 0) {
       fireEvent.click(editButtons[0])
       expect(screen.queryByLabelText(/Reset password/i)).not.toBeInTheDocument()
@@ -116,6 +189,7 @@ describe('Security card — idle timeout (moved from Appointment Settings)', () 
       if (url === '/users') return Promise.resolve({ data: { data: [ADMIN, STAFF] } })
       if (url === '/admin/settings') return Promise.resolve({ data: { data: SETTINGS } })
       if (url === '/api/branches') return Promise.resolve({ data: { data: [] } })
+      if (url === '/clinic/roles') return Promise.resolve({ data: { data: ROLES } })
       return Promise.resolve({ data: { data: [] } })
     })
   }
@@ -158,11 +232,11 @@ describe('Security card — idle timeout (moved from Appointment Settings)', () 
   })
 })
 
-describe('Primary-admin lock on Active-account checkbox (Task 8)', () => {
+describe('Primary-admin lock on Active-account checkbox', () => {
   it('disables the Active-account checkbox with a lock note when editing the primary admin', async () => {
     renderTab()
     const editButtons = await screen.findAllByRole('button', { name: 'Edit' })
-    fireEvent.click(editButtons[0]) // ADMIN (id=1) is the lowest-id admin => primary
+    fireEvent.click(editButtons[0]) // ADMIN (id=1) is the server-flagged primary admin
     const checkbox = screen.getByLabelText(/Active account/i) as HTMLInputElement
     expect(checkbox).toBeDisabled()
     expect(screen.getByText(/Primary admin — cannot be deactivated/i)).toBeInTheDocument()
@@ -187,7 +261,7 @@ describe('Primary-admin lock on Active-account checkbox (Task 8)', () => {
   })
 })
 
-describe('Row-level Deactivate/Restore (Task 9)', () => {
+describe('Row-level Deactivate/Restore', () => {
   it('shows a Deactivate button on active, non-primary-admin rows; confirming calls DELETE', async () => {
     api.delete.mockResolvedValue({ status: 200 })
     renderTab()
@@ -207,10 +281,9 @@ describe('Row-level Deactivate/Restore (Task 9)', () => {
   it('shows a disabled lock icon instead of Deactivate on the primary-admin row, and it fires no request', async () => {
     renderTab()
     await screen.findAllByRole('button', { name: 'Edit' })
-    // Only one Deactivate button should exist (for SECOND_ADMIN); STAFF also
-    // gets one, so exactly two non-primary-admin active rows => two buttons.
+    // Only SECOND_ADMIN + STAFF are active, non-primary-admin rows.
     const deactivateButtons = screen.getAllByRole('button', { name: /^Deactivate$/i })
-    expect(deactivateButtons).toHaveLength(2) // SECOND_ADMIN + STAFF, not ADMIN (primary)
+    expect(deactivateButtons).toHaveLength(2)
     const lockIcon = screen.getByLabelText(/Primary admin — cannot be deactivated/i)
     fireEvent.click(lockIcon)
     expect(api.delete).not.toHaveBeenCalled()

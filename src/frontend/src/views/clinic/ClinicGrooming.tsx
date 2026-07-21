@@ -22,7 +22,7 @@ interface SearchResult {
   petId: number; petName: string; species: string; ownerId: number; ownerName: string; phone: string
 }
 
-interface StaffUser { id: number; name: string; role: string }
+interface StaffUser { id: number; name: string; role: { key: string } }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const STATUS_COLORS: Record<string, string> = {
@@ -75,7 +75,7 @@ function BookingModal({ date, onClose, onSaved }: {
 
   const { data: staff = [] } = useQuery<StaffUser[]>({
     queryKey: ['staff-list'],
-    queryFn: () => api.get('/users?role=staff').then(r => r.data.data),
+    queryFn: () => api.get('/users').then(r => r.data.data),
   })
 
   const qc = useQueryClient()

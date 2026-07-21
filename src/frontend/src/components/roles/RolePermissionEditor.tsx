@@ -72,8 +72,9 @@ interface Props {
   catalogue: PermissionCatalogue
   /** The current user's own permissions (for AC-5 self-escalation guard) */
   userPermissions: string[]
-  /** Called when user clicks "Clone to edit" inside the banner */
-  onClone: () => void
+  /** Called when user clicks "Clone to edit" inside the banner. Absent for
+   *  the sealed clinic_admin role (D-4), which hides the banner entirely. */
+  onClone?: () => void
   /** Called when user clicks "Save changes" with the computed delta */
   onSave: (delta: PermDelta) => void
   /** True while the save request is in flight */
@@ -128,25 +129,30 @@ export default function RolePermissionEditor({
   return (
     <div className="px-lg py-lg bg-surface-container-low space-y-lg border-b border-outline-variant">
 
-      {/* System-role read-only banner (AC-2) */}
+      {/* System-role read-only banner (AC-2). The Clone trigger is hidden
+          for the sealed clinic_admin role (D-4) — onClone is undefined. */}
       {isSystem && (
         <div className="flex items-center justify-between p-md bg-secondary-container rounded-lg">
           <div className="flex items-center gap-md">
             <MaterialIcon name="lock" size={20} className="text-secondary flex-shrink-0" />
             <span className="text-body-sm text-on-surface-container font-bold">
-              System roles are read-only. Clone to create a customisable version.
+              {onClone
+                ? 'System roles are read-only. Clone to create a customisable version.'
+                : 'System roles are read-only.'}
             </span>
           </div>
-          <button
-            type="button"
-            onClick={onClone}
-            className="px-lg py-base bg-secondary text-on-primary font-bold rounded-lg
-                       hover:opacity-90 transition-opacity min-h-[44px]
-                       flex items-center gap-xs flex-shrink-0"
-          >
-            <MaterialIcon name="content_copy" size={16} />
-            {t('roles.cloneToEdit')}
-          </button>
+          {onClone && (
+            <button
+              type="button"
+              onClick={onClone}
+              className="px-lg py-base bg-secondary text-on-primary font-bold rounded-lg
+                         hover:opacity-90 transition-opacity min-h-[44px]
+                         flex items-center gap-xs flex-shrink-0"
+            >
+              <MaterialIcon name="content_copy" size={16} />
+              {t('roles.cloneToEdit')}
+            </button>
+          )}
         </div>
       )}
 

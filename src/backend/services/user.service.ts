@@ -12,25 +12,6 @@ import * as subscriptionService from './subscription.service'
 import type { CreateUserRequest, UpdateUserRequest, UserResponse } from '../types'
 
 /**
- * TRANSITIONAL — maps a role's stable `key` to the legacy 3-value role
- * string that UserResponse.role has always returned, now that the
- * User.role column is gone (ADR-0019/D-7). Deliberately duplicates the same
- * mapping shape as auth.service.ts's toLegacyRoleString (D-8) — that one is
- * module-private to auth.service.ts by design (D-8 confines it there for
- * the JWT claim specifically), so this is a small, intentional, temporary
- * duplication for the response-shape boundary, not drift.
- *
- * REMOVED in the frontend companion PR (Plan B, task "safe() gains
- * role-object + isPrimaryAdmin") once UserManagementTab.tsx/AdminBranches.tsx
- * are updated to consume the full role object atomically with that change.
- */
-function toLegacyRoleStringTransitional(roleKey: string): 'admin' | 'doctor' | 'staff' {
-  if (roleKey === 'clinic_admin') return 'admin'
-  if (roleKey === 'doctor') return 'doctor'
-  return 'staff'
-}
-
-/**
  * Guards against lockout-equivalent actions on the tenant's primary admin
  * (ADR-0016). The primary admin is the lowest-id `role='admin'` user in the
  * tenant (userRepo.findPrimaryAdminId). Throws 403 when the target user IS
@@ -66,32 +47,50 @@ async function assertNotPrimaryAdminDeactivation(
   }
 }
 
+/**
+ * Legacy 3-value ('admin'|'doctor'|'staff') role-string mapper, kept for the
+ * one response shape Plan B deliberately left unmigrated: AssignBranchesResponse
+ * (T-URA-2.3 — nothing in src/frontend reads that response body).
+ */
+function toLegacyRoleString3Way(roleKey: string | undefined): 'admin' | 'doctor' | 'staff' {
+  if (roleKey === 'clinic_admin') return 'admin'
+  if (roleKey === 'doctor') return 'doctor'
+  return 'staff'
+}
+
 function safe(user: {
   id: number; tenantId: number; name: string; username: string
   email: string | null; phone?: string | null
   passwordHash?: string; isActive: boolean; createdAt: Date
   roleRef: { id: number; name: string; key: string; isSystem: boolean } | null
-}): UserResponse {
+}, isPrimaryAdmin: boolean): UserResponse {
   const { passwordHash: _pw, roleRef, ...rest } = user
   if (!roleRef) throw new UserError('User has no role assigned — data integrity error', 500)
   return {
     ...rest,
-    role:      toLegacyRoleStringTransitional(roleRef.key),
+    role: { id: roleRef.id, name: roleRef.name, key: roleRef.key, isSystem: roleRef.isSystem },
     email:     rest.email ?? null,
     phone:     rest.phone ?? null,
     createdAt: rest.createdAt.toISOString(),
+    isPrimaryAdmin,
   }
 }
 
 export async function listUsers(tenantId: number, branchId?: number | null): Promise<UserResponse[]> {
-  const users = await userRepo.findUsers(tenantId, branchId)
-  return users.map(safe)
+  const [users, primaryAdminId] = await Promise.all([
+    userRepo.findUsers(tenantId, branchId),
+    userRepo.findPrimaryAdminId(tenantId),
+  ])
+  return users.map(u => safe(u, u.id === primaryAdminId))
 }
 
 export async function getUserById(tenantId: number, userId: number): Promise<UserResponse> {
-  const user = await userRepo.findUserById(tenantId, userId)
+  const [user, primaryAdminId] = await Promise.all([
+    userRepo.findUserById(tenantId, userId),
+    userRepo.findPrimaryAdminId(tenantId),
+  ])
   if (!user) throw new UserError('User not found', 404)
-  return safe(user)
+  return safe(user, user.id === primaryAdminId)
 }
 
 /**
@@ -205,7 +204,8 @@ export async function createUser(
       },
       roleRow.id,
     )
-    return safe(user)
+    const primaryAdminId = await userRepo.findPrimaryAdminId(tenantId)
+    return safe(user, user.id === primaryAdminId)
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
       throw new UserError('Username or email already in use within this clinic', 409)
@@ -245,7 +245,8 @@ export async function updateUser(
 
   const user = await userRepo.updateUser(tenantId, userId, body)
   if (!user) throw new UserError('User not found', 404)
-  return safe(user)
+  const primaryAdminId = await userRepo.findPrimaryAdminId(tenantId)
+  return safe(user, user.id === primaryAdminId)
 }
 
 /** Shape returned for a single role in user-roles responses. */
@@ -317,7 +318,8 @@ export async function assignUserBranch(
 
   const updated = await userRepo.updateUserBranch(tenantId, userId, branchId)
   if (!updated) throw new UserError('User not found', 404)
-  return safe(updated)
+  const primaryAdminId = await userRepo.findPrimaryAdminId(tenantId)
+  return safe(updated, updated.id === primaryAdminId)
 }
 
 /** Shape returned by assignUserBranches. */
@@ -374,7 +376,11 @@ export async function assignUserBranches(
     id:               user.id,
     name:             user.name,
     username:         user.username,
-    role:             user.roleRef ? toLegacyRoleStringTransitional(user.roleRef.key) : 'staff',
+    // Plan B (T-URA-2.3): AssignBranchesResponse deliberately keeps the
+    // legacy 3-value string shape — nothing in src/frontend reads this
+    // response body (confirmed by grep), so it is out of scope for the
+    // role-object migration.
+    role: toLegacyRoleString3Way(user.roleRef?.key),
     assignedBranches,
   }
 }

@@ -22,6 +22,7 @@ import {
 } from '../../hooks/useRoles'
 import { useAuthStore } from '../../store/authStore'
 import { useT } from '../../i18n'
+import { SEALED_ROLE_KEY } from '../../hooks/useUserRoles'
 
 // ── Toast helper (inline, no external lib needed) ────────────────────────────
 
@@ -293,8 +294,8 @@ export default function RoleList({
                   <span className="hidden sm:inline">{t('roles.assignStaff')}</span>
                 </button>
 
-                {/* Clone — system roles only, requires manage */}
-                {role.isSystem && canManage && (
+                {/* Clone — system roles only, requires manage. clinic_admin is sealed (D-4). */}
+                {role.isSystem && role.key !== SEALED_ROLE_KEY && canManage && (
                   <button
                     type="button"
                     onClick={() => setCloneSource(role.name)}
@@ -335,7 +336,7 @@ export default function RoleList({
                 currentPermissions={role.permissions}
                 catalogue={catalogue}
                 userPermissions={userPermissions}
-                onClone={() => setCloneSource(role.name)}
+                onClone={role.key !== SEALED_ROLE_KEY ? () => setCloneSource(role.name) : undefined}
                 onSave={(delta) => handleSave(role, delta)}
                 isSaving={updateMut.isPending}
               />

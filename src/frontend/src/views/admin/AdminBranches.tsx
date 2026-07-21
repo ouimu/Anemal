@@ -21,7 +21,7 @@ interface Shift {
   endTime: string
 }
 
-interface UserLite { id: number; name: string; role: string }
+interface UserLite { id: number; name: string; role: { key: string } }
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
@@ -203,7 +203,11 @@ export default function AdminBranches() {
     queryKey: ['admin', 'users-lite'],
     queryFn: () => api.get('/users').then(r => r.data.data),
   })
-  const doctors = users.filter(u => u.role === 'doctor')
+  // ADR-0019: key-match only, deliberately narrower than "Bookable doctor"
+  // (appointments) which resolves via role lineage — branch assignment is an
+  // operational concern, not a clinical-eligibility one. Do not "fix" this to
+  // match lineage without a new decision.
+  const doctors = users.filter(u => u.role.key === 'doctor')
 
   const selected = branches.find(b => b.id === selectedId) ?? null
 

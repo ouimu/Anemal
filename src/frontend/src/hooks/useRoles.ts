@@ -12,6 +12,7 @@ import api from '../utils/api'
 export interface Role {
   id: string
   name: string
+  key: string
   isSystem: boolean
   permissions: string[]
   assignedUserCount: number

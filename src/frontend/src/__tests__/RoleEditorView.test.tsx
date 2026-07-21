@@ -81,6 +81,7 @@ const catalogue: PermissionCatalogue = {
 const systemRole: Role = {
   id: 'sys-staff',
   name: 'Clinic Staff',
+  key: 'clinic_staff',
   isSystem: true,
   permissions: ['appointments.view', 'appointments.create'],
   assignedUserCount: 3,
@@ -89,6 +90,7 @@ const systemRole: Role = {
 const customRole: Role = {
   id: 'custom-1',
   name: 'Senior Receptionist',
+  key: 'tenant_1_senior_receptionist',
   isSystem: false,
   permissions: ['appointments.view', 'crm.view'],
   assignedUserCount: 2,
