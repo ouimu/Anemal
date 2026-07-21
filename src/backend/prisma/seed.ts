@@ -4,7 +4,7 @@ import dotenv from 'dotenv'
 import path from 'path'
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') })
 
-import { PrismaClient, LegacyRole } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcrypt'
 import * as platformAuthRepo from '../models/platform-auth.repository'
 import { seedPlans, seedRbac } from './seed-rbac'
@@ -70,34 +70,31 @@ async function main() {
   })
   const mainBranch: Record<number, number> = { [tenantA.id]: branchA.id, [tenantB.id]: branchB.id }
 
-  // Session D-1: username added; unique finder is now tenantId_username (email unique dropped)
-  const usersToSeed = [
-    // Tenant A
-    { tenantId: tenantA.id, name: 'Admin A',  username: 'admin_a',  email: 'admin@dev-clinic.com',  role: LegacyRole.admin,  password: 'AdminPass1!' },
-    { tenantId: tenantA.id, name: 'Doctor A', username: 'doctor_a', email: 'doctor@dev-clinic.com', role: LegacyRole.doctor, password: 'DoctorPass1!' },
-    { tenantId: tenantA.id, name: 'Staff A',  username: 'staff_a',  email: 'staff@dev-clinic.com',  role: LegacyRole.staff,  password: 'StaffPass1!' },
-    // T-5C-03: superadmin removed from users — platform admin lives in platform_users (see T-5C-02)
-    // Tenant B
-    { tenantId: tenantB.id, name: 'Admin B',  username: 'admin_b',  email: 'admin@test-clinic.com',  role: LegacyRole.admin,  password: 'AdminPass2!' },
-    { tenantId: tenantB.id, name: 'Doctor B', username: 'doctor_b', email: 'doctor@test-clinic.com', role: LegacyRole.doctor, password: 'DoctorPass2!' },
-    { tenantId: tenantB.id, name: 'Staff B',  username: 'staff_b',  email: 'staff@test-clinic.com',  role: LegacyRole.staff,  password: 'StaffPass2!' },
-  ]
-
   // Phase 8 (5-A) — seed system roles + permissions first, then resolve IDs
   await seedRbac()
 
-  // resolve system ClinicRole IDs for UserRole seeding
+  // resolve system ClinicRole IDs for User.roleId + UserRole seeding
+  // (ADR-0019/D-7: LegacyRole enum + User.role column retired, roleId is now
+  // the single source of truth — see the roleId-based migration this seed
+  // script had to follow.)
   const [adminClinicRole, doctorClinicRole, staffClinicRole] = await Promise.all([
-    prisma.clinicRole.findFirst({ where: { key: 'clinic_admin', tenantId: null } }),
-    prisma.clinicRole.findFirst({ where: { key: 'doctor',       tenantId: null } }),
-    prisma.clinicRole.findFirst({ where: { key: 'clinic_staff', tenantId: null } }),
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } }),
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor',       tenantId: null } }),
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } }),
   ])
 
-  const legacyRoleToClinicRole: Partial<Record<LegacyRole, typeof adminClinicRole>> = {
-    [LegacyRole.admin]:  adminClinicRole,
-    [LegacyRole.doctor]: doctorClinicRole,
-    [LegacyRole.staff]:  staffClinicRole,
-  }
+  // Session D-1: username added; unique finder is now tenantId_username (email unique dropped)
+  const usersToSeed = [
+    // Tenant A
+    { tenantId: tenantA.id, name: 'Admin A',  username: 'admin_a',  email: 'admin@dev-clinic.com',  roleKey: 'clinic_admin', roleId: adminClinicRole.id,  password: 'AdminPass1!' },
+    { tenantId: tenantA.id, name: 'Doctor A', username: 'doctor_a', email: 'doctor@dev-clinic.com', roleKey: 'doctor',       roleId: doctorClinicRole.id, password: 'DoctorPass1!' },
+    { tenantId: tenantA.id, name: 'Staff A',  username: 'staff_a',  email: 'staff@dev-clinic.com',  roleKey: 'clinic_staff', roleId: staffClinicRole.id,  password: 'StaffPass1!' },
+    // T-5C-03: superadmin removed from users — platform admin lives in platform_users (see T-5C-02)
+    // Tenant B
+    { tenantId: tenantB.id, name: 'Admin B',  username: 'admin_b',  email: 'admin@test-clinic.com',  roleKey: 'clinic_admin', roleId: adminClinicRole.id,  password: 'AdminPass2!' },
+    { tenantId: tenantB.id, name: 'Doctor B', username: 'doctor_b', email: 'doctor@test-clinic.com', roleKey: 'doctor',       roleId: doctorClinicRole.id, password: 'DoctorPass2!' },
+    { tenantId: tenantB.id, name: 'Staff B',  username: 'staff_b',  email: 'staff@test-clinic.com',  roleKey: 'clinic_staff', roleId: staffClinicRole.id,  password: 'StaffPass2!' },
+  ]
 
   for (const u of usersToSeed) {
     const passwordHash = await bcrypt.hash(u.password, SALT_ROUNDS)
@@ -105,20 +102,17 @@ async function main() {
     // Session D-1: unique finder is now tenantId_username (email unique index removed)
     const seededUser = await prisma.user.upsert({
       where: { tenantId_username: { tenantId: u.tenantId, username: u.username } },
-      update: { branchId, email: u.email },
-      create: { tenantId: u.tenantId, branchId, name: u.name, username: u.username, email: u.email, passwordHash, role: u.role },
+      update: { branchId, email: u.email, roleId: u.roleId },
+      create: { tenantId: u.tenantId, branchId, name: u.name, username: u.username, email: u.email, passwordHash, roleId: u.roleId },
     })
-    console.log(`  ✓ ${u.role} — ${u.email}`)
+    console.log(`  ✓ ${u.roleKey} — ${u.email}`)
 
     // Phase 8 (5-B) — seed UserRole join-table row so requirePermission() resolves permissions
-    const clinicRole = legacyRoleToClinicRole[u.role]
-    if (clinicRole) {
-      await prisma.userRole.upsert({
-        where: { userId_roleId: { userId: seededUser.id, roleId: clinicRole.id } },
-        update: {},
-        create: { userId: seededUser.id, roleId: clinicRole.id, tenantId: u.tenantId },
-      })
-    }
+    await prisma.userRole.upsert({
+      where: { userId_roleId: { userId: seededUser.id, roleId: u.roleId } },
+      update: {},
+      create: { userId: seededUser.id, roleId: u.roleId, tenantId: u.tenantId },
+    })
   }
 
   // Task 4 (two-step login): seed user_branches for non-admin seed users

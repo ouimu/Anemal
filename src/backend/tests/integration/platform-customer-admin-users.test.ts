@@ -115,9 +115,9 @@ describe('CO-1: createCustomer() auto-creates first clinic_admin', () => {
     expect(admin!.name).toBe('Administrator')
     expect(admin!.email).toBeNull()
     expect(admin!.phone).toBeNull()
-    expect(admin!.role).toBe('admin')
 
     const clinicAdminRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
+    expect(admin!.roleId).toBe(clinicAdminRole.id)
     const userRole = await prisma.userRole.findFirst({ where: { userId: admin!.id, tenantId: tenant.id } })
     expect(userRole).not.toBeNull()
     expect(userRole!.roleId).toBe(clinicAdminRole.id)
@@ -208,7 +208,7 @@ describe('CO-1: createCustomer() auto-creates first clinic_admin', () => {
     const staffPasswordHash = await bcrypt.hash('StaffPass1!', 10)
     const staffRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } })
     const staff = await prisma.user.create({
-      data: { tenantId: tenant.id, username: 'prov1staff', name: 'Prov Staff', passwordHash: staffPasswordHash, role: 'staff', isActive: true },
+      data: { tenantId: tenant.id, username: 'prov1staff', name: 'Prov Staff', passwordHash: staffPasswordHash, roleId: staffRole.id, isActive: true },
     })
     await prisma.userRole.create({ data: { tenantId: tenant.id, userId: staff.id, roleId: staffRole.id } })
     await prisma.userBranch.create({ data: { tenantId: tenant.id, userId: staff.id, branchId: branch.id } })
@@ -378,7 +378,7 @@ describe('CO-4: PATCH /platform/customers/:id/admin-users/:userId/deactivate', (
     const passwordHash = await bcrypt.hash('StaffPass1!', 10)
     const staffRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } })
     const staff = await prisma.user.create({
-      data: { tenantId: tenant.id, username: 'staffer', name: 'Staffer', passwordHash, role: 'staff', isActive: true },
+      data: { tenantId: tenant.id, username: 'staffer', name: 'Staffer', passwordHash, roleId: staffRole.id, isActive: true },
     })
     await prisma.userRole.create({ data: { tenantId: tenant.id, userId: staff.id, roleId: staffRole.id } })
 
@@ -542,7 +542,7 @@ describe('CO-6: GET /platform/customers/:id/admin-users', () => {
     const passwordHash = await bcrypt.hash('StaffPass1!', 10)
     const staffRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } })
     const staff = await prisma.user.create({
-      data: { tenantId: tenant.id, username: 'staffer6', name: 'Staffer', passwordHash, role: 'staff', isActive: true },
+      data: { tenantId: tenant.id, username: 'staffer6', name: 'Staffer', passwordHash, roleId: staffRole.id, isActive: true },
     })
     await prisma.userRole.create({ data: { tenantId: tenant.id, userId: staff.id, roleId: staffRole.id } })
 

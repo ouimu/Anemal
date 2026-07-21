@@ -25,12 +25,18 @@ import prisma from '../../config/db'
 
 const mockTenant = { id: 1, subdomain: 'dev-clinic', isActive: true }
 
+function roleRefFor(role: string) {
+  const key = role === 'admin' ? 'clinic_admin' : role === 'doctor' ? 'doctor' : 'clinic_staff'
+  return { id: 1, name: role, key, isSystem: true }
+}
+
 async function makeUser(role = 'admin') {
   return {
     id: 10, tenantId: 1, name: 'Admin A', username: 'admin_a',
     email: 'admin@dev-clinic.com',
     passwordHash: await bcrypt.hash('AdminPass1!', 10),
-    role, isActive: true, branchId: null, allowedStartTime: null, allowedEndTime: null,
+    roleId: 1, roleRef: roleRefFor(role),
+    isActive: true, branchId: null, allowedStartTime: null, allowedEndTime: null,
   }
 }
 
@@ -115,8 +121,8 @@ describe('authService.switchBranch', () => {
   const tenantId  = 1;  const userId = 10
   const branch1   = { id: 1, tenantId, name: 'Main', isActive: true }
   const branch2   = { id: 2, tenantId, name: 'Branch 2', isActive: true }
-  const staffUser = { id: userId, tenantId, name: 'Staff', role: 'staff', isActive: true, branchId: null }
-  const adminUser = { id: userId, tenantId, name: 'Admin', role: 'admin', isActive: true, branchId: null }
+  const staffUser = { id: userId, tenantId, name: 'Staff', roleId: 1, roleRef: roleRefFor('staff'), isActive: true, branchId: null }
+  const adminUser = { id: userId, tenantId, name: 'Admin', roleId: 1, roleRef: roleRefFor('admin'), isActive: true, branchId: null }
 
   beforeEach(() => jest.clearAllMocks())
 

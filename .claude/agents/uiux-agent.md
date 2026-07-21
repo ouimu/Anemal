@@ -1,6 +1,7 @@
 ---
 name: uiux-agent
 model: sonnet
+effort: low
 description: >
   Touch-first UI/UX designer for Anemal (tablet + web). Use for any screen, layout, or component
   design; tablet behavior at 768px (portrait) and 1024px (landscape); 44×44px tap targets; and

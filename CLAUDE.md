@@ -8,14 +8,14 @@
 
 | Task | Agent | Model | Superpowers Skills | Sequence |
 |------|-------|-------|--------------------|----------|
-| Requirements, authorization design, gap analysis | `@ba-agent` | fable | `/brainstorm` | Step 3 |
+| Requirements, authorization design, gap analysis | `@ba-agent` | opus | `/brainstorm` | Step 3 |
 | Scope, task breakdown, coordination, docs owner | `@pm-agent` | sonnet | `/brainstorm`, `/write-plan`, `/grill-with-docs`, `/execute-plan`, `/anemal-finish-branch` | Step 1, 2, 4, 8 |
 | Screen/component design | `@uiux-agent` | sonnet | `/brainstorm` | Step 6∥ |
 | Schema, migration, query safety, tenant isolation | `@db-agent` | sonnet | `/migrate` | Step 6∥ |
 | Backend/frontend implementation | `@dev-agent` | sonnet | `/tdd`, `/debug`, `/optimize` | Step 6∥ |
 | Stress-test design before plan (MANDATORY) | (human-driven) | opus | `/grill-with-docs` (invokes `grilling` + `domain-modeling` skills) | Step 3.5 gate |
 | Simplicity gate | `@ponytail-agent` | opus | — (project gate, not Superpowers) | Step 5 gate |
-| Tests, edge cases, isolation/RBAC verification | `@qa-agent` | fable | `/tdd`, `/code-review`, `/audit` | Step 7 |
+| Tests, edge cases, isolation/RBAC verification | `@qa-agent` | opus | `/tdd`, `/code-review`, `/audit` | Step 7 |
 
 **Rules:** Delegate first (except trivial one-liners). Each delegation must include: agent name, task, specs/skills cited, output path. Context > 70% → Auto-Compact.
 

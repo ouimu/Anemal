@@ -301,7 +301,6 @@ export async function createCustomer(data: CreateCustomerInput, performedById: n
         email:        null,
         phone:        null,
         passwordHash,
-        role:         'admin',
         roleId:       clinicAdminRole.id,
       },
     })

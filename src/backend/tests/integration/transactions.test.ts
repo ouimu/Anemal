@@ -35,7 +35,7 @@ beforeAll(async () => {
 
   const adminRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
   const adminUser = await prisma.user.create({
-    data: { tenantId: tid, branchId: branch.id, name: 'Admin TX', username: 'admin_tx', email: 'admin@tx.test', passwordHash, role: 'admin', roleId: adminRole.id },
+    data: { tenantId: tid, branchId: branch.id, name: 'Admin TX', username: 'admin_tx', email: 'admin@tx.test', passwordHash, roleId: adminRole.id },
   })
   await prisma.userRole.create({ data: { userId: adminUser.id, roleId: adminRole.id, tenantId: tid } })
 
@@ -43,7 +43,7 @@ beforeAll(async () => {
     data: { tenantId: tid, name: 'No Perm TX', key: 'no_perm_tx', permVersion: 1 },
   })
   const noPermUser = await prisma.user.create({
-    data: { tenantId: tid, branchId: branch.id, name: 'No Perm TX', username: 'noperm_tx', email: 'noperm@tx.test', passwordHash, role: 'staff', roleId: emptyRole.id },
+    data: { tenantId: tid, branchId: branch.id, name: 'No Perm TX', username: 'noperm_tx', email: 'noperm@tx.test', passwordHash, roleId: emptyRole.id },
   })
   await prisma.userRole.create({ data: { userId: noPermUser.id, roleId: emptyRole.id, tenantId: tid } })
   await prisma.userBranch.create({ data: { userId: noPermUser.id, branchId: branch.id, tenantId: tid } })

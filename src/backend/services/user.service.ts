@@ -12,14 +12,23 @@ import * as subscriptionService from './subscription.service'
 import type { CreateUserRequest, UpdateUserRequest, UserResponse } from '../types'
 
 /**
- * Maps the legacy API role strings accepted by the public endpoint to the
- * stable `key` values used in the `clinic_roles` table for system roles.
+ * TRANSITIONAL — maps a role's stable `key` to the legacy 3-value role
+ * string that UserResponse.role has always returned, now that the
+ * User.role column is gone (ADR-0019/D-7). Deliberately duplicates the same
+ * mapping shape as auth.service.ts's toLegacyRoleString (D-8) — that one is
+ * module-private to auth.service.ts by design (D-8 confines it there for
+ * the JWT claim specifically), so this is a small, intentional, temporary
+ * duplication for the response-shape boundary, not drift.
+ *
+ * REMOVED in the frontend companion PR (Plan B, task "safe() gains
+ * role-object + isPrimaryAdmin") once UserManagementTab.tsx/AdminBranches.tsx
+ * are updated to consume the full role object atomically with that change.
  */
-const LEGACY_ROLE_TO_SYSTEM_KEY: Record<string, string> = {
-  admin:  'clinic_admin',
-  doctor: 'doctor',
-  staff:  'clinic_staff',
-} as const
+function toLegacyRoleStringTransitional(roleKey: string): 'admin' | 'doctor' | 'staff' {
+  if (roleKey === 'clinic_admin') return 'admin'
+  if (roleKey === 'doctor') return 'doctor'
+  return 'staff'
+}
 
 /**
  * Guards against lockout-equivalent actions on the tenant's primary admin
@@ -41,7 +50,7 @@ const LEGACY_ROLE_TO_SYSTEM_KEY: Record<string, string> = {
 async function assertNotPrimaryAdminDeactivation(
   tenantId: number,
   userId: number,
-  change: { isActive?: boolean; role?: string },
+  change: { isActive?: boolean; roleId?: number },
 ): Promise<void> {
   const primaryAdminId = await userRepo.findPrimaryAdminId(tenantId)
   if (primaryAdminId === null || userId !== primaryAdminId) return
@@ -49,20 +58,25 @@ async function assertNotPrimaryAdminDeactivation(
   if (change.isActive === false) {
     throw new UserError('Cannot deactivate the primary clinic admin', 403)
   }
-  if (change.role !== undefined && change.role !== 'admin') {
-    throw new UserError("Cannot change the primary clinic admin's role", 403)
+  if (change.roleId !== undefined) {
+    const targetRole = await roleRepo.findRoleById(change.roleId)
+    if (!targetRole || targetRole.key !== 'clinic_admin') {
+      throw new UserError("Cannot change the primary clinic admin's role", 403)
+    }
   }
 }
 
 function safe(user: {
   id: number; tenantId: number; name: string; username: string
   email: string | null; phone?: string | null
-  passwordHash?: string; role: string; isActive: boolean; createdAt: Date
+  passwordHash?: string; isActive: boolean; createdAt: Date
+  roleRef: { id: number; name: string; key: string; isSystem: boolean } | null
 }): UserResponse {
-  const { passwordHash: _pw, ...rest } = user
+  const { passwordHash: _pw, roleRef, ...rest } = user
+  if (!roleRef) throw new UserError('User has no role assigned — data integrity error', 500)
   return {
     ...rest,
-    role:      String(rest.role),
+    role:      toLegacyRoleStringTransitional(roleRef.key),
     email:     rest.email ?? null,
     phone:     rest.phone ?? null,
     createdAt: rest.createdAt.toISOString(),
@@ -80,7 +94,87 @@ export async function getUserById(tenantId: number, userId: number): Promise<Use
   return safe(user)
 }
 
-export async function createUser(tenantId: number, body: CreateUserRequest): Promise<UserResponse> {
+/**
+ * No-escalation guard (CORR-3/T-URA-2.7): the role being assigned must not
+ * hold a permission the caller doesn't already have — UNLESS the caller
+ * holds `roles.manage`.
+ *
+ * The `roles.manage` exemption is required, not optional: the BA sign-off's
+ * own CORR-3 acceptance test states plainly "the same assignment by a
+ * clinic_admin → 200". The actual seeded permission matrix
+ * (prisma/seed-rbac.ts) intentionally withholds several clinical-only codes
+ * from `clinic_admin` (e.g. `vaccination.create`, `emr.create`,
+ * `prescriptions.create` — segregation of clinical duties, not a privilege
+ * tier), so a literal subset check blocks `clinic_admin` from creating a
+ * `doctor` or `clinic_staff` user — a basic, previously-working admin
+ * action, and a regression this migration must not ship. A caller holding
+ * `roles.manage` can already edit any role's permission set directly, so a
+ * subset check is moot for them; exempting on that code (rather than
+ * hardcoding the `clinic_admin` key) keeps the rule general for any
+ * tenant-custom role a clinic later grants equivalent authority.
+ *
+ * @param roleRow     - The target role, with its permission codes.
+ * @param callerPerms - The caller's own resolved permission set.
+ */
+function assertNoRoleEscalation(
+  roleRow: { key: string; permissions: { permissionCode: string }[] },
+  callerPerms: Set<string>,
+): void {
+  const escalations = roleRow.permissions
+    .map(p => p.permissionCode)
+    .filter(code => !callerPerms.has(code))
+
+  // D-4: clinic_admin is sealed — the roles.manage exemption below must
+  // NEVER apply to it, or a custom role merely granted roles.manage (without
+  // actually holding every clinic_admin permission) could assign the real
+  // Admin role to itself/anyone, recreating exactly the escalation path D-4's
+  // clone-rejection (role.service.ts cloneRole) closes on the clone side.
+  // A caller who already holds every clinic_admin permission (i.e. is
+  // already admin-equivalent) has no escalations here and passes normally.
+  if (roleRow.key === 'clinic_admin') {
+    if (escalations.length > 0) {
+      throw new UserError(`Cannot assign a role whose permissions exceed your own: ${escalations.join(', ')}`, 403)
+    }
+    return
+  }
+
+  if (callerPerms.has('roles.manage')) return
+
+  if (escalations.length > 0) {
+    throw new UserError(`Cannot assign a role whose permissions exceed your own: ${escalations.join(', ')}`, 403)
+  }
+}
+
+/**
+ * Tenant-isolation guard for role assignment (multi-tenancy ABSOLUTE rule,
+ * CLAUDE.md). `findRoleById` is a global, non-tenant-scoped lookup — system
+ * roles (`isSystem: true`, `tenantId: null`) are assignable by any tenant,
+ * but a tenant-custom role must belong to the caller's own tenant. Without
+ * this, a caller could pass another tenant's custom `roleId` by number and
+ * assign it, since `assertNoRoleEscalation`'s `roles.manage` exemption never
+ * blocks on tenant ownership. Mirrors the ownership check that existed on
+ * the now-removed `role.service.ts assignRoleToUser` path.
+ *
+ * 404, not 403: a 403 would confirm to the caller that a role with this ID
+ * exists in some other tenant (BOLA existence-leak, ADR-0014 precedent) — the
+ * same reasoning `findRoleById` callers already apply for `Unknown role`.
+ */
+function assertRoleBelongsToCallerTenant(
+  roleRow: { isSystem: boolean; tenantId: number | null },
+  tenantId: number,
+): void {
+  if (roleRow.isSystem) return
+  if (roleRow.tenantId !== tenantId) {
+    throw new UserError('Role not found', 404)
+  }
+}
+
+export async function createUser(
+  tenantId: number,
+  body: CreateUserRequest,
+  callerPerms: Set<string>,
+  hasAssignRole: boolean,
+): Promise<UserResponse> {
   // D-2-02: at least one contact method required
   if (!body.email && !body.phone) {
     throw new UserError('At least one contact (email or phone) is required', 422)
@@ -88,11 +182,15 @@ export async function createUser(tenantId: number, body: CreateUserRequest): Pro
 
   await subscriptionService.assertCanAddUser(tenantId)
 
-  const systemKey = LEGACY_ROLE_TO_SYSTEM_KEY[body.role]
-  if (!systemKey) throw new UserError(`Unknown role: ${body.role}`, 400)
+  if (!hasAssignRole) {
+    throw new UserError('Assigning a role requires the staff.assign_role permission', 403)
+  }
 
-  const roleRow = await roleRepo.findSystemRoleByKey(systemKey)
-  if (!roleRow) throw new UserError(`System role '${systemKey}' not seeded`, 500)
+  const roleRow = await roleRepo.findRoleById(body.roleId)
+  if (!roleRow) throw new UserError(`Unknown role: ${body.roleId}`, 400)
+
+  assertRoleBelongsToCallerTenant(roleRow, tenantId)
+  assertNoRoleEscalation(roleRow, callerPerms)
 
   const passwordHash = await bcrypt.hash(body.password, config.bcryptRounds)
   try {
@@ -104,7 +202,6 @@ export async function createUser(tenantId: number, body: CreateUserRequest): Pro
         email:    body.email ?? null,
         phone:    body.phone ?? null,
         passwordHash,
-        role:     body.role,
       },
       roleRow.id,
     )
@@ -118,12 +215,13 @@ export async function createUser(tenantId: number, body: CreateUserRequest): Pro
 }
 
 export async function updateUser(
-  tenantId: number, userId: number, body: UpdateUserRequest
+  tenantId: number, userId: number, body: UpdateUserRequest,
+  callerPerms: Set<string>, hasAssignRole: boolean,
 ): Promise<UserResponse> {
   const existing = await userRepo.findUserById(tenantId, userId)
   if (!existing) throw new UserError('User not found', 404)
 
-  await assertNotPrimaryAdminDeactivation(tenantId, userId, { isActive: body.isActive, role: body.role })
+  await assertNotPrimaryAdminDeactivation(tenantId, userId, { isActive: body.isActive, roleId: body.roleId })
 
   // ADR-0016 D-6: restoring a deactivated user must re-check the seat quota,
   // same as createUser — restore should not be a quota-enforcement bypass.
@@ -131,12 +229,16 @@ export async function updateUser(
     await subscriptionService.assertCanAddUser(tenantId)
   }
 
-  if (body.role !== undefined) {
-    const systemKey = LEGACY_ROLE_TO_SYSTEM_KEY[body.role]
-    if (!systemKey) throw new UserError(`Unknown role: ${body.role}`, 400)
+  if (body.roleId !== undefined) {
+    if (!hasAssignRole) {
+      throw new UserError('Assigning a role requires the staff.assign_role permission', 403)
+    }
 
-    const roleRow = await roleRepo.findSystemRoleByKey(systemKey)
-    if (!roleRow) throw new UserError(`System role '${systemKey}' not seeded`, 500)
+    const roleRow = await roleRepo.findRoleById(body.roleId)
+    if (!roleRow) throw new UserError(`Unknown role: ${body.roleId}`, 400)
+
+    assertRoleBelongsToCallerTenant(roleRow, tenantId)
+    assertNoRoleEscalation(roleRow, callerPerms)
 
     await userRepo.replaceUserRole(tenantId, userId, roleRow.id)
   }
@@ -272,7 +374,7 @@ export async function assignUserBranches(
     id:               user.id,
     name:             user.name,
     username:         user.username,
-    role:             user.role,
+    role:             user.roleRef ? toLegacyRoleStringTransitional(user.roleRef.key) : 'staff',
     assignedBranches,
   }
 }

@@ -75,30 +75,30 @@ beforeAll(async () => {
   branchBId = branchB.id
   otherBranchId = otherBranch.id
 
-  const [staffSystemRole, staffSystemRoleOther] = await Promise.all([
+  const [staffSystemRole, staffSystemRoleOther, clinicAdminRole] = await Promise.all([
     prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } }),
     prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } }),
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } }),
   ])
 
   const passwordHash = await bcrypt.hash(PASSWORD, 10)
 
   // Branch-scoped staffer pinned to Branch A, holds inpatient.view + inpatient.manage.
   const staffA = await prisma.user.create({
-    data: { tenantId: tid, username: 'staff_a', name: 'Staff Branch A', passwordHash, role: 'staff', branchId: branchAId, isActive: true },
+    data: { tenantId: tid, username: 'staff_a', name: 'Staff Branch A', passwordHash, roleId: staffSystemRole.id, branchId: branchAId, isActive: true },
   })
   await prisma.userBranch.create({ data: { tenantId: tid, userId: staffA.id, branchId: branchAId } })
   await prisma.userRole.create({ data: { tenantId: tid, userId: staffA.id, roleId: staffSystemRole.id } })
 
-  // All-branch admin in the same tenant (literal role 'admin' → login bypass, branchId: null in JWT).
+  // All-branch admin in the same tenant (clinic_admin role → login bypass, branchId: null in JWT).
   const adminUser = await prisma.user.create({
-    data: { tenantId: tid, username: 'admin_iso', name: 'Admin All-Branch', passwordHash, role: 'admin', branchId: null, isActive: true },
+    data: { tenantId: tid, username: 'admin_iso', name: 'Admin All-Branch', passwordHash, roleId: clinicAdminRole.id, branchId: null, isActive: true },
   })
-  const clinicAdminRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
   await prisma.userRole.create({ data: { tenantId: tid, userId: adminUser.id, roleId: clinicAdminRole.id } })
 
   // A second tenant + branch-scoped staffer, for cross-tenant regression.
   const otherStaff = await prisma.user.create({
-    data: { tenantId: otherTid, username: 'staff_other', name: 'Staff Other Tenant', passwordHash, role: 'staff', branchId: otherBranchId, isActive: true },
+    data: { tenantId: otherTid, username: 'staff_other', name: 'Staff Other Tenant', passwordHash, roleId: staffSystemRoleOther.id, branchId: otherBranchId, isActive: true },
   })
   await prisma.userBranch.create({ data: { tenantId: otherTid, userId: otherStaff.id, branchId: otherBranchId } })
   await prisma.userRole.create({ data: { tenantId: otherTid, userId: otherStaff.id, roleId: staffSystemRoleOther.id } })

@@ -34,20 +34,25 @@ beforeAll(async () => {
   branchAId = branchA.id
   branchBId = branchB.id
 
+  const [adminRole, staffRole] = await Promise.all([
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } }),
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } }),
+  ])
+
   const admin = await prisma.user.create({
-    data: { tenantId: tid, name: 'Admin', username: `admpg_${ts % 100000}`, email: `admpg-${ts}@t.local`, passwordHash: hash, role: 'admin' },
+    data: { tenantId: tid, name: 'Admin', username: `admpg_${ts % 100000}`, email: `admpg-${ts}@t.local`, passwordHash: hash, roleId: adminRole.id },
   })
   await seedUserRoles(prisma, [{ userId: admin.id, tenantId: tid, roleKey: 'clinic_admin' }])
 
   // Users: one assigned to Branch A (via UserBranch join), one to Branch B, one unassigned (visible everywhere)
   const staffA = await prisma.user.create({
-    data: { tenantId: tid, name: 'StaffA', username: `sa_${ts % 100000}`, email: `sa-${ts}@t.local`, passwordHash: hash, role: 'staff' },
+    data: { tenantId: tid, name: 'StaffA', username: `sa_${ts % 100000}`, email: `sa-${ts}@t.local`, passwordHash: hash, roleId: staffRole.id },
   })
   const staffB = await prisma.user.create({
-    data: { tenantId: tid, name: 'StaffB', username: `sb_${ts % 100000}`, email: `sb-${ts}@t.local`, passwordHash: hash, role: 'staff' },
+    data: { tenantId: tid, name: 'StaffB', username: `sb_${ts % 100000}`, email: `sb-${ts}@t.local`, passwordHash: hash, roleId: staffRole.id },
   })
   const staffUnassigned = await prisma.user.create({
-    data: { tenantId: tid, name: 'StaffU', username: `su_${ts % 100000}`, email: `su-${ts}@t.local`, passwordHash: hash, role: 'staff' },
+    data: { tenantId: tid, name: 'StaffU', username: `su_${ts % 100000}`, email: `su-${ts}@t.local`, passwordHash: hash, roleId: staffRole.id },
   })
   staffAId = staffA.id; staffBId = staffB.id; staffUnassignedId = staffUnassigned.id
   await prisma.userBranch.createMany({

@@ -6,8 +6,11 @@
  *  2. POST /clinic/roles/clone  — creates custom role with only caller's perms
  *  3. PUT /clinic/roles/:roleId/permissions  — 403 for system role; ok for custom
  *  4. DELETE /clinic/roles/:roleId  — 409 if in use; ok if unused
- *  5. POST /clinic/roles/users/:userId/roles  — assigns role to user
- *  6. DELETE /clinic/roles/users/:userId/roles/:roleId  — 409 if last role
+ *  5. Cache invalidation — permission revocation takes effect immediately
+ *
+ * The former multi-role assign/remove endpoints (POST/DELETE
+ * /clinic/roles/users/:userId/roles[/:roleId]) were retired by ADR-0019
+ * (D-7, single-role model) — see docs/superpowers/plans/2026-07-20-unify-user-role-assignment-plan-a-backend.md.
  */
 
 import request from 'supertest'
@@ -69,7 +72,6 @@ beforeAll(async () => {
         username:     'admin_rm',
         email:        'admin@rm.test',
         passwordHash,
-        role:         'admin',
         roleId:       adminRole.id,
       },
     }),
@@ -81,7 +83,6 @@ beforeAll(async () => {
         username:     'doctor_rm',
         email:        'doctor@rm.test',
         passwordHash,
-        role:         'doctor',
         roleId:       doctorRole.id,
       },
     }),
@@ -177,6 +178,16 @@ describe('GET /clinic/roles', () => {
     }
   })
 
+  it('includes each role\'s key (additive; consumed by Plan B)', async () => {
+    const res = await request(server)
+      .get('/clinic/roles')
+      .set('Authorization', `Bearer ${adminToken}`)
+
+    expect(res.status).toBe(200)
+    const adminRow = res.body.data.find((r: { name: string }) => r.name === 'Clinic Admin')
+    expect(adminRow.key).toBe('clinic_admin')
+  })
+
   it('doctor: receives 403 (lacks roles.manage)', async () => {
     const res = await request(server)
       .get('/clinic/roles')
@@ -247,6 +258,15 @@ describe('POST /clinic/roles/clone', () => {
       where: { id: res.body.data.id },
     })
     expect(created.sourceRoleId).toBe(doctorSystemRole.id)
+  })
+
+  it('rejects cloning the clinic_admin system role, regardless of caller permissions (D-4)', async () => {
+    const res = await request(server)
+      .post('/clinic/roles/clone')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ sourceRoleName: 'Clinic Admin', newName: 'Super Admin Clone' })
+
+    expect(res.status).toBe(403)
   })
 })
 
@@ -381,58 +401,6 @@ describe('DELETE /clinic/roles/:roleId', () => {
 })
 
 // ---------------------------------------------------------------------------
-// 5. POST /clinic/roles/users/:userId/roles
-// ---------------------------------------------------------------------------
-
-describe('POST /clinic/roles/users/:userId/roles', () => {
-  let assignableRoleId = 0
-
-  beforeAll(async () => {
-    const res = await request(server)
-      .post('/clinic/roles/clone')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({ sourceRoleName: 'Clinic Staff', newName: 'Assignable Role' })
-    expect(res.status).toBe(201)
-    assignableRoleId = res.body.data.id
-  })
-
-  afterAll(async () => {
-    await prisma.userRole.deleteMany({ where: { roleId: assignableRoleId } })
-    await prisma.rolePermission.deleteMany({ where: { roleId: assignableRoleId } })
-    await prisma.clinicRole.deleteMany({ where: { id: assignableRoleId } }).catch(() => undefined)
-  })
-
-  it('assigns a role to a user and returns 201', async () => {
-    const res = await request(server)
-      .post(`/clinic/roles/users/${doctorUserId}/roles`)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({ roleId: assignableRoleId })
-
-    expect(res.status).toBe(201)
-    expect(res.body.success).toBe(true)
-
-    // Verify assignment exists in DB
-    const row = await prisma.userRole.findFirst({
-      where: { userId: doctorUserId, roleId: assignableRoleId, tenantId: tid },
-    })
-    expect(row).not.toBeNull()
-  })
-
-  it('returns 400 when roleId is missing', async () => {
-    const res = await request(server)
-      .post(`/clinic/roles/users/${doctorUserId}/roles`)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({})
-
-    expect(res.status).toBe(400)
-  })
-})
-
-// ---------------------------------------------------------------------------
-// 6. DELETE /clinic/roles/users/:userId/roles/:roleId
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
 // 7. Cache invalidation — permission revocation takes effect immediately
 // ---------------------------------------------------------------------------
 
@@ -463,7 +431,6 @@ describe('updateRolePermissions cache invalidation', () => {
         username:     'cache_test_rm',
         email:        'cachetest@rm.test',
         passwordHash,
-        role:         'doctor',
         roleId:       customRoleId,
       },
     })
@@ -505,57 +472,5 @@ describe('updateRolePermissions cache invalidation', () => {
       .get('/api/appointments')
       .set('Authorization', `Bearer ${targetToken}`)
     expect(afterRes.status).toBe(403)
-  })
-})
-
-// ---------------------------------------------------------------------------
-// 6. DELETE /clinic/roles/users/:userId/roles/:roleId
-// ---------------------------------------------------------------------------
-
-describe('DELETE /clinic/roles/users/:userId/roles/:roleId', () => {
-  let extraRoleId = 0
-
-  beforeAll(async () => {
-    // Give adminUser a second custom role so we can remove one without hitting the last-role guard
-    const res = await request(server)
-      .post('/clinic/roles/clone')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({ sourceRoleName: 'Clinic Staff', newName: 'Extra Admin Role' })
-    expect(res.status).toBe(201)
-    extraRoleId = res.body.data.id
-
-    await prisma.userRole.create({
-      data: { userId: adminUserId, roleId: extraRoleId, tenantId: tid },
-    })
-  })
-
-  afterAll(async () => {
-    await prisma.userRole.deleteMany({ where: { roleId: extraRoleId } })
-    await prisma.rolePermission.deleteMany({ where: { roleId: extraRoleId } })
-    await prisma.clinicRole.deleteMany({ where: { id: extraRoleId } }).catch(() => undefined)
-  })
-
-  it('returns 409 when removing would leave user with no roles', async () => {
-    // doctorUser has only doctorRoleId; removing it should fail
-    const res = await request(server)
-      .delete(`/clinic/roles/users/${doctorUserId}/roles/${doctorRoleId}`)
-      .set('Authorization', `Bearer ${adminToken}`)
-
-    expect(res.status).toBe(409)
-  })
-
-  it('successfully removes a role when user still has another role', async () => {
-    // adminUser has adminRole + extraRole; removing extraRole is safe
-    const res = await request(server)
-      .delete(`/clinic/roles/users/${adminUserId}/roles/${extraRoleId}`)
-      .set('Authorization', `Bearer ${adminToken}`)
-
-    expect(res.status).toBe(200)
-    expect(res.body.success).toBe(true)
-
-    const row = await prisma.userRole.findFirst({
-      where: { userId: adminUserId, roleId: extraRoleId, tenantId: tid },
-    })
-    expect(row).toBeNull()
   })
 })

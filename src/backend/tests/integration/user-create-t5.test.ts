@@ -64,7 +64,7 @@ beforeAll(async () => {
   staffRoleId  = staffRole.id
 
   const uAdmin = await prisma.user.create({
-    data: { tenantId: tid, branchId: branch.id, name: 'Admin T5', username: 'admin_t5', email: 'admin@t5.test', passwordHash, role: 'admin', roleId: adminRoleId },
+    data: { tenantId: tid, branchId: branch.id, name: 'Admin T5', username: 'admin_t5', email: 'admin@t5.test', passwordHash, roleId: adminRoleId },
   })
   adminUserId = uAdmin.id
   await prisma.userRole.create({ data: { userId: adminUserId, roleId: adminRoleId, tenantId: tid } })
@@ -96,7 +96,7 @@ describe('POST /clinic/users — transactional user_roles creation', () => {
     const res = await request(server)
       .post('/users')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ name: 'Dr New', username: 'dr_new_t5', email: 'dr.new@t5.test', password: 'SecurePass1!', role: 'doctor' })
+      .send({ name: 'Dr New', username: 'dr_new_t5', email: 'dr.new@t5.test', password: 'SecurePass1!', roleId: doctorRoleId })
 
     expect(res.status).toBe(201)
     expect(res.body.success).toBe(true)
@@ -115,7 +115,7 @@ describe('POST /clinic/users — transactional user_roles creation', () => {
     const res = await request(server)
       .post('/users')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ name: 'Staff New', username: 'staff_new_t5', email: 'staff.new@t5.test', password: 'SecurePass1!', role: 'staff' })
+      .send({ name: 'Staff New', username: 'staff_new_t5', email: 'staff.new@t5.test', password: 'SecurePass1!', roleId: staffRoleId })
 
     expect(res.status).toBe(201)
 
@@ -129,7 +129,7 @@ describe('POST /clinic/users — transactional user_roles creation', () => {
     const res = await request(server)
       .post('/users')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ name: 'Dr Dup', username: 'dr_new_t5', email: 'dr.dup@t5.test', password: 'SecurePass1!', role: 'doctor' })
+      .send({ name: 'Dr Dup', username: 'dr_new_t5', email: 'dr.dup@t5.test', password: 'SecurePass1!', roleId: doctorRoleId })
 
     expect(res.status).toBe(409)
     expect(res.body.success).toBe(false)
@@ -153,7 +153,7 @@ describe('PUT /users/:id — role update replaces user_roles row', () => {
     const res = await request(server)
       .post('/users')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ name: 'Role Mutable', username: 'mutable_t5', email: 'mutable@t5.test', password: 'SecurePass1!', role: 'staff' })
+      .send({ name: 'Role Mutable', username: 'mutable_t5', email: 'mutable@t5.test', password: 'SecurePass1!', roleId: staffRoleId })
     expect(res.status).toBe(201)
     targetUserId = res.body.data.id
   })
@@ -162,7 +162,7 @@ describe('PUT /users/:id — role update replaces user_roles row', () => {
     const res = await request(server)
       .put(`/users/${targetUserId}`)
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ role: 'doctor' })
+      .send({ roleId: doctorRoleId })
 
     expect(res.status).toBe(200)
     expect(res.body.success).toBe(true)

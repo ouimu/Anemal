@@ -57,8 +57,9 @@ beforeAll(async () => {
   tenantId = tenant.id
   const branch = await prisma.branch.create({ data: { tenantId, name: 'Main' } })
   const uploadTs = Date.now()
+  const adminRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
   const user = await prisma.user.create({
-    data: { tenantId, name: 'Upload Admin', username: `upload_adm_${uploadTs % 100000}`, email: `upload-${uploadTs}@test.local`, passwordHash: hash, role: 'admin' },
+    data: { tenantId, name: 'Upload Admin', username: `upload_adm_${uploadTs % 100000}`, email: `upload-${uploadTs}@test.local`, passwordHash: hash, roleId: adminRole.id },
   })
   adminToken = signToken({ userId: user.id, tenantId, branchId: branch.id, plane: 'clinic', permSetVersion: 1, role: 'admin' })
 

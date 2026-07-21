@@ -13,12 +13,15 @@ import prisma from '../config/db'
 import bcrypt from 'bcrypt'
 import { signToken } from '../config/jwt'
 import { seedUserRoles, cleanupUserRoles } from '../tests/helpers/seedUserRoles'
+import * as userService from '../services/user.service'
 
 // ── Fixture ───────────────────────────────────────────────────────────────────
 let server: Server
 let tenantId: number
 let adminId: number
 let targetUserId: number
+let doctorRoleId: number
+let staffRoleId: number
 
 const SUBDOMAIN = `users-test-${Date.now()}`
 
@@ -39,13 +42,21 @@ beforeAll(async () => {
   // separately in subscription.test.ts).
   await prisma.tenantSettings.create({ data: { tenantId, planTier: 'professional' } })
 
+  const [adminSystemRole, doctorSystemRole, staffSystemRole] = await Promise.all([
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } }),
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor',       tenantId: null } }),
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } }),
+  ])
+  doctorRoleId = doctorSystemRole.id
+  staffRoleId  = staffSystemRole.id
+
   const admin = await prisma.user.create({
-    data: { tenantId, name: 'Test Admin', username: `adm_${ts % 100000}`, email: `admin-${ts}@users-test.local`, passwordHash: hash, role: 'admin' },
+    data: { tenantId, name: 'Test Admin', username: `adm_${ts % 100000}`, email: `admin-${ts}@users-test.local`, passwordHash: hash, roleId: adminSystemRole.id },
   })
   adminId = admin.id
 
   const target = await prisma.user.create({
-    data: { tenantId, name: 'Target Doctor', username: `doc_${ts % 100000}`, email: `doctor-${ts}@users-test.local`, passwordHash: hash, role: 'doctor' },
+    data: { tenantId, name: 'Target Doctor', username: `doc_${ts % 100000}`, email: `doctor-${ts}@users-test.local`, passwordHash: hash, roleId: doctorSystemRole.id },
   })
   targetUserId = target.id
 
@@ -133,7 +144,7 @@ describe('user-1.5 — POST /users', () => {
     const res = await request(server)
       .post('/users')
       .set('Authorization', adminToken())
-      .send({ name: 'New Staff', username: `newstaff_${ts}`, email: `newstaff-${ts}@users-test.local`, password: 'StaffPass1!', role: 'staff' })
+      .send({ name: 'New Staff', username: `newstaff_${ts}`, email: `newstaff-${ts}@users-test.local`, password: 'StaffPass1!', roleId: staffRoleId })
       .expect(201)
 
     expect(res.body.data.role).toBe('staff')
@@ -147,7 +158,7 @@ describe('user-1.5 — POST /users', () => {
     const res = await request(server)
       .post('/users')
       .set('Authorization', adminToken())
-      .send({ name: 'New Doctor', username: `newdoc_${ts}`, email: `newdoc-${ts}@users-test.local`, password: 'DocPass1!', role: 'doctor' })
+      .send({ name: 'New Doctor', username: `newdoc_${ts}`, email: `newdoc-${ts}@users-test.local`, password: 'DocPass1!', roleId: doctorRoleId })
       .expect(201)
 
     expect(res.body.data.role).toBe('doctor')
@@ -160,13 +171,13 @@ describe('user-1.5 — POST /users', () => {
     await request(server)
       .post('/users')
       .set('Authorization', adminToken())
-      .send({ name: 'First', username, email: `dup1-${ts}@users-test.local`, password: 'Pass1234!', role: 'staff' })
+      .send({ name: 'First', username, email: `dup1-${ts}@users-test.local`, password: 'Pass1234!', roleId: staffRoleId })
       .expect(201)
 
     await request(server)
       .post('/users')
       .set('Authorization', adminToken())
-      .send({ name: 'Second', username, email: `dup2-${ts}@users-test.local`, password: 'Pass1234!', role: 'staff' })
+      .send({ name: 'Second', username, email: `dup2-${ts}@users-test.local`, password: 'Pass1234!', roleId: staffRoleId })
       .expect(409)
   })
 
@@ -176,7 +187,7 @@ describe('user-1.5 — POST /users', () => {
     await request(server)
       .post('/users')
       .set('Authorization', adminToken())
-      .send({ username: `noname_${ts}`, email: `x-${ts}@t.com`, password: 'Pass1234!', role: 'staff' })
+      .send({ username: `noname_${ts}`, email: `x-${ts}@t.com`, password: 'Pass1234!', roleId: staffRoleId })
       .expect(400)
   })
 
@@ -186,17 +197,17 @@ describe('user-1.5 — POST /users', () => {
     await request(server)
       .post('/users')
       .set('Authorization', adminToken())
-      .send({ name: 'Short Pass', username: `short_${ts}`, email: `sp-${ts}@t.com`, password: 'abc', role: 'staff' })
+      .send({ name: 'Short Pass', username: `short_${ts}`, email: `sp-${ts}@t.com`, password: 'abc', roleId: staffRoleId })
       .expect(400)
   })
 
-  test('user-10: Invalid role value → 400', async () => {
+  test('user-10: Invalid roleId type → 400', async () => {
     // Type: edge_case / input validation
     const ts = Date.now() % 100000
     await request(server)
       .post('/users')
       .set('Authorization', adminToken())
-      .send({ name: 'Bad Role', username: `badrole_${ts}`, email: `br-${ts}@t.com`, password: 'Pass1234!', role: 'superuser' })
+      .send({ name: 'Bad Role', username: `badrole_${ts}`, email: `br-${ts}@t.com`, password: 'Pass1234!', roleId: 'superuser' })
       .expect(400)
   })
 
@@ -209,7 +220,7 @@ describe('user-1.5 — POST /users', () => {
     const res = await request(server)
       .post('/users')
       .set('Authorization', adminToken())
-      .send({ name: 'Isolated', username: `iso_${ts}`, email: `iso-${ts}@t.com`, password: 'Pass1234!', role: 'staff' })
+      .send({ name: 'Isolated', username: `iso_${ts}`, email: `iso-${ts}@t.com`, password: 'Pass1234!', roleId: staffRoleId })
       .expect(201)
 
     // The service always uses req.context.tenantId — never from request body
@@ -236,7 +247,7 @@ describe('user-1.5 — PUT /users/:id', () => {
     const res = await request(server)
       .put(`/users/${targetUserId}`)
       .set('Authorization', adminToken())
-      .send({ role: 'staff' })
+      .send({ roleId: staffRoleId })
       .expect(200)
 
     expect(res.body.data.role).toBe('staff')
@@ -268,12 +279,12 @@ describe('user-1.5 — PUT /users/:id', () => {
       .expect(404)
   })
 
-  test('user-16: Update with invalid role → 400', async () => {
+  test('user-16: Update with invalid roleId type → 400', async () => {
     // Type: edge_case / input validation
     await request(server)
       .put(`/users/${targetUserId}`)
       .set('Authorization', adminToken())
-      .send({ role: 'superuser' })
+      .send({ roleId: 'superuser' })
       .expect(400)
   })
 })
@@ -285,8 +296,9 @@ describe('user-1.5 — DELETE /users/:id (soft delete)', () => {
     // Type: happy_path
     const ts = Date.now() % 100000
     const hash = await bcrypt.hash('TestPass1!', 10)
+    const staffSystemRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } })
     const tempUser = await prisma.user.create({
-      data: { tenantId, name: 'Temp User', username: `temp_${ts}`, email: `temp-${ts}@users-test.local`, passwordHash: hash, role: 'staff' },
+      data: { tenantId, name: 'Temp User', username: `temp_${ts}`, email: `temp-${ts}@users-test.local`, passwordHash: hash, roleId: staffSystemRole.id },
     })
 
     await request(server)
@@ -318,7 +330,7 @@ describe('user-1.5 — Concurrent edge cases', () => {
     const ts = Date.now() % 100000
     const payload = {
       name: 'Double Tap', username: `doubletap_${ts}`, email: `double-${ts}@users-test.local`,
-      password: 'Pass1234!', role: 'staff',
+      password: 'Pass1234!', roleId: staffRoleId,
     }
     const [r1, r2] = await Promise.all([
       request(server).post('/users').set('Authorization', adminToken()).send(payload),
@@ -327,5 +339,168 @@ describe('user-1.5 — Concurrent edge cases', () => {
     const statuses = [r1.status, r2.status].sort()
     expect(statuses).toContain(201)
     expect(statuses).toContain(409)
+  })
+})
+
+// ═════════════════════════════════════════════════════════════════════════════
+// T-URA-2.1 — userService.createUser/updateUser now take roleId directly;
+// safe() keeps UserResponse.role as a legacy string (Plan A constraint).
+describe('user-1.5 — roleId-based create/update (ADR-0019/D-7)', () => {
+  let fullPerms: Set<string>
+
+  beforeAll(async () => {
+    const adminRoleWithPerms = await prisma.clinicRole.findFirstOrThrow({
+      where: { key: 'clinic_admin', tenantId: null },
+      include: { permissions: true },
+    })
+    fullPerms = new Set([...adminRoleWithPerms.permissions.map(p => p.permissionCode), 'staff.assign_role'])
+  })
+
+  test('createUser accepts roleId and persists the correct role FK, role stays a string in the response', async () => {
+    const doctorRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
+    const created = await userService.createUser(tenantId, {
+      name: 'New Doctor', username: `new_doctor_ura_${Date.now() % 100000}`, email: `newdoc-ura-${Date.now()}@test.com`,
+      password: 'TestPass1!', roleId: doctorRole.id,
+    }, fullPerms, true)
+    expect(created.role).toBe('doctor')
+    const dbUser = await prisma.user.findUniqueOrThrow({ where: { id: created.id } })
+    expect(dbUser.roleId).toBe(doctorRole.id)
+  })
+
+  test('createUser rejects an unknown roleId', async () => {
+    await expect(userService.createUser(tenantId, {
+      name: 'Bad', username: `bad_role_ura_${Date.now() % 100000}`, email: `bad-ura-${Date.now()}@test.com`,
+      password: 'TestPass1!', roleId: 999999,
+    }, fullPerms, true)).rejects.toMatchObject({ statusCode: 400 })
+  })
+
+  test('updateUser accepts roleId and replaces the user role, response role stays a string', async () => {
+    const staffRole  = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } })
+    const doctorRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
+    const user = await userService.createUser(tenantId, {
+      name: 'Switchable', username: `switchable_ura_${Date.now() % 100000}`, email: `sw-ura-${Date.now()}@test.com`,
+      password: 'TestPass1!', roleId: staffRole.id,
+    }, fullPerms, true)
+    const updated = await userService.updateUser(
+      tenantId, user.id, { roleId: doctorRole.id },
+      fullPerms, true,
+    )
+    expect(updated.role).toBe('doctor')
+  })
+
+  test('a custom-role user\'s response role maps to the legacy "staff" string', async () => {
+    const customRole = await prisma.clinicRole.create({
+      data: { tenantId, key: `tenant_${tenantId}_accountant_ura6_${Date.now()}`, name: 'Accountant', isSystem: false, permVersion: 1 },
+    })
+    const created = await userService.createUser(tenantId, {
+      name: 'Custom Role User', username: `cr_ura6_${Date.now() % 100000}`, email: `cr-ura-${Date.now()}@test.com`,
+      password: 'TestPass1!', roleId: customRole.id,
+    }, fullPerms, true)
+    expect(created.role).toBe('staff')
+  })
+
+  test('LEGACY_ROLE_TO_SYSTEM_KEY no longer exists in user.service.ts', () => {
+    const source = require('fs').readFileSync(require.resolve('../services/user.service.ts'), 'utf8')
+    expect(source).not.toContain('LEGACY_ROLE_TO_SYSTEM_KEY')
+  })
+
+  test('rejects a roleId change from a caller lacking staff.assign_role', async () => {
+    const doctorRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
+    const target = await userService.createUser(tenantId, {
+      name: 'Target', username: `tgt1_${Date.now() % 100000}`, email: `t-gate-${Date.now()}@test.com`,
+      password: 'TestPass1!', roleId: doctorRole.id,
+    }, fullPerms, true)
+
+    await expect(userService.updateUser(
+      tenantId, target.id, { roleId: doctorRole.id },
+      new Set(['staff.manage']), false,
+    )).rejects.toMatchObject({ statusCode: 403 })
+  })
+
+  test('allows a name-only edit without staff.assign_role', async () => {
+    const doctorRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
+    const target = await userService.createUser(tenantId, {
+      name: 'Target2', username: `tgt2_${Date.now() % 100000}`, email: `t2-gate-${Date.now()}@test.com`,
+      password: 'TestPass1!', roleId: doctorRole.id,
+    }, fullPerms, true)
+
+    const updated = await userService.updateUser(
+      tenantId, target.id, { name: 'Renamed' },
+      new Set(['staff.manage']), false,
+    )
+    expect(updated.name).toBe('Renamed')
+  })
+
+  test('rejects assigning a role whose permissions exceed the caller\'s own', async () => {
+    const adminRole  = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
+    const doctorRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
+    const target = await userService.createUser(tenantId, {
+      name: 'Target3', username: `tgt3_${Date.now() % 100000}`, email: `t3-gate-${Date.now()}@test.com`,
+      password: 'TestPass1!', roleId: doctorRole.id,
+    }, fullPerms, true)
+
+    await expect(userService.updateUser(
+      tenantId, target.id, { roleId: adminRole.id },
+      new Set(['staff.manage', 'staff.view', 'staff.assign_role']),
+      true,
+    )).rejects.toMatchObject({ statusCode: 403 })
+  })
+
+  test('allows a clinic_admin-level caller to assign any role within their permission set', async () => {
+    const doctorRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
+    const adminRoleWithPerms = await prisma.clinicRole.findFirstOrThrow({
+      where: { key: 'clinic_admin', tenantId: null },
+      include: { permissions: true },
+    })
+    const target = await userService.createUser(tenantId, {
+      name: 'Target4', username: `tgt4_${Date.now() % 100000}`, email: `t4-gate-${Date.now()}@test.com`,
+      password: 'TestPass1!', roleId: doctorRole.id,
+    }, fullPerms, true)
+
+    const fullAdminPerms = new Set([...adminRoleWithPerms.permissions.map(p => p.permissionCode), 'staff.assign_role'])
+    const updated = await userService.updateUser(
+      tenantId, target.id, { roleId: adminRoleWithPerms.id },
+      fullAdminPerms, true,
+    )
+    expect(updated.role).toBe('admin')
+  })
+
+  test('a roles.manage holder who is NOT admin-equivalent still cannot assign the sealed clinic_admin role (D-4 assign-path seal)', async () => {
+    const adminRole  = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
+    const doctorRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
+    const target = await userService.createUser(tenantId, {
+      name: 'Target5', username: `tgt5_${Date.now() % 100000}`, email: `t5-gate-${Date.now()}@test.com`,
+      password: 'TestPass1!', roleId: doctorRole.id,
+    }, fullPerms, true)
+
+    // roles.manage would blanket-exempt the general subset check, but must
+    // NOT exempt assigning the sealed clinic_admin role itself.
+    const rolesManageOnlyPerms = new Set(['staff.manage', 'staff.assign_role', 'roles.manage'])
+    await expect(userService.updateUser(
+      tenantId, target.id, { roleId: adminRole.id },
+      rolesManageOnlyPerms, true,
+    )).rejects.toMatchObject({ statusCode: 403 })
+  })
+
+  test('rejects assigning a custom role that belongs to a different tenant (tenant isolation)', async () => {
+    const otherTenant = await prisma.tenant.create({
+      data: { name: `Other Tenant ${Date.now()}`, subdomain: `other-ura-${Date.now() % 100000}` },
+    })
+    const otherTenantRole = await prisma.clinicRole.create({
+      data: { tenantId: otherTenant.id, key: `tenant_${otherTenant.id}_foreign_${Date.now()}`, name: 'Foreign Role', isSystem: false, permVersion: 1 },
+    })
+    const doctorRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
+    const target = await userService.createUser(tenantId, {
+      name: 'Target6', username: `tgt6_${Date.now() % 100000}`, email: `t6-gate-${Date.now()}@test.com`,
+      password: 'TestPass1!', roleId: doctorRole.id,
+    }, fullPerms, true)
+
+    await expect(userService.updateUser(
+      tenantId, target.id, { roleId: otherTenantRole.id },
+      fullPerms, true,
+    )).rejects.toMatchObject({ statusCode: 404 })
+
+    await prisma.clinicRole.delete({ where: { id: otherTenantRole.id } })
+    await prisma.tenant.delete({ where: { id: otherTenant.id } })
   })
 })

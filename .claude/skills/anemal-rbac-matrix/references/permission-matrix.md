@@ -171,20 +171,26 @@ platform permissions — see `anemal-platform-console` skill.
 set of endpoints it could reach before enforcement it can still reach post-enforcement (no lockout), and
 that the newly-denied combinations (doctor->billing, staff->emr.edit) now return 403.
 
-## 5. Multi-role addendum (CR-01)
+## 5. Single-role retirement of the earlier multi-role addendum (ADR-0019, retires CR-01)
 
-Users are linked to roles many-to-many via `user_roles`; `users.role_id` becomes an optional
-display/primary role only. Effective permission set = union of all assigned roles.
+Users are linked to a role one-to-one via `User.roleId` (NOT NULL). The `user_roles` join
+table now holds exactly one row per user (kept in sync by `replaceUserRole`) — its
+many-to-many *shape* is retained at the schema level for backward-compatible query patterns,
+but the product no longer supports more than one row per user. Effective permission set =
+that single role's permissions (no union).
 
-New permission code (add to the catalogue):
+Permission code (in the catalogue):
 
 | Code | Module | clinic_admin | doctor | clinic_staff |
 |---|---|:---:|:---:|:---:|
 | `staff.assign_role` | Staff / users | E | - | - |
 
-Runtime rule: assigning a role requires `staff.assign_role` + `roles.view`, and the assigned role's
-permissions must be ⊆ the assigner's effective permissions (no escalation). A user must retain ≥ 1 role.
-Route map: `POST/DELETE /users/:id/roles` → `staff.assign_role`.
+Runtime rule: assigning a role requires `staff.assign_role`, and the assigned role's permissions
+must be ⊆ the assigner's effective permissions (no escalation) — enforced in `user.service.ts`'s
+`createUser`/`updateUser` role-change branch. A user must always hold exactly one role (ADR-0019 —
+this is now an absolute invariant, not a "≥ 1" minimum).
+Route map: `PUT /users/:id` (with `roleId` in the body) → `staff.manage` + `staff.assign_role`;
+`POST /users` (create) → `staff.manage` + `staff.assign_role`.
 
 | `staff.assign_branch` | Staff / users | E | - | - |
 

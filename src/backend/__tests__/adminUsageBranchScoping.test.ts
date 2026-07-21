@@ -32,8 +32,13 @@ beforeAll(async () => {
   branchAId = branchA.id
   branchBId = branchB.id
 
+  const [adminRole, staffRole] = await Promise.all([
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } }),
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } }),
+  ])
+
   const admin = await prisma.user.create({
-    data: { tenantId: tid, name: 'Admin', username: `admusg_${ts % 100000}`, email: `admusg-${ts}@t.local`, passwordHash: hash, role: 'admin' },
+    data: { tenantId: tid, name: 'Admin', username: `admusg_${ts % 100000}`, email: `admusg-${ts}@t.local`, passwordHash: hash, roleId: adminRole.id },
   })
   await seedUserRoles(prisma, [{ userId: admin.id, tenantId: tid, roleKey: 'clinic_admin' }])
 
@@ -52,9 +57,9 @@ beforeAll(async () => {
   // 2 staff assigned (via userBranches) to Branch A, 1 to Branch B. The admin has no
   // branch assignment → counts under every branch (mirrors the real clinic admin).
   const [staffA1, staffA2, staffB1] = await Promise.all([
-    prisma.user.create({ data: { tenantId: tid, name: 'StaffA1', username: `sa1_${ts % 100000}`, email: `sa1-${ts}@t.local`, passwordHash: hash, role: 'staff', isActive: true } }),
-    prisma.user.create({ data: { tenantId: tid, name: 'StaffA2', username: `sa2_${ts % 100000}`, email: `sa2-${ts}@t.local`, passwordHash: hash, role: 'staff', isActive: true } }),
-    prisma.user.create({ data: { tenantId: tid, name: 'StaffB1', username: `sb1_${ts % 100000}`, email: `sb1-${ts}@t.local`, passwordHash: hash, role: 'staff', isActive: true } }),
+    prisma.user.create({ data: { tenantId: tid, name: 'StaffA1', username: `sa1_${ts % 100000}`, email: `sa1-${ts}@t.local`, passwordHash: hash, roleId: staffRole.id, isActive: true } }),
+    prisma.user.create({ data: { tenantId: tid, name: 'StaffA2', username: `sa2_${ts % 100000}`, email: `sa2-${ts}@t.local`, passwordHash: hash, roleId: staffRole.id, isActive: true } }),
+    prisma.user.create({ data: { tenantId: tid, name: 'StaffB1', username: `sb1_${ts % 100000}`, email: `sb1-${ts}@t.local`, passwordHash: hash, roleId: staffRole.id, isActive: true } }),
   ])
   await prisma.userBranch.createMany({
     data: [

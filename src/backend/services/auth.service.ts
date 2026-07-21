@@ -27,6 +27,21 @@ export class AuthError extends AppError {
   }
 }
 
+/**
+ * Map a role's stable `key` to the legacy 3-value role string the JWT `role`
+ * claim and frontend consumers still expect (D-8, option (a) — BA sign-off
+ * F-1, confined to this file). Every custom/cloned role (including
+ * `clinic_staff` itself) maps to `'staff'`.
+ *
+ * NOT exported — deliberately private to this file.
+ */
+function toLegacyRoleString(roleRef: { key: string } | null | undefined): 'admin' | 'doctor' | 'staff' {
+  if (!roleRef) throw new AuthError('User has no role assigned — data integrity error', 500)
+  if (roleRef.key === 'clinic_admin') return 'admin'
+  if (roleRef.key === 'doctor') return 'doctor'
+  return 'staff'
+}
+
 // "HH:MM" string comparison (lexicographic works for zero-padded 24h time).
 function isWithinWindow(start: string | null, end: string | null, now: Date): boolean {
   if (!start || !end) return true
@@ -62,7 +77,8 @@ export async function login(body: LoginRequest): Promise<LoginResponse> {
 
   // 5. Compute permission version and check role
   const permSetVersion = await computePermSetVersion(user.id, tenant.id)
-  const isAdmin = user.role === 'admin'
+  const legacyRole = toLegacyRoleString(user.roleRef)
+  const isAdmin = legacyRole === 'admin'
 
   // Admin bypass — skip branch selection, issue full JWT immediately
   if (isAdmin) {
@@ -72,7 +88,7 @@ export async function login(body: LoginRequest): Promise<LoginResponse> {
       branchId:       undefined,   // null in JWT = all-branches scope
       plane:          'clinic',
       permSetVersion,
-      role:           user.role,
+      role:           legacyRole,
     })
     const rawRefreshToken = crypto.randomBytes(32).toString('hex')
     const familyId        = crypto.randomUUID()
@@ -92,7 +108,7 @@ export async function login(body: LoginRequest): Promise<LoginResponse> {
       userId:       user.id,
       tenantId:     tenant.id,
       branchId:     null,
-      role:         user.role,
+      role:         legacyRole,
       name:         user.name,
       companyName:  tenant.name,
     }
@@ -109,7 +125,7 @@ export async function login(body: LoginRequest): Promise<LoginResponse> {
     tenantId:       tenant.id,
     plane:          'clinic',
     permSetVersion,
-    role:           user.role,
+    role:           legacyRole,
     scope:          'branch_select',
   })
 
@@ -137,6 +153,7 @@ export async function selectBranch(
   // Verify user still active
   const user = await authRepo.findUserById(tenantId, userId)
   if (!user || !user.isActive) throw new AuthError('User not found or inactive.', 401)
+  const legacyRole = toLegacyRoleString(user.roleRef)
 
   // Verify branch exists and is active in this tenant
   const branch = await authRepo.findBranchById(tenantId, branchId)
@@ -174,7 +191,7 @@ export async function selectBranch(
     userId,
     tenantId,
     branchId,
-    role:  user.role,
+    role:  legacyRole,
     name:  user.name,
     companyName,
   }
@@ -197,6 +214,7 @@ export async function switchBranch(
 ): Promise<SwitchBranchResponse> {
   const user = await authRepo.findUserById(tenantId, userId)
   if (!user || !user.isActive) throw new AuthError('User not found', 404)
+  const legacyRole = toLegacyRoleString(user.roleRef)
 
   // null = reset to all-branches (admin only)
   if (targetBranchId === null) {
@@ -205,7 +223,7 @@ export async function switchBranch(
     const companyName = tenant?.name ?? ''
     const permSetVersion = await computePermSetVersion(userId, tenantId)
     const token = signToken({ userId, tenantId, branchId: undefined, plane: 'clinic', permSetVersion, role })
-    return { token, userId, tenantId, branchId: null, role: user.role, name: user.name, companyName }
+    return { token, userId, tenantId, branchId: null, role: legacyRole, name: user.name, companyName }
   }
 
   const branch = await authRepo.findBranchById(tenantId, targetBranchId)
@@ -307,7 +325,7 @@ export async function refreshClinicToken(rawRefreshToken: string): Promise<Refre
     branchId:       record.branchId ?? user.branchId ?? undefined,
     plane:          'clinic',
     permSetVersion,
-    role:           user.role,
+    role:           toLegacyRoleString(user.roleRef),
   })
 
   const newRaw      = crypto.randomBytes(32).toString('hex')

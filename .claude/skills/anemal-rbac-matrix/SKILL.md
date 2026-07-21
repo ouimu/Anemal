@@ -20,10 +20,12 @@ description: >
 - **Role** = a named set of permission codes. System roles are seeded (`is_system=true`,
   `tenant_id=NULL`); clinic admins may clone a system role into a tenant-scoped **custom role**
   and toggle permissions (configurable RBAC).
-- **User** holds **one or more roles** via `user_roles` (CR-01). Server resolves the **union**
-  of all roles' permissions (current implementation: 5-minute in-memory cache keyed by
-  `tenantId:userId`; `permSetVersion` in the JWT detects stale tokens). UI mirrors it via
-  `usePermissions()` for hide/disable only. A Clinic Admin assigns/removes a user's roles.
+- **User** holds **exactly one role** via `roleId` (single-role model, ADR-0019 — retires the
+  earlier CR-01 multi-role design). Server resolves that role's permission set (current
+  implementation: 5-minute in-memory cache keyed by `tenantId:userId`; `permSetVersion` in the
+  JWT detects stale tokens). UI mirrors it via `usePermissions()` for hide/disable only. A
+  Clinic Admin assigns a user's role (`staff.assign_role`, no escalation — the assigned role's
+  permissions must be a subset of the assigner's own).
 
 ## System clinic roles (seeded defaults)
 
@@ -62,10 +64,12 @@ Platform-plane permissions live in the `anemal-platform-console` skill.
 - [ ] Each system role keeps its existing access (regression test exists).
 - [ ] UI guard present but NOT relied on as the security boundary.
 
-## Multi-role users (CR-01)
-A user holds 1..N roles via `user_roles` (same tenant). Effective permissions = **union** of all
-assigned roles (most-permissive wins). A user must keep ≥ 1 role. Clinic Admin (perm
-`staff.assign_role`) assigns/removes roles but may only grant roles whose permissions are a
-**subset of their own** (no escalation). Permission cache is currently keyed by `tenantId:userId`;
-assigning/removing a role or editing a role's permissions invalidates/re-resolves the affected users,
-and `permSetVersion` protects active tokens from stale role versions.
+## Single-role users (ADR-0019, retires CR-01)
+A user holds exactly one role via `User.roleId` (NOT NULL). Effective permissions = that role's
+permission set (no union — the earlier CR-01 multi-role design, and the `user_roles` join table's
+many-to-many capacity, are retired; `user_roles` now holds exactly one row per user, kept in sync
+by `replaceUserRole`). Clinic Admin (perm `staff.assign_role`) assigns a user's role but may only
+grant a role whose permissions are a **subset of their own** (no escalation) — enforced server-side
+on the `PUT /users/:id`/`POST /users` role-change branch, not just on a dedicated role-assignment
+route. Combined access needs are met by cloning a role with the right permission mix, not by
+stacking roles on one user. See `docs/adr/0019-single-role-per-user-retires-multi-role.md`.

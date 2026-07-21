@@ -1,6 +1,7 @@
 ---
 name: db-agent
 model: sonnet
+effort: high
 description: >
   Database & multi-tenancy guardian for Anemal. Use PROACTIVELY for any schema design, Prisma
   migration, SQL query, index, or repository change — and MUST review any DB-touching change for

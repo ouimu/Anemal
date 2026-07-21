@@ -1,6 +1,7 @@
 ---
 name: qa-agent
-model: fable
+model: opus
+effort: high
 description: >
   QA engineer for Anemal. Use PROACTIVELY after any implementation to write/run tests, cover edge
   cases, and verify tenant isolation + RBAC permission enforcement. MUST be invoked before a task is

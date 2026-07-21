@@ -107,7 +107,7 @@ export interface CreateUserRequest {
   email?:   string              // D-2-02: now optional; at least one of email/phone required
   phone?:   string              // D-2-02: new optional contact field
   password: string
-  role:     'doctor' | 'staff'  // admin cannot be created via API
+  roleId:   number              // ADR-0019/D-7: was role: 'doctor' | 'staff'
 }
 
 export interface UpdateUserRequest {
@@ -115,7 +115,7 @@ export interface UpdateUserRequest {
   username?: string             // D-2-02: optional update
   email?:    string             // D-2-02: optional
   phone?:    string             // D-2-02: new optional contact field
-  role?:     'admin' | 'doctor' | 'staff'
+  roleId?:   number             // ADR-0019/D-7: was role?: 'admin' | 'doctor' | 'staff'
   isActive?: boolean
 }
 

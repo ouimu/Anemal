@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import { z } from 'zod'
 import * as userService from '../services/user.service'
+import { resolvePermissions } from '../services/permission.service'
 
 /** Regex for username: 3-20 chars, letters/digits/underscores only. */
 const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/
@@ -11,7 +12,12 @@ export const createUserSchema = z.object({
   email:    z.string().email().optional(),
   phone:    z.string().max(20).optional(),
   password: z.string().min(8),
-  role:     z.enum(['doctor', 'staff']),
+  // ADR-0019/D-7: was role: z.enum(['doctor', 'staff']) — the single-role
+  // model takes the target ClinicRole id directly. The old "admin cannot be
+  // created via API" restriction is now enforced generally, for every role,
+  // by Task 9's no-escalation check (staff.assign_role + permissions ⊆
+  // caller's own) in user.service.ts, not by a schema-level enum.
+  roleId:   z.number().int().positive(),
 }).strict()
 
 /**
@@ -29,7 +35,7 @@ export const updateUserSchema = z.object({
   username: z.string().min(3).max(20).regex(USERNAME_REGEX, 'Username may only contain letters, digits, and underscores').optional(),
   email:    z.string().email().optional(),
   phone:    z.string().max(20).optional(),
-  role:     z.enum(['admin', 'doctor', 'staff']).optional(),
+  roleId:   z.number().int().positive().optional(), // ADR-0019/D-7: was role?: z.enum(['admin', 'doctor', 'staff'])
   isActive: z.boolean().optional(),
 }).strict()
 
@@ -49,14 +55,20 @@ export async function getUser(req: Request, res: Response, next: NextFunction): 
 
 export async function createUser(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await userService.createUser(req.context!.tenantId, req.body)
+    const callerPerms = await resolvePermissions(req.context!.userId, req.context!.tenantId)
+    const data = await userService.createUser(
+      req.context!.tenantId, req.body, callerPerms, callerPerms.has('staff.assign_role'),
+    )
     res.status(201).json({ success: true, data })
   } catch (err) { next(err) }
 }
 
 export async function updateUser(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await userService.updateUser(req.context!.tenantId, Number(req.params.id), req.body)
+    const callerPerms = await resolvePermissions(req.context!.userId, req.context!.tenantId)
+    const data = await userService.updateUser(
+      req.context!.tenantId, Number(req.params.id), req.body, callerPerms, callerPerms.has('staff.assign_role'),
+    )
     res.json({ success: true, data })
   } catch (err) { next(err) }
 }

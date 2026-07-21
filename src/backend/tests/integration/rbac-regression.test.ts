@@ -45,10 +45,13 @@ async function login(subdomain: string, username: string): Promise<string> {
   return step2.body.data.token as string
 }
 
-// Resolve a seeded system role id by key (tenantId IS NULL). Returns null if not seeded.
-async function systemRoleId(key: string): Promise<number | null> {
-  const role = await prisma.clinicRole.findFirst({ where: { key, tenantId: null } })
-  return role?.id ?? null
+// Resolve a seeded system role id by key (tenantId IS NULL). ADR-0019 made
+// User.roleId NOT NULL, so every fixture user needs a real id — the system
+// roles are always seeded by jest-global-setup.js, so this throws (rather
+// than falling back to null) if that invariant is ever broken.
+async function systemRoleId(key: string): Promise<number> {
+  const role = await prisma.clinicRole.findFirstOrThrow({ where: { key, tenantId: null } })
+  return role.id
 }
 
 beforeAll(async () => {
@@ -73,10 +76,10 @@ beforeAll(async () => {
   const passwordHash = await bcrypt.hash(PASSWORD, 4)
   await prisma.user.createMany({
     data: [
-      { tenantId: tid,  branchId: branch1.id, name: 'Admin RG',  username: 'admin_rg',  email: 'admin@rg.test',  passwordHash, role: 'admin',  roleId: adminRoleId },
-      { tenantId: tid,  branchId: branch1.id, name: 'Doctor RG', username: 'doctor_rg', email: 'doctor@rg.test', passwordHash, role: 'doctor', roleId: doctorRoleId },
-      { tenantId: tid,  branchId: branch1.id, name: 'Staff RG',  username: 'staff_rg',  email: 'staff@rg.test',  passwordHash, role: 'staff',  roleId: staffRoleId },
-      { tenantId: tid2, branchId: branch2.id, name: 'Admin RG2', username: 'admin_rg2', email: 'admin@rg2.test', passwordHash, role: 'admin',  roleId: adminRoleId },
+      { tenantId: tid,  branchId: branch1.id, name: 'Admin RG',  username: 'admin_rg',  email: 'admin@rg.test',  passwordHash, roleId: adminRoleId },
+      { tenantId: tid,  branchId: branch1.id, name: 'Doctor RG', username: 'doctor_rg', email: 'doctor@rg.test', passwordHash, roleId: doctorRoleId },
+      { tenantId: tid,  branchId: branch1.id, name: 'Staff RG',  username: 'staff_rg',  email: 'staff@rg.test',  passwordHash, roleId: staffRoleId },
+      { tenantId: tid2, branchId: branch2.id, name: 'Admin RG2', username: 'admin_rg2', email: 'admin@rg2.test', passwordHash, roleId: adminRoleId },
     ],
   })
 

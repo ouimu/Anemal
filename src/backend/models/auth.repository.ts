@@ -18,11 +18,17 @@ export function findUserByTenantEmail(tenantId: number, email: string) {
  * @param username - The user's login handle (3-20 chars, alphanumeric + underscore).
  */
 export function findUserByTenantUsername(tenantId: number, username: string) {
-  return prisma.user.findUnique({ where: { tenantId_username: { tenantId, username } } })
+  return prisma.user.findUnique({
+    where: { tenantId_username: { tenantId, username } },
+    include: { roleRef: { select: { key: true } } },
+  })
 }
 
 export function findUserById(tenantId: number, userId: number) {
-  return prisma.user.findFirst({ where: { id: userId, tenantId } })
+  return prisma.user.findFirst({
+    where: { id: userId, tenantId },
+    include: { roleRef: { select: { key: true } } },
+  })
 }
 
 export function findBranchById(tenantId: number, branchId: number) {

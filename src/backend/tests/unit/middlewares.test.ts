@@ -1,7 +1,6 @@
-// @qa-agent — Unit tests: authMiddleware + rbacMiddleware (RBAC matrix)
+// @qa-agent — Unit tests: authMiddleware
 import { Request, Response, NextFunction } from 'express'
 import { authMiddleware } from '../../middlewares/auth.middleware'
-import { rbacMiddleware } from '../../middlewares/rbac.middleware'
 import * as jwtConfig from '../../config/jwt'
 
 jest.mock('../../config/jwt')
@@ -44,43 +43,5 @@ describe('authMiddleware', () => {
     await authMiddleware(req, res, next)
     expect((req as any).context).toEqual(platformPayload)
     expect(next).toHaveBeenCalled()
-  })
-})
-
-describe('rbacMiddleware — RBAC matrix', () => {
-  function reqWithRole(role: string) {
-    return { context: { userId: 1, tenantId: 1, plane: 'clinic' as const, permSetVersion: 1, role } } as unknown as Request
-  }
-
-  it('allows admin to admin-only route', () => {
-    const next = mockNext()
-    rbacMiddleware(['admin'])(reqWithRole('admin'), mockRes(), next)
-    expect(next).toHaveBeenCalled()
-  })
-
-  it('blocks doctor from admin-only route → 403', () => {
-    const res = mockRes(); const next = mockNext()
-    rbacMiddleware(['admin'])(reqWithRole('doctor'), res, next)
-    expect(res.status).toHaveBeenCalledWith(403)
-    expect(next).not.toHaveBeenCalled()
-  })
-
-  it('blocks staff from admin-only route → 403', () => {
-    const res = mockRes(); const next = mockNext()
-    rbacMiddleware(['admin'])(reqWithRole('staff'), res, next)
-    expect(res.status).toHaveBeenCalledWith(403)
-  })
-
-  it('allows doctor to doctor+admin route', () => {
-    const next = mockNext()
-    rbacMiddleware(['admin', 'doctor'])(reqWithRole('doctor'), mockRes(), next)
-    expect(next).toHaveBeenCalled()
-  })
-
-  it('returns 401 when no context on request', () => {
-    const req = {} as Request
-    const res = mockRes(); const next = mockNext()
-    rbacMiddleware(['admin'])(req, res, next)
-    expect(res.status).toHaveBeenCalledWith(401)
   })
 })

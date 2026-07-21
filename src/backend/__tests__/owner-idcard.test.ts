@@ -91,8 +91,9 @@ describe('Owner idCardNumber uniqueness (tenant-scoped)', () => {
     const tA = await prisma.tenant.create({ data: { name: 'Owner IDC A', subdomain: SUB_A } })
     const tB = await prisma.tenant.create({ data: { name: 'Owner IDC B', subdomain: SUB_B } })
     tidA = tA.id; tidB = tB.id
-    const uA = await prisma.user.create({ data: { tenantId: tidA, name: 'Admin A', username: `oidc_a_${ts % 100000}`, email: `oidc-a-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
-    const uB = await prisma.user.create({ data: { tenantId: tidB, name: 'Admin B', username: `oidc_b_${ts % 100000}`, email: `oidc-b-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
+    const adminRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
+    const uA = await prisma.user.create({ data: { tenantId: tidA, name: 'Admin A', username: `oidc_a_${ts % 100000}`, email: `oidc-a-${ts}@t.local`, passwordHash: hash, roleId: adminRole.id } })
+    const uB = await prisma.user.create({ data: { tenantId: tidB, name: 'Admin B', username: `oidc_b_${ts % 100000}`, email: `oidc-b-${ts}@t.local`, passwordHash: hash, roleId: adminRole.id } })
     const bA = await prisma.branch.create({ data: { tenantId: tidA, name: 'Main' } })
     const bB = await prisma.branch.create({ data: { tenantId: tidB, name: 'Main' } })
     tokenA = signToken({ userId: uA.id, tenantId: tidA, branchId: bA.id, plane: 'clinic', permSetVersion: 1, role: 'admin' })

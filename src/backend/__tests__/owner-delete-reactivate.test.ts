@@ -24,9 +24,13 @@ beforeAll(async () => {
   const tA = await prisma.tenant.create({ data: { name: 'Owner Del A', subdomain: SUB_A } })
   const tB = await prisma.tenant.create({ data: { name: 'Owner Del B', subdomain: SUB_B } })
   tidA = tA.id; tidB = tB.id
-  const adminA = await prisma.user.create({ data: { tenantId: tidA, name: 'Admin A', username: `odel_adm_a_${ts % 100000}`, email: `odel-adm-a-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
-  const staffA = await prisma.user.create({ data: { tenantId: tidA, name: 'Staff A', username: `odel_stf_a_${ts % 100000}`, email: `odel-stf-a-${ts}@t.local`, passwordHash: hash, role: 'staff' } })
-  const adminB = await prisma.user.create({ data: { tenantId: tidB, name: 'Admin B', username: `odel_adm_b_${ts % 100000}`, email: `odel-adm-b-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
+  const [adminRole, staffRole] = await Promise.all([
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } }),
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } }),
+  ])
+  const adminA = await prisma.user.create({ data: { tenantId: tidA, name: 'Admin A', username: `odel_adm_a_${ts % 100000}`, email: `odel-adm-a-${ts}@t.local`, passwordHash: hash, roleId: adminRole.id } })
+  const staffA = await prisma.user.create({ data: { tenantId: tidA, name: 'Staff A', username: `odel_stf_a_${ts % 100000}`, email: `odel-stf-a-${ts}@t.local`, passwordHash: hash, roleId: staffRole.id } })
+  const adminB = await prisma.user.create({ data: { tenantId: tidB, name: 'Admin B', username: `odel_adm_b_${ts % 100000}`, email: `odel-adm-b-${ts}@t.local`, passwordHash: hash, roleId: adminRole.id } })
   const bA = await prisma.branch.create({ data: { tenantId: tidA, name: 'Main' } })
   const bB = await prisma.branch.create({ data: { tenantId: tidB, name: 'Main' } })
   tokenAdminA = signToken({ userId: adminA.id, tenantId: tidA, branchId: bA.id, plane: 'clinic', permSetVersion: 1, role: 'admin' })

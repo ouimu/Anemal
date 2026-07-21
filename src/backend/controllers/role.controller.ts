@@ -30,10 +30,6 @@ export const updateRolePermsSchema = z.object({
   remove: z.array(z.string().min(1)).default([]),
 }).strict()
 
-export const assignUserRoleSchema = z.object({
-  roleId: z.number().int().positive(),
-}).strict()
-
 // ---------------------------------------------------------------------------
 // Handlers
 // ---------------------------------------------------------------------------
@@ -123,32 +119,6 @@ export async function deleteRole(
 }
 
 /**
- * POST /clinic/roles/users/:userId/roles
- * Assign a role to a user (no escalation check).
- */
-export async function assignRoleToUser(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> {
-  try {
-    const { roleId }     = assignUserRoleSchema.parse(req.body)
-    const targetUserId   = Number(req.params.userId)
-    const callerPerms    = await resolvePermissions(
-      req.context!.userId,
-      req.context!.tenantId,
-    )
-    await roleService.assignRoleToUser(
-      req.context!.tenantId,
-      targetUserId,
-      roleId,
-      callerPerms,
-    )
-    res.status(201).json({ success: true, data: { message: 'Role assigned' } })
-  } catch (err) { next(err) }
-}
-
-/**
  * GET /clinic/permissions
  * Returns all permission codes grouped by module. Used by the role editor UI
  * to populate the permission toggle list.
@@ -169,23 +139,3 @@ export async function listPermissions(
   } catch (err) { next(err) }
 }
 
-/**
- * DELETE /clinic/roles/users/:userId/roles/:roleId
- * Remove a role from a user; 409 if it would be the last role.
- */
-export async function removeRoleFromUser(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> {
-  try {
-    const targetUserId = Number(req.params.userId)
-    const roleId       = Number(req.params.roleId)
-    await roleService.removeRoleFromUser(
-      req.context!.tenantId,
-      targetUserId,
-      roleId,
-    )
-    res.json({ success: true, data: { message: 'Role removed' } })
-  } catch (err) { next(err) }
-}

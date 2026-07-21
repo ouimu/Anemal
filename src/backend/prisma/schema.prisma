@@ -142,9 +142,9 @@ model User {
   // Session D-1: phone added as optional contact channel
   phone               String?    @db.VarChar(20)
   passwordHash        String     @db.VarChar(255)
-  role                LegacyRole
-  // Phase 8 (5-A): FK to new roles table; nullable during migration; legacy role string kept until 5-C
-  roleId              Int?
+  // Phase 8 (5-A): FK to roles table. NOT NULL as of ADR-0019 (D-7) — every user
+  // has exactly one role; the legacy `role` string column has been retired.
+  roleId              Int
   isActive            Boolean    @default(true)
   allowedStartTime    String?    @db.VarChar(5) // "HH:MM" login window start (Phase 4)
   allowedEndTime      String?    @db.VarChar(5) // "HH:MM" login window end
@@ -175,16 +175,8 @@ model User {
   @@unique([tenantId, username])
   @@index([tenantId])
   @@index([tenantId, branchId])
+  @@index([roleId])
   @@map("users")
-}
-
-// Legacy role enum — superadmin removed in T-5C-03 (migrated to platform_users)
-enum LegacyRole {
-  admin
-  doctor
-  staff
-
-  @@map("Role")
 }
 
 // Platform-global settings — NOT tenant-scoped; super-admin only (Phase 1.5)

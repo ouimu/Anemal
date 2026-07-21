@@ -16,11 +16,21 @@ import * as userRepo from '../../models/user.repository'
 
 let tid = 0
 
+let staffRoleId = 0
+let adminRoleId = 0
+
 beforeAll(async () => {
   const tenant = await prisma.tenant.create({
     data: { name: 'UserRepo Unit Test', subdomain: `userrepo-unit-${Date.now()}` },
   })
   tid = tenant.id
+
+  const [staffRole, adminRole] = await Promise.all([
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } }),
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } }),
+  ])
+  staffRoleId = staffRole.id
+  adminRoleId = adminRole.id
 })
 
 afterAll(async () => {
@@ -37,7 +47,7 @@ describe('getUserBranches', () => {
     const user = await prisma.user.create({
       data: {
         tenantId: tid, name: 'Repo Test User', username: 'ub_test_1',
-        email: `repo-test-${Date.now()}@example.com`, passwordHash: 'x', role: 'staff', isActive: true,
+        email: `repo-test-${Date.now()}@example.com`, passwordHash: 'x', roleId: staffRoleId, isActive: true,
       },
     })
 
@@ -57,7 +67,7 @@ describe('replaceUserBranches', () => {
     const user = await prisma.user.create({
       data: {
         tenantId: tid, name: 'Repo Test User 2', username: 'ub_test_2',
-        email: `repo-test2-${Date.now()}@example.com`, passwordHash: 'x', role: 'staff', isActive: true,
+        email: `repo-test2-${Date.now()}@example.com`, passwordHash: 'x', roleId: staffRoleId, isActive: true,
       },
     })
     const branchA = await prisma.branch.create({ data: { tenantId: tid, name: '__test_branchA__', isActive: true } })
@@ -79,13 +89,13 @@ describe('findPrimaryAdminId', () => {
     const admin1 = await prisma.user.create({
       data: {
         tenantId: tid, name: 'Primary Admin', username: `pa_${Date.now()}`,
-        email: `pa-${Date.now()}@example.com`, passwordHash: 'x', role: 'admin', isActive: true,
+        email: `pa-${Date.now()}@example.com`, passwordHash: 'x', roleId: adminRoleId, isActive: true,
       },
     })
     const admin2 = await prisma.user.create({
       data: {
         tenantId: tid, name: 'Second Admin', username: `sa_${Date.now()}`,
-        email: `sa-${Date.now()}@example.com`, passwordHash: 'x', role: 'admin', isActive: true,
+        email: `sa-${Date.now()}@example.com`, passwordHash: 'x', roleId: adminRoleId, isActive: true,
       },
     })
     const result = await userRepo.findPrimaryAdminId(tid)
@@ -113,7 +123,7 @@ describe('findPrimaryAdminId', () => {
       const foreignAdmin = await prisma.user.create({
         data: {
           tenantId: otherTenant.id, name: 'Foreign Admin', username: `fa_${Date.now()}`,
-          email: `fa-${Date.now()}@example.com`, passwordHash: 'x', role: 'admin', isActive: true,
+          email: `fa-${Date.now()}@example.com`, passwordHash: 'x', roleId: adminRoleId, isActive: true,
         },
       })
       const resultForThisTenant = await userRepo.findPrimaryAdminId(tid)

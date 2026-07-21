@@ -23,6 +23,8 @@ let primaryAdminId = 0
 let admin2Id = 0
 let staffId = 0
 let branchId = 0
+let adminRoleId = 0
+let staffRoleId = 0
 
 async function login(username: string): Promise<string> {
   const step1 = await request(server)
@@ -52,13 +54,15 @@ beforeAll(async () => {
     prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } }),
     prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } }),
   ])
+  adminRoleId = adminRole.id
+  staffRoleId = staffRole.id
 
   const passwordHash = await bcrypt.hash(PASSWORD, 4)
 
   const uAdmin = await prisma.user.create({
     data: {
       tenantId: tid, branchId, name: 'Primary Admin', username: 'primary_admin_t1',
-      email: 'primary@t1.test', passwordHash, role: 'admin', roleId: adminRole.id,
+      email: 'primary@t1.test', passwordHash, roleId: adminRole.id,
     },
   })
   primaryAdminId = uAdmin.id
@@ -67,7 +71,7 @@ beforeAll(async () => {
   const uAdmin2 = await prisma.user.create({
     data: {
       tenantId: tid, branchId, name: 'Second Admin', username: 'second_admin_t1',
-      email: 'second@t1.test', passwordHash, role: 'admin', roleId: adminRole.id,
+      email: 'second@t1.test', passwordHash, roleId: adminRole.id,
     },
   })
   admin2Id = uAdmin2.id
@@ -76,7 +80,7 @@ beforeAll(async () => {
   const uStaff = await prisma.user.create({
     data: {
       tenantId: tid, branchId, name: 'Staff T1', username: 'staff_t1',
-      email: 'staff@t1.test', passwordHash, role: 'staff', roleId: staffRole.id,
+      email: 'staff@t1.test', passwordHash, roleId: staffRole.id,
     },
   })
   staffId = uStaff.id
@@ -155,7 +159,7 @@ describe('PUT /users/:id — role change away from admin on primary admin', () =
     const res = await request(server)
       .put(`/users/${primaryAdminId}`)
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ role: 'staff' })
+      .send({ roleId: staffRoleId })
     expect(res.status).toBe(403)
     expect(res.body.error).toMatch(/Cannot change the primary clinic admin's role/)
   })
@@ -164,7 +168,7 @@ describe('PUT /users/:id — role change away from admin on primary admin', () =
     const res = await request(server)
       .put(`/users/${primaryAdminId}`)
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ role: 'admin' })
+      .send({ roleId: adminRoleId })
     expect(res.status).toBe(200)
   })
 })
@@ -237,5 +241,32 @@ describe('Tenant isolation', () => {
     } finally {
       await prisma.tenant.delete({ where: { id: otherTenant.id } })
     }
+  })
+})
+
+describe('PUT /users/:id — role-demotion guard covers custom roles too (ADR-0019/D-7)', () => {
+  it('blocks demoting the primary admin to a custom role cloned from Doctor', async () => {
+    const doctorSystemRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
+    const clonedDoctorRole = await prisma.clinicRole.create({
+      data: { tenantId: tid, key: `tenant_${tid}_senior_vet`, name: 'Senior Vet', isSystem: false, permVersion: 1, sourceRoleId: doctorSystemRole.id },
+    })
+
+    const res = await request(server)
+      .put(`/users/${primaryAdminId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ roleId: clonedDoctorRole.id })
+
+    expect(res.status).toBe(403)
+    expect(res.body.error).toMatch(/primary clinic admin/i)
+  })
+
+  it('allows demoting a non-primary admin-role user to Doctor', async () => {
+    const doctorRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
+    const res = await request(server)
+      .put(`/users/${admin2Id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ roleId: doctorRole.id })
+
+    expect(res.status).toBe(200)
   })
 })
