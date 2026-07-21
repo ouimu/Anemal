@@ -73,7 +73,7 @@ Authoritative detail in skills `anemal-rbac-matrix` and `anemal-platform-console
 | Module | FR IDs | Core Must items |
 |---|---|---|
 | Authorization (RBAC) | FR-14 | Permission catalogue `<module>.<action>`; system roles seeded; **configurable custom roles per clinic**; deny-by-default; `requirePermission` on every route; view vs edit separation |
-| Multi-role (RBAC) | FR-14b | A clinic user may hold **multiple roles**; effective permissions = union; **Clinic Admin assigns roles** (`staff.assign_role`, no escalation, ≥1 role). CR-01 |
+| Multi-role (RBAC) | ~~FR-14b~~ RETIRED 2026-07-20 | **Superseded by ADR-0019** — a clinic user holds exactly **one** role via `roleId`; combined access is achieved by cloning a role with the right permission mix (e.g. "Doctor + Accounting"), not by stacking roles. **Clinic Admin assigns the role** (`staff.assign_role`, no escalation — permissions of the assigned role must be ⊆ the assigner's own). See `docs/adr/0019-single-role-per-user-retires-multi-role.md`, `docs/superpowers/plans/2026-07-20-unify-user-role-assignment-plan-a-backend.md`, and `-plan-b-frontend.md`. |
 | Platform Console (SaaS) | FR-15 | Separate platform plane (`/platform/*`, `platform_users`, no tenant); customer (tenant) CRUD; **plan/package management**; **per-customer quotas** (max branches/staff/owners); per-tenant provisioning; platform settings; cross-tenant usage/audit |
 | Plan & Quota | FR-16 | `plans` + `tenant_quotas`; effective quota = override ?? plan; enforced at create-time → `409 QUOTA_EXCEEDED` |
 
