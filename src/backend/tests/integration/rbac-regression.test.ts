@@ -45,10 +45,13 @@ async function login(subdomain: string, username: string): Promise<string> {
   return step2.body.data.token as string
 }
 
-// Resolve a seeded system role id by key (tenantId IS NULL). Returns null if not seeded.
-async function systemRoleId(key: string): Promise<number | null> {
-  const role = await prisma.clinicRole.findFirst({ where: { key, tenantId: null } })
-  return role?.id ?? null
+// Resolve a seeded system role id by key (tenantId IS NULL). ADR-0019 made
+// User.roleId NOT NULL, so every fixture user needs a real id — the system
+// roles are always seeded by jest-global-setup.js, so this throws (rather
+// than falling back to null) if that invariant is ever broken.
+async function systemRoleId(key: string): Promise<number> {
+  const role = await prisma.clinicRole.findFirstOrThrow({ where: { key, tenantId: null } })
+  return role.id
 }
 
 beforeAll(async () => {
