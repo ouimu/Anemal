@@ -23,6 +23,8 @@ import {
 export interface RoleDto {
   id:                 number
   name:               string
+  /** Stable role key (e.g. 'clinic_admin', 'doctor'). Additive — Task 11, consumed by Plan B. */
+  key:                string
   isSystem:           boolean
   tenantId:           number | null
   permVersion:        number
@@ -35,6 +37,7 @@ export interface RoleDto {
 function toDto(role: {
   id:          number
   name:        string
+  key:         string
   isSystem:    boolean
   tenantId:    number | null
   permVersion: number
@@ -43,6 +46,7 @@ function toDto(role: {
   return {
     id:          role.id,
     name:        role.name,
+    key:         role.key,
     isSystem:    role.isSystem,
     tenantId:    role.tenantId,
     permVersion: role.permVersion,

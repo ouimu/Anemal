@@ -178,6 +178,16 @@ describe('GET /clinic/roles', () => {
     }
   })
 
+  it('includes each role\'s key (additive; consumed by Plan B)', async () => {
+    const res = await request(server)
+      .get('/clinic/roles')
+      .set('Authorization', `Bearer ${adminToken}`)
+
+    expect(res.status).toBe(200)
+    const adminRow = res.body.data.find((r: { name: string }) => r.name === 'Clinic Admin')
+    expect(adminRow.key).toBe('clinic_admin')
+  })
+
   it('doctor: receives 403 (lacks roles.manage)', async () => {
     const res = await request(server)
       .get('/clinic/roles')
