@@ -20,6 +20,8 @@ export const clinicProfileSchema = z.object({
   email:   z.string().email().optional().or(z.literal('')),
   taxId:   z.string().trim().max(50).optional(),
   website: z.string().trim().max(255).optional(),
+  vatMode: z.enum(['none', 'exclusive', 'inclusive']).optional(),
+  vatRate: z.number().min(0).max(100).optional(),
 }).strict()
 
 export const notificationsSchema = z.object({

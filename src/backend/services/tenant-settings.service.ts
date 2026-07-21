@@ -33,6 +33,8 @@ export interface TenantSettingsInput {
   gbprimepaySecret?:    string
   labApiUrl?:           string
   labApiKey?:           string
+  vatMode?:             string
+  vatRate?:             number
 }
 
 export const SECRET_FIELDS = ['lineOaToken', 'smsApiKey', 'gbprimepaySecret', 'labApiKey'] as const
