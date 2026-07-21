@@ -74,13 +74,13 @@ beforeAll(async () => {
 
   const [uAdminA, uStaffA, uAdminB] = await Promise.all([
     prisma.user.create({
-      data: { tenantId: tidA, branchId: a.branchId, name: 'Admin A', username: 'admin_re_a', email: 'admin@a.test', passwordHash, role: 'admin', roleId: adminRole.id },
+      data: { tenantId: tidA, branchId: a.branchId, name: 'Admin A', username: 'admin_re_a', email: 'admin@a.test', passwordHash, roleId: adminRole.id },
     }),
     prisma.user.create({
-      data: { tenantId: tidA, branchId: a.branchId, name: 'Staff A', username: 'staff_re_a', email: 'staff@a.test', passwordHash, role: 'staff', roleId: staffRole.id },
+      data: { tenantId: tidA, branchId: a.branchId, name: 'Staff A', username: 'staff_re_a', email: 'staff@a.test', passwordHash, roleId: staffRole.id },
     }),
     prisma.user.create({
-      data: { tenantId: tidB, branchId: b.branchId, name: 'Admin B', username: 'admin_re_b', email: 'admin@b.test', passwordHash, role: 'admin', roleId: adminRole.id },
+      data: { tenantId: tidB, branchId: b.branchId, name: 'Admin B', username: 'admin_re_b', email: 'admin@b.test', passwordHash, roleId: adminRole.id },
     }),
   ])
   adminUserIdA = uAdminA.id

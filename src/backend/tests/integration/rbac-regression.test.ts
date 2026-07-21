@@ -73,10 +73,10 @@ beforeAll(async () => {
   const passwordHash = await bcrypt.hash(PASSWORD, 4)
   await prisma.user.createMany({
     data: [
-      { tenantId: tid,  branchId: branch1.id, name: 'Admin RG',  username: 'admin_rg',  email: 'admin@rg.test',  passwordHash, role: 'admin',  roleId: adminRoleId },
-      { tenantId: tid,  branchId: branch1.id, name: 'Doctor RG', username: 'doctor_rg', email: 'doctor@rg.test', passwordHash, role: 'doctor', roleId: doctorRoleId },
-      { tenantId: tid,  branchId: branch1.id, name: 'Staff RG',  username: 'staff_rg',  email: 'staff@rg.test',  passwordHash, role: 'staff',  roleId: staffRoleId },
-      { tenantId: tid2, branchId: branch2.id, name: 'Admin RG2', username: 'admin_rg2', email: 'admin@rg2.test', passwordHash, role: 'admin',  roleId: adminRoleId },
+      { tenantId: tid,  branchId: branch1.id, name: 'Admin RG',  username: 'admin_rg',  email: 'admin@rg.test',  passwordHash, roleId: adminRoleId },
+      { tenantId: tid,  branchId: branch1.id, name: 'Doctor RG', username: 'doctor_rg', email: 'doctor@rg.test', passwordHash, roleId: doctorRoleId },
+      { tenantId: tid,  branchId: branch1.id, name: 'Staff RG',  username: 'staff_rg',  email: 'staff@rg.test',  passwordHash, roleId: staffRoleId },
+      { tenantId: tid2, branchId: branch2.id, name: 'Admin RG2', username: 'admin_rg2', email: 'admin@rg2.test', passwordHash, roleId: adminRoleId },
     ],
   })
 

@@ -128,11 +128,16 @@ beforeAll(async () => {
   const branch = await prisma.branch.create({ data: { tenantId: tid, name: 'RRM Main' } })
 
   const passwordHash = await bcrypt.hash(PASSWORD, 4)
+  const [adminRole, doctorRole, staffRole] = await Promise.all([
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } }),
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor',       tenantId: null } }),
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } }),
+  ])
   await prisma.user.createMany({
     data: [
-      { tenantId: tid, branchId: branch.id, name: 'Admin RRM',  username: 'admin_rrm',  email: 'admin@rrm.test',  passwordHash, role: 'admin' },
-      { tenantId: tid, branchId: branch.id, name: 'Doctor RRM', username: 'doctor_rrm', email: 'doctor@rrm.test', passwordHash, role: 'doctor' },
-      { tenantId: tid, branchId: branch.id, name: 'Staff RRM',  username: 'staff_rrm',  email: 'staff@rrm.test',  passwordHash, role: 'staff' },
+      { tenantId: tid, branchId: branch.id, name: 'Admin RRM',  username: 'admin_rrm',  email: 'admin@rrm.test',  passwordHash, roleId: adminRole.id },
+      { tenantId: tid, branchId: branch.id, name: 'Doctor RRM', username: 'doctor_rrm', email: 'doctor@rrm.test', passwordHash, roleId: doctorRole.id },
+      { tenantId: tid, branchId: branch.id, name: 'Staff RRM',  username: 'staff_rrm',  email: 'staff@rrm.test',  passwordHash, roleId: staffRole.id },
     ],
   })
   const [uAdmin, uDoctor, uStaff] = await Promise.all([
