@@ -38,7 +38,13 @@ export async function handleUpdateMedicalRecord(req: Request, res: Response, nex
 
 export async function handleAddAttachment(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await addAttachment(req.context!.tenantId, req.context?.branchId, parseInt(req.params.id), req.body)
+    const data = await addAttachment(
+      req.context!.tenantId,
+      req.context?.branchId,
+      parseInt(req.params.id),
+      req.body,
+      req.context!.userId,
+    )
     res.status(201).json({ success: true, data })
   } catch (err) { next(err) }
 }
