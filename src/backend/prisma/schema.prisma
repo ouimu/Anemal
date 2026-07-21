@@ -121,6 +121,9 @@ model TenantSettings {
   // Phase 1.5 — Lab integration (labApiKey encrypted)
   labApiUrl            String?  @db.VarChar(500)
   labApiKey            String?
+  // Billing VAT Configuration (ADR-0020) — tenant-wide, admin-editable
+  vatMode              String   @default("exclusive") @db.VarChar(20) // 'none' | 'exclusive' | 'inclusive'
+  vatRate              Decimal  @default(7) @db.Decimal(5, 2)
   updatedBy            Int?
   updatedAt            DateTime @updatedAt
 
