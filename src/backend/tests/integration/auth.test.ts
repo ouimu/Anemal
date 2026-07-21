@@ -2,6 +2,7 @@
 import request from 'supertest'
 import { Server } from 'http'
 import app from '../../app'
+import prisma from '../../config/db'
 
 // Admin users bypass branch selection and receive a full JWT directly.
 const ADMIN_A  = { subdomain: 'dev-clinic',  username: 'admin_a',  password: 'AdminPass1!' }
@@ -212,5 +213,41 @@ describe('POST /auth/switch-branch — null support', () => {
       .send({ branchId: null })
 
     expect(res.status).toBe(403)
+  })
+})
+
+describe('POST /auth/login — legacy role-claim mapping for custom roles (ADR-0019/D-8)', () => {
+  it('a custom-role user cloned from Doctor logs in with mapped claim "staff" and routes non-admin', async () => {
+    const staffUser = await prisma.user.findFirstOrThrow({
+      where: { username: STAFF_A.username },
+      include: { tenant: true },
+    })
+    const doctorSystemRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
+    const clonedRole = await prisma.clinicRole.create({
+      data: {
+        tenantId: staffUser.tenantId, key: `tenant_${staffUser.tenantId}_senior_vet_auth_${Date.now()}`,
+        name: 'Senior Vet', isSystem: false, permVersion: 1, sourceRoleId: doctorSystemRole.id,
+      },
+    })
+
+    await prisma.user.update({ where: { id: staffUser.id }, data: { roleId: clonedRole.id } })
+    await prisma.userRole.deleteMany({ where: { userId: staffUser.id } })
+    await prisma.userRole.create({ data: { userId: staffUser.id, roleId: clonedRole.id, tenantId: staffUser.tenantId } })
+
+    try {
+      const res = await request(server).post('/auth/login').send(STAFF_A)
+      expect(res.status).toBe(200)
+      expect(res.body.data.requiresBranchSelection).toBe(true)
+      const [, b64] = (res.body.data.pendingToken as string).split('.')
+      const decoded = JSON.parse(Buffer.from(b64, 'base64').toString())
+      expect(decoded.role).toBe('staff')
+    } finally {
+      // Restore original role so later tests in this file (and this suite's own
+      // earlier describe blocks, if re-run) keep seeing STAFF_A as a system-staff user.
+      await prisma.userRole.deleteMany({ where: { userId: staffUser.id } })
+      await prisma.userRole.create({ data: { userId: staffUser.id, roleId: staffUser.roleId, tenantId: staffUser.tenantId } })
+      await prisma.user.update({ where: { id: staffUser.id }, data: { roleId: staffUser.roleId } })
+      await prisma.clinicRole.delete({ where: { id: clonedRole.id } })
+    }
   })
 })
