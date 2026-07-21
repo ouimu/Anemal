@@ -1,6 +1,7 @@
 ---
 name: dev-agent
 model: sonnet
+effort: medium
 description: >
   Full-stack implementer for Anemal. Use to write backend (Route→Controller→Service→Repository) and
   React frontend in TypeScript strict, following the layered architecture, coding rules, and design

@@ -1,6 +1,7 @@
 ---
 name: pm-agent
 model: sonnet
+effort: medium
 description: >
   Product & Requirement Manager for Anemal. Use to control scope, validate a feature against real
   veterinary-clinic workflows, and break a validated requirement into atomic, developer-ready tasks
