@@ -346,12 +346,22 @@ describe('user-1.5 — Concurrent edge cases', () => {
 // T-URA-2.1 — userService.createUser/updateUser now take roleId directly;
 // safe() keeps UserResponse.role as a legacy string (Plan A constraint).
 describe('user-1.5 — roleId-based create/update (ADR-0019/D-7)', () => {
+  let fullPerms: Set<string>
+
+  beforeAll(async () => {
+    const adminRoleWithPerms = await prisma.clinicRole.findFirstOrThrow({
+      where: { key: 'clinic_admin', tenantId: null },
+      include: { permissions: true },
+    })
+    fullPerms = new Set([...adminRoleWithPerms.permissions.map(p => p.permissionCode), 'staff.assign_role'])
+  })
+
   test('createUser accepts roleId and persists the correct role FK, role stays a string in the response', async () => {
     const doctorRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
     const created = await userService.createUser(tenantId, {
       name: 'New Doctor', username: `new_doctor_ura_${Date.now() % 100000}`, email: `newdoc-ura-${Date.now()}@test.com`,
       password: 'TestPass1!', roleId: doctorRole.id,
-    })
+    }, fullPerms, true)
     expect(created.role).toBe('doctor')
     const dbUser = await prisma.user.findUniqueOrThrow({ where: { id: created.id } })
     expect(dbUser.roleId).toBe(doctorRole.id)
@@ -361,7 +371,7 @@ describe('user-1.5 — roleId-based create/update (ADR-0019/D-7)', () => {
     await expect(userService.createUser(tenantId, {
       name: 'Bad', username: `bad_role_ura_${Date.now() % 100000}`, email: `bad-ura-${Date.now()}@test.com`,
       password: 'TestPass1!', roleId: 999999,
-    })).rejects.toMatchObject({ statusCode: 400 })
+    }, fullPerms, true)).rejects.toMatchObject({ statusCode: 400 })
   })
 
   test('updateUser accepts roleId and replaces the user role, response role stays a string', async () => {
@@ -370,8 +380,11 @@ describe('user-1.5 — roleId-based create/update (ADR-0019/D-7)', () => {
     const user = await userService.createUser(tenantId, {
       name: 'Switchable', username: `switchable_ura_${Date.now() % 100000}`, email: `sw-ura-${Date.now()}@test.com`,
       password: 'TestPass1!', roleId: staffRole.id,
-    })
-    const updated = await userService.updateUser(tenantId, user.id, { roleId: doctorRole.id })
+    }, fullPerms, true)
+    const updated = await userService.updateUser(
+      tenantId, user.id, { roleId: doctorRole.id },
+      fullPerms, true,
+    )
     expect(updated.role).toBe('doctor')
   })
 
@@ -382,12 +395,73 @@ describe('user-1.5 — roleId-based create/update (ADR-0019/D-7)', () => {
     const created = await userService.createUser(tenantId, {
       name: 'Custom Role User', username: `cr_ura6_${Date.now() % 100000}`, email: `cr-ura-${Date.now()}@test.com`,
       password: 'TestPass1!', roleId: customRole.id,
-    })
+    }, fullPerms, true)
     expect(created.role).toBe('staff')
   })
 
   test('LEGACY_ROLE_TO_SYSTEM_KEY no longer exists in user.service.ts', () => {
     const source = require('fs').readFileSync(require.resolve('../services/user.service.ts'), 'utf8')
     expect(source).not.toContain('LEGACY_ROLE_TO_SYSTEM_KEY')
+  })
+
+  test('rejects a roleId change from a caller lacking staff.assign_role', async () => {
+    const doctorRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
+    const target = await userService.createUser(tenantId, {
+      name: 'Target', username: `tgt1_${Date.now() % 100000}`, email: `t-gate-${Date.now()}@test.com`,
+      password: 'TestPass1!', roleId: doctorRole.id,
+    }, fullPerms, true)
+
+    await expect(userService.updateUser(
+      tenantId, target.id, { roleId: doctorRole.id },
+      new Set(['staff.manage']), false,
+    )).rejects.toMatchObject({ statusCode: 403 })
+  })
+
+  test('allows a name-only edit without staff.assign_role', async () => {
+    const doctorRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
+    const target = await userService.createUser(tenantId, {
+      name: 'Target2', username: `tgt2_${Date.now() % 100000}`, email: `t2-gate-${Date.now()}@test.com`,
+      password: 'TestPass1!', roleId: doctorRole.id,
+    }, fullPerms, true)
+
+    const updated = await userService.updateUser(
+      tenantId, target.id, { name: 'Renamed' },
+      new Set(['staff.manage']), false,
+    )
+    expect(updated.name).toBe('Renamed')
+  })
+
+  test('rejects assigning a role whose permissions exceed the caller\'s own', async () => {
+    const adminRole  = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
+    const doctorRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
+    const target = await userService.createUser(tenantId, {
+      name: 'Target3', username: `tgt3_${Date.now() % 100000}`, email: `t3-gate-${Date.now()}@test.com`,
+      password: 'TestPass1!', roleId: doctorRole.id,
+    }, fullPerms, true)
+
+    await expect(userService.updateUser(
+      tenantId, target.id, { roleId: adminRole.id },
+      new Set(['staff.manage', 'staff.view', 'staff.assign_role']),
+      true,
+    )).rejects.toMatchObject({ statusCode: 403 })
+  })
+
+  test('allows a clinic_admin-level caller to assign any role within their permission set', async () => {
+    const doctorRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
+    const adminRoleWithPerms = await prisma.clinicRole.findFirstOrThrow({
+      where: { key: 'clinic_admin', tenantId: null },
+      include: { permissions: true },
+    })
+    const target = await userService.createUser(tenantId, {
+      name: 'Target4', username: `tgt4_${Date.now() % 100000}`, email: `t4-gate-${Date.now()}@test.com`,
+      password: 'TestPass1!', roleId: doctorRole.id,
+    }, fullPerms, true)
+
+    const fullAdminPerms = new Set([...adminRoleWithPerms.permissions.map(p => p.permissionCode), 'staff.assign_role'])
+    const updated = await userService.updateUser(
+      tenantId, target.id, { roleId: adminRoleWithPerms.id },
+      fullAdminPerms, true,
+    )
+    expect(updated.role).toBe('admin')
   })
 })

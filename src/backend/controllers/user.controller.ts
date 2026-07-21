@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import { z } from 'zod'
 import * as userService from '../services/user.service'
+import { resolvePermissions } from '../services/permission.service'
 
 /** Regex for username: 3-20 chars, letters/digits/underscores only. */
 const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/
@@ -54,14 +55,20 @@ export async function getUser(req: Request, res: Response, next: NextFunction): 
 
 export async function createUser(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await userService.createUser(req.context!.tenantId, req.body)
+    const callerPerms = await resolvePermissions(req.context!.userId, req.context!.tenantId)
+    const data = await userService.createUser(
+      req.context!.tenantId, req.body, callerPerms, callerPerms.has('staff.assign_role'),
+    )
     res.status(201).json({ success: true, data })
   } catch (err) { next(err) }
 }
 
 export async function updateUser(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await userService.updateUser(req.context!.tenantId, Number(req.params.id), req.body)
+    const callerPerms = await resolvePermissions(req.context!.userId, req.context!.tenantId)
+    const data = await userService.updateUser(
+      req.context!.tenantId, Number(req.params.id), req.body, callerPerms, callerPerms.has('staff.assign_role'),
+    )
     res.json({ success: true, data })
   } catch (err) { next(err) }
 }

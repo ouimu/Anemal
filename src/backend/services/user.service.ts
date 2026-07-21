@@ -94,7 +94,48 @@ export async function getUserById(tenantId: number, userId: number): Promise<Use
   return safe(user)
 }
 
-export async function createUser(tenantId: number, body: CreateUserRequest): Promise<UserResponse> {
+/**
+ * No-escalation guard (CORR-3/T-URA-2.7): the role being assigned must not
+ * hold a permission the caller doesn't already have — UNLESS the caller
+ * holds `roles.manage`.
+ *
+ * The `roles.manage` exemption is required, not optional: the BA sign-off's
+ * own CORR-3 acceptance test states plainly "the same assignment by a
+ * clinic_admin → 200". The actual seeded permission matrix
+ * (prisma/seed-rbac.ts) intentionally withholds several clinical-only codes
+ * from `clinic_admin` (e.g. `vaccination.create`, `emr.create`,
+ * `prescriptions.create` — segregation of clinical duties, not a privilege
+ * tier), so a literal subset check blocks `clinic_admin` from creating a
+ * `doctor` or `clinic_staff` user — a basic, previously-working admin
+ * action, and a regression this migration must not ship. A caller holding
+ * `roles.manage` can already edit any role's permission set directly, so a
+ * subset check is moot for them; exempting on that code (rather than
+ * hardcoding the `clinic_admin` key) keeps the rule general for any
+ * tenant-custom role a clinic later grants equivalent authority.
+ *
+ * @param roleRow     - The target role, with its permission codes.
+ * @param callerPerms - The caller's own resolved permission set.
+ */
+function assertNoRoleEscalation(
+  roleRow: { permissions: { permissionCode: string }[] },
+  callerPerms: Set<string>,
+): void {
+  if (callerPerms.has('roles.manage')) return
+
+  const escalations = roleRow.permissions
+    .map(p => p.permissionCode)
+    .filter(code => !callerPerms.has(code))
+  if (escalations.length > 0) {
+    throw new UserError(`Cannot assign a role whose permissions exceed your own: ${escalations.join(', ')}`, 403)
+  }
+}
+
+export async function createUser(
+  tenantId: number,
+  body: CreateUserRequest,
+  callerPerms: Set<string>,
+  hasAssignRole: boolean,
+): Promise<UserResponse> {
   // D-2-02: at least one contact method required
   if (!body.email && !body.phone) {
     throw new UserError('At least one contact (email or phone) is required', 422)
@@ -102,8 +143,14 @@ export async function createUser(tenantId: number, body: CreateUserRequest): Pro
 
   await subscriptionService.assertCanAddUser(tenantId)
 
+  if (!hasAssignRole) {
+    throw new UserError('Assigning a role requires the staff.assign_role permission', 403)
+  }
+
   const roleRow = await roleRepo.findRoleById(body.roleId)
   if (!roleRow) throw new UserError(`Unknown role: ${body.roleId}`, 400)
+
+  assertNoRoleEscalation(roleRow, callerPerms)
 
   const passwordHash = await bcrypt.hash(body.password, config.bcryptRounds)
   try {
@@ -128,7 +175,8 @@ export async function createUser(tenantId: number, body: CreateUserRequest): Pro
 }
 
 export async function updateUser(
-  tenantId: number, userId: number, body: UpdateUserRequest
+  tenantId: number, userId: number, body: UpdateUserRequest,
+  callerPerms: Set<string>, hasAssignRole: boolean,
 ): Promise<UserResponse> {
   const existing = await userRepo.findUserById(tenantId, userId)
   if (!existing) throw new UserError('User not found', 404)
@@ -142,8 +190,14 @@ export async function updateUser(
   }
 
   if (body.roleId !== undefined) {
+    if (!hasAssignRole) {
+      throw new UserError('Assigning a role requires the staff.assign_role permission', 403)
+    }
+
     const roleRow = await roleRepo.findRoleById(body.roleId)
     if (!roleRow) throw new UserError(`Unknown role: ${body.roleId}`, 400)
+
+    assertNoRoleEscalation(roleRow, callerPerms)
 
     await userRepo.replaceUserRole(tenantId, userId, roleRow.id)
   }
