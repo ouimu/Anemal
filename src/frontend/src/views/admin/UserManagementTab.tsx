@@ -1,47 +1,60 @@
-﻿// @uiux-agent spec: user list, role badges, add/edit/deactivate modal — 44px tap targets
+// @uiux-agent spec: user list, role badges, add/edit/deactivate modal — 44px tap targets
 import { useState, useEffect, type FormEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import { useAuthStore } from '../../store/authStore'
 import Can from '../../components/Can'
-import RolePicker from '../../components/roles/RolePicker'
-import { useUserRolesQuery } from '../../hooks/useUserRoles'
+import { useClinicRolesQuery, type Role as RoleOption } from '../../hooks/useUserRoles'
 import { useAdminSettings, useUpdateSettings } from '../../hooks/useAdmin'
 import { useT } from '../../i18n'
 import { describeSaveError } from '../../utils/errorMessages'
 import MaterialIcon from '../../components/MaterialIcon'
 import BranchSwitcher from '../../components/BranchSwitcher'
 
-interface User { id: number; name: string; username: string; email: string | null; role: string; isActive: boolean; createdAt: string; branchId: number | null }
+interface User {
+  id: number; name: string; username: string; email: string | null
+  role: { id: number; name: string; key: string; isSystem: boolean }
+  isPrimaryAdmin: boolean; isActive: boolean; createdAt: string; branchId: number | null
+}
 interface Branch { id: number; name: string }
 
 const ROLE_COLORS: Record<string, string> = {
-  admin:  'bg-error-container text-error-on-container',
-  doctor: 'bg-primary-fixed text-primary',
-  staff:  'bg-secondary-container text-secondary-on-container',
+  clinic_admin: 'bg-error-container text-error-on-container',
+  doctor:       'bg-primary-fixed text-primary',
+  clinic_staff: 'bg-secondary-container text-secondary-on-container',
 }
+const ROLE_COLOR_FALLBACK = 'bg-surface-container text-on-surface-variant'
 
 const INITIALS = (name: string) => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 const AVATAR_BG: Record<string, string> = {
-  admin: 'bg-error-container text-error-on-container', doctor: 'bg-primary-fixed text-primary', staff: 'bg-secondary-container text-secondary-on-container',
+  clinic_admin: 'bg-error-container text-error-on-container',
+  doctor:       'bg-primary-fixed text-primary',
+  clinic_staff: 'bg-secondary-container text-secondary-on-container',
+}
+const AVATAR_BG_FALLBACK = 'bg-surface-container text-on-surface-variant'
+
+/** Mirrors isGrantable/isAdminLevelRole formerly in RolePicker.tsx (deleted, Task 3). */
+function isGrantable(role: RoleOption, callerPermissions: ReadonlySet<string>): boolean {
+  return role.permissions.every((code) => callerPermissions.has(code))
+}
+function isAdminLevelRole(role: RoleOption): boolean {
+  return role.key === 'clinic_admin' || role.permissions.includes('staff.assign_role') || role.permissions.includes('staff.manage')
 }
 
 function Modal({ user, onClose, isPrimaryAdmin }: { user: Partial<User> & { isNew?: boolean }; onClose: () => void; isPrimaryAdmin: boolean }) {
   const t = useT()
   const qc = useQueryClient()
   const isNew = !!user.isNew
-  const editUserId = user.id ?? 0
-  const { data: userRolesData, refetch: refetchUserRoles } = useUserRolesQuery(isNew ? 0 : editUserId)
-  const userRoles = userRolesData ?? []
   const { data: branches = [] } = useQuery<Branch[]>({
     queryKey: ['admin', 'branches'],
     queryFn: () => api.get('/api/branches').then(r => r.data.data),
   })
   const [form, setForm] = useState({
     name: user.name ?? '', username: user.username ?? '', email: user.email ?? '',
-    role: user.role ?? 'staff', password: '', isActive: user.isActive ?? true,
+    roleId: user.role?.id ?? 0, password: '', isActive: user.isActive ?? true,
     branchIds: [] as number[],
   })
+  const [selfDemoteConfirm, setSelfDemoteConfirm] = useState<{ pendingRoleId: number } | null>(null)
 
   // Load the user's currently assigned branches when editing
   useEffect(() => {
@@ -53,14 +66,33 @@ function Modal({ user, onClose, isPrimaryAdmin }: { user: Partial<User> & { isNe
 
   const save = useMutation({
     mutationFn: () => isNew
-      ? api.post('/users', { name: form.name, username: form.username, email: form.email || undefined, password: form.password, role: form.role })
-      : api.put(`/users/${user.id}`, { name: form.name, role: form.role, isActive: form.isActive }),
+      ? api.post('/users', { name: form.name, username: form.username, email: form.email || undefined, password: form.password, roleId: form.roleId })
+      : api.put(`/users/${user.id}`, { name: form.name, roleId: form.roleId, isActive: form.isActive }),
     onSuccess: async (res) => {
       const uid = isNew ? (res.data as { data: { id: number } }).data.id : user.id!
       await api.patch(`/users/${uid}/branch`, { branchIds: form.branchIds }).catch(() => {})
       qc.invalidateQueries({ queryKey: ['admin', 'users'] }); onClose()
     },
   })
+
+  const { data: allRoles = [] } = useClinicRolesQuery()
+  const authPermissions = useAuthStore(s => s.permissions)
+  const hasAssignRole = useAuthStore(s => s.hasPermission('staff.assign_role'))
+  const callerPermSet = new Set(authPermissions)
+  const grantableRoles = allRoles.filter(r => isGrantable(r, callerPermSet))
+  const listableRoles = grantableRoles.filter(r => !(isNew && r.key === 'clinic_admin'))
+
+  function handleRoleChange(newRoleId: number) {
+    if (isSelf) {
+      const newRole = allRoles.find(r => r.id === newRoleId)
+      const currentRole = allRoles.find(r => r.id === form.roleId)
+      if (currentRole && isAdminLevelRole(currentRole) && newRole && !isAdminLevelRole(newRole)) {
+        setSelfDemoteConfirm({ pendingRoleId: newRoleId })
+        return
+      }
+    }
+    setForm(p => ({ ...p, roleId: newRoleId }))
+  }
 
   const currentUserId = useAuthStore(s => s.userId)
   const isSelf = !isNew && user.id === currentUserId
@@ -99,14 +131,41 @@ function Modal({ user, onClose, isPrimaryAdmin }: { user: Partial<User> & { isNe
             </>
           )}
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-on-surface-variant">{t('admin.users.role')}</label>
-            <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}
-              className="min-h-[44px] px-3 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 bg-surface">
-              <option value="doctor">{t('admin.users.doctor')}</option>
-              <option value="staff">{t('admin.users.staff')}</option>
-              {!isNew && <option value="admin">{t('admin.users.admin')}</option>}
-            </select>
+            <label htmlFor="user-role-select" className="text-xs text-on-surface-variant">{t('admin.users.role')}</label>
+            <Can perm="staff.assign_role">
+              <select
+                id="user-role-select"
+                aria-label={t('admin.users.role')}
+                value={form.roleId}
+                disabled={!hasAssignRole}
+                onChange={e => handleRoleChange(Number(e.target.value))}
+                className="min-h-[44px] px-3 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 bg-surface"
+              >
+                <option value={0} disabled>Select…</option>
+                {listableRoles.map(r => (
+                  <option key={r.id} value={r.id}>{r.name}</option>
+                ))}
+              </select>
+            </Can>
           </div>
+          {selfDemoteConfirm && (
+            <div role="dialog" aria-modal="true" className="fixed inset-0 z-[100] flex items-center justify-center bg-primary/30 p-4">
+              <div className="bg-surface rounded-xl shadow-xl w-full max-w-sm p-6 space-y-3">
+                <h3 className="text-sm font-semibold text-on-surface text-center">{t('roles.selfDemotionTitle')}</h3>
+                <p className="text-xs text-on-surface-variant text-center">{t('roles.selfDemotionDesc')}</p>
+                <div className="flex gap-2 pt-2">
+                  <button type="button" onClick={() => setSelfDemoteConfirm(null)}
+                    className="flex-1 min-h-[44px] border border-outline-variant rounded-lg text-xs font-semibold text-on-surface">
+                    {t('roles.keepRole')}
+                  </button>
+                  <button type="button" onClick={() => { setForm(p => ({ ...p, roleId: selfDemoteConfirm.pendingRoleId })); setSelfDemoteConfirm(null) }}
+                    className="flex-1 min-h-[44px] bg-error text-on-primary rounded-lg text-xs font-semibold">
+                    {t('roles.removeAnyway')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="flex flex-col gap-1">
             <label className="text-xs text-on-surface-variant">
               {t('admin.users.assignedBranches')}<span className="text-error"> *</span>
@@ -145,44 +204,33 @@ function Modal({ user, onClose, isPrimaryAdmin }: { user: Partial<User> & { isNe
             </label>
           )}
           {!isNew && (
-            <>
-              <hr className="border-outline-variant my-4" />
-              <Can perm="staff.assign_role">
-                <RolePicker
-                  userId={editUserId}
-                  currentRoles={userRoles}
-                  onRolesChanged={() => { void refetchUserRoles() }}
-                />
-              </Can>
-              <hr className="border-outline-variant my-4" />
-              <Can perm="staff.manage">
-                {isSelf ? (
-                  <p className="text-xs text-on-surface-variant">
-                    Change your own password in My Preferences (profile menu).
-                  </p>
-                ) : (
-                  <div className="flex flex-col gap-1">
-                    <label htmlFor="admin-reset-password" className="text-xs text-on-surface-variant">Reset password</label>
-                    <input
-                      id="admin-reset-password" type="password" autoComplete="new-password"
-                      value={resetPasswordValue}
-                      onChange={e => setResetPasswordValue(e.target.value)}
-                      className={inputCls}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => resetPw.mutate()}
-                      disabled={resetPw.isPending || resetPasswordValue.length === 0}
-                      className="min-h-[44px] px-4 self-start border border-outline-variant rounded-lg text-sm text-on-surface-variant hover:bg-surface-container-low disabled:opacity-50"
-                    >
-                      {resetPw.isPending ? 'Resetting…' : 'Reset password'}
-                    </button>
-                    {resetPw.isSuccess && <p className="text-xs text-secondary">Password reset.</p>}
-                    {resetPw.isError && <p className="text-xs text-error-on-container">{describeSaveError(resetPw.error)}</p>}
-                  </div>
-                )}
-              </Can>
-            </>
+            <Can perm="staff.manage">
+              {isSelf ? (
+                <p className="text-xs text-on-surface-variant">
+                  Change your own password in My Preferences (profile menu).
+                </p>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="admin-reset-password" className="text-xs text-on-surface-variant">Reset password</label>
+                  <input
+                    id="admin-reset-password" type="password" autoComplete="new-password"
+                    value={resetPasswordValue}
+                    onChange={e => setResetPasswordValue(e.target.value)}
+                    className={inputCls}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => resetPw.mutate()}
+                    disabled={resetPw.isPending || resetPasswordValue.length === 0}
+                    className="min-h-[44px] px-4 self-start border border-outline-variant rounded-lg text-sm text-on-surface-variant hover:bg-surface-container-low disabled:opacity-50"
+                  >
+                    {resetPw.isPending ? 'Resetting…' : 'Reset password'}
+                  </button>
+                  {resetPw.isSuccess && <p className="text-xs text-secondary">Password reset.</p>}
+                  {resetPw.isError && <p className="text-xs text-error-on-container">{describeSaveError(resetPw.error)}</p>}
+                </div>
+              )}
+            </Can>
           )}
         </div>
         <div className="flex-shrink-0 px-6 pb-6 pt-3">
@@ -317,9 +365,7 @@ export default function UserManagementTab() {
 
   const active   = users.filter(u => u.isActive)
   const inactive = users.filter(u => !u.isActive)
-  const primaryAdminId = users
-    .filter(u => u.role === 'admin')
-    .reduce<number | null>((min, u) => (min === null || u.id < min ? u.id : min), null)
+  const primaryAdminId = users.find(u => u.isPrimaryAdmin)?.id ?? null
 
   return (
     <>
@@ -349,7 +395,7 @@ export default function UserManagementTab() {
               const isPrimaryAdmin = user.id === primaryAdminId
               return (
                 <div key={user.id} className="flex items-center gap-3 px-4 py-3 min-h-[56px]">
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${AVATAR_BG[user.role] ?? 'bg-surface-container text-on-surface-variant'}`}>
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${AVATAR_BG[user.role.key] ?? AVATAR_BG_FALLBACK}`}>
                     {INITIALS(user.name)}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -358,7 +404,7 @@ export default function UserManagementTab() {
                     </p>
                     <p className="text-xs text-on-surface-variant truncate font-code">@{user.username}</p>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${ROLE_COLORS[user.role] ?? ''}`}>{user.role}</span>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${ROLE_COLORS[user.role.key] ?? ROLE_COLOR_FALLBACK}`}>{user.role.name}</span>
                   <Can perm="staff.manage">
                     {isPrimaryAdmin ? (
                       <button
