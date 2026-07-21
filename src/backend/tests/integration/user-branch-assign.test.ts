@@ -76,7 +76,6 @@ beforeAll(async () => {
       username:     'admin_t3',
       email:        'admin@t3.test',
       passwordHash,
-      role:         'admin',
       roleId:       adminRole.id,
     },
   })
@@ -91,7 +90,6 @@ beforeAll(async () => {
       username:     'staff_t3',
       email:        'staff@t3.test',
       passwordHash,
-      role:         'staff',
       roleId:       staffRole.id,
     },
   })

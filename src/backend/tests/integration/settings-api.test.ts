@@ -48,12 +48,17 @@ beforeAll(async () => {
   await prisma.branch.create({ data: { tenantId: tidB, name: 'Main B' } })
 
   const passwordHash = await bcrypt.hash(PASSWORD, 4)
+  const [adminRole, staffRole, doctorRole] = await Promise.all([
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } }),
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } }),
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor',       tenantId: null } }),
+  ])
   await prisma.user.createMany({
     data: [
-      { tenantId: tidA, name: 'Admin A',  username: 'sapi_admin_a',  email: 'admin@a.test',  passwordHash, role: 'admin' },
-      { tenantId: tidA, name: 'Staff A',  username: 'sapi_staff_a',  email: 'staff@a.test',  passwordHash, role: 'staff' },
-      { tenantId: tidA, name: 'Doctor A', username: 'sapi_doctor_a', email: 'doctor@a.test', passwordHash, role: 'doctor' },
-      { tenantId: tidB, name: 'Admin B',  username: 'sapi_admin_b',  email: 'admin@b.test',  passwordHash, role: 'admin' },
+      { tenantId: tidA, name: 'Admin A',  username: 'sapi_admin_a',  email: 'admin@a.test',  passwordHash, roleId: adminRole.id },
+      { tenantId: tidA, name: 'Staff A',  username: 'sapi_staff_a',  email: 'staff@a.test',  passwordHash, roleId: staffRole.id },
+      { tenantId: tidA, name: 'Doctor A', username: 'sapi_doctor_a', email: 'doctor@a.test', passwordHash, roleId: doctorRole.id },
+      { tenantId: tidB, name: 'Admin B',  username: 'sapi_admin_b',  email: 'admin@b.test',  passwordHash, roleId: adminRole.id },
     ],
   })
 

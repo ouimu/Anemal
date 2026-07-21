@@ -15,8 +15,9 @@ beforeAll(async () => {
   const tB = await prisma.tenant.create({ data: { name: 'Settings B', subdomain: SUB_B } })
   tidA = tA.id
   tidB = tB.id
+  const adminRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
   const u = await prisma.user.create({
-    data: { tenantId: tidA, name: 'Settings Admin', username: 'settings_admin_a', email: 'admin@settings-a.test', passwordHash: 'x', role: 'admin' },
+    data: { tenantId: tidA, name: 'Settings Admin', username: 'settings_admin_a', email: 'admin@settings-a.test', passwordHash: 'x', roleId: adminRole.id },
   })
   userA = u.id
 })
