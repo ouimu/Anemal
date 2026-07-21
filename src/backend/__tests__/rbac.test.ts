@@ -45,10 +45,15 @@ beforeAll(async () => {
   tidA = tenant.id
 
   const ts = Date.now()
+  const [adminRole, doctorRole, staffRole] = await Promise.all([
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } }),
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor',       tenantId: null } }),
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } }),
+  ])
   const [admin, doctor, staff] = await Promise.all([
-    prisma.user.create({ data: { tenantId: tidA, name: 'Admin',  username: `rbac_admin_${ts % 100000}`,  email: `admin-${ts}@rbac.local`,  passwordHash: hash, role: 'admin' } }),
-    prisma.user.create({ data: { tenantId: tidA, name: 'Doctor', username: `rbac_doctor_${ts % 100000}`, email: `doctor-${ts}@rbac.local`, passwordHash: hash, role: 'doctor' } }),
-    prisma.user.create({ data: { tenantId: tidA, name: 'Staff',  username: `rbac_staff_${ts % 100000}`,  email: `staff-${ts}@rbac.local`,  passwordHash: hash, role: 'staff' } }),
+    prisma.user.create({ data: { tenantId: tidA, name: 'Admin',  username: `rbac_admin_${ts % 100000}`,  email: `admin-${ts}@rbac.local`,  passwordHash: hash, roleId: adminRole.id } }),
+    prisma.user.create({ data: { tenantId: tidA, name: 'Doctor', username: `rbac_doctor_${ts % 100000}`, email: `doctor-${ts}@rbac.local`, passwordHash: hash, roleId: doctorRole.id } }),
+    prisma.user.create({ data: { tenantId: tidA, name: 'Staff',  username: `rbac_staff_${ts % 100000}`,  email: `staff-${ts}@rbac.local`,  passwordHash: hash, roleId: staffRole.id } }),
   ])
   adminId = admin.id; doctorId = doctor.id; staffId = staff.id
 
