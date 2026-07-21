@@ -40,14 +40,14 @@ beforeAll(async () => {
   const adminRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
 
   const adminUser = await prisma.user.create({
-    data: { tenantId: tid, branchId: branch.id, name: 'Admin WL', username: 'admin_wl', email: 'admin@wl.test', passwordHash, role: 'admin', roleId: adminRole.id },
+    data: { tenantId: tid, branchId: branch.id, name: 'Admin WL', username: 'admin_wl', email: 'admin@wl.test', passwordHash, roleId: adminRole.id },
   })
   await prisma.userRole.create({ data: { userId: adminUser.id, roleId: adminRole.id, tenantId: tid } })
 
   // Doctor role (has emr.create)
   const doctorRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
   const doctorUser = await prisma.user.create({
-    data: { tenantId: tid, branchId: branch.id, name: 'Doctor WL', username: 'doctor_wl', email: 'doctor@wl.test', passwordHash, role: 'doctor', roleId: doctorRole.id },
+    data: { tenantId: tid, branchId: branch.id, name: 'Doctor WL', username: 'doctor_wl', email: 'doctor@wl.test', passwordHash, roleId: doctorRole.id },
   })
   await prisma.userRole.create({ data: { userId: doctorUser.id, roleId: doctorRole.id, tenantId: tid } })
   await prisma.userBranch.create({ data: { userId: doctorUser.id, branchId: branch.id, tenantId: tid } })
@@ -57,7 +57,7 @@ beforeAll(async () => {
     data: { tenantId: tid, name: 'No Perm Role', key: 'no_perm_wl', permVersion: 1 },
   })
   const noPermUser = await prisma.user.create({
-    data: { tenantId: tid, branchId: branch.id, name: 'No Perm WL', username: 'noperm_wl', email: 'noperm@wl.test', passwordHash, role: 'staff', roleId: emptyRole.id },
+    data: { tenantId: tid, branchId: branch.id, name: 'No Perm WL', username: 'noperm_wl', email: 'noperm@wl.test', passwordHash, roleId: emptyRole.id },
   })
   await prisma.userRole.create({ data: { userId: noPermUser.id, roleId: emptyRole.id, tenantId: tid } })
   // Staff users need an explicit user_branches row to pass login step 1

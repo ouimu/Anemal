@@ -45,19 +45,19 @@ beforeAll(async () => {
   const adminRole  = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
 
   const staffUser = await prisma.user.create({
-    data: { tenantId: tid, branchId: branch.id, name: 'Staff VCP', username: 'staff_vcp', email: 'staff@vcp.test', passwordHash, role: 'staff', roleId: staffRole.id },
+    data: { tenantId: tid, branchId: branch.id, name: 'Staff VCP', username: 'staff_vcp', email: 'staff@vcp.test', passwordHash, roleId: staffRole.id },
   })
   await prisma.userRole.create({ data: { userId: staffUser.id, roleId: staffRole.id, tenantId: tid } })
   await prisma.userBranch.create({ data: { userId: staffUser.id, branchId: branch.id, tenantId: tid } })
 
   const doctorUser = await prisma.user.create({
-    data: { tenantId: tid, branchId: branch.id, name: 'Doctor VCP', username: 'doctor_vcp', email: 'doctor@vcp.test', passwordHash, role: 'doctor', roleId: doctorRole.id },
+    data: { tenantId: tid, branchId: branch.id, name: 'Doctor VCP', username: 'doctor_vcp', email: 'doctor@vcp.test', passwordHash, roleId: doctorRole.id },
   })
   await prisma.userRole.create({ data: { userId: doctorUser.id, roleId: doctorRole.id, tenantId: tid } })
   await prisma.userBranch.create({ data: { userId: doctorUser.id, branchId: branch.id, tenantId: tid } })
 
   const adminUser = await prisma.user.create({
-    data: { tenantId: tid, branchId: branch.id, name: 'Admin VCP', username: 'admin_vcp', email: 'admin@vcp.test', passwordHash, role: 'admin', roleId: adminRole.id },
+    data: { tenantId: tid, branchId: branch.id, name: 'Admin VCP', username: 'admin_vcp', email: 'admin@vcp.test', passwordHash, roleId: adminRole.id },
   })
   await prisma.userRole.create({ data: { userId: adminUser.id, roleId: adminRole.id, tenantId: tid } })
 
