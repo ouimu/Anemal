@@ -293,8 +293,8 @@ export default function RoleList({
                   <span className="hidden sm:inline">{t('roles.assignStaff')}</span>
                 </button>
 
-                {/* Clone — system roles only, requires manage */}
-                {role.isSystem && canManage && (
+                {/* Clone — system roles only, requires manage. clinic_admin is sealed (D-4). */}
+                {role.isSystem && role.key !== 'clinic_admin' && canManage && (
                   <button
                     type="button"
                     onClick={() => setCloneSource(role.name)}
@@ -335,7 +335,7 @@ export default function RoleList({
                 currentPermissions={role.permissions}
                 catalogue={catalogue}
                 userPermissions={userPermissions}
-                onClone={() => setCloneSource(role.name)}
+                onClone={role.key !== 'clinic_admin' ? () => setCloneSource(role.name) : undefined}
                 onSave={(delta) => handleSave(role, delta)}
                 isSaving={updateMut.isPending}
               />
