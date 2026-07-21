@@ -249,6 +249,15 @@ describe('POST /clinic/roles/clone', () => {
     })
     expect(created.sourceRoleId).toBe(doctorSystemRole.id)
   })
+
+  it('rejects cloning the clinic_admin system role, regardless of caller permissions (D-4)', async () => {
+    const res = await request(server)
+      .post('/clinic/roles/clone')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ sourceRoleName: 'Clinic Admin', newName: 'Super Admin Clone' })
+
+    expect(res.status).toBe(403)
+  })
 })
 
 // ---------------------------------------------------------------------------

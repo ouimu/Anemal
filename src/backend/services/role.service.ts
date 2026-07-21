@@ -84,6 +84,10 @@ export async function cloneRole(
     throw new NotFoundError(`System role '${sourceRoleName}'`)
   }
 
+  if (sourceRole.key === 'clinic_admin') {
+    throw new ForbiddenError('The Admin role cannot be cloned. Assign the Admin role directly instead.')
+  }
+
   const existing = await roleRepo.findRoleByName(newName, tenantId)
   if (existing) {
     throw new ConflictError(`A role named '${newName}' already exists for this tenant`)
