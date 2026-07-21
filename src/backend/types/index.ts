@@ -120,15 +120,16 @@ export interface UpdateUserRequest {
 }
 
 export interface UserResponse {
-  id:        number
-  tenantId:  number
-  name:      string
-  username:  string             // D-2-02: included in response
-  email:     string | null      // D-2-02: nullable
-  phone:     string | null      // D-2-02: new field
-  role:      string
-  isActive:  boolean
-  createdAt: string
+  id:             number
+  tenantId:       number
+  name:           string
+  username:       string             // D-2-02: included in response
+  email:          string | null      // D-2-02: nullable
+  phone:          string | null      // D-2-02: new field
+  role:           { id: number; name: string; key: string; isSystem: boolean }
+  isPrimaryAdmin: boolean
+  isActive:       boolean
+  createdAt:      string
 }
 
 // ─── API helpers ─────────────────────────────────────────────────────────────
