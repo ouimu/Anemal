@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { classifyMultiRoleUsers, collapseMultiRoleUsers } from '../../prisma/scripts/collapse-multi-role'
+import { resolvePermissions, clearPermCache } from '../../services/permission.service'
 
 const prisma = new PrismaClient()
 
@@ -126,6 +127,9 @@ describe('collapseMultiRoleUsers', () => {
       data: { tenantId, key: `tenant_${tenantId}_accountant2`, name: 'Accountant', isSystem: false, permVersion: 1 },
     })
     customRoleId = custom.id
+    // A permission code doctor does NOT hold — proves the collapse actually
+    // narrows resolved permissions, not just deletes a user_roles row (T-URA-1.3).
+    await prisma.rolePermission.create({ data: { roleId: customRoleId, permissionCode: 'staff.manage' } })
   })
 
   afterAll(async () => {
@@ -146,6 +150,10 @@ describe('collapseMultiRoleUsers', () => {
       ],
     })
 
+    clearPermCache()
+    const permsBeforeCollapse = await resolvePermissions(user.id, tenantId)
+    expect(permsBeforeCollapse.has('staff.manage')).toBe(true) // union includes the Accountant custom role
+
     const report = await collapseMultiRoleUsers(prisma)
 
     const entry = report.collapsed.find(c => c.userId === user.id)
@@ -159,6 +167,14 @@ describe('collapseMultiRoleUsers', () => {
 
     const refreshedUser = await prisma.user.findUniqueOrThrow({ where: { id: user.id } })
     expect(refreshedUser.roleId).toBe(systemDoctorRoleId)
+
+    // T-URA-1.3 proof (3): the collapse must narrow *resolved* permissions,
+    // not just delete a user_roles row — the removed Accountant role's
+    // 'staff.manage' must no longer be in the union once collapsed.
+    clearPermCache()
+    const permsAfterCollapse = await resolvePermissions(user.id, tenantId)
+    expect(permsAfterCollapse.has('staff.manage')).toBe(false)
+    expect(permsAfterCollapse.has('emr.view')).toBe(true) // still has Doctor's own permissions
   })
 
   it('leaves an ambiguous user untouched and reports it', async () => {
