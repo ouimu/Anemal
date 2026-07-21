@@ -55,8 +55,9 @@ beforeAll(async () => {
   tenantId = tenant.id
   const branch = await prisma.branch.create({ data: { tenantId, name: 'Main' } })
   const passwordHash = await bcrypt.hash(PASSWORD, 4)
+  const adminRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
   const adminUser = await prisma.user.create({
-    data: { tenantId, branchId: branch.id, name: 'Admin A', username: 'audit_redact_admin_a', email: 'admin@audit-redaction-a.test', passwordHash, role: 'admin' },
+    data: { tenantId, branchId: branch.id, name: 'Admin A', username: 'audit_redact_admin_a', email: 'admin@audit-redaction-a.test', passwordHash, roleId: adminRole.id },
   })
   await seedUserRoles(prisma, [{ userId: adminUser.id, tenantId, roleKey: 'clinic_admin' }])
   clinicToken = await login(SUB_A, 'audit_redact_admin_a')
