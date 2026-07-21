@@ -50,10 +50,16 @@ beforeAll(async () => {
   doctorUsername = `doctor_${ts}`
   staffUsername  = `staff_${ts}`
 
+  const [adminRole, doctorRole, staffRole] = await Promise.all([
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } }),
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor',       tenantId: null } }),
+    prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } }),
+  ])
+
   const [, doctor, staff] = await Promise.all([
-    prisma.user.create({ data: { tenantId, name: 'Auth Admin',  username: adminUsername,  email: `admin-${ts}@auth.local`,  passwordHash: hash, role: 'admin'  } }),
-    prisma.user.create({ data: { tenantId, name: 'Auth Doctor', username: doctorUsername, email: `doctor-${ts}@auth.local`, passwordHash: hash, role: 'doctor' } }),
-    prisma.user.create({ data: { tenantId, name: 'Auth Staff',  username: staffUsername,  email: `staff-${ts}@auth.local`,  passwordHash: hash, role: 'staff'  } }),
+    prisma.user.create({ data: { tenantId, name: 'Auth Admin',  username: adminUsername,  email: `admin-${ts}@auth.local`,  passwordHash: hash, roleId: adminRole.id  } }),
+    prisma.user.create({ data: { tenantId, name: 'Auth Doctor', username: doctorUsername, email: `doctor-${ts}@auth.local`, passwordHash: hash, roleId: doctorRole.id } }),
+    prisma.user.create({ data: { tenantId, name: 'Auth Staff',  username: staffUsername,  email: `staff-${ts}@auth.local`,  passwordHash: hash, roleId: staffRole.id  } }),
   ])
 
   // staff and doctor need user_branches rows to log in
@@ -167,8 +173,9 @@ describe('auth-1.2 — POST /auth/login (step 1)', () => {
     const hash = await bcrypt.hash('ValidPass1!', 10)
     const ts   = Date.now() % 100000
     const uname = `inactive_${ts}`
+    const inactiveStaffRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } })
     await prisma.user.create({
-      data: { tenantId, name: 'Inactive', username: uname, email: `inactive-${ts}@auth.local`, passwordHash: hash, role: 'staff', isActive: false },
+      data: { tenantId, name: 'Inactive', username: uname, email: `inactive-${ts}@auth.local`, passwordHash: hash, roleId: inactiveStaffRole.id, isActive: false },
     })
     await request(server)
       .post('/auth/login')

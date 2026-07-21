@@ -31,8 +31,9 @@ beforeAll(async () => {
   const tA = await prisma.tenant.create({ data: { name: 'Bill A', subdomain: SUB_A } })
   const tB = await prisma.tenant.create({ data: { name: 'Bill B', subdomain: SUB_B } })
   tidA = tA.id; tidB = tB.id
-  const uA = await prisma.user.create({ data: { tenantId: tidA, name: 'Doc A', username: `bill_adm_a_${ts % 100000}`, email: `bill-a-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
-  const uB = await prisma.user.create({ data: { tenantId: tidB, name: 'Doc B', username: `bill_adm_b_${ts % 100000}`, email: `bill-b-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
+  const adminRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
+  const uA = await prisma.user.create({ data: { tenantId: tidA, name: 'Doc A', username: `bill_adm_a_${ts % 100000}`, email: `bill-a-${ts}@t.local`, passwordHash: hash, roleId: adminRole.id } })
+  const uB = await prisma.user.create({ data: { tenantId: tidB, name: 'Doc B', username: `bill_adm_b_${ts % 100000}`, email: `bill-b-${ts}@t.local`, passwordHash: hash, roleId: adminRole.id } })
   const bA = await prisma.branch.create({ data: { tenantId: tidA, name: 'Main' } })
   const bB = await prisma.branch.create({ data: { tenantId: tidB, name: 'Main' } })
   branchAId = bA.id
@@ -183,9 +184,13 @@ describe('bill-3.3 — Payment History: invoice.id, filters, receiver options (T
     const branchA = await prisma.branch.create({ data: { tenantId: tidPH, name: 'Main' } })
     const branchB = await prisma.branch.create({ data: { tenantId: tidPH, name: 'Branch B' } })
 
-    const admin  = await prisma.user.create({ data: { tenantId: tidPH, branchId: branchA.id, name: 'PH Admin',  username: `ph_admin_${ts % 100000}`,  email: `ph-admin-${ts}@t.local`,  passwordHash: hash, role: 'admin' } })
-    const staff  = await prisma.user.create({ data: { tenantId: tidPH, branchId: branchA.id, name: 'PH Staff',  username: `ph_staff_${ts % 100000}`,  email: `ph-staff-${ts}@t.local`,  passwordHash: hash, role: 'staff' } })
-    const staffB = await prisma.user.create({ data: { tenantId: tidPH, branchId: branchB.id, name: 'PH Staff B', username: `ph_staffb_${ts % 100000}`, email: `ph-staffb-${ts}@t.local`, passwordHash: hash, role: 'staff' } })
+    const [phAdminRole, phStaffRole] = await Promise.all([
+      prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } }),
+      prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } }),
+    ])
+    const admin  = await prisma.user.create({ data: { tenantId: tidPH, branchId: branchA.id, name: 'PH Admin',  username: `ph_admin_${ts % 100000}`,  email: `ph-admin-${ts}@t.local`,  passwordHash: hash, roleId: phAdminRole.id } })
+    const staff  = await prisma.user.create({ data: { tenantId: tidPH, branchId: branchA.id, name: 'PH Staff',  username: `ph_staff_${ts % 100000}`,  email: `ph-staff-${ts}@t.local`,  passwordHash: hash, roleId: phStaffRole.id } })
+    const staffB = await prisma.user.create({ data: { tenantId: tidPH, branchId: branchB.id, name: 'PH Staff B', username: `ph_staffb_${ts % 100000}`, email: `ph-staffb-${ts}@t.local`, passwordHash: hash, roleId: phStaffRole.id } })
     adminUserId = admin.id
     staffUserId = staff.id
     staffBUserId = staffB.id
@@ -205,7 +210,7 @@ describe('bill-3.3 — Payment History: invoice.id, filters, receiver options (T
     // test 4, T-3c.2 test).
     const otherTenant = await prisma.tenant.create({ data: { name: 'PayHist Other', subdomain: `payhist-other-${ts}` } })
     tidOther = otherTenant.id
-    const otherAdmin = await prisma.user.create({ data: { tenantId: tidOther, name: 'Other Admin', username: `ph_other_${ts % 100000}`, email: `ph-other-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
+    const otherAdmin = await prisma.user.create({ data: { tenantId: tidOther, name: 'Other Admin', username: `ph_other_${ts % 100000}`, email: `ph-other-${ts}@t.local`, passwordHash: hash, roleId: phAdminRole.id } })
     otherAdminUserId = otherAdmin.id
     await seedUserRoles(prisma, [{ userId: otherAdmin.id, tenantId: tidOther, roleKey: 'clinic_admin' }])
 

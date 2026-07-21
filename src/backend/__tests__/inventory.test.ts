@@ -30,8 +30,9 @@ beforeAll(async () => {
   const tA = await prisma.tenant.create({ data: { name: 'Inv A', subdomain: SUB_A } })
   const tB = await prisma.tenant.create({ data: { name: 'Inv B', subdomain: SUB_B } })
   tidA = tA.id; tidB = tB.id
-  const uA = await prisma.user.create({ data: { tenantId: tidA, name: 'Admin A', username: `inv_adm_a_${ts % 100000}`, email: `inv-a-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
-  const uB = await prisma.user.create({ data: { tenantId: tidB, name: 'Admin B', username: `inv_adm_b_${ts % 100000}`, email: `inv-b-${ts}@t.local`, passwordHash: hash, role: 'admin' } })
+  const adminRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
+  const uA = await prisma.user.create({ data: { tenantId: tidA, name: 'Admin A', username: `inv_adm_a_${ts % 100000}`, email: `inv-a-${ts}@t.local`, passwordHash: hash, roleId: adminRole.id } })
+  const uB = await prisma.user.create({ data: { tenantId: tidB, name: 'Admin B', username: `inv_adm_b_${ts % 100000}`, email: `inv-b-${ts}@t.local`, passwordHash: hash, roleId: adminRole.id } })
   const bA = await prisma.branch.create({ data: { tenantId: tidA, name: 'Main' } })
   const bB = await prisma.branch.create({ data: { tenantId: tidB, name: 'Main' } })
   branchAId = bA.id
