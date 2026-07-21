@@ -295,3 +295,57 @@ describe('emr-attachments — POST /:id/attachments (confirm, extended)', () => 
   })
 
 })
+
+describe('emr-attachments — GET /:id/attachments/:attId/download', () => {
+  let attachmentId: number
+
+  beforeAll(async () => {
+    const a = await prisma.attachment.create({
+      data: {
+        tenantId, medicalRecordId, fileName: 'download-me.pdf',
+        storageKey: `tenants/${tenantId}/emr/${medicalRecordId}/dl-uuid-download-me.pdf`,
+        mimeType: 'application/pdf', fileSize: 555, uploadedByUserId: doctorUserId,
+      },
+    })
+    attachmentId = a.id
+  })
+
+  test('EA-15: emr.view holder (doctor) gets a downloadUrl', async () => {
+    const res = await request(server)
+      .get(`/api/medical-records/${medicalRecordId}/attachments/${attachmentId}/download`)
+      .set('Authorization', `Bearer ${doctorToken}`)
+      .expect(200)
+    expect(res.body.data.downloadUrl).toBe(MOCK_SIGNED_URL)
+    expect(res.body.data.fileName).toBe('download-me.pdf')
+  })
+
+  test('EA-16: role without emr.view → 403', async () => {
+    const staffRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } })
+    const staffPerms = await prisma.rolePermission.findMany({ where: { roleId: staffRole.id } })
+    const noViewRole = await prisma.clinicRole.create({ data: { tenantId, key: 'no_emr_view_staff', name: 'No-EMR-View Staff', isSystem: false } })
+    for (const rp of staffPerms) {
+      if (rp.permissionCode.startsWith('emr.')) continue
+      await prisma.rolePermission.create({ data: { roleId: noViewRole.id, permissionCode: rp.permissionCode } })
+    }
+    const ts = Date.now() % 100000
+    const noViewUser = await prisma.user.create({
+      data: { tenantId, branchId, name: 'No View', username: `no_view_${ts}`, email: `no-view-${ts}@test.local`, passwordHash: await bcrypt.hash('TestPass1!', 4), roleId: noViewRole.id },
+    })
+    await prisma.userRole.create({ data: { userId: noViewUser.id, roleId: noViewRole.id, tenantId } })
+    const noViewToken = signToken({ userId: noViewUser.id, tenantId, branchId, plane: 'clinic', permSetVersion: 1, role: 'staff' })
+
+    const res = await request(server)
+      .get(`/api/medical-records/${medicalRecordId}/attachments/${attachmentId}/download`)
+      .set('Authorization', `Bearer ${noViewToken}`)
+      .expect(403)
+    expect(res.body.success).toBe(false)
+  })
+
+  test('EA-17: foreign-tenant attachment id → 404', async () => {
+    const res = await request(server)
+      .get(`/api/medical-records/${medicalRecordId}/attachments/999999/download`)
+      .set('Authorization', `Bearer ${doctorToken}`)
+      .expect(404)
+    expect(res.body.success).toBe(false)
+  })
+})
