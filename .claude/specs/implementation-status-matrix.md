@@ -6,7 +6,29 @@
 > This matrix is the canonical status source; @pm-agent updates it LAST on every
 > task (see CLAUDE.md → Tracking & Documentation).
 >
-> Current totals as of PR #33 (2026-07-20, "Usage Stats page renders real
+> Current totals as of PR #37 (2026-07-21, "unify user role assignment,
+> Plan A: backend", ADR-0019): retired the shipped-but-superseded
+> multi-role-per-user capability and the legacy `User.role` enum column —
+> `roleId` (RBAC Role table, `role.repository.ts`) is now the sole source of
+> truth for a user's role everywhere (`user.service.ts`, `auth.service.ts`
+> JWT claim mapping, `permission.service.ts` resolution). Closed a
+> cross-tenant BOLA gap (existence-leak precedent, ADR-0014): assigning a
+> foreign-tenant `roleId` now 404s, not 403s; added `@@index([roleId])` on
+> `users`. Migration script (`prisma/scripts/collapse-multi-role.ts`)
+> classifies and collapses pre-existing multi-role users, auto-collapsing
+> unambiguous cases and emitting a manual-resolution report + audit log for
+> ambiguous ones. Deleted 3 now-dead multi-role assign/remove endpoints and
+> the dead `rbac.middleware.ts` (superseded by `permission.middleware.ts`).
+> Backend + migration + docs only — zero frontend blast radius confirmed
+> (`git diff --stat` empty on `src/frontend`); the legacy `<select>`-based
+> Edit User modal keeps working unmodified against the new `roleId`-based
+> API. Plan B (unifying the Edit User modal's two conflicting
+> role-assignment UIs on the frontend) is designed and Ponytail-approved
+> but not yet executed — see
+> `docs/superpowers/plans/2026-07-20-unify-user-role-assignment-plan-b-frontend.md`.
+> Backend 1021 → 1015 (net decrease — test files for the 3 deleted
+> multi-role endpoints were removed), frontend 291 (unchanged) — on top of
+> PR #33 (2026-07-20, "Usage Stats page renders real
 > quota instead of fake hardcoded numbers", ADR-0018): added a 4th quota
 > field `maxPets` mirroring `maxOwners` across schema, all 3 independent
 > quota resolvers (platform-plane, customer-detail override, clinic-plane
@@ -81,7 +103,8 @@
 > top of Pet/EMR Batch A, PR #14, on top of the Codex audit closeout
 > 2026-07-09 Batches 1–5, PRs #8–#13, plus the seedCredentialSmoke
 > isolation-flake fix 4e78e0b:
-> **993 backend tests, 283 frontend tests.**
+> **1015 backend tests, 291 frontend tests** (was 993/283 through PR #27; see
+> the PR #37 paragraph above for the most recent change).
 > Route-level authorization is machine-verified by
 > `src/backend/tests/integration/roleRouteMatrix.test.ts` — that file is the source
 > of truth for per-route permission coverage; this matrix does not duplicate it.
@@ -102,6 +125,7 @@
 | Auth (clinic) | `/auth/login`, `/auth/select-branch` | Username + two-step branch select. "Remember me" recalls username(s) per subdomain (localStorage, picker popup for 2+) — session itself always ends on tab/browser/app close or 8h JWT expiry (sessionStorage-only, no persistent-session opt-in), ADR-0010 | `controllers/auth.controller.ts`, `services/auth.service.ts` | `views/LoginView.tsx`, `utils/rememberedUsernames.ts`, `store/authStore.ts` | `tests/integration/auth.test.ts`, `__tests__/LoginView.rememberMe.test.tsx`, `utils/rememberedUsernames.test.ts`, `store/__tests__/authStore.test.ts` | implemented |
 | Auth (platform) | `/platform/auth/login` | Email-based, single-step | `controllers/platform-auth.controller.ts` | `views/platform/PlatformLoginView.tsx` | `tests/integration/seedCredentialSmoke.test.ts` | implemented |
 | RBAC — clinic roles | `/clinic/roles/*` | Role editor, custom roles | `routes/role.routes.ts` | `views/clinic/RoleEditorView.tsx` | `tests/integration/roleEditor-t5f01.test.ts` | implemented |
+| RBAC — user role assignment | `PUT /users/:id`, `POST /users` | Single-role-per-user model — `roleId` (RBAC Role table) is the sole source of truth, `User.role` enum column retired (ADR-0019, PR #37). Cross-tenant `roleId` 404s (not 403s, existence-leak precedent ADR-0014). `users.roleId` indexed. Frontend still uses the legacy `<select>`-based Edit User modal unmodified (works against the new API); unifying it with the newer role-assignment UI is Plan B, not yet executed | `services/user.service.ts`, `models/user.repository.ts`, `models/role.repository.ts` | `views/admin/UserManagementTab.tsx` (unmodified, legacy `<select>` UI) | `__tests__/userManagement.test.ts`, `tests/scripts/collapse-multi-role.test.ts` | implemented |
 | RBAC — route authorization | all clinic-mounted routes | Per-role allow/deny sweep, CI-enforced | `middlewares/permission.middleware.ts` | — | `tests/integration/roleRouteMatrix.test.ts` | implemented |
 | Vaccination recording | `POST /api/vaccinations` | `vaccination.create` canonical (doctor + clinic_staff, not admin) | `routes/vaccination.routes.ts` | `views/clinic/ClinicEMR.tsx` | `tests/integration/vaccination-create-permission.test.ts` | implemented |
 | Grooming status update | `PUT /api/grooming/bookings/:id/status` | Fixed Batch 2 D1 (frontend URL) | `routes/grooming.routes.ts` | `views/clinic/ClinicGrooming.tsx:278` | — | implemented |
