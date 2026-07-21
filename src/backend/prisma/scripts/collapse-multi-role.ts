@@ -10,7 +10,7 @@
  * column-drop migration (Task 4) — it is what guarantees "exactly one
  * user_roles row per user" going into that step.
  */
-import type { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 
 export interface AutoCollapsibleCase {
   userId: number
@@ -73,4 +73,78 @@ export async function classifyMultiRoleUsers(prisma: PrismaClient): Promise<Clas
   }
 
   return { autoCollapsible, ambiguous }
+}
+
+export interface CollapseLogEntry {
+  userId: number
+  tenantId: number
+  keptRoleId: number
+  removedRoleIds: number[]
+  timestamp: string
+}
+
+export interface CollapseReport {
+  collapsed: CollapseLogEntry[]
+  manualResolutionNeeded: AmbiguousCase[]
+}
+
+/**
+ * Execute the D-7 survivor rule: collapse every auto-collapsible multi-role
+ * user to their system role, leave ambiguous cases untouched, and return an
+ * auditable report (attach to the migration PR — CORR-1.4).
+ *
+ * @param prisma - Prisma client.
+ */
+export async function collapseMultiRoleUsers(prisma: PrismaClient): Promise<CollapseReport> {
+  const { autoCollapsible, ambiguous } = await classifyMultiRoleUsers(prisma)
+
+  const collapsed: CollapseLogEntry[] = []
+
+  for (const c of autoCollapsible) {
+    await prisma.$transaction(async (tx) => {
+      await tx.userRole.deleteMany({
+        where: { userId: c.userId, tenantId: c.tenantId, roleId: { in: c.removedRoleIds } },
+      })
+      await tx.user.update({ where: { id: c.userId }, data: { roleId: c.systemRoleId } })
+    })
+
+    collapsed.push({
+      userId: c.userId,
+      tenantId: c.tenantId,
+      keptRoleId: c.systemRoleId,
+      removedRoleIds: c.removedRoleIds,
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  return { collapsed, manualResolutionNeeded: ambiguous }
+}
+
+// Run directly when invoked as a script (mirrors backfill-user-roles.ts's own entrypoint).
+if (require.main === module) {
+  const prisma = new PrismaClient()
+  collapseMultiRoleUsers(prisma)
+    .then((report) => {
+      console.log(`[collapse-multi-role] Collapsed ${report.collapsed.length} user(s):`)
+      for (const entry of report.collapsed) {
+        console.log(
+          `  userId=${entry.userId} tenantId=${entry.tenantId} kept=${entry.keptRoleId} ` +
+          `removed=[${entry.removedRoleIds.join(', ')}] at ${entry.timestamp}`
+        )
+      }
+      if (report.manualResolutionNeeded.length > 0) {
+        console.warn(`[collapse-multi-role] ${report.manualResolutionNeeded.length} user(s) NEED MANUAL RESOLUTION:`)
+        for (const a of report.manualResolutionNeeded) {
+          console.warn(`  userId=${a.userId} tenantId=${a.tenantId} roleIds=[${a.roleIds.join(', ')}] reason=${a.reason}`)
+        }
+        console.warn('[collapse-multi-role] These tenants must NOT proceed to the column-drop migration until resolved.')
+      } else {
+        console.log('[collapse-multi-role] No ambiguous cases. Safe to proceed to the column-drop migration.')
+      }
+    })
+    .catch((err) => {
+      console.error('[collapse-multi-role] Fatal error:', err)
+      process.exit(1)
+    })
+    .finally(() => prisma.$disconnect())
 }
