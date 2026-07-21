@@ -16,7 +16,6 @@ import * as roleController from '../controllers/role.controller'
 import {
   cloneRoleSchema,
   updateRolePermsSchema,
-  assignUserRoleSchema,
 } from '../controllers/role.controller'
 
 const router = Router()
@@ -36,11 +35,5 @@ router.put('/:roleId/permissions', requirePermission('roles.manage'), validate(u
 
 // Delete a custom role — requires roles.manage
 router.delete('/:roleId', requirePermission('roles.manage'), roleController.deleteRole)
-
-// Assign a role to a user — requires staff.assign_role
-router.post('/users/:userId/roles', requirePermission('staff.assign_role'), validate(assignUserRoleSchema), roleController.assignRoleToUser)
-
-// Remove a role from a user — requires staff.assign_role
-router.delete('/users/:userId/roles/:roleId', requirePermission('staff.assign_role'), roleController.removeRoleFromUser)
 
 export default router
