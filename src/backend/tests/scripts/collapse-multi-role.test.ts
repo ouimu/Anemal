@@ -28,6 +28,13 @@ describe('classifyMultiRoleUsers', () => {
   })
 
   afterAll(async () => {
+    // FK-safe order: userRole/user rows reference this tenant's custom
+    // ClinicRole rows via roleId (default NO ACTION), so they must be cleared
+    // before the tenant cascade-deletes the ClinicRole rows — otherwise the
+    // delete silently fails (swallowed by .catch) and orphans the tenant,
+    // breaking the next run's unique-subdomain create.
+    await prisma.userRole.deleteMany({ where: { tenantId } })
+    await prisma.user.deleteMany({ where: { tenantId } })
     await prisma.tenant.delete({ where: { id: tenantId } }).catch(() => {})
     await prisma.$disconnect()
   })
@@ -122,6 +129,9 @@ describe('collapseMultiRoleUsers', () => {
   })
 
   afterAll(async () => {
+    // Same FK-safe ordering as classifyMultiRoleUsers's afterAll above.
+    await prisma.userRole.deleteMany({ where: { tenantId } })
+    await prisma.user.deleteMany({ where: { tenantId } })
     await prisma.tenant.delete({ where: { id: tenantId } }).catch(() => {})
   })
 
