@@ -29,7 +29,7 @@ async function makeTenantWithAdmin(subdomainSuffix: string, adminPassword: strin
   const clinicAdminRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
   const passwordHash = await bcrypt.hash(adminPassword, 10)
   const admin = await prisma.user.create({
-    data: { tenantId: tenant.id, username: 'pwadmin', name: 'PW Admin', passwordHash, role: 'admin', isActive: true },
+    data: { tenantId: tenant.id, username: 'pwadmin', name: 'PW Admin', passwordHash, roleId: clinicAdminRole.id, isActive: true },
   })
   await prisma.userRole.create({ data: { tenantId: tenant.id, userId: admin.id, roleId: clinicAdminRole.id } })
   return { tenant, admin }
@@ -148,7 +148,7 @@ describe('PWD-2: PATCH /users/:id/password', () => {
   async function makeStaffUser(tenantId: number, username: string, password: string) {
     const passwordHash = await bcrypt.hash(password, 10)
     const staffRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } })
-    const staff = await prisma.user.create({ data: { tenantId, username, name: 'Staffer', passwordHash, role: 'staff', isActive: true } })
+    const staff = await prisma.user.create({ data: { tenantId, username, name: 'Staffer', passwordHash, roleId: staffRole.id, isActive: true } })
     await prisma.userRole.create({ data: { tenantId, userId: staff.id, roleId: staffRole.id } })
     const branch = await prisma.branch.findFirstOrThrow({ where: { tenantId } })
     await prisma.userBranch.create({ data: { tenantId, userId: staff.id, branchId: branch.id } })
@@ -185,7 +185,7 @@ describe('PWD-2: PATCH /users/:id/password', () => {
 
     const clinicAdminRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
     const passwordHash = await bcrypt.hash('AdminBPass1!', 10)
-    const adminB = await prisma.user.create({ data: { tenantId: tenant.id, username: 'peeradmin', name: 'Peer Admin', passwordHash, role: 'admin', isActive: true } })
+    const adminB = await prisma.user.create({ data: { tenantId: tenant.id, username: 'peeradmin', name: 'Peer Admin', passwordHash, roleId: clinicAdminRole.id, isActive: true } })
     await prisma.userRole.create({ data: { tenantId: tenant.id, userId: adminB.id, roleId: clinicAdminRole.id } })
 
     const res = await request(server)

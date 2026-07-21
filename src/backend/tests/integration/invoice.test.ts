@@ -64,10 +64,11 @@ beforeAll(async () => {
   })
 
   const passwordHash = await bcrypt.hash(PASSWORD, 4)
+  const adminRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
   await prisma.user.createMany({
     data: [
-      { tenantId: tidA, name: 'Admin A', username: 'admin_qra', email: 'admin@qr-a.test', passwordHash, role: 'admin' },
-      { tenantId: tidB, name: 'Admin B', username: 'admin_qrb', email: 'admin@qr-b.test', passwordHash, role: 'admin' },
+      { tenantId: tidA, name: 'Admin A', username: 'admin_qra', email: 'admin@qr-a.test', passwordHash, roleId: adminRole.id },
+      { tenantId: tidB, name: 'Admin B', username: 'admin_qrb', email: 'admin@qr-b.test', passwordHash, roleId: adminRole.id },
     ],
   })
 
