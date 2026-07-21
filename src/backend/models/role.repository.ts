@@ -169,50 +169,6 @@ export function countRoleUsage(roleId: number) {
 // ---------------------------------------------------------------------------
 
 /**
- * Find a user by ID scoped to a specific tenant.
- * Returns null if the user does not exist or belongs to a different tenant.
- *
- * @param userId   - Target user's primary key.
- * @param tenantId - Required tenant scope for isolation.
- */
-export function findUserInTenant(userId: number, tenantId: number) {
-  return prisma.user.findFirst({ where: { id: userId, tenantId } })
-}
-
-/**
- * Assign a role to a user within a tenant.
- *
- * @param userId   - Target user.
- * @param roleId   - Role to assign.
- * @param tenantId - Tenant scope for the assignment.
- */
-export function assignRoleToUser(userId: number, roleId: number, tenantId: number) {
-  return prisma.userRole.create({ data: { userId, roleId, tenantId } })
-}
-
-/**
- * Remove a specific role from a user within a tenant.
- *
- * @param userId   - Target user.
- * @param roleId   - Role to revoke.
- * @param tenantId - Tenant scope (required for isolation).
- */
-export function removeRoleFromUser(userId: number, roleId: number, tenantId: number) {
-  return prisma.userRole.deleteMany({ where: { userId, roleId, tenantId } })
-}
-
-/**
- * Count the number of active role assignments for a user within a tenant.
- * Used to guard against removing the last role.
- *
- * @param userId   - Target user.
- * @param tenantId - Tenant scope.
- */
-export function countUserRoles(userId: number, tenantId: number) {
-  return prisma.userRole.count({ where: { userId, tenantId } })
-}
-
-/**
  * Return the IDs of every user currently assigned a given role within a tenant.
  * Used to enumerate who must have their permission cache invalidated when the
  * role's permission set changes.

@@ -17,7 +17,6 @@ import {
   ForbiddenError,
   NotFoundError,
   ConflictError,
-  ValidationError,
 } from '../utils/errors'
 
 /** Shape returned for a single role in list/get responses. */
@@ -180,91 +179,4 @@ export async function deleteRole(tenantId: number, roleId: number): Promise<void
   }
 
   await roleRepo.deleteRole(tenantId, roleId)
-}
-
-/**
- * Assign a role to a user within the caller's tenant.
- * No escalation: caller cannot assign a role whose permissions exceed their own.
- *
- * @param tenantId    - Caller's tenant scope; validates role ownership.
- * @param targetUserId - User who will receive the role.
- * @param roleId       - Role to assign.
- * @param callerPerms  - Full permission set held by the calling user.
- */
-export async function assignRoleToUser(
-  tenantId:      number,
-  targetUserId:  number,
-  roleId:        number,
-  callerPerms:   Set<string>,
-): Promise<void> {
-  // Verify the target user exists within the caller's tenant (tenant isolation).
-  const targetUser = await roleRepo.findUserInTenant(targetUserId, tenantId)
-  if (!targetUser) {
-    throw new NotFoundError('User')
-  }
-
-  const role = await roleRepo.findRoleById(roleId)
-  if (!role) {
-    throw new NotFoundError('Role')
-  }
-
-  // Role must be either a system role or belong to this tenant
-  if (!role.isSystem && role.tenantId !== tenantId) {
-    throw new ForbiddenError('Role does not belong to your tenant')
-  }
-
-  // No escalation: every permission in the role must be held by the caller
-  const escalations = role.permissions
-    .map(p => p.permissionCode)
-    .filter(code => !callerPerms.has(code))
-
-  if (escalations.length > 0) {
-    throw new ForbiddenError(
-      `Cannot assign a role whose permissions exceed your own: ${escalations.join(', ')}`,
-    )
-  }
-
-  try {
-    await roleRepo.assignRoleToUser(targetUserId, roleId, tenantId)
-  } catch (err: unknown) {
-    // Prisma unique constraint — already assigned
-    if (isPrismaUniqueConstraintError(err)) {
-      throw new ValidationError('User already has this role assigned')
-    }
-    throw err
-  }
-
-  invalidatePermCache(targetUserId, tenantId)
-}
-
-/**
- * Remove a role from a user.
- * Returns 409 if removing this role would leave the user with no roles.
- *
- * @param tenantId     - Caller's tenant scope.
- * @param targetUserId - User whose role is being removed.
- * @param roleId       - Role to revoke.
- */
-export async function removeRoleFromUser(
-  tenantId:      number,
-  targetUserId:  number,
-  roleId:        number,
-): Promise<void> {
-  const remaining = await roleRepo.countUserRoles(targetUserId, tenantId)
-  if (remaining <= 1) {
-    throw new ConflictError('Cannot remove the last role from a user')
-  }
-
-  await roleRepo.removeRoleFromUser(targetUserId, roleId, tenantId)
-  invalidatePermCache(targetUserId, tenantId)
-}
-
-/** Narrow type guard for Prisma P2002 unique constraint violation. */
-function isPrismaUniqueConstraintError(err: unknown): boolean {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    'code' in err &&
-    (err as { code: unknown }).code === 'P2002'
-  )
 }
