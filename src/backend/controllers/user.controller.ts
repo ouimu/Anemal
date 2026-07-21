@@ -11,7 +11,12 @@ export const createUserSchema = z.object({
   email:    z.string().email().optional(),
   phone:    z.string().max(20).optional(),
   password: z.string().min(8),
-  role:     z.enum(['doctor', 'staff']),
+  // ADR-0019/D-7: was role: z.enum(['doctor', 'staff']) — the single-role
+  // model takes the target ClinicRole id directly. The old "admin cannot be
+  // created via API" restriction is now enforced generally, for every role,
+  // by Task 9's no-escalation check (staff.assign_role + permissions ⊆
+  // caller's own) in user.service.ts, not by a schema-level enum.
+  roleId:   z.number().int().positive(),
 }).strict()
 
 /**
@@ -29,7 +34,7 @@ export const updateUserSchema = z.object({
   username: z.string().min(3).max(20).regex(USERNAME_REGEX, 'Username may only contain letters, digits, and underscores').optional(),
   email:    z.string().email().optional(),
   phone:    z.string().max(20).optional(),
-  role:     z.enum(['admin', 'doctor', 'staff']).optional(),
+  roleId:   z.number().int().positive().optional(), // ADR-0019/D-7: was role?: z.enum(['admin', 'doctor', 'staff'])
   isActive: z.boolean().optional(),
 }).strict()
 

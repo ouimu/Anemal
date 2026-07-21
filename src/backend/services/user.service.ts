@@ -12,14 +12,23 @@ import * as subscriptionService from './subscription.service'
 import type { CreateUserRequest, UpdateUserRequest, UserResponse } from '../types'
 
 /**
- * Maps the legacy API role strings accepted by the public endpoint to the
- * stable `key` values used in the `clinic_roles` table for system roles.
+ * TRANSITIONAL — maps a role's stable `key` to the legacy 3-value role
+ * string that UserResponse.role has always returned, now that the
+ * User.role column is gone (ADR-0019/D-7). Deliberately duplicates the same
+ * mapping shape as auth.service.ts's toLegacyRoleString (D-8) — that one is
+ * module-private to auth.service.ts by design (D-8 confines it there for
+ * the JWT claim specifically), so this is a small, intentional, temporary
+ * duplication for the response-shape boundary, not drift.
+ *
+ * REMOVED in the frontend companion PR (Plan B, task "safe() gains
+ * role-object + isPrimaryAdmin") once UserManagementTab.tsx/AdminBranches.tsx
+ * are updated to consume the full role object atomically with that change.
  */
-const LEGACY_ROLE_TO_SYSTEM_KEY: Record<string, string> = {
-  admin:  'clinic_admin',
-  doctor: 'doctor',
-  staff:  'clinic_staff',
-} as const
+function toLegacyRoleStringTransitional(roleKey: string): 'admin' | 'doctor' | 'staff' {
+  if (roleKey === 'clinic_admin') return 'admin'
+  if (roleKey === 'doctor') return 'doctor'
+  return 'staff'
+}
 
 /**
  * Guards against lockout-equivalent actions on the tenant's primary admin
@@ -41,7 +50,7 @@ const LEGACY_ROLE_TO_SYSTEM_KEY: Record<string, string> = {
 async function assertNotPrimaryAdminDeactivation(
   tenantId: number,
   userId: number,
-  change: { isActive?: boolean; role?: string },
+  change: { isActive?: boolean; roleId?: number },
 ): Promise<void> {
   const primaryAdminId = await userRepo.findPrimaryAdminId(tenantId)
   if (primaryAdminId === null || userId !== primaryAdminId) return
@@ -49,20 +58,25 @@ async function assertNotPrimaryAdminDeactivation(
   if (change.isActive === false) {
     throw new UserError('Cannot deactivate the primary clinic admin', 403)
   }
-  if (change.role !== undefined && change.role !== 'admin') {
-    throw new UserError("Cannot change the primary clinic admin's role", 403)
+  if (change.roleId !== undefined) {
+    const targetRole = await roleRepo.findRoleById(change.roleId)
+    if (!targetRole || targetRole.key !== 'clinic_admin') {
+      throw new UserError("Cannot change the primary clinic admin's role", 403)
+    }
   }
 }
 
 function safe(user: {
   id: number; tenantId: number; name: string; username: string
   email: string | null; phone?: string | null
-  passwordHash?: string; role: string; isActive: boolean; createdAt: Date
+  passwordHash?: string; isActive: boolean; createdAt: Date
+  roleRef: { id: number; name: string; key: string; isSystem: boolean } | null
 }): UserResponse {
-  const { passwordHash: _pw, ...rest } = user
+  const { passwordHash: _pw, roleRef, ...rest } = user
+  if (!roleRef) throw new UserError('User has no role assigned — data integrity error', 500)
   return {
     ...rest,
-    role:      String(rest.role),
+    role:      toLegacyRoleStringTransitional(roleRef.key),
     email:     rest.email ?? null,
     phone:     rest.phone ?? null,
     createdAt: rest.createdAt.toISOString(),
@@ -88,11 +102,8 @@ export async function createUser(tenantId: number, body: CreateUserRequest): Pro
 
   await subscriptionService.assertCanAddUser(tenantId)
 
-  const systemKey = LEGACY_ROLE_TO_SYSTEM_KEY[body.role]
-  if (!systemKey) throw new UserError(`Unknown role: ${body.role}`, 400)
-
-  const roleRow = await roleRepo.findSystemRoleByKey(systemKey)
-  if (!roleRow) throw new UserError(`System role '${systemKey}' not seeded`, 500)
+  const roleRow = await roleRepo.findRoleById(body.roleId)
+  if (!roleRow) throw new UserError(`Unknown role: ${body.roleId}`, 400)
 
   const passwordHash = await bcrypt.hash(body.password, config.bcryptRounds)
   try {
@@ -104,7 +115,6 @@ export async function createUser(tenantId: number, body: CreateUserRequest): Pro
         email:    body.email ?? null,
         phone:    body.phone ?? null,
         passwordHash,
-        role:     body.role,
       },
       roleRow.id,
     )
@@ -123,7 +133,7 @@ export async function updateUser(
   const existing = await userRepo.findUserById(tenantId, userId)
   if (!existing) throw new UserError('User not found', 404)
 
-  await assertNotPrimaryAdminDeactivation(tenantId, userId, { isActive: body.isActive, role: body.role })
+  await assertNotPrimaryAdminDeactivation(tenantId, userId, { isActive: body.isActive, roleId: body.roleId })
 
   // ADR-0016 D-6: restoring a deactivated user must re-check the seat quota,
   // same as createUser — restore should not be a quota-enforcement bypass.
@@ -131,12 +141,9 @@ export async function updateUser(
     await subscriptionService.assertCanAddUser(tenantId)
   }
 
-  if (body.role !== undefined) {
-    const systemKey = LEGACY_ROLE_TO_SYSTEM_KEY[body.role]
-    if (!systemKey) throw new UserError(`Unknown role: ${body.role}`, 400)
-
-    const roleRow = await roleRepo.findSystemRoleByKey(systemKey)
-    if (!roleRow) throw new UserError(`System role '${systemKey}' not seeded`, 500)
+  if (body.roleId !== undefined) {
+    const roleRow = await roleRepo.findRoleById(body.roleId)
+    if (!roleRow) throw new UserError(`Unknown role: ${body.roleId}`, 400)
 
     await userRepo.replaceUserRole(tenantId, userId, roleRow.id)
   }
@@ -272,7 +279,7 @@ export async function assignUserBranches(
     id:               user.id,
     name:             user.name,
     username:         user.username,
-    role:             user.role,
+    role:             user.roleRef ? toLegacyRoleStringTransitional(user.roleRef.key) : 'staff',
     assignedBranches,
   }
 }

@@ -3,7 +3,7 @@
 // tenant-scoped existence check in the service.
 
 import prisma from '../config/db'
-import type { CreateUserRequest, UpdateUserRequest } from '../types'
+import type { UpdateUserRequest } from '../types'
 
 /** Shape of data accepted by the transactional user+role create. */
 export interface CreateUserData {
@@ -12,7 +12,6 @@ export interface CreateUserData {
   email:        string | null     // D-2-02: nullable; at least email or phone required
   phone:        string | null     // D-2-02: optional contact field
   passwordHash: string
-  role:         CreateUserRequest['role']
 }
 
 // ponytail: a user with no branch assignment shows up in every branch's list, same NULL-branch
@@ -23,19 +22,13 @@ export function findUsers(tenantId: number, branchId?: number | null) {
       tenantId,
       ...(branchId ? { OR: [{ userBranches: { some: { branchId } } }, { userBranches: { none: {} } }] } : {}),
     },
+    include: { roleRef: true },
     orderBy: { createdAt: 'asc' },
   })
 }
 
 export function findUserById(tenantId: number, userId: number) {
-  return prisma.user.findFirst({ where: { id: userId, tenantId } })
-}
-
-export function createUser(
-  tenantId: number,
-  data: { name: string; username: string; email: string | null; passwordHash: string; role: CreateUserRequest['role'] },
-) {
-  return prisma.user.create({ data: { tenantId, ...data } })
+  return prisma.user.findFirst({ where: { id: userId, tenantId }, include: { roleRef: true } })
 }
 
 /**
@@ -55,6 +48,7 @@ export async function createUserWithRole(
   return prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
       data: { tenantId, ...data, roleId },
+      include: { roleRef: true },
     })
     await tx.userRole.create({
       data: { userId: user.id, roleId, tenantId },
@@ -65,7 +59,7 @@ export async function createUserWithRole(
 
 export async function updateUser(tenantId: number, userId: number, data: UpdateUserRequest) {
   await prisma.user.updateMany({ where: { id: userId, tenantId }, data })
-  return prisma.user.findFirst({ where: { id: userId, tenantId } })
+  return prisma.user.findFirst({ where: { id: userId, tenantId }, include: { roleRef: true } })
 }
 
 export async function setActive(tenantId: number, userId: number, isActive: boolean) {
@@ -159,7 +153,7 @@ export async function updateUserBranch(
   tenantId: number,
   userId:   number,
   branchId: number | null,
-): Promise<{ id: number; tenantId: number; name: string; username: string; email: string | null; phone: string | null; role: string; branchId: number | null; isActive: boolean; createdAt: Date } | null> {
+): Promise<{ id: number; tenantId: number; name: string; username: string; email: string | null; phone: string | null; roleRef: { id: number; name: string; key: string; isSystem: boolean } | null; branchId: number | null; isActive: boolean; createdAt: Date } | null> {
   const count = await prisma.user.updateMany({
     where: { id: userId, tenantId },
     data:  { branchId },
@@ -169,10 +163,10 @@ export async function updateUserBranch(
     where: { id: userId, tenantId },
     select: {
       id: true, tenantId: true, name: true, username: true,
-      email: true, phone: true, role: true,
+      email: true, phone: true, roleRef: true,
       branchId: true, isActive: true, createdAt: true,
     },
-  }) as Promise<{ id: number; tenantId: number; name: string; username: string; email: string | null; phone: string | null; role: string; branchId: number | null; isActive: boolean; createdAt: Date } | null>
+  })
 }
 
 // ─── Multi-branch assignment ────────────────────────────────────────────────
@@ -244,15 +238,17 @@ export function updatePreferences(
 }
 
 /**
- * Return the lowest-id user with legacy `role = 'admin'` for a tenant — the
- * tenant's "primary admin" (ADR-0016 D-1). Returns null if the tenant has no
- * such user. Tenant-scoped `findFirst` (BOLA-safe by construction).
+ * Return the lowest-id user holding the `clinic_admin` system role for a
+ * tenant — the tenant's "primary admin" (ADR-0016 D-1). Returns null if the
+ * tenant has no such user. Tenant-scoped `findFirst` (BOLA-safe by
+ * construction). Re-pointed from the dropped `User.role` column to
+ * `roleRef.key` by ADR-0019/D-7.
  *
  * @param tenantId - Tenant scope (multi-tenancy isolation).
  */
 export async function findPrimaryAdminId(tenantId: number): Promise<number | null> {
   const admin = await prisma.user.findFirst({
-    where:   { tenantId, role: 'admin' },
+    where:   { tenantId, roleRef: { key: 'clinic_admin' } },
     orderBy: { id: 'asc' },
     select:  { id: true },
   })
