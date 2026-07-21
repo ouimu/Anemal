@@ -483,10 +483,11 @@ describe('T-5D-04 Quota enforcement', () => {
 
   it('❌ users at limit → assertCanAddUser throws 409 QUOTA_EXCEEDED resource=users', async () => {
     // Seed one active user so current(1) >= limit(1) → next add blocked.
+    const staffRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } })
     await prisma.user.create({
       data: {
         tenantId, name: 'QA User 1', username: `qa_user1_${SFX}`, email: `qa-user-1-${SFX}@x.test`,
-        passwordHash: 'x', role: 'staff', isActive: true,
+        passwordHash: 'x', roleId: staffRole.id, isActive: true,
       },
     })
     await setOverride({ maxUsers: 1 })
