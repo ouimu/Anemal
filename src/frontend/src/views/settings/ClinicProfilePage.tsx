@@ -3,6 +3,7 @@ import MaterialIcon from '../../components/MaterialIcon'
 import { useAuthStore } from '../../store/authStore'
 import { useClinicSettings, useUpdateClinicProfile, type VatMode } from '../../hooks/useClinicSettings'
 import { getErrorMessage } from '../../utils/errorMessage'
+import { useT } from '../../i18n'
 
 interface FormState {
   name:    string
@@ -17,6 +18,7 @@ interface FormState {
 }
 
 export default function ClinicProfilePage() {
+  const t = useT()
   const { data, isLoading } = useClinicSettings()
   const update = useUpdateClinicProfile()
   const userId = useAuthStore(s => s.userId)
@@ -199,9 +201,13 @@ export default function ClinicProfilePage() {
 
         {/* VAT Configuration (ADR-0020) */}
         <div className="flex flex-col gap-xs">
-          <label className="text-body-sm font-medium text-on-surface-variant">VAT</label>
+          <label className="text-body-sm font-medium text-on-surface-variant">{t('clinic.settings.vatSection')}</label>
           <div className="flex gap-sm">
-            {([['none', 'No VAT'], ['exclusive', 'VAT Exclusive'], ['inclusive', 'VAT Inclusive']] as const).map(([mode, label]) => (
+            {([
+              ['none', t('clinic.settings.vatNone')],
+              ['exclusive', t('clinic.settings.vatExclusive')],
+              ['inclusive', t('clinic.settings.vatInclusive')],
+            ] as const).map(([mode, label]) => (
               <button
                 key={mode}
                 type="button"
@@ -216,7 +222,7 @@ export default function ClinicProfilePage() {
           </div>
           {form.vatMode !== 'none' && (
             <div className="flex items-center gap-sm mt-xs">
-              <label className="text-body-sm text-on-surface-variant" htmlFor="vatRate">Rate (%)</label>
+              <label className="text-body-sm text-on-surface-variant" htmlFor="vatRate">{t('clinic.settings.vatRate')}</label>
               <input
                 id="vatRate"
                 type="number"

@@ -289,9 +289,9 @@ export default function ClinicBilling() {
                 <div className="flex items-center gap-sm px-md py-xs text-label-md text-on-surface-variant uppercase tracking-wider">
                   <span className="w-[18px] flex-shrink-0" />
                   <span className="flex-1">{t('clinic.billing.description')}</span>
-                  <span className="w-16 text-center">Qty</span>
+                  <span className="w-16 text-center">{t('clinic.billing.qty')}</span>
                   <span className="w-24 text-right">{VAT_PRICE_LABEL_KEY[vatMode] ? t(VAT_PRICE_LABEL_KEY[vatMode]!) : t('clinic.billing.price')}</span>
-                  <span className="w-24 text-right">Total</span>
+                  <span className="w-24 text-right">{t('clinic.billing.total')}</span>
                   <span className="w-[44px]" />
                 </div>
               )}
