@@ -6,7 +6,27 @@
 > This matrix is the canonical status source; @pm-agent updates it LAST on every
 > task (see CLAUDE.md → Tracking & Documentation).
 >
-> Current totals as of PR #38 (2026-07-21, "unify user role assignment,
+> Current totals as of PR #41 (2026-07-21, "EMR file attachment uploads for pet
+> medical records", ADR-0021): replaced the URL-reference-only EMR attachment
+> flow with a real presign → direct-to-S3 PUT → confirm upload pipeline
+> (`useEmrAttachmentUpload.ts`), scoped to PDF/JPG/PNG/DOCX with a server-side
+> size cap and MIME allow-list, and a signed `ContentLength`-bound PUT (grill
+> F1, verified against the live `@aws-sdk/s3-request-presigner` setup). Added
+> gated presigned-download and delete routes (`attachment.controller.ts`) —
+> delete is blocked on attachments belonging to a billed medical record — plus
+> a storage-key-prefix guard on confirm to stop a caller from pointing a
+> record's attachment at another tenant's/record's S3 key. Private-bucket-safe
+> by design: EMR attachments never return a public URL (grill F2), unlike the
+> existing pet-photo upload flow. Wired into `ClinicEMR.tsx`'s right panel. A
+> QA-caught P1 (delete-attachment failures were swallowed silently instead of
+> surfacing in the UI) was fixed pre-merge. QA sign-off (APPROVE, no open P1/P2)
+> at `docs/superpowers/plans/2026-07-21-emr-file-attachments-qa-signoff.md`.
+> Backend 1031 → 1058, frontend 283 → 289 — on top of PR #39 (2026-07-21,
+> "billing VAT configuration", ADR-0020): per-clinic VAT mode (No VAT /
+> Exclusive / Inclusive) + editable rate, resolved server-side from the
+> tenant's setting instead of a client-suppliable per-invoice `taxRate`.
+> Backend 1017 → 1031, frontend 279 → 283 — on top of PR #38 (2026-07-21,
+> "unify user role assignment,
 > Plan B: frontend", ADR-0019): replaced Clinic Admin's two conflicting
 > role-assignment UIs (legacy hardcoded enum listbox + separate RBAC
 > "Roles" section) with a single `ClinicRole`-backed listbox
@@ -183,5 +203,7 @@
 | Discoverable Deactivate/Restore (USER-DISC-1, PR #27) | `DELETE /users/:id`, `PUT /users/:id {isActive:true}` | **Added** — direct Deactivate button on active rows (simple confirm dialog, ADR-0016 D-4), Restore on inactive rows; primary-admin row shows a disabled lock icon instead of Deactivate. Restore surfaces server error (e.g. seat-quota 403) instead of failing silently | — (reuses existing endpoints) | `views/admin/UserManagementTab.tsx` | `__tests__/UserManagementTab.test.tsx` | implemented |
 
 | Billing — VAT configuration (PR #39, ADR-0020) | `GET/PUT /api/settings/clinic` (existing endpoints, extended), `POST /api/invoices` (contract narrowed) | **Added** — per-clinic VAT mode (`none`/`exclusive`/`inclusive`) + editable rate on `TenantSettings` (default `exclusive`/7, zero behavior change for existing tenants), configured by Clinic Admin in Clinic Setting via a toggle (on/off) + radio (Exclusive/Inclusive), reusing `clinic.profile.edit`/`clinic.profile.view` — no new endpoint or permission. `createInvoiceSchema`'s client-suppliable `taxRate` is removed (`.strict()`); `invoice.service.ts`'s `computeVat()` resolves VAT server-side from the tenant's setting instead, closing a per-invoice tampering vector. Cart, receipts (in-app + printed), and the PDF hide the VAT line for `none` and show `(Ex. VAT)`/`(Inc. VAT)` suffixes on the price column and subtotal row for the other two modes. `hospitalization.service.ts`'s discharge-invoice call site updated in lockstep (would break under the narrowed `.strict()` schema otherwise) | `services/invoice.service.ts`, `services/tenant-settings.service.ts`, `controllers/settings.controller.ts`, `services/hospitalization.service.ts`, `services/pdf.service.ts`, `prisma/migrations/20260721134853_add_tenant_settings_vat/` | `views/settings/ClinicProfilePage.tsx`, `views/clinic/ClinicBilling.tsx`, `hooks/useClinicSettings.ts`, `hooks/useInvoices.ts` | `tests/integration/vat-config.test.ts`, `tests/integration/settings-api.test.ts` (TC-S008 permission boundary), `tests/integration/phase4.test.ts`/`pdf.test.ts` (strict-schema fixes), `__tests__/ClinicBilling.test.tsx` (`calcVat()` 3-mode unit tests) | implemented |
+
+| EMR file attachments (PR #41, ADR-0021) | routes wired via `medical-record.routes.ts` (presign/confirm/download/delete on `:id/attachments*`) | **Added** — replaces the URL-reference-only attachment flow with a real presign → direct-to-S3 PUT → confirm pipeline, scoped to PDF/JPG/PNG/DOCX with a server-side size cap and MIME allow-list; signed PUT is `ContentLength`-bound so the size cap can't be bypassed client-side (grill F1). Confirm accepts `storageKey` XOR `fileUrl` and enforces a storage-key-prefix guard tying the key to the caller's tenant/record. New gated presigned-download route and delete route (blocked when the parent medical record is billed). EMR attachments never return a public URL, unlike the existing pet-photo upload flow (grill F2, private-bucket-safe by design pending infra bucket-policy work). `uploadedByUserId` threaded from JWT context, not client-suppliable. QA-caught P1 — delete-attachment failures were swallowed silently instead of surfacing an error — fixed pre-merge | `controllers/emr-attachment.controller.ts`, `services/emr-attachment.service.ts`, `services/emr-attachment.constants.ts`, `services/medical-record.service.ts`, `services/upload.service.ts`, `models/medical-record.repository.ts`, `routes/medical-record.routes.ts` | `views/clinic/ClinicEMR.tsx`, `hooks/useEmrAttachmentUpload.ts` | `__tests__/emr-attachments.test.ts`, `__tests__/useEmrAttachmentUpload.test.ts`, `__tests__/ClinicEMR.attachments.test.tsx` | implemented |
 
 Implementer note: this is a starting seed (~30 rows), not exhaustive — the header rule ("expand a row before modifying that module") is the mechanism that keeps it growing accurately over time rather than trying to enumerate everything up front.
