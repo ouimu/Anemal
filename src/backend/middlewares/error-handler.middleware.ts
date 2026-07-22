@@ -3,6 +3,7 @@
 
 import { Request, Response, NextFunction } from 'express'
 import { ZodError } from 'zod'
+import { MulterError } from 'multer'
 import { AppError } from '../utils/errors'
 import { logger } from '../utils/logger'
 
@@ -16,6 +17,11 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
 
   if (err instanceof ZodError) {
     res.status(400).json({ success: false, error: 'Validation failed', code: 'VALIDATION_ERROR', details: err.flatten() })
+    return
+  }
+
+  if (err instanceof MulterError) {
+    res.status(400).json({ success: false, error: err.message, code: 'VALIDATION_ERROR' })
     return
   }
 

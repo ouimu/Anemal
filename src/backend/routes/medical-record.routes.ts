@@ -9,8 +9,9 @@ import {
 } from '../controllers/medical-record.controller'
 import { handleAttachmentSubmit, handleDownloadAttachment, handleDeleteAttachment } from '../controllers/emr-attachment.controller'
 import { createMedicalRecordSchema, updateMedicalRecordSchema } from '../services/medical-record.service'
+import { EMR_ATTACHMENT_MAX_SIZE_BYTES } from '../services/emr-attachment.constants'
 
-const upload = multer({ storage: multer.memoryStorage() })
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: EMR_ATTACHMENT_MAX_SIZE_BYTES } })
 const router = Router()
 router.use(authMiddleware)
 
