@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import { AppError } from '../utils/errors'
 import * as recordRepo from '../models/medical-record.repository'
-import { EMR_ATTACHMENT_MIME_ALLOWLIST, EMR_ATTACHMENT_MAX_SIZE_BYTES, assertStorageKeyPrefix } from './emr-attachment.constants'
 
 export const createMedicalRecordSchema = z.object({
   petId:            z.number().int().positive(),
@@ -20,24 +19,15 @@ export const createMedicalRecordSchema = z.object({
 
 export const updateMedicalRecordSchema = createMedicalRecordSchema.partial().omit({ petId: true, doctorId: true })
 
-export const addAttachmentSchema = z.object({
-  fileName:      z.string().min(1).max(255),
-  fileUrl:       z.string().url().optional(),
-  storageKey:    z.string().min(1).optional(),
-  mimeType:      z.enum(EMR_ATTACHMENT_MIME_ALLOWLIST).optional(),
-  fileSizeBytes: z.number().int().positive().max(EMR_ATTACHMENT_MAX_SIZE_BYTES).optional(),
-  fileType:      z.enum(['lab', 'xray', 'photo', 'other']).optional(),
-}).refine(
-  (data) => Boolean(data.fileUrl) !== Boolean(data.storageKey),
-  { message: 'Provide exactly one of fileUrl or storageKey', path: ['fileUrl'] },
-).refine(
-  (data) => !data.storageKey || (data.mimeType !== undefined && data.fileSizeBytes !== undefined),
-  { message: 'mimeType and fileSizeBytes are required when storageKey is provided', path: ['mimeType'] },
-)
+export const registerAttachmentUrlSchema = z.object({
+  fileName: z.string().min(1).max(255),
+  fileUrl:  z.string().url(),
+  fileType: z.enum(['lab', 'xray', 'photo', 'other']).optional(),
+})
 
 export type CreateMedicalRecordInput = z.infer<typeof createMedicalRecordSchema>
 export type UpdateMedicalRecordInput = z.infer<typeof updateMedicalRecordSchema>
-export type AddAttachmentInput = z.infer<typeof addAttachmentSchema>
+export type RegisterAttachmentUrlInput = z.infer<typeof registerAttachmentUrlSchema>
 
 export class MedicalRecordError extends AppError {
   constructor(message: string, statusCode: number) {
@@ -76,19 +66,21 @@ export async function updateMedicalRecord(tenantId: number, branchId: number | n
 }
 
 /**
- * Confirm an EMR attachment after upload (or register a legacy fileUrl
- * reference). `uploadedByUserId` is only recorded for the new binary-upload
- * path — a legacy `fileUrl`-only confirm doesn't necessarily correspond to
- * an in-app upload action, so it stays `null` there (EMR-ATTACH-9).
+ * Register a URL-reference attachment (ADR-0021 backward-compat — a
+ * non-upload way to attach an externally-hosted file, e.g. a referral
+ * letter link). `uploadedByUserId` stays null: a URL reference doesn't
+ * correspond to an in-app upload action (EMR-ATTACH-9).
  */
-export async function addAttachment(
+export async function registerAttachmentUrl(
   tenantId: number,
   branchId: number | null | undefined,
   medicalRecordId: number,
-  data: AddAttachmentInput,
-  uploadedByUserId: number,
+  data: RegisterAttachmentUrlInput,
 ) {
   await getMedicalRecord(tenantId, branchId, medicalRecordId)
-  if (data.storageKey) assertStorageKeyPrefix(tenantId, medicalRecordId, data.storageKey)
-  return recordRepo.createAttachment(tenantId, medicalRecordId, data, data.storageKey ? uploadedByUserId : null)
+  return recordRepo.createAttachment(
+    tenantId, medicalRecordId,
+    { fileName: data.fileName, fileUrl: data.fileUrl, fileType: data.fileType },
+    null,
+  )
 }

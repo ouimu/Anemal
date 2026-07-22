@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import { ValidationError } from '../utils/errors'
 import {
-  listMedicalRecords, getMedicalRecord, createMedicalRecord, updateMedicalRecord, addAttachment,
+  listMedicalRecords, getMedicalRecord, createMedicalRecord, updateMedicalRecord,
 } from '../services/medical-record.service'
 
 export async function handleListMedicalRecords(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -33,18 +33,5 @@ export async function handleUpdateMedicalRecord(req: Request, res: Response, nex
   try {
     const data = await updateMedicalRecord(req.context!.tenantId, req.context?.branchId, parseInt(req.params.id), req.body)
     res.json({ success: true, data })
-  } catch (err) { next(err) }
-}
-
-export async function handleAddAttachment(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const data = await addAttachment(
-      req.context!.tenantId,
-      req.context?.branchId,
-      parseInt(req.params.id),
-      req.body,
-      req.context!.userId,
-    )
-    res.status(201).json({ success: true, data })
   } catch (err) { next(err) }
 }
