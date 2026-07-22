@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
+import AuthedPetImage from '../../components/AuthedPetImage'
 import { usePhotoUpload } from '../../hooks/usePhotoUpload'
 import { useT } from '../../i18n'
 import Can from '../../components/Can'
@@ -229,11 +230,7 @@ export function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerI
     setSaving(true)
     setError('')
     try {
-      let photoUrl: string | null = null
-      if (photoFile) {
-        photoUrl = await uploadPhoto(photoFile)
-      }
-      await api.post('/api/pets', {
+      const res = await api.post('/api/pets', {
         ownerId,
         name: form.name,
         species: form.species,
@@ -245,13 +242,17 @@ export function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerI
         microchipId: form.microchipId || null,
         allergies: form.allergies || null,
         underlyingConditions: form.underlyingConditions || null,
-        photoUrl,
       })
+      const newPetId = res.data.data.id as number
+      if (photoFile) {
+        // Grill G3: no rollback on photo failure — the pet is already
+        // created and valid without a photo; swallow the error here and
+        // let the user retry from Edit Pet.
+        try { await uploadPhoto(newPetId, photoFile) } catch { /* non-fatal, see G3 */ }
+      }
       onSuccess()
     } catch (err: unknown) {
-      if (!uploadError) {
-        setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save')
-      }
+      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save')
     } finally { setSaving(false) }
   }
 
@@ -340,7 +341,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: { pet: Pet; onClose: (
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const [photoFile, setPhotoFile]       = useState<File | null>(null)
-  const [photoPreview, setPhotoPreview] = useState<string | null>(pet.photoUrl ?? null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { uploadPhoto, isUploading, uploadError } = usePhotoUpload()
 
@@ -359,8 +360,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: { pet: Pet; onClose: (
     setSaving(true)
     setError('')
     try {
-      let photoUrl = pet.photoUrl ?? null
-      if (photoFile) photoUrl = await uploadPhoto(photoFile)
+      if (photoFile) await uploadPhoto(pet.id, photoFile)
       await api.put(`/api/pets/${pet.id}`, {
         name: form.name,
         species: form.species,
@@ -372,7 +372,6 @@ export function EditPetModal({ pet, onClose, onSuccess }: { pet: Pet; onClose: (
         microchipId: form.microchipId || null,
         allergies: form.allergies || null,
         underlyingConditions: form.underlyingConditions || null,
-        photoUrl,
       })
       qc.invalidateQueries({ queryKey: ['pet', pet.id] })
       onSuccess()
@@ -396,7 +395,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: { pet: Pet; onClose: (
             <div className="w-16 h-16 rounded-xl bg-surface-container-high flex items-center justify-center overflow-hidden flex-shrink-0 border border-outline-variant">
               {photoPreview
                 ? <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
-                : <MaterialIcon name="pets" size={28} className="text-on-surface-variant" />
+                : <AuthedPetImage petId={pet.id} alt={pet.name} className="w-full h-full object-cover" />
               }
             </div>
             <div className="flex flex-col gap-xs flex-1">
@@ -525,7 +524,7 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
       {/* Pet hero */}
       <div className="flex items-center gap-lg bg-surface rounded-xl border border-outline-variant p-lg">
         {pet.photoUrl
-          ? <img src={pet.photoUrl} alt={pet.name} className="w-[120px] h-[120px] rounded-xl object-cover border border-outline-variant" />
+          ? <AuthedPetImage petId={pet.id} alt={pet.name} className="w-[120px] h-[120px] rounded-xl object-cover border border-outline-variant" iconSize={48} />
           : <div className="w-[120px] h-[120px] rounded-xl bg-surface-container-high flex items-center justify-center"><MaterialIcon name="pets" size={48} className="text-on-surface-variant" /></div>
         }
         <div className="flex-1">
@@ -776,7 +775,7 @@ export function OwnerPanel({ ownerId, onSelectPet, onAddPet, onDeleted }: { owne
               <button key={pet.id} onClick={() => onSelectPet(pet.id)}
                       className="flex flex-col items-center gap-sm p-lg bg-surface rounded-xl border border-outline-variant hover:border-primary hover:shadow-lvl1 transition-all min-h-[120px] text-center">
                 {pet.photoUrl
-                  ? <img src={pet.photoUrl} alt={pet.name} className="w-16 h-16 rounded-full object-cover border border-outline-variant" />
+                  ? <AuthedPetImage petId={pet.id} alt={pet.name} className="w-16 h-16 rounded-full object-cover border border-outline-variant" iconSize={28} />
                   : <div className="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center">
                       <MaterialIcon name="pets" size={28} className="text-on-surface-variant" />
                     </div>

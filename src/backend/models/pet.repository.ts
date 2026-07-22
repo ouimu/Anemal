@@ -62,6 +62,10 @@ export function createPet(tenantId: number, data: CreatePetInput) {
   })
 }
 
+export function updatePetPhotoUrl(tenantId: number, id: number, photoUrl: string) {
+  return prisma.pet.update({ where: { id, tenantId }, data: { photoUrl } })
+}
+
 export function updatePet(tenantId: number, id: number, data: UpdatePetInput) {
   const { birthDate, weightKg, ...rest } = data
   return prisma.pet.update({

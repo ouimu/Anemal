@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
+import AuthedPetImage from '../../components/AuthedPetImage'
 import { VitalStepper } from '../../components/VitalStepper'
 import { useAuthStore } from '../../store/authStore'
 import { useT } from '../../i18n'
@@ -525,7 +526,7 @@ export default function ClinicEMR() {
           <div className="p-md border-b border-outline-variant">
             <div className="flex items-center gap-sm mb-md">
               {pet.photoUrl
-                ? <img src={pet.photoUrl} alt={pet.name} className="w-10 h-10 rounded-full object-cover" />
+                ? <AuthedPetImage petId={pet.id} alt={pet.name} className="w-10 h-10 rounded-full object-cover" iconSize={20} />
                 : <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center"><MaterialIcon name="pets" size={20} className="text-on-surface-variant" /></div>
               }
               <div>

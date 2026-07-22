@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
-import { listPets, getPet, createPet, updatePet } from '../services/pet.service'
+import { listPets, getPet, createPet, updatePet, uploadPetPhoto, getPetPhotoFile } from '../services/pet.service'
 import { resolvePermissions } from '../services/permission.service'
+import { ValidationError } from '../utils/errors'
 
 export async function handleListPets(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -32,5 +33,24 @@ export async function handleUpdatePet(req: Request, res: Response, next: NextFun
   try {
     const data = await updatePet(req.context!.tenantId, parseInt(req.params.id), req.body)
     res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export async function handleUploadPetPhoto(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!req.file) throw new ValidationError({ file: ['file is required'] })
+    const data = await uploadPetPhoto(req.context!.tenantId, parseInt(req.params.id), {
+      buffer: req.file.buffer, mimetype: req.file.mimetype, size: req.file.size,
+    })
+    res.status(201).json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export async function handleGetPetPhoto(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await getPetPhotoFile(req.context!.tenantId, parseInt(req.params.id))
+    res.setHeader('Content-Type', data.contentType)
+    res.setHeader('Cache-Control', 'private, max-age=300')
+    res.send(data.buffer)
   } catch (err) { next(err) }
 }
