@@ -708,8 +708,14 @@ export default function ClinicEMR() {
                     type="button"
                     aria-label="Delete attachment"
                     onClick={async () => {
-                      await api.delete(`/api/medical-records/${selectedRecordId}/attachments/${a.id}`)
-                      refetchRecord()
+                      try {
+                        await api.delete(`/api/medical-records/${selectedRecordId}/attachments/${a.id}`)
+                        setAttachmentUiError(null)
+                        refetchRecord()
+                      } catch (err) {
+                        const message = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+                        setAttachmentUiError(message ?? 'Failed to delete attachment.')
+                      }
                     }}
                     className="w-[36px] h-[36px] flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-error/10 hover:text-error transition-colors flex-shrink-0"
                   >
