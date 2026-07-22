@@ -81,6 +81,11 @@ describe('ClinicEMR — Attachments panel', () => {
     expect(screen.getByText(/20(\.0)? ?KB|20480/i)).toBeInTheDocument()
     expect(screen.getByText('Dr. Rex')).toBeInTheDocument()
     expect(screen.getByText('lab')).toBeInTheDocument()
+    // The name must fill its column and truncate so a long name never overlaps
+    // the delete icon (regression: inline-block button didn't clip).
+    const nameEl = screen.getByText('lab.pdf')
+    expect(nameEl.className).toContain('truncate')
+    expect(nameEl.className).toContain('w-full')
   })
 
   it('rejects an oversized file client-side without calling the upload hook', async () => {

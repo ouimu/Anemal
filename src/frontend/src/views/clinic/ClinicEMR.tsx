@@ -704,12 +704,12 @@ export default function ClinicEMR() {
                     <button
                       type="button"
                       onClick={() => downloadAttachment(selectedRecordId!, a.id)}
-                      className="text-body-sm text-primary truncate hover:underline text-left"
+                      className="block w-full text-body-sm text-primary truncate hover:underline text-left"
                     >
                       {a.fileName}
                     </button>
                   ) : (
-                    <a href={a.fileUrl} target="_blank" rel="noreferrer" className="text-body-sm text-primary truncate hover:underline">{a.fileName}</a>
+                    <a href={a.fileUrl} target="_blank" rel="noreferrer" className="block w-full text-body-sm text-primary truncate hover:underline">{a.fileName}</a>
                   )}
                   <p className="text-label-md text-on-surface-variant">
                     <span>{formatFileSize(a.fileSize)}</span>
