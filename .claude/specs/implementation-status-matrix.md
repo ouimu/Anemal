@@ -6,7 +6,39 @@
 > This matrix is the canonical status source; @pm-agent updates it LAST on every
 > task (see CLAUDE.md → Tracking & Documentation).
 >
-> Current totals as of PR #41 (2026-07-21, "EMR file attachment uploads for pet
+> Current totals as of PR #43 (2026-07-22, "pet-photo migration to
+> StorageDriver + S3-stack teardown", ADR-0022, PR2/2): fast-follow to PR #42
+> — migrates pet-photo upload onto the same pluggable `StorageDriver` PR1
+> introduced, using a stable per-pet key (`tenants/{id}/photo/pet-{id}.{ext}`,
+> overwrite-in-place, zero orphans, grill G2) instead of EMR's per-upload UUID
+> key. Closed a client-writable-`photoUrl` cross-tenant/cross-module read hole
+> (BA §2.3 R-1) — `photoUrl` is now server-managed only on both create and
+> update, with a serve-time tenant-prefix guard as defense-in-depth. New
+> `AuthedPetImage`/`useAuthedImage` component (authenticated blob-fetch, since
+> `<img src>` can't carry the Bearer token) replaces every raw
+> `<img src={photoUrl}>` site (`ClinicPets.tsx` grid + detail + Add/Edit
+> modals, `ClinicEMR.tsx` avatar); `AddPetModal` creates the pet first, then
+> uploads the photo (grill G3 — upload failure doesn't block pet creation).
+> Deletes the entire S3 presign stack (`config/storage.ts`,
+> `upload.service/controller/routes.ts`) and both `@aws-sdk/*` deps, safe now
+> that both EMR and pet-photo are off it. QA round 1 REJECT — P1 (the
+> photo-delete path could delete another tenant's file via a forged/legacy
+> `photoUrl`, since it lacked the read-side's tenant-prefix guard) and P2
+> (multer had no `fileSize` limit, same class PR1 fixed for EMR) — both fixed
+> + a regression test added (PP-14), QA round 2 APPROVE. Backend 1066 → 1078,
+> frontend 289 → 301 — on top of PR #42 (2026-07-22, "unified local-disk
+> storage driver, PR1/2: EMR fix", ADR-0022): replaced the broken S3 presign
+> path for EMR attachments (503 `STORAGE_NOT_CONFIGURED` with no live AWS
+> creds configured) with the `StorageDriver` interface + `LocalDiskDriver`
+> (`storage-driver.ts`), boot-guarded to refuse `NODE_ENV=production` unless
+> `ALLOW_LOCAL_STORAGE_IN_PROD=true` (grill G1). EMR upload collapses
+> presign→PUT→confirm to one multipart `POST`; the legacy `fileUrl`
+> registration path (ADR-0021) is preserved on the same route. QA-flagged P2
+> fixed same-PR: multer's `fileSize` limit is now enforced at ingest instead
+> of after full in-memory buffering, via a new `MulterError`→400 branch added
+> to the global error handler. Local disk is testing-only — a BYO-cloud
+> driver is required before production (ADR-0022 §9). Backend 1058 → 1066,
+> frontend 289 (unchanged) — on top of PR #41 (2026-07-21, "EMR file attachment uploads for pet
 > medical records", ADR-0021): replaced the URL-reference-only EMR attachment
 > flow with a real presign → direct-to-S3 PUT → confirm upload pipeline
 > (`useEmrAttachmentUpload.ts`), scoped to PDF/JPG/PNG/DOCX with a server-side
