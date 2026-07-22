@@ -3,7 +3,7 @@
 import prisma from '../config/db'
 import { Prisma } from '@prisma/client'
 import type {
-  CreateMedicalRecordInput, UpdateMedicalRecordInput, AddAttachmentInput,
+  CreateMedicalRecordInput, UpdateMedicalRecordInput,
 } from '../services/medical-record.service'
 
 export function findByPet(tenantId: number, branchId: number | null | undefined, petId: number, skip: number, take: number) {
@@ -98,10 +98,19 @@ export function updateRecord(tenantId: number, id: number, data: UpdateMedicalRe
   })
 }
 
+export interface AttachmentCreateData {
+  fileName:       string
+  fileUrl?:       string | null
+  storageKey?:    string | null
+  mimeType?:      string | null
+  fileSizeBytes?: number | null
+  fileType?:      string | null
+}
+
 export function createAttachment(
   tenantId: number,
   medicalRecordId: number,
-  data: AddAttachmentInput,
+  data: AttachmentCreateData,
   uploadedByUserId: number | null,
 ) {
   return prisma.attachment.create({

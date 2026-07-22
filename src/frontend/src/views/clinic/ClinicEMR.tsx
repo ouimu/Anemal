@@ -413,9 +413,14 @@ export default function ClinicEMR() {
   const handleAttachmentFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     e.target.value = '' // allow re-selecting the same file
-    if (!file || !selectedRecordId) return
+    if (!file) return
     setAttachmentUiError(null)
     clearUploadError()
+
+    if (!selectedRecordId) {
+      setAttachmentUiError('Save the record before attaching files.')
+      return
+    }
 
     if (file.size > CLIENT_MAX_ATTACHMENT_BYTES) {
       setAttachmentUiError('File is too large — the limit is 25 MB.')
