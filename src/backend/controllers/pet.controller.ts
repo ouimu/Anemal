@@ -50,7 +50,14 @@ export async function handleGetPetPhoto(req: Request, res: Response, next: NextF
   try {
     const data = await getPetPhotoFile(req.context!.tenantId, parseInt(req.params.id))
     res.setHeader('Content-Type', data.contentType)
-    res.setHeader('Cache-Control', 'private, max-age=300')
+    // no-store, not private+max-age: the URL (/api/pets/:id/photo) is not
+    // tenant-qualified in the path and the storage key is stable (overwrite
+    // in place), so a timed private cache both risks cross-tenant reuse on a
+    // shared/tablet browser after re-login and serves a stale photo for up to
+    // the max-age after an in-place re-upload. The frontend refetches per
+    // mount and revokes the object URL on unmount, so HTTP caching adds no
+    // real benefit here.
+    res.setHeader('Cache-Control', 'no-store')
     res.send(data.buffer)
   } catch (err) { next(err) }
 }
