@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
+import AuthedPetImage from '../../components/AuthedPetImage'
 import { usePhotoUpload } from '../../hooks/usePhotoUpload'
 import { useT } from '../../i18n'
 import Can from '../../components/Can'
@@ -340,7 +341,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: { pet: Pet; onClose: (
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const [photoFile, setPhotoFile]       = useState<File | null>(null)
-  const [photoPreview, setPhotoPreview] = useState<string | null>(pet.photoUrl ?? null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { uploadPhoto, isUploading, uploadError } = usePhotoUpload()
 
@@ -359,8 +360,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: { pet: Pet; onClose: (
     setSaving(true)
     setError('')
     try {
-      let photoUrl = pet.photoUrl ?? null
-      if (photoFile) photoUrl = await uploadPhoto(photoFile)
+      if (photoFile) await uploadPhoto(pet.id, photoFile)
       await api.put(`/api/pets/${pet.id}`, {
         name: form.name,
         species: form.species,
@@ -372,7 +372,6 @@ export function EditPetModal({ pet, onClose, onSuccess }: { pet: Pet; onClose: (
         microchipId: form.microchipId || null,
         allergies: form.allergies || null,
         underlyingConditions: form.underlyingConditions || null,
-        photoUrl,
       })
       qc.invalidateQueries({ queryKey: ['pet', pet.id] })
       onSuccess()
@@ -396,7 +395,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: { pet: Pet; onClose: (
             <div className="w-16 h-16 rounded-xl bg-surface-container-high flex items-center justify-center overflow-hidden flex-shrink-0 border border-outline-variant">
               {photoPreview
                 ? <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
-                : <MaterialIcon name="pets" size={28} className="text-on-surface-variant" />
+                : <AuthedPetImage petId={pet.id} alt={pet.name} className="w-full h-full object-cover" />
               }
             </div>
             <div className="flex flex-col gap-xs flex-1">
