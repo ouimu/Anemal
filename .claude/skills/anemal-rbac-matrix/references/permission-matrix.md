@@ -42,7 +42,7 @@ Columns are the three **system clinic roles**. Custom roles start as a clone of 
 | `emr.view` | EMR / Clinical | V | V | V |
 | `emr.create` | EMR / Clinical | - | E | - |
 | `emr.edit` | EMR / Clinical | - | E | - |
-| `emr.attach` | EMR (lab/X-ray files) | - | E | V |
+| `emr.attach` | EMR (lab/X-ray files) | E | E | V |
 | `vaccination.create` | EMR / Clinical (vaccination only) | - | E | E |
 | `prescriptions.view` | Prescriptions | V | V | V |
 | `prescriptions.create` | Prescriptions (write Rx) | - | E | - |
@@ -121,7 +121,10 @@ Columns are the three **system clinic roles**. Custom roles start as a clone of 
 | | PUT | `crm.edit` |
 | `medical-record.routes` | GET | `emr.view` |
 | | POST `/` , PUT `/:id` | `emr.create` / `emr.edit` |
+| | POST `/:id/attachments/presign` | `emr.attach` |
 | | POST `/:id/attachments` | `emr.attach` |
+| | GET `/:id/attachments/:attId/download` | `emr.view` |
+| | DELETE `/:id/attachments/:attId` | `emr.attach` |
 | `vaccination.routes` | GET | `emr.view` |
 | | POST `/` | `vaccination.create` |
 | `prescription.routes` | GET | `prescriptions.view` |

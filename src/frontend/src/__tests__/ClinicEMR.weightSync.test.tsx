@@ -18,7 +18,10 @@ vi.mock('../utils/api', () => ({
   },
 }))
 vi.mock('../store/authStore', () => ({
-  useAuthStore: () => ({ userId: 1 }),
+  useAuthStore: (selector?: (s: { userId: number; hasPermission: () => boolean }) => unknown) => {
+    const state = { userId: 1, hasPermission: () => true }
+    return selector ? selector(state) : state
+  },
 }))
 
 import ClinicEMR from '../views/clinic/ClinicEMR'

@@ -173,6 +173,8 @@ model User {
   paymentHistoryReceived PaymentHistory[]  @relation("ReceivedPayments")
   // ADR-0013 D4: care logs this user recorded (DailyInpatientCare.performedBy)
   careLogsPerformed      DailyInpatientCare[] @relation("CarePerformedBy")
+  // ADR-0021: EMR attachments this user uploaded (Attachment.uploadedByUserId)
+  attachmentsUploaded    Attachment[]         @relation("AttachmentUploadedBy")
   userBranches           UserBranch[]
 
   // Session D-1: unique on (tenantId, username); email uniqueness enforced in service layer
@@ -528,14 +530,24 @@ model Attachment {
   tenantId        Int
   medicalRecordId Int
   fileName        String   @db.VarChar(255)
-  fileUrl         String
+  fileUrl         String?
   fileType        String?  @db.VarChar(50)
-  createdAt       DateTime @default(now())
+  // ADR-0021 EMR-ATTACH-9: real-upload metadata, additive + nullable for legacy
+  // URL-reference rows. fileUrl is now optional — confirm accepts fileUrl XOR storageKey.
+  storageKey       String?
+  mimeType         String?  @db.VarChar(255)
+  fileSize         Int?
+  uploadedByUserId Int?
+  createdAt        DateTime @default(now())
 
-  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  medicalRecord MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  medicalRecord  MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
+  // ADR-0021: ON DELETE SET NULL — attachment metadata survives staff deletion,
+  // matching the daily_inpatient_care.performedBy precedent (ADR-0013 D4).
+  uploadedByUser User?         @relation("AttachmentUploadedBy", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, medicalRecordId])
+  @@index([uploadedByUserId])
   @@map("attachments")
 }
 

@@ -6,15 +6,48 @@ import MaterialIcon from '../../components/MaterialIcon'
 import { VitalStepper } from '../../components/VitalStepper'
 import { useAuthStore } from '../../store/authStore'
 import { useT } from '../../i18n'
+import { useEmrAttachmentUpload } from '../../hooks/useEmrAttachmentUpload'
+import Can from '../../components/Can'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Pet { id: number; name: string; species: string; photoUrl?: string; allergies?: string; underlyingConditions?: string; owner?: { firstName: string; lastName: string; phone: string } }
 interface MedicalRecord { id: number; petId: number; createdAt: string; assessment?: string; subjective?: string; objective?: string; plan?: string; weightKg?: number; temperatureC?: number; heartRateBpm?: number; respRateRpm?: number; anatomyAnnotation?: AnatomyAnnotation; prescriptions?: Prescription[]; attachments?: Attachment[] }
 interface Prescription { id: number; quantity: number; unit?: string; dosageInstruction?: string; drug: { id: number; name: string; unit?: string; stockQuantity: number } }
-interface Attachment { id: number; fileName: string; fileUrl: string; fileType?: string }
+interface Attachment {
+  id: number
+  fileName: string
+  fileUrl?: string
+  fileType?: string
+  mimeType?: string
+  fileSize?: number
+  storageKey?: string
+  uploadedByUser?: { id: number; name: string }
+  createdAt?: string
+}
 interface Drug { id: number; name: string; unit?: string; stockQuantity: number; barcode?: string }
 interface SearchResult { petId: number; petName: string; species: string; ownerName: string; phone: string }
 interface AnatomyAnnotation { template: string; imageData: string }
+
+// ─── Attachment upload constants ──────────────────────────────────────────────
+// Client-side allow-list — UX pre-check only, not the security boundary (the
+// server re-validates via emr-attachment.constants.ts). Kept as a small local
+// constant rather than shared with the backend module since it's cross-package.
+const CLIENT_ATTACHMENT_TYPES = new Set([
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+])
+const CLIENT_MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024
+
+function formatFileSize(bytes?: number): string {
+  if (!bytes) return ''
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
 // ─── Anatomy Canvas ───────────────────────────────────────────────────────────
 const TEMPLATES = ['Canine - Lateral', 'Canine - Dorsal', 'Feline - Lateral']
@@ -314,6 +347,8 @@ export default function ClinicEMR() {
   const t = useT()
   const { userId } = useAuthStore()
   const queryClient = useQueryClient()
+  const { uploadAttachment, downloadAttachment, isUploading, uploadError, clearUploadError } = useEmrAttachmentUpload()
+  const [attachmentUiError, setAttachmentUiError] = useState<string | null>(null)
 
   // Patient selection state
   const [patientSearch, setPatientSearch] = useState('')
@@ -374,6 +409,30 @@ export default function ClinicEMR() {
   const pet = petData
   const records: MedicalRecord[] = recordsData?.records ?? []
   const record = recordData
+
+  const handleAttachmentFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // allow re-selecting the same file
+    if (!file || !selectedRecordId) return
+    setAttachmentUiError(null)
+    clearUploadError()
+
+    if (file.size > CLIENT_MAX_ATTACHMENT_BYTES) {
+      setAttachmentUiError('File is too large — the limit is 25 MB.')
+      return
+    }
+    if (!CLIENT_ATTACHMENT_TYPES.has(file.type)) {
+      setAttachmentUiError('This file type is not supported.')
+      return
+    }
+
+    try {
+      await uploadAttachment(selectedRecordId, file)
+      refetchRecord()
+    } catch {
+      // uploadError from the hook already carries the server-side message
+    }
+  }
 
   // Load existing record into form
   useEffect(() => {
@@ -601,12 +660,68 @@ export default function ClinicEMR() {
         <div className="w-72 flex-shrink-0 border-l border-outline-variant bg-surface flex flex-col overflow-hidden">
           {/* Attachments */}
           <div className="p-lg border-b border-outline-variant">
-            <h4 className="text-body-sm font-semibold text-on-surface-variant mb-md">Attachments</h4>
+            <div className="flex items-center justify-between mb-md">
+              <h4 className="text-body-sm font-semibold text-on-surface-variant">Attachments</h4>
+              <Can perm="emr.attach">
+                <label className="min-h-[36px] px-md flex items-center gap-xs rounded-lg bg-surface-container text-label-md font-medium text-on-surface-variant hover:bg-surface-container-high cursor-pointer transition-colors">
+                  <MaterialIcon name="upload_file" size={16} />
+                  {isUploading ? 'Uploading…' : 'Upload'}
+                  <input
+                    type="file"
+                    data-testid="emr-attachment-file-input"
+                    className="hidden"
+                    disabled={isUploading}
+                    onChange={handleAttachmentFileChange}
+                  />
+                </label>
+              </Can>
+            </div>
+
+            {(attachmentUiError || uploadError) && (
+              <p className="text-label-md text-error mb-sm">{attachmentUiError ?? uploadError}</p>
+            )}
+
             {record?.attachments?.length ? record.attachments.map(a => (
               <div key={a.id} className="flex items-center gap-sm min-h-[44px] border-b border-outline-variant/50 py-xs">
                 <MaterialIcon name="attach_file" size={16} className="text-on-surface-variant flex-shrink-0" />
-                <a href={a.fileUrl} target="_blank" rel="noreferrer" className="text-body-sm text-primary truncate hover:underline">{a.fileName}</a>
-                {a.fileType && <span className="text-label-md bg-surface-container px-sm py-xs rounded-full">{a.fileType}</span>}
+                <div className="flex-1 min-w-0">
+                  {a.storageKey ? (
+                    <button
+                      type="button"
+                      onClick={() => downloadAttachment(selectedRecordId!, a.id)}
+                      className="text-body-sm text-primary truncate hover:underline text-left"
+                    >
+                      {a.fileName}
+                    </button>
+                  ) : (
+                    <a href={a.fileUrl} target="_blank" rel="noreferrer" className="text-body-sm text-primary truncate hover:underline">{a.fileName}</a>
+                  )}
+                  <p className="text-label-md text-on-surface-variant">
+                    <span>{formatFileSize(a.fileSize)}</span>
+                    {a.fileSize && a.uploadedByUser ? ' · ' : ''}
+                    {a.uploadedByUser && <span>{a.uploadedByUser.name}</span>}
+                  </p>
+                </div>
+                {a.fileType && <span className="text-label-md bg-surface-container px-sm py-xs rounded-full flex-shrink-0">{a.fileType}</span>}
+                <Can perm="emr.attach">
+                  <button
+                    type="button"
+                    aria-label="Delete attachment"
+                    onClick={async () => {
+                      try {
+                        await api.delete(`/api/medical-records/${selectedRecordId}/attachments/${a.id}`)
+                        setAttachmentUiError(null)
+                        refetchRecord()
+                      } catch (err) {
+                        const message = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+                        setAttachmentUiError(message ?? 'Failed to delete attachment.')
+                      }
+                    }}
+                    className="w-[36px] h-[36px] flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-error/10 hover:text-error transition-colors flex-shrink-0"
+                  >
+                    <MaterialIcon name="delete" size={16} />
+                  </button>
+                </Can>
               </div>
             )) : <p className="text-label-md text-on-surface-variant">No attachments yet.</p>}
           </div>
