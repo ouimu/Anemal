@@ -229,11 +229,7 @@ export function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerI
     setSaving(true)
     setError('')
     try {
-      let photoUrl: string | null = null
-      if (photoFile) {
-        photoUrl = await uploadPhoto(photoFile)
-      }
-      await api.post('/api/pets', {
+      const res = await api.post('/api/pets', {
         ownerId,
         name: form.name,
         species: form.species,
@@ -245,13 +241,17 @@ export function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerI
         microchipId: form.microchipId || null,
         allergies: form.allergies || null,
         underlyingConditions: form.underlyingConditions || null,
-        photoUrl,
       })
+      const newPetId = res.data.data.id as number
+      if (photoFile) {
+        // Grill G3: no rollback on photo failure — the pet is already
+        // created and valid without a photo; swallow the error here and
+        // let the user retry from Edit Pet.
+        try { await uploadPhoto(newPetId, photoFile) } catch { /* non-fatal, see G3 */ }
+      }
       onSuccess()
     } catch (err: unknown) {
-      if (!uploadError) {
-        setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save')
-      }
+      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save')
     } finally { setSaving(false) }
   }
 
