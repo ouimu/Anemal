@@ -20,3 +20,13 @@ export const config = {
   // AES-256-GCM key for settings secrets — 32-byte hex (openssl rand -hex 32)
   settingsEncryptionKey: required('SETTINGS_ENCRYPTION_KEY'),
 }
+
+// G1 (ADR-0022): the local-disk storage driver is testing-only — it pools
+// every tenant's files on the operator's server and loses them on every
+// redeploy. Refuse to boot in production unless explicitly overridden.
+if (config.nodeEnv === 'production' && process.env.ALLOW_LOCAL_STORAGE_IN_PROD !== 'true') {
+  throw new Error(
+    'Local-disk storage driver is testing-only and must not run in production. ' +
+    'Set ALLOW_LOCAL_STORAGE_IN_PROD=true to override (not recommended; see ADR-0022).'
+  )
+}
