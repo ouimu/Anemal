@@ -59,6 +59,10 @@ export function getStorageDriver(): StorageDriver   // now: always LocalDiskDriv
 - **Path-traversal guard (security-critical):** resolve `path.join(baseDir, key)`, assert the resolved absolute path is still inside the resolved baseDir; reject otherwise. Covers `..` and absolute-path keys. This guard is a trust-boundary check — do NOT simplify it away.
 - `attachments/` added to `.gitignore`.
 
+### 4.2b Production boot guard (grill G1 — required)
+
+At startup (extend the `config/env.ts` throw-on-boot pattern), if `NODE_ENV === 'production'` AND the active storage driver is `local`, **throw and refuse to start**, unless `ALLOW_LOCAL_STORAGE_IN_PROD=true` is set (explicit escape hatch). ~5 lines. Enforces the testing-only boundary so the local driver cannot silently reach production (where files vanish on redeploy and all tenants pool on the operator's disk).
+
 ### 4.3 Backend routes (`medical-record.routes.ts` + emr-attachment controller/service)
 
 | Method | Route | Guard | Behavior |
@@ -76,8 +80,8 @@ Pet photos move onto the same driver. Because they render inline in `<img>` (not
 
 | Method | Route | Guard | Behavior |
 |---|---|---|---|
-| POST | `/api/pets/:id/photo` | `crm.edit` | **multipart** (multer). Image MIME allow-list (jpeg/png/webp) + 5 MB cap. Verify pet belongs to tenant. `driver.save('tenants/{tid}/photo/{uuid}-{sanitizedName}', ...)`, store the **server-built storageKey** in `pet.photoUrl`. Returns updated pet. |
-| GET | `/api/pets/:id/photo` | `crm.view` | Verify pet→tenant scope. **Prefix guard:** assert `pet.photoUrl` starts with `tenants/{tenantId}/photo/` before `driver.read` — reject otherwise (defense-in-depth even though the field is now server-managed). Stream with `Content-Type: mimeType`, inline disposition. 404 if pet has no photo / file missing. |
+| POST | `/api/pets/:id/photo` | `crm.edit` | **multipart** (multer). Image MIME allow-list (jpeg/png/webp) + 5 MB cap. Verify pet belongs to tenant. **Stable key (grill G2):** `tenants/{tid}/photo/pet-{petId}.{ext}` — overwrites in place (no UUID, no orphan on same-format replace). If the prior `pet.photoUrl` key differs (format changed), best-effort `driver.delete` the old file. `driver.save(...)`, store the **server-built storageKey** in `pet.photoUrl`. Returns updated pet. |
+| GET | `/api/pets/:id/photo` | `crm.view` | Verify pet→tenant scope. **Prefix guard:** assert `pet.photoUrl` starts with `tenants/{tenantId}/photo/` before `driver.read` — reject otherwise (defense-in-depth even though the field is now server-managed). Stream with `Content-Type` derived from the key extension, inline disposition, `Cache-Control: private, max-age=...` (grill: reduce grid N-fetch). 404 if pet has no photo / file missing. |
 
 - **SECURITY (BA finding #1 — required):** `photoUrl` MUST be **server-managed only**. Remove `photoUrl` from `createPetSchema` AND `updatePetSchema` (currently `z.string().optional().nullable()`, client-writable) and from the AddPet/EditPet modal payloads. The only way to set it is the `POST /:id/photo` route. Rationale: with `driver.read(pet.photoUrl)`, a client-writable key lets an in-tenant `crm.edit` holder set `photoUrl` to another tenant's key or an EMR-attachment key and read it via `GET /:id/photo` — cross-tenant / cross-module arbitrary file read, bypassing `emr.view`. The path-traversal guard does NOT stop a well-formed in-baseDir key; the `tenants/{tenantId}/photo/` serve-time prefix guard above is the equivalent of EMR's `assertStorageKeyPrefix`.
 - `pet.photoUrl` now holds the **storageKey** (private), not a public URL. No DB migration in this env — BA ran a read-only count: **5 pets, 0 non-null `photoUrl`**. ADR must record a pre-deploy count check for any future pilot holding real `http(s)` values.
