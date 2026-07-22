@@ -524,7 +524,7 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
       {/* Pet hero */}
       <div className="flex items-center gap-lg bg-surface rounded-xl border border-outline-variant p-lg">
         {pet.photoUrl
-          ? <img src={pet.photoUrl} alt={pet.name} className="w-[120px] h-[120px] rounded-xl object-cover border border-outline-variant" />
+          ? <AuthedPetImage petId={pet.id} alt={pet.name} className="w-[120px] h-[120px] rounded-xl object-cover border border-outline-variant" iconSize={48} />
           : <div className="w-[120px] h-[120px] rounded-xl bg-surface-container-high flex items-center justify-center"><MaterialIcon name="pets" size={48} className="text-on-surface-variant" /></div>
         }
         <div className="flex-1">
@@ -775,7 +775,7 @@ export function OwnerPanel({ ownerId, onSelectPet, onAddPet, onDeleted }: { owne
               <button key={pet.id} onClick={() => onSelectPet(pet.id)}
                       className="flex flex-col items-center gap-sm p-lg bg-surface rounded-xl border border-outline-variant hover:border-primary hover:shadow-lvl1 transition-all min-h-[120px] text-center">
                 {pet.photoUrl
-                  ? <img src={pet.photoUrl} alt={pet.name} className="w-16 h-16 rounded-full object-cover border border-outline-variant" />
+                  ? <AuthedPetImage petId={pet.id} alt={pet.name} className="w-16 h-16 rounded-full object-cover border border-outline-variant" iconSize={28} />
                   : <div className="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center">
                       <MaterialIcon name="pets" size={28} className="text-on-surface-variant" />
                     </div>
