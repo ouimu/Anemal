@@ -56,7 +56,7 @@
 **Interfaces:**
 - Produces: `Attachment.storageKey/mimeType/fileSize/uploadedByUserId: nullable`, `Attachment.fileUrl: String?` — consumed by Task 6 (repository), Task 7 (service).
 
-- [ ] **Step 1: Edit the `Attachment` model**
+- [x] **Step 1: Edit the `Attachment` model**
 
 Replace lines 526–540 with:
 
@@ -88,7 +88,7 @@ model Attachment {
 }
 ```
 
-- [ ] **Step 2: Add the `User` back-relation**
+- [x] **Step 2: Add the `User` back-relation**
 
 In `model User`, immediately after the `careLogsPerformed` line (schema.prisma:175):
 
@@ -100,7 +100,7 @@ In `model User`, immediately after the `careLogsPerformed` line (schema.prisma:1
   userBranches           UserBranch[]
 ```
 
-- [ ] **Step 3: Write the migration by hand** (mirrors the hand-written `20260711140000_add_care_performed_by_fk` + `20260713090000_add_care_performed_by_index` precedent, combined into one migration since this is a net-new nullable column set with no orphan risk)
+- [x] **Step 3: Write the migration by hand** (mirrors the hand-written `20260711140000_add_care_performed_by_fk` + `20260713090000_add_care_performed_by_index` precedent, combined into one migration since this is a net-new nullable column set with no orphan risk)
 
 Create `src/backend/prisma/migrations/20260721160000_add_attachment_upload_metadata/migration.sql`:
 
@@ -126,13 +126,13 @@ ALTER TABLE "attachments"
 CREATE INDEX "attachments_uploadedByUserId_idx" ON "attachments"("uploadedByUserId");
 ```
 
-- [ ] **Step 4: Apply and regenerate the client**
+- [x] **Step 4: Apply and regenerate the client**
 
 Run: `cd D:\Development\AnimalClinic && npx prisma migrate deploy --schema=src/backend/prisma/schema.prisma && npx prisma generate --schema=src/backend/prisma/schema.prisma`
 
 Verify: no errors; `npx prisma migrate status` reports the new migration as applied.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/backend/prisma/schema.prisma src/backend/prisma/migrations
@@ -149,7 +149,7 @@ git commit -m "feat(emr): add attachment upload metadata fields (storageKey/mime
 **Interfaces:**
 - Produces: `EMR_ATTACHMENT_MIME_ALLOWLIST`, `EMR_ATTACHMENT_MAX_SIZE_BYTES`, `buildEmrStorageKeyPrefix()`, `assertStorageKeyPrefix()` — consumed by Task 4 (presign service), Task 7 (confirm schema/service). This file has **no** imports from `medical-record.service.ts` or `emr-attachment.service.ts` — it sits at the bottom of the dependency graph so both of those files can import it without a cycle.
 
-- [ ] **Step 1: Write the file**
+- [x] **Step 1: Write the file**
 
 ```typescript
 // src/backend/services/emr-attachment.constants.ts
@@ -197,7 +197,7 @@ export function assertStorageKeyPrefix(tenantId: number, medicalRecordId: number
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add src/backend/services/emr-attachment.constants.ts
@@ -216,7 +216,7 @@ git commit -m "feat(emr): add shared MIME allow-list and storage-key-prefix guar
 **Interfaces:**
 - Produces: `sanitizeFilename(name: string): string` (now exported) — consumed by Task 4.
 
-- [ ] **Step 1: Add the `export` keyword**
+- [x] **Step 1: Add the `export` keyword**
 
 ```typescript
 // Sanitize filename — keep extension, strip path chars.
@@ -227,7 +227,7 @@ export function sanitizeFilename(name: string): string {
 
 This is the only change to this file — the pet-photo presign flow's behavior is unchanged (same function, now also importable).
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add src/backend/services/upload.service.ts
@@ -246,7 +246,7 @@ git commit -m "refactor(upload): export sanitizeFilename for reuse by EMR attach
 - Consumes: `getMedicalRecord`/`MedicalRecordError` from `medical-record.service.ts`; `EMR_ATTACHMENT_MIME_ALLOWLIST`/`EMR_ATTACHMENT_MAX_SIZE_BYTES` from `emr-attachment.constants.ts`; `sanitizeFilename` from `upload.service.ts`; `createS3Client`/`getStorageConfig`/`isStorageConfigured` from `config/storage.ts`.
 - Produces: `emrPresignSchema` (Zod), `generateEmrAttachmentPresign(tenantId, branchId, medicalRecordId, input): Promise<{uploadUrl, storageKey}>` — consumed by Task 5 (route/controller).
 
-- [ ] **Step 1: Write the failing test** — append to `src/backend/__tests__/emr-attachments.test.ts`:
+- [x] **Step 1: Write the failing test** — append to `src/backend/__tests__/emr-attachments.test.ts`:
 
 ```typescript
 // src/backend/__tests__/emr-attachments.test.ts
@@ -480,9 +480,9 @@ describe('emr-attachments — POST /:id/attachments/presign', () => {
 })
 ```
 
-- [ ] **Step 2: Verify the test fails** — run `cd D:\Development\AnimalClinic && npx jest --testPathPattern=emr-attachments --runInBand` and confirm every test fails (route doesn't exist yet → 404 from Express's default handler, not the app's own 404).
+- [x] **Step 2: Verify the test fails** — run `cd D:\Development\AnimalClinic && npx jest --testPathPattern=emr-attachments --runInBand` and confirm every test fails (route doesn't exist yet → 404 from Express's default handler, not the app's own 404).
 
-- [ ] **Step 3: Implement `emr-attachment.service.ts`** — minimal code to pass:
+- [x] **Step 3: Implement `emr-attachment.service.ts`** — minimal code to pass:
 
 ```typescript
 // src/backend/services/emr-attachment.service.ts
@@ -546,9 +546,9 @@ export async function generateEmrAttachmentPresign(
 }
 ```
 
-- [ ] **Step 4: Wire a temporary route so the tests in this task can run** — see Task 5 for the real route registration; this task's tests will stay red until Task 5 lands. (If your workflow requires green-before-commit per task, merge Task 4 + Task 5 into one commit — both are small.)
+- [x] **Step 4: Wire a temporary route so the tests in this task can run** — see Task 5 for the real route registration; this task's tests will stay red until Task 5 lands. (If your workflow requires green-before-commit per task, merge Task 4 + Task 5 into one commit — both are small.)
 
-- [ ] **Step 5: Commit** (after Task 5's route wiring makes EA-01..08 pass)
+- [x] **Step 5: Commit** (after Task 5's route wiring makes EA-01..08 pass)
 
 ```bash
 git add src/backend/services/emr-attachment.service.ts src/backend/__tests__/emr-attachments.test.ts
@@ -567,7 +567,7 @@ git commit -m "feat(emr): add presigned-upload service for EMR attachments"
 - Consumes: `generateEmrAttachmentPresign`/`emrPresignSchema` from Task 4.
 - Produces: `handlePresignAttachment` — wired to `POST /:id/attachments/presign`.
 
-- [ ] **Step 1: Write the controller**
+- [x] **Step 1: Write the controller**
 
 ```typescript
 // src/backend/controllers/emr-attachment.controller.ts
@@ -587,7 +587,7 @@ export async function handlePresignAttachment(req: Request, res: Response, next:
 }
 ```
 
-- [ ] **Step 2: Register the route** — in `src/backend/routes/medical-record.routes.ts`, add the import and route:
+- [x] **Step 2: Register the route** — in `src/backend/routes/medical-record.routes.ts`, add the import and route:
 
 ```typescript
 import { Router } from 'express'
@@ -617,9 +617,9 @@ export default router
 
 (Download and delete routes are added in Tasks 10/11.)
 
-- [ ] **Step 3: Run the tests from Task 4** — `npx jest --testPathPattern=emr-attachments --runInBand`. EA-01 through EA-08 should now pass.
+- [x] **Step 3: Run the tests from Task 4** — `npx jest --testPathPattern=emr-attachments --runInBand`. EA-01 through EA-08 should now pass.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/backend/controllers/emr-attachment.controller.ts src/backend/routes/medical-record.routes.ts
@@ -636,7 +636,7 @@ git commit -m "feat(emr): wire POST /:id/attachments/presign route"
 **Interfaces:**
 - Produces: `createAttachment(tenantId, medicalRecordId, data, uploadedByUserId)`, `findAttachmentById(tenantId, medicalRecordId, attachmentId)`, `deleteAttachmentById(tenantId, medicalRecordId, attachmentId)` — consumed by Task 7 (confirm), Task 10 (download), Task 11 (delete). `findById`'s attachment include now returns `uploadedByUser: { id, name }` — consumed by Task 14 (frontend display).
 
-- [ ] **Step 1: Update `createAttachment`** — replace the existing function:
+- [x] **Step 1: Update `createAttachment`** — replace the existing function:
 
 ```typescript
 export function createAttachment(
@@ -669,7 +669,7 @@ export function deleteAttachmentById(tenantId: number, medicalRecordId: number, 
 }
 ```
 
-- [ ] **Step 2: Update `findById`'s attachment include** — change `attachments: true` to:
+- [x] **Step 2: Update `findById`'s attachment include** — change `attachments: true` to:
 
 ```typescript
     attachments: {
@@ -680,7 +680,7 @@ export function deleteAttachmentById(tenantId: number, medicalRecordId: number, 
 
 (Full context: this is inside the `include` block of `findById()`, alongside `pet`, `doctor`, `prescriptions`, `invoices`.)
 
-- [ ] **Step 3: Commit** (tests exercising this land in Task 7/10/11 — this task alone doesn't compile against the old `AddAttachmentInput` type until Task 7 extends it, so commit Task 6+7 together if your workflow requires green-per-commit)
+- [x] **Step 3: Commit** (tests exercising this land in Task 7/10/11 — this task alone doesn't compile against the old `AddAttachmentInput` type until Task 7 extends it, so commit Task 6+7 together if your workflow requires green-per-commit)
 
 ```bash
 git add src/backend/models/medical-record.repository.ts
@@ -698,7 +698,7 @@ git commit -m "feat(emr): persist attachment upload metadata, add lookup/delete 
 **Interfaces:**
 - Produces: `addAttachmentSchema` (extended), `addAttachment(tenantId, branchId, medicalRecordId, data, uploadedByUserId)` — consumed by Task 8 (controller).
 
-- [ ] **Step 1: Write the failing tests** — append to `emr-attachments.test.ts`:
+- [x] **Step 1: Write the failing tests** — append to `emr-attachments.test.ts`:
 
 ```typescript
 describe('emr-attachments — POST /:id/attachments (confirm, extended)', () => {
@@ -769,9 +769,9 @@ describe('emr-attachments — POST /:id/attachments (confirm, extended)', () => 
 
 Add `import crypto from 'crypto'` (or use `require('crypto').randomUUID()` inline) at the top of the test file.
 
-- [ ] **Step 2: Verify failure** — run the suite; EA-09/10 fail because the repository still spreads `...data` (old shape); EA-11..14 fail because the schema doesn't yet enforce XOR.
+- [x] **Step 2: Verify failure** — run the suite; EA-09/10 fail because the repository still spreads `...data` (old shape); EA-11..14 fail because the schema doesn't yet enforce XOR.
 
-- [ ] **Step 3: Implement** — in `src/backend/services/medical-record.service.ts`:
+- [x] **Step 3: Implement** — in `src/backend/services/medical-record.service.ts`:
 
 ```typescript
 import { z } from 'zod'
@@ -815,9 +815,9 @@ export async function addAttachment(
 
 Note: `uploadedByUserId` is only recorded for the new binary-upload path — a legacy `fileUrl`-only confirm doesn't necessarily correspond to an in-app upload action, so it stays `null` there, matching "nullable for legacy rows" (EMR-ATTACH-9).
 
-- [ ] **Step 4: Run tests** — EA-09..14 should pass. Also re-run EA-01..08 and the pre-existing `medical-record-weight-sync.test.ts` to confirm no regression (the legacy `fileUrl`-only shape is untouched by the XOR refine as long as `storageKey` is absent).
+- [x] **Step 4: Run tests** — EA-09..14 should pass. Also re-run EA-01..08 and the pre-existing `medical-record-weight-sync.test.ts` to confirm no regression (the legacy `fileUrl`-only shape is untouched by the XOR refine as long as `storageKey` is absent).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/backend/services/medical-record.service.ts src/backend/models/medical-record.repository.ts src/backend/__tests__/emr-attachments.test.ts
@@ -834,7 +834,7 @@ git commit -m "feat(emr): extend attachment confirm to accept storageKey XOR fil
 **Interfaces:**
 - Consumes: `addAttachment` (Task 7, new signature).
 
-- [ ] **Step 1: Update `handleAddAttachment`**
+- [x] **Step 1: Update `handleAddAttachment`**
 
 ```typescript
 export async function handleAddAttachment(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -851,9 +851,9 @@ export async function handleAddAttachment(req: Request, res: Response, next: Nex
 }
 ```
 
-- [ ] **Step 2: Run the full `emr-attachments.test.ts` suite** — confirms EA-09's `uploadedByUserId` assertion passes end-to-end through the real controller (this was likely already green from Task 7 if TypeScript didn't compile without this change — `addAttachment` now requires a 5th argument, so this task is really "make it compile" as much as "make it correct").
+- [x] **Step 2: Run the full `emr-attachments.test.ts` suite** — confirms EA-09's `uploadedByUserId` assertion passes end-to-end through the real controller (this was likely already green from Task 7 if TypeScript didn't compile without this change — `addAttachment` now requires a 5th argument, so this task is really "make it compile" as much as "make it correct").
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/backend/controllers/medical-record.controller.ts
@@ -866,12 +866,12 @@ git commit -m "feat(emr): thread uploadedByUserId from JWT context into attachme
 
 **Files:** none (verification-only task)
 
-- [ ] **Step 1: Run the full backend suite** — `cd D:\Development\AnimalClinic && npx jest --runInBand --forceExit` — confirm zero regressions, in particular:
+- [x] **Step 1: Run the full backend suite** — `cd D:\Development\AnimalClinic && npx jest --runInBand --forceExit` — confirm zero regressions, in particular:
   - `medical-record-weight-sync.test.ts` (uses the medical-record routes elsewhere)
   - `upload.test.ts` (pet-photo flow, untouched behavior — Task 3 only added an export)
   - Any RBAC/permission-matrix route-introspection test (`roleRouteMatrix.test.ts` or similar) — the 3 new routes must appear in its route inventory once added; if that test enumerates routes and fails because it doesn't yet know about the new permission requirements, that's expected until Task 13 documents them — re-run after Task 13 if so.
 
-- [ ] **Step 2: No commit** (verification only) — if a regression is found, stop and fix before proceeding; do not paper over a red test.
+- [x] **Step 2: No commit** (verification only) — if a regression is found, stop and fix before proceeding; do not paper over a red test.
 
 ---
 
@@ -886,7 +886,7 @@ git commit -m "feat(emr): thread uploadedByUserId from JWT context into attachme
 **Interfaces:**
 - Produces: `generateAttachmentDownloadUrl(tenantId, branchId, medicalRecordId, attachmentId): Promise<{downloadUrl, fileName}>` — consumed by the controller.
 
-- [ ] **Step 1: Write the failing tests** — append:
+- [x] **Step 1: Write the failing tests** — append:
 
 ```typescript
 describe('emr-attachments — GET /:id/attachments/:attId/download', () => {
@@ -944,7 +944,7 @@ describe('emr-attachments — GET /:id/attachments/:attId/download', () => {
 })
 ```
 
-- [ ] **Step 2: Verify failure**, then implement in `emr-attachment.service.ts` (append):
+- [x] **Step 2: Verify failure**, then implement in `emr-attachment.service.ts` (append):
 
 ```typescript
 import { GetObjectCommand } from '@aws-sdk/client-s3'
@@ -1015,9 +1015,9 @@ import { handlePresignAttachment, handleDownloadAttachment } from '../controller
 router.get('/:id/attachments/:attId/download', requirePlane('clinic'), requirePermission('emr.view'), handleDownloadAttachment)
 ```
 
-- [ ] **Step 3: Run tests** — EA-15..17 should pass.
+- [x] **Step 3: Run tests** — EA-15..17 should pass.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/backend/services/emr-attachment.service.ts src/backend/controllers/emr-attachment.controller.ts src/backend/routes/medical-record.routes.ts src/backend/__tests__/emr-attachments.test.ts
@@ -1037,7 +1037,7 @@ git commit -m "feat(emr): add gated presigned-download route for attachments"
 **Interfaces:**
 - Produces: `deleteAttachment(tenantId, branchId, medicalRecordId, attachmentId): Promise<void>` — throws `MedicalRecordError(403)` if the parent record has a paid invoice (mirrors `updateMedicalRecord`'s existing guard).
 
-- [ ] **Step 1: Write the failing tests** — append:
+- [x] **Step 1: Write the failing tests** — append:
 
 ```typescript
 describe('emr-attachments — DELETE /:id/attachments/:attId', () => {
@@ -1117,7 +1117,7 @@ describe('emr-attachments — DELETE /:id/attachments/:attId', () => {
 })
 ```
 
-- [ ] **Step 2: Verify failure**, then implement. Append to `emr-attachment.service.ts`:
+- [x] **Step 2: Verify failure**, then implement. Append to `emr-attachment.service.ts`:
 
 ```typescript
 export async function deleteAttachment(
@@ -1177,9 +1177,9 @@ import { handlePresignAttachment, handleDownloadAttachment, handleDeleteAttachme
 router.delete('/:id/attachments/:attId', requirePlane('clinic'), requirePermission('emr.attach'), handleDeleteAttachment)
 ```
 
-- [ ] **Step 3: Run tests** — EA-18..21 should pass. Re-run the full `emr-attachments.test.ts` file once more end-to-end.
+- [x] **Step 3: Run tests** — EA-18..21 should pass. Re-run the full `emr-attachments.test.ts` file once more end-to-end.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/backend/services/emr-attachment.service.ts src/backend/controllers/emr-attachment.controller.ts src/backend/routes/medical-record.routes.ts src/backend/__tests__/emr-attachments.test.ts
@@ -1193,7 +1193,7 @@ git commit -m "feat(emr): add gated delete route with billed-record guard for at
 **Files:**
 - Modify: `.claude/skills/anemal-rbac-matrix/references/permission-matrix.md:122-124`
 
-- [ ] **Step 1: Update the route→permission table**
+- [x] **Step 1: Update the route→permission table**
 
 Replace:
 ```
@@ -1211,7 +1211,7 @@ with:
 | | DELETE `/:id/attachments/:attId` | `emr.attach` |
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add .claude/skills/anemal-rbac-matrix/references/permission-matrix.md
@@ -1229,7 +1229,7 @@ git commit -m "docs(rbac): document EMR attachment presign/download/delete route
 **Interfaces:**
 - Produces: `useEmrAttachmentUpload(): { uploadAttachment(medicalRecordId, file, fileType?): Promise<Attachment>, downloadAttachment(medicalRecordId, attachmentId): Promise<void>, isUploading, uploadError, clearUploadError }` — consumed by Task 14 (`ClinicEMR.tsx`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```typescript
 // src/frontend/src/__tests__/useEmrAttachmentUpload.test.ts
@@ -1299,9 +1299,9 @@ describe('useEmrAttachmentUpload', () => {
 })
 ```
 
-- [ ] **Step 2: Verify failure** — `cd D:\Development\AnimalClinic && npx vitest run useEmrAttachmentUpload --config src/frontend/vitest.config.ts` (adjust path to the frontend's actual vitest config/script — mirror whatever `package.json` test script the frontend already uses).
+- [x] **Step 2: Verify failure** — `cd D:\Development\AnimalClinic && npx vitest run useEmrAttachmentUpload --config src/frontend/vitest.config.ts` (adjust path to the frontend's actual vitest config/script — mirror whatever `package.json` test script the frontend already uses).
 
-- [ ] **Step 3: Implement the hook**
+- [x] **Step 3: Implement the hook**
 
 ```typescript
 // src/frontend/src/hooks/useEmrAttachmentUpload.ts
@@ -1389,9 +1389,9 @@ export function useEmrAttachmentUpload(): UseEmrAttachmentUploadResult {
 }
 ```
 
-- [ ] **Step 4: Run tests** — confirm green.
+- [x] **Step 4: Run tests** — confirm green.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/frontend/src/hooks/useEmrAttachmentUpload.ts src/frontend/src/__tests__/useEmrAttachmentUpload.test.ts
@@ -1409,7 +1409,7 @@ git commit -m "feat(emr): add useEmrAttachmentUpload hook (presign → PUT → c
 **Interfaces:**
 - Consumes: `useEmrAttachmentUpload` (Task 13).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```typescript
 // src/frontend/src/__tests__/ClinicEMR.attachments.test.tsx
@@ -1511,9 +1511,9 @@ describe('ClinicEMR — Attachments panel', () => {
 
 (This test intentionally tolerates two ways the record might get selected — via the records list or an implicit auto-select — because the exact record-list interaction isn't the object under test; adjust the second `userEvent.click` to whatever `ClinicEMR.tsx`'s actual record-row selector renders, matching the pattern already used in `ClinicEMR.weightSync.test.tsx`.)
 
-- [ ] **Step 2: Verify failure.**
+- [x] **Step 2: Verify failure.**
 
-- [ ] **Step 3: Implement.** In `src/frontend/src/views/clinic/ClinicEMR.tsx`:
+- [x] **Step 3: Implement.** In `src/frontend/src/views/clinic/ClinicEMR.tsx`:
 
 Update the `Attachment` interface (top of file, replaces the existing one-liner):
 
@@ -1654,9 +1654,9 @@ Replace the Attachments panel block (lines ~603–612) with:
           </div>
 ```
 
-- [ ] **Step 4: Run tests** — `npx vitest run ClinicEMR.attachments useEmrAttachmentUpload`. Adjust selector-dependent assertions if the actual rendered DOM differs slightly (e.g. exact record-selection interaction) — this is expected polish during TDD's red→green step, not a plan defect.
+- [x] **Step 4: Run tests** — `npx vitest run ClinicEMR.attachments useEmrAttachmentUpload`. Adjust selector-dependent assertions if the actual rendered DOM differs slightly (e.g. exact record-selection interaction) — this is expected polish during TDD's red→green step, not a plan defect.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/frontend/src/views/clinic/ClinicEMR.tsx src/frontend/src/__tests__/ClinicEMR.attachments.test.tsx
@@ -1669,10 +1669,10 @@ git commit -m "feat(emr): add upload/download/delete UI to the EMR Attachments p
 
 **Files:** none
 
-- [ ] **Step 1: Backend** — `cd D:\Development\AnimalClinic && npx jest --runInBand --forceExit` — all suites green, including the new `emr-attachments.test.ts` (21 tests) and every pre-existing suite (no regressions to `upload.test.ts`, medical-record tests, or any RBAC route-matrix test).
-- [ ] **Step 2: Frontend** — run the frontend's existing test script (mirror whatever `package.json` defines, e.g. `npm run test` in `src/frontend`) — all suites green, including the 2 new files (`useEmrAttachmentUpload.test.ts`, `ClinicEMR.attachments.test.tsx`).
-- [ ] **Step 3: TypeScript** — `npx tsc --noEmit` in both `src/backend` and `src/frontend` (or the repo's existing typecheck script) — zero errors, in particular around the `Attachment` type's new optional fields and the `addAttachment`/`createAttachment` signature changes threaded through Tasks 6–8.
-- [ ] **No commit** — this is the pre-QA gate; if anything is red, return to the relevant task and fix before declaring the plan executed.
+- [x] **Step 1: Backend** — `cd D:\Development\AnimalClinic && npx jest --runInBand --forceExit` — all suites green, including the new `emr-attachments.test.ts` (21 tests) and every pre-existing suite (no regressions to `upload.test.ts`, medical-record tests, or any RBAC route-matrix test).
+- [x] **Step 2: Frontend** — run the frontend's existing test script (mirror whatever `package.json` defines, e.g. `npm run test` in `src/frontend`) — all suites green, including the 2 new files (`useEmrAttachmentUpload.test.ts`, `ClinicEMR.attachments.test.tsx`).
+- [x] **Step 3: TypeScript** — `npx tsc --noEmit` in both `src/backend` and `src/frontend` (or the repo's existing typecheck script) — zero errors, in particular around the `Attachment` type's new optional fields and the `addAttachment`/`createAttachment` signature changes threaded through Tasks 6–8.
+- [x] **No commit** — this is the pre-QA gate; if anything is red, return to the relevant task and fix before declaring the plan executed.
 
 ---
 
