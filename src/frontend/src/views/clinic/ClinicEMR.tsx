@@ -42,6 +42,10 @@ const CLIENT_ATTACHMENT_TYPES = new Set([
   'application/vnd.ms-excel',
 ])
 const CLIENT_MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024
+// Soft OS-picker filter (not the security boundary). Derived from the allow-list.
+const ATTACHMENT_ACCEPT = Array.from(CLIENT_ATTACHMENT_TYPES).join(',')
+// Human-readable supported-types hint shown under the Upload control.
+const ATTACHMENT_TYPES_LABEL = 'JPG, PNG, GIF, WebP, PDF, Word, Excel · max 25 MB'
 
 function formatFileSize(bytes?: number): string {
   if (!bytes) return ''
@@ -676,12 +680,17 @@ export default function ClinicEMR() {
                     type="file"
                     data-testid="emr-attachment-file-input"
                     className="hidden"
+                    accept={ATTACHMENT_ACCEPT}
                     disabled={isUploading}
                     onChange={handleAttachmentFileChange}
                   />
                 </label>
               </Can>
             </div>
+
+            <Can perm="emr.attach">
+              <p className="text-label-md text-on-surface-variant mb-sm">{ATTACHMENT_TYPES_LABEL}</p>
+            </Can>
 
             {(attachmentUiError || uploadError) && (
               <p className="text-label-md text-error mb-sm">{attachmentUiError ?? uploadError}</p>
@@ -714,6 +723,7 @@ export default function ClinicEMR() {
                     type="button"
                     aria-label="Delete attachment"
                     onClick={async () => {
+                      if (!window.confirm(`Delete "${a.fileName}"? This cannot be undone.`)) return
                       try {
                         await api.delete(`/api/medical-records/${selectedRecordId}/attachments/${a.id}`)
                         setAttachmentUiError(null)

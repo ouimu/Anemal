@@ -4,13 +4,15 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 
-const getMock  = vi.fn()
-const postMock = vi.fn()
+const getMock    = vi.fn()
+const postMock   = vi.fn()
+const deleteMock = vi.fn()
 
 vi.mock('../utils/api', () => ({
   default: {
-    get:  (...args: unknown[]) => getMock(...(args as [string, unknown])),
-    post: (...args: unknown[]) => postMock(...args),
+    get:    (...args: unknown[]) => getMock(...(args as [string, unknown])),
+    post:   (...args: unknown[]) => postMock(...args),
+    delete: (...args: unknown[]) => deleteMock(...args),
   },
 }))
 // Can-gated controls call useAuthStore with a selector (s => s.hasPermission);
@@ -37,6 +39,8 @@ const recordWithAttachment = {
 beforeEach(() => {
   getMock.mockReset()
   postMock.mockReset()
+  deleteMock.mockReset()
+  deleteMock.mockResolvedValue({ data: { success: true } })
   getMock.mockImplementation((url: string, config?: { params?: Record<string, unknown> }) => {
     if (url === '/api/search') {
       const q = config?.params?.q as string | undefined
@@ -86,10 +90,12 @@ describe('ClinicEMR — Attachments panel', () => {
 
     const bigFile = new File([new Uint8Array(26 * 1024 * 1024)], 'huge.pdf', { type: 'application/pdf' })
     const input = screen.getByTestId('emr-attachment-file-input') as HTMLInputElement
-    await userEvent.upload(input, bigFile)
+    // applyAccept:false — the `accept` attr is a soft UX filter; this test targets
+    // the JS size guard, so deliver the file regardless of the picker filter.
+    await userEvent.upload(input, bigFile, { applyAccept: false })
 
-    expect(await screen.findByText(/25 ?MB|too large/i)).toBeInTheDocument()
-    expect(postMock).not.toHaveBeenCalledWith(expect.stringContaining('/presign'), expect.anything())
+    expect(await screen.findByText(/too large/i)).toBeInTheDocument()
+    expect(postMock).not.toHaveBeenCalledWith(expect.stringContaining('/attachments'), expect.anything())
   })
 
   it('rejects an unsupported file type client-side', async () => {
@@ -99,8 +105,44 @@ describe('ClinicEMR — Attachments panel', () => {
 
     const badFile = new File(['<svg></svg>'], 'evil.svg', { type: 'image/svg+xml' })
     const input = screen.getByTestId('emr-attachment-file-input') as HTMLInputElement
-    await userEvent.upload(input, badFile)
+    await userEvent.upload(input, badFile, { applyAccept: false })
 
     expect(await screen.findByText(/not supported|unsupported/i)).toBeInTheDocument()
+  })
+
+  it('shows the supported-types hint and sets the file input accept filter', async () => {
+    renderEMR()
+    await selectRexAndOpenRecord()
+    await screen.findByText('lab.pdf')
+
+    expect(screen.getByText(/max 25 MB/i)).toBeInTheDocument()
+    const input = screen.getByTestId('emr-attachment-file-input') as HTMLInputElement
+    expect(input.accept).toContain('application/pdf')
+    expect(input.accept).toContain('image/png')
+  })
+
+  it('asks for confirmation before deleting; cancelling does NOT call the API', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    renderEMR()
+    await selectRexAndOpenRecord()
+    await screen.findByText('lab.pdf')
+
+    await userEvent.click(screen.getByRole('button', { name: /delete attachment/i }))
+
+    expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('lab.pdf'))
+    expect(deleteMock).not.toHaveBeenCalled()
+    confirmSpy.mockRestore()
+  })
+
+  it('deletes the attachment when confirmation is accepted', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    renderEMR()
+    await selectRexAndOpenRecord()
+    await screen.findByText('lab.pdf')
+
+    await userEvent.click(screen.getByRole('button', { name: /delete attachment/i }))
+
+    expect(deleteMock).toHaveBeenCalledWith('/api/medical-records/7/attachments/55')
+    confirmSpy.mockRestore()
   })
 })
