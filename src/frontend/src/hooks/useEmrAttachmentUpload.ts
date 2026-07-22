@@ -28,12 +28,10 @@ function extractErrorMessage(err: unknown): string {
 }
 
 /**
- * Orchestrates the presign → PUT → confirm flow for EMR file attachments.
- *
- * Mirrors `usePhotoUpload.ts`'s shape but targets the EMR-specific,
- * `emr.attach`-gated routes (`/api/medical-records/:id/attachments/presign`
- * and `/api/medical-records/:id/attachments`) instead of the generic
- * pet-photo upload route.
+ * Single multipart POST to the local-disk-backed EMR attachment route
+ * (emr.attach-gated). Replaces the retired presign → PUT → confirm flow
+ * (ADR-0022) — the server now builds the storage key and streams the file
+ * straight to disk.
  */
 export function useEmrAttachmentUpload(): UseEmrAttachmentUploadResult {
   const [isUploading, setIsUploading] = useState(false)
@@ -45,28 +43,14 @@ export function useEmrAttachmentUpload(): UseEmrAttachmentUploadResult {
     setIsUploading(true)
     setUploadError(null)
     try {
-      const presignRes = await api.post(`/api/medical-records/${medicalRecordId}/attachments/presign`, {
-        fileName:      file.name,
-        contentType:   file.type,
-        fileSizeBytes: file.size,
-      })
-      const { uploadUrl, storageKey } = presignRes.data.data as { uploadUrl: string; storageKey: string }
+      const formData = new FormData()
+      formData.append('file', file)
+      if (fileType) formData.append('fileType', fileType)
 
-      const putRes = await fetch(uploadUrl, {
-        method:  'PUT',
-        headers: { 'Content-Type': file.type },
-        body:    file,
+      const res = await api.post(`/api/medical-records/${medicalRecordId}/attachments`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       })
-      if (!putRes.ok) throw new Error(`S3 upload failed: ${putRes.status}`)
-
-      const confirmRes = await api.post(`/api/medical-records/${medicalRecordId}/attachments`, {
-        fileName:      file.name,
-        storageKey,
-        mimeType:      file.type,
-        fileSizeBytes: file.size,
-        fileType,
-      })
-      return confirmRes.data.data as Attachment
+      return res.data.data as Attachment
     } catch (err: unknown) {
       setUploadError(extractErrorMessage(err))
       throw err
@@ -77,9 +61,12 @@ export function useEmrAttachmentUpload(): UseEmrAttachmentUploadResult {
 
   const downloadAttachment = async (medicalRecordId: number, attachmentId: number): Promise<void> => {
     try {
-      const res = await api.get(`/api/medical-records/${medicalRecordId}/attachments/${attachmentId}/download`)
-      const { downloadUrl } = res.data.data as { downloadUrl: string }
-      window.open(downloadUrl, '_blank', 'noopener,noreferrer')
+      const res = await api.get(`/api/medical-records/${medicalRecordId}/attachments/${attachmentId}/download`, {
+        responseType: 'blob',
+      })
+      const objectUrl = URL.createObjectURL(res.data as Blob)
+      window.open(objectUrl, '_blank', 'noopener,noreferrer')
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 10000)
     } catch (err: unknown) {
       setUploadError(extractErrorMessage(err))
       throw err
