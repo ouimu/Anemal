@@ -4,9 +4,9 @@ import { authMiddleware } from '../middlewares/auth.middleware'
 import { requirePlane, requirePermission } from '../middlewares/permission.middleware'
 import { validate } from '../middlewares/validate.middleware'
 import { handleListPets, handleGetPet, handleCreatePet, handleUpdatePet, handleUploadPetPhoto, handleGetPetPhoto } from '../controllers/pet.controller'
-import { createPetSchema, updatePetSchema } from '../services/pet.service'
+import { createPetSchema, updatePetSchema, PET_PHOTO_MAX_SIZE_BYTES } from '../services/pet.service'
 
-const upload = multer({ storage: multer.memoryStorage() })
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: PET_PHOTO_MAX_SIZE_BYTES } })
 const router = Router()
 router.use(authMiddleware)
 

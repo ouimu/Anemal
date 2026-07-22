@@ -148,7 +148,7 @@ describe('pet-photo — POST /api/pets/:id/photo', () => {
       .set('Authorization', `Bearer ${staffToken}`)
       .attach('file', Buffer.alloc(6 * 1024 * 1024, 1), { filename: 'huge.jpg', contentType: 'image/jpeg' })
       .expect(400)
-    expect(res.body.code).toBe('PET_ERROR')
+    expect(res.body.code).toBe('VALIDATION_ERROR')
   })
 
   test('PP-06: foreign-tenant pet id → 404', async () => {
@@ -173,6 +173,28 @@ describe('pet-photo — POST /api/pets/:id/photo', () => {
       .set('Authorization', `Bearer ${doctorToken}`)
       .attach('file', Buffer.from('x'), { filename: 'x.jpg', contentType: 'image/jpeg' })
       .expect(403)
+  })
+
+  test('PP-14: uploading a new photo does not delete a forged out-of-tenant photoUrl file (QA P1 fix)', async () => {
+    const owner = await prisma.owner.findFirstOrThrow({ where: { tenantId } })
+    const victimKey = 'tenants/999999/photo/pet-victim.jpg'
+    fs.mkdirSync(path.dirname(path.join(attachmentDir, victimKey)), { recursive: true })
+    fs.writeFileSync(path.join(attachmentDir, victimKey), 'victim-bytes')
+    const forgedPet = await prisma.pet.create({
+      data: { tenantId, ownerId: owner.id, name: 'Forged Upload', species: 'canine', photoUrl: victimKey },
+    })
+
+    await request(server)
+      .post(`/api/pets/${forgedPet.id}/photo`)
+      .set('Authorization', `Bearer ${staffToken}`)
+      .attach('file', Buffer.from('new-bytes'), { filename: 'new.jpg', contentType: 'image/jpeg' })
+      .expect(201)
+
+    expect(fs.existsSync(path.join(attachmentDir, victimKey))).toBe(true)
+    expect(fs.readFileSync(path.join(attachmentDir, victimKey)).toString()).toBe('victim-bytes')
+
+    await prisma.pet.delete({ where: { id: forgedPet.id } })
+    fs.rmSync(path.join(attachmentDir, 'tenants', '999999'), { recursive: true, force: true })
   })
 
 })

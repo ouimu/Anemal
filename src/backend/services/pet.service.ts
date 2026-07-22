@@ -59,7 +59,7 @@ export async function updatePet(tenantId: number, id: number, data: UpdatePetInp
 }
 
 const PET_PHOTO_MIME_ALLOWLIST = ['image/jpeg', 'image/png', 'image/webp'] as const
-const PET_PHOTO_MAX_SIZE_BYTES = 5 * 1024 * 1024
+export const PET_PHOTO_MAX_SIZE_BYTES = 5 * 1024 * 1024
 const PET_PHOTO_EXTENSION: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }
 const PET_PHOTO_CONTENT_TYPE: Record<string, string> = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' }
 
@@ -73,10 +73,21 @@ function buildPetPhotoKey(tenantId: number, petId: number, mimetype: string): st
   return `tenants/${tenantId}/photo/pet-${petId}.${PET_PHOTO_EXTENSION[mimetype]}`
 }
 
+function isOwnTenantPhotoKey(tenantId: number, photoUrl: string): boolean {
+  return photoUrl.startsWith(`tenants/${tenantId}/photo/`)
+}
+
 /**
  * Stable per-pet key (grill G2) — a same-format re-upload overwrites in
  * place (zero orphan, zero delete code). A format change (different
  * extension) triggers a best-effort delete of the previous file.
+ *
+ * Tenant-prefix guard on delete (mirrors the read-side guard, BA sign-off
+ * §2.3 R-1): a pre-existing row could carry a forged/legacy photoUrl from
+ * before photoUrl became server-managed-only — without this check,
+ * uploading a new photo would delete whatever file that forged key points
+ * at, including another tenant's, via LocalDiskDriver (which permits any
+ * in-baseDir path).
  */
 export async function uploadPetPhoto(tenantId: number, petId: number, file: PetPhotoUploadFile) {
   const pet = await getPet(tenantId, petId, false)
@@ -91,7 +102,7 @@ export async function uploadPetPhoto(tenantId: number, petId: number, file: PetP
   const storageKey = buildPetPhotoKey(tenantId, petId, file.mimetype)
   const driver = getStorageDriver()
 
-  if (pet.photoUrl && pet.photoUrl !== storageKey) {
+  if (pet.photoUrl && pet.photoUrl !== storageKey && isOwnTenantPhotoKey(tenantId, pet.photoUrl)) {
     await driver.delete(pet.photoUrl)
   }
   await driver.save(storageKey, file.buffer, file.mimetype)
@@ -114,8 +125,7 @@ export async function getPetPhotoFile(tenantId: number, petId: number): Promise<
   const pet = await getPet(tenantId, petId, false)
   if (!pet.photoUrl) throw new PetError('Pet has no photo', 404)
 
-  const expectedPrefix = `tenants/${tenantId}/photo/`
-  if (!pet.photoUrl.startsWith(expectedPrefix)) {
+  if (!isOwnTenantPhotoKey(tenantId, pet.photoUrl)) {
     throw new PetError('Invalid photo reference', 404)
   }
 
