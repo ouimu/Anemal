@@ -6,7 +6,7 @@ import prisma from '../config/db'
 export interface SettingsAuditEntry {
   tenantId:  number | null
   changedBy: number | null
-  tableName: 'tenant_settings' | 'system_settings'
+  tableName: 'tenant_settings' | 'system_settings' | 'tenant_storage_config'
   fieldName: string
   oldValue:  string | null
   newValue:  string | null

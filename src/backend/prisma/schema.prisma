@@ -53,6 +53,7 @@ model Tenant {
   vaccinations        Vaccination[]
   attachments         Attachment[]
   settings            TenantSettings?
+  storageConfig       TenantStorageConfig?
   // Phase 4
   branches            Branch[]
   branchInventory     BranchInventory[]
@@ -132,6 +133,26 @@ model TenantSettings {
   updatedByUser User?  @relation("TenantSettingsUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
 
   @@map("tenant_settings")
+}
+
+// Per-tenant BYO storage location (ADR-0023). One row per tenant; absence
+// of a row means "use the operator's default LocalDiskDriver" — no backfill
+// needed for existing tenants. provider values: 'local' | 'custom_path'
+// (future: 'google_drive' | 'onedrive' — kept as a dedicated table, not
+// columns on TenantSettings, specifically so those future OAuth-token
+// columns land here without bloating TenantSettings, per BA sign-off §3.4).
+model TenantStorageConfig {
+  tenantId             Int      @id
+  provider             String   @default("local") @db.VarChar(20)
+  smbHost              String?  @db.VarChar(255)
+  smbShare             String?  @db.VarChar(500)
+  smbUsername          String?  @db.VarChar(255)
+  smbPasswordEncrypted String?
+  updatedAt            DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_storage_config")
 }
 
 model User {
