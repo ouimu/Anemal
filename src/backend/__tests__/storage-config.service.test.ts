@@ -145,3 +145,111 @@ describe('updateStorageConfig', () => {
       .rejects.toBeInstanceOf(StorageConfigSwitchConfirmationRequiredError)
   })
 })
+
+jest.mock('../config/google-drive-client')
+import { revokeGoogleToken, createGoogleDriveClient, GoogleDriveAuthInvalidError } from '../config/google-drive-client'
+
+describe('updateStorageConfig — disconnecting from google_drive (BA G-4b)', () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  test('switching google_drive → local revokes the stored refresh token at Google and nulls all google* columns in the same write', async () => {
+    const encryptedRefresh = encryptField('stored-refresh-token')
+    ;(repo.getStorageConfig as jest.Mock).mockResolvedValue({
+      tenantId: 1, provider: 'google_drive',
+      googleAccessTokenEncrypted: encryptField('at'), googleRefreshTokenEncrypted: encryptedRefresh,
+      googleRootFolderId: 'r1', googleEmrFolderId: 'e1', googlePhotoFolderId: 'p1',
+    })
+    ;(revokeGoogleToken as jest.Mock).mockResolvedValue(undefined)
+    ;(repo.upsertStorageConfig as jest.Mock).mockResolvedValue({ tenantId: 1, provider: 'local' })
+
+    await updateStorageConfig(1, 42, { provider: 'local', confirmBaseChange: true })
+
+    expect(revokeGoogleToken).toHaveBeenCalledWith('stored-refresh-token')
+    expect(repo.upsertStorageConfig).toHaveBeenCalledWith(1, expect.objectContaining({
+      provider: 'local',
+      googleAccessTokenEncrypted: null, googleRefreshTokenEncrypted: null,
+      googleRootFolderId: null, googleEmrFolderId: null, googlePhotoFolderId: null,
+    }))
+  })
+
+  test('a failed Google revoke is logged, never blocks the switch (best-effort, matches the existing SMB-failure pattern)', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue({
+      tenantId: 1, provider: 'google_drive', googleRefreshTokenEncrypted: encryptField('rt'),
+    })
+    ;(revokeGoogleToken as jest.Mock).mockRejectedValue(new Error('Google revoke endpoint down'))
+    ;(repo.upsertStorageConfig as jest.Mock).mockResolvedValue({ tenantId: 1, provider: 'local' })
+
+    await expect(updateStorageConfig(1, 42, { provider: 'local', confirmBaseChange: true })).resolves.toBeUndefined()
+    expect(repo.upsertStorageConfig).toHaveBeenCalled()
+  })
+
+  test('switching google_drive → custom_path (not just → local) also nulls the google* columns', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue({
+      tenantId: 1, provider: 'google_drive', googleRefreshTokenEncrypted: encryptField('rt'),
+    })
+    ;(revokeGoogleToken as jest.Mock).mockResolvedValue(undefined)
+    ;(createSmbClient as jest.Mock).mockReturnValue(fakeClient())
+    ;(repo.upsertStorageConfig as jest.Mock).mockResolvedValue({ tenantId: 1, provider: 'custom_path' })
+
+    await updateStorageConfig(1, 42, { provider: 'custom_path', smbHost: 'h', smbShare: 's', smbUsername: 'u', smbPassword: 'p', confirmBaseChange: true })
+
+    expect(repo.upsertStorageConfig).toHaveBeenCalledWith(1, expect.objectContaining({
+      googleAccessTokenEncrypted: null, googleRefreshTokenEncrypted: null,
+      googleRootFolderId: null, googleEmrFolderId: null, googlePhotoFolderId: null,
+    }))
+  })
+
+  test('a currently google_drive row is always treated as a base change — switching away without confirmBaseChange throws', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue({ tenantId: 1, provider: 'google_drive', googleRefreshTokenEncrypted: null })
+    await expect(updateStorageConfig(1, 42, { provider: 'local' })).rejects.toBeInstanceOf(StorageConfigSwitchConfirmationRequiredError)
+    expect(repo.upsertStorageConfig).not.toHaveBeenCalled()
+  })
+
+  test('no stored refresh token (edge case: connected then row was already partially cleared) — revoke is skipped, switch still succeeds', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue({ tenantId: 1, provider: 'google_drive', googleRefreshTokenEncrypted: null })
+    ;(repo.upsertStorageConfig as jest.Mock).mockResolvedValue({ tenantId: 1, provider: 'local' })
+    await updateStorageConfig(1, 42, { provider: 'local', confirmBaseChange: true })
+    expect(revokeGoogleToken).not.toHaveBeenCalled()
+    expect(repo.upsertStorageConfig).toHaveBeenCalled()
+  })
+})
+
+describe('getStorageConfigForDisplay — google_drive live status check (design §"Status check")', () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  test('a valid connection → connected: true', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue({
+      tenantId: 1, provider: 'google_drive',
+      googleAccessTokenEncrypted: encryptField('at'), googleRefreshTokenEncrypted: encryptField('rt'),
+    })
+    ;(createGoogleDriveClient as jest.Mock).mockReturnValue({ ping: jest.fn().mockResolvedValue(undefined) })
+    const result = await getStorageConfigForDisplay(1)
+    expect(result).toEqual({ provider: 'google_drive', configured: true, connected: true })
+  })
+
+  test('a revoked/invalid token → connected: false', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue({
+      tenantId: 1, provider: 'google_drive',
+      googleAccessTokenEncrypted: encryptField('at'), googleRefreshTokenEncrypted: encryptField('rt'),
+    })
+    ;(createGoogleDriveClient as jest.Mock).mockReturnValue({ ping: jest.fn().mockRejectedValue(new GoogleDriveAuthInvalidError()) })
+    const result = await getStorageConfigForDisplay(1)
+    expect(result.connected).toBe(false)
+  })
+
+  test('a transient failure (network blip) does NOT flip connected to false — "a blip must not read as data loss"', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue({
+      tenantId: 1, provider: 'google_drive',
+      googleAccessTokenEncrypted: encryptField('at'), googleRefreshTokenEncrypted: encryptField('rt'),
+    })
+    ;(createGoogleDriveClient as jest.Mock).mockReturnValue({ ping: jest.fn().mockRejectedValue(new Error('ETIMEDOUT')) })
+    const result = await getStorageConfigForDisplay(1)
+    expect(result.connected).toBe(true)
+  })
+
+  test('local/custom_path responses never include a connected field', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue(null)
+    const result = await getStorageConfigForDisplay(1)
+    expect(result).not.toHaveProperty('connected')
+  })
+})

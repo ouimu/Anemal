@@ -56,6 +56,7 @@ const UNMAPPED_ALLOWLIST: Array<{ method: string; path: string; reason: string }
   { method: 'GET',  path: '/api/settings/personal', reason: 'requirePlane(\'clinic\') only — S2.3: personal preferences are self-service for any clinic role.' },
   { method: 'PUT',  path: '/api/settings/personal', reason: "requirePlane('clinic') only — same as above." },
   { method: 'GET',  path: '/api/cron/reminders',     reason: 'No auth/RBAC middleware — guarded instead by a `Bearer ${CRON_SECRET}` header check inside the handler (cron.routes.ts). Called only by Vercel Cron (vercel.json), never by a user session; not user-facing.' },
+  { method: 'GET',  path: '/oauth/google/callback',  reason: 'Public — Google\'s own unauthenticated OAuth redirect target (ADR-0023 sub-project 2). The signed, single-use `state` param IS the trust boundary, verified inside the handler before anything is read or persisted; no JWT is ever presented by Google here.' },
 ]
 
 function isAllowlisted(route: EnumeratedRoute): boolean {

@@ -42,16 +42,17 @@ export async function updateGoogleFolderIds(tenantId: number, ids: GoogleDriveFo
 }
 
 /**
- * First-pass write-back for a silently-refreshed Google access token.
- * Task 10 hardens this to the grill-N-4 race-safe conditional update
- * (WHERE provider = 'google_drive' AND googleRefreshTokenEncrypted IS NOT
- * NULL) — this version exists so Task 4's getStorageDriver wiring compiles
- * and passes its own tests; Task 10 adds the specific race test this naive
- * version fails.
+ * Conditional update, guarded against the disconnect race (grill N-4): an
+ * in-flight operation's silent token refresh can complete AFTER the admin
+ * has disconnected (row nulled by updateStorageConfig's BA-G-4b write) —
+ * this WHERE clause makes that write-back a no-op instead of resurrecting
+ * an encrypted token onto a row whose provider is no longer google_drive.
+ * Never retried, never errored — this is a system token refresh, not an
+ * admin action, and is explicitly EXEMPT from settings_audit_log (BA G-4a).
  */
 export async function writeBackRefreshedGoogleAccessToken(tenantId: number, newAccessToken: string): Promise<void> {
-  await prisma.tenantStorageConfig.update({
-    where: { tenantId },
+  await prisma.tenantStorageConfig.updateMany({
+    where: { tenantId, provider: 'google_drive', googleRefreshTokenEncrypted: { not: null } },
     data:  { googleAccessTokenEncrypted: encryptField(newAccessToken) },
   })
 }
