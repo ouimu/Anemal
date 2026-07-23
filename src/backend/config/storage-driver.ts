@@ -4,6 +4,7 @@
 // StorageDriver interface, and getStorageDriver() becomes the switch point.
 import { promises as fs } from 'fs'
 import path from 'path'
+import { randomUUID } from 'crypto'
 import { AppError } from '../utils/errors'
 
 export interface StorageDriver {
@@ -61,12 +62,23 @@ export class LocalDiskDriver implements StorageDriver {
   async save(key: string, body: Buffer, _contentType: string): Promise<void> {
     const target = resolveSafePath(this.baseDir, key)
     await fs.mkdir(path.dirname(target), { recursive: true })
-    await fs.writeFile(target, body)
+    // Grill finding #2: write to a temp name in the same directory, then
+    // rename over the final key. A connection/process drop mid-write leaves
+    // the temp file orphaned, never the previous good file truncated —
+    // critical for pet-photo overwrite-in-place.
+    const tempTarget = `${target}.tmp-${randomUUID()}`
+    await fs.writeFile(tempTarget, body)
+    await fs.rename(tempTarget, target)
   }
 
   async read(key: string): Promise<Buffer> {
     const target = resolveSafePath(this.baseDir, key)
-    return fs.readFile(target)
+    try {
+      return await fs.readFile(target)
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') throw new StorageNotFoundError(key)
+      throw new StorageUnavailableError(err)
+    }
   }
 
   async delete(key: string): Promise<void> {
@@ -74,7 +86,7 @@ export class LocalDiskDriver implements StorageDriver {
     try {
       await fs.unlink(target)
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
+      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw new StorageUnavailableError(err)
     }
   }
 
@@ -83,8 +95,9 @@ export class LocalDiskDriver implements StorageDriver {
     try {
       await fs.access(target)
       return true
-    } catch {
-      return false
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return false
+      throw new StorageUnavailableError(err)
     }
   }
 }
