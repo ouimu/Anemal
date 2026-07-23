@@ -147,7 +147,7 @@ describe('updateStorageConfig', () => {
 })
 
 jest.mock('../config/google-drive-client')
-import { revokeGoogleToken } from '../config/google-drive-client'
+import { revokeGoogleToken, createGoogleDriveClient, GoogleDriveAuthInvalidError } from '../config/google-drive-client'
 
 describe('updateStorageConfig — disconnecting from google_drive (BA G-4b)', () => {
   beforeEach(() => jest.clearAllMocks())
@@ -211,5 +211,45 @@ describe('updateStorageConfig — disconnecting from google_drive (BA G-4b)', ()
     await updateStorageConfig(1, 42, { provider: 'local', confirmBaseChange: true })
     expect(revokeGoogleToken).not.toHaveBeenCalled()
     expect(repo.upsertStorageConfig).toHaveBeenCalled()
+  })
+})
+
+describe('getStorageConfigForDisplay — google_drive live status check (design §"Status check")', () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  test('a valid connection → connected: true', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue({
+      tenantId: 1, provider: 'google_drive',
+      googleAccessTokenEncrypted: encryptField('at'), googleRefreshTokenEncrypted: encryptField('rt'),
+    })
+    ;(createGoogleDriveClient as jest.Mock).mockReturnValue({ ping: jest.fn().mockResolvedValue(undefined) })
+    const result = await getStorageConfigForDisplay(1)
+    expect(result).toEqual({ provider: 'google_drive', configured: true, connected: true })
+  })
+
+  test('a revoked/invalid token → connected: false', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue({
+      tenantId: 1, provider: 'google_drive',
+      googleAccessTokenEncrypted: encryptField('at'), googleRefreshTokenEncrypted: encryptField('rt'),
+    })
+    ;(createGoogleDriveClient as jest.Mock).mockReturnValue({ ping: jest.fn().mockRejectedValue(new GoogleDriveAuthInvalidError()) })
+    const result = await getStorageConfigForDisplay(1)
+    expect(result.connected).toBe(false)
+  })
+
+  test('a transient failure (network blip) does NOT flip connected to false — "a blip must not read as data loss"', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue({
+      tenantId: 1, provider: 'google_drive',
+      googleAccessTokenEncrypted: encryptField('at'), googleRefreshTokenEncrypted: encryptField('rt'),
+    })
+    ;(createGoogleDriveClient as jest.Mock).mockReturnValue({ ping: jest.fn().mockRejectedValue(new Error('ETIMEDOUT')) })
+    const result = await getStorageConfigForDisplay(1)
+    expect(result.connected).toBe(true)
+  })
+
+  test('local/custom_path responses never include a connected field', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue(null)
+    const result = await getStorageConfigForDisplay(1)
+    expect(result).not.toHaveProperty('connected')
   })
 })

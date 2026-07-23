@@ -4,7 +4,7 @@ import * as repo from '../models/tenant-storage-config.repository'
 import * as auditRepo from '../models/settings-audit.repository'
 import { decryptField, encryptField } from '../utils/encryption'
 import { createSmbClient } from '../config/smb-client'
-import { revokeGoogleToken } from '../config/google-drive-client'
+import { revokeGoogleToken, createGoogleDriveClient, GoogleDriveAuthInvalidError } from '../config/google-drive-client'
 import { AppError } from '../utils/errors'
 import { logger } from '../utils/logger'
 
@@ -51,15 +51,41 @@ export class StorageConfigSwitchConfirmationRequiredError extends AppError {
 export interface StorageConfigDisplay {
   provider:     string
   configured:   boolean
+  connected?:   boolean
   smbHost?:     string
   smbShare?:    string
   smbUsername?: string
 }
 
-/** Never includes the password — a "configured" boolean stands in for it (design §"Address format"). */
+async function checkGoogleDriveConnected(row: { googleAccessTokenEncrypted: string | null; googleRefreshTokenEncrypted: string | null }): Promise<boolean> {
+  if (!row.googleAccessTokenEncrypted || !row.googleRefreshTokenEncrypted) return false
+  const client = createGoogleDriveClient({
+    clientId:     process.env.GOOGLE_OAUTH_CLIENT_ID ?? '',
+    clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET ?? '',
+    accessToken:  decryptField(row.googleAccessTokenEncrypted),
+    refreshToken: decryptField(row.googleRefreshTokenEncrypted),
+  })
+  try {
+    await client.ping()
+    return true
+  } catch (err) {
+    if (err instanceof GoogleDriveAuthInvalidError) return false
+    // Transient failure — "don't read a blip as data loss" (design's status-
+    // check principle, applied here) — the check is simply skipped/logged,
+    // never falsely tells the admin to reconnect over a network hiccup.
+    logger.warn({ err: String(err) }, 'Google Drive live status check failed transiently — connected stays true')
+    return true
+  }
+}
+
+/** Never includes the password/tokens — a "configured" boolean stands in for them. */
 export async function getStorageConfigForDisplay(tenantId: number): Promise<StorageConfigDisplay> {
   const row = await repo.getStorageConfig(tenantId)
   if (!row || row.provider === 'local') return { provider: 'local', configured: false }
+  if (row.provider === 'google_drive') {
+    const connected = await checkGoogleDriveConnected(row)
+    return { provider: 'google_drive', configured: true, connected }
+  }
   return {
     provider:    row.provider,
     configured:  true,
