@@ -96,8 +96,12 @@ export async function handleGoogleOAuthCallback(req: Request, res: Response): Pr
     const client = createGoogleDriveClient({ clientId, clientSecret, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken })
     const folders = await bootstrapTenantFolders(verified.tenantId, client)
 
+    // A stale SMB credential must not survive a switch to google_drive, same
+    // invariant as BA G-4b for the reverse direction (disconnect nulls
+    // google* columns) — connecting Drive nulls any smb* columns instead.
     await tenantStorageConfigRepo.upsertStorageConfig(verified.tenantId, {
       provider: 'google_drive',
+      smbHost: null, smbShare: null, smbUsername: null, smbPasswordEncrypted: null,
       googleAccessTokenEncrypted:  encryptField(tokens.accessToken),
       googleRefreshTokenEncrypted: encryptField(tokens.refreshToken),
       googleRootFolderId:  folders.rootFolderId,

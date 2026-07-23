@@ -1,10 +1,23 @@
 import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import MaterialIcon from '../../components/MaterialIcon'
 import { useStorageConfig, useUpdateStorageConfig, useGoogleAuthorize, type StorageConfigInput } from '../../hooks/useStorageConfig'
 import { getErrorMessage } from '../../utils/errorMessage'
 
 function getErrorCode(error: unknown): string | undefined {
   return (error as { response?: { data?: { code?: string } } })?.response?.data?.code
+}
+
+// Maps the OAuth callback's ?error= query param (design §"Error Handling") to
+// copy a non-technical clinic admin can act on — every callback failure path
+// redirects here with one of these codes, never a silent no-op.
+const GOOGLE_OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  google_consent_denied:  'Google sign-in was cancelled — try again if you want to connect Google Drive.',
+  google_state_invalid:   'That Google sign-in link was invalid or expired — try connecting again.',
+  google_state_replayed:  'That Google sign-in link was already used — try connecting again.',
+  google_not_authorized:  'Your account no longer has permission to connect Google Drive — ask an admin to try again.',
+  google_not_configured:  'Google Drive connection is not configured on this server yet.',
+  google_connect_failed:  'Could not connect to Google Drive — please try again.',
 }
 
 interface StorageForm {
@@ -21,6 +34,8 @@ export default function StoragePage(): React.ReactElement {
   const { data, isLoading } = useStorageConfig()
   const update = useUpdateStorageConfig()
   const googleAuthorize = useGoogleAuthorize()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const oauthErrorCode = searchParams.get('error')
 
   const [form, setForm] = useState<StorageForm>(EMPTY_FORM)
   const [editingPassword, setEditingPassword] = useState(false)
@@ -37,7 +52,10 @@ export default function StoragePage(): React.ReactElement {
       smbUsername: data.smbUsername ?? '',
       smbPassword: '',
     })
-    setEditingPassword(!data.configured)
+    // "Connected — password saved" only means something for an actually-saved
+    // custom_path config — otherwise (never configured, or configured as
+    // google_drive) there is no SMB password on file to describe as saved.
+    setEditingPassword(!(data.provider === 'custom_path' && data.configured))
   }, [data])
 
   function buildPayload(provider: 'local' | 'custom_path', confirmBaseChange?: boolean): StorageConfigInput {
@@ -119,6 +137,16 @@ export default function StoragePage(): React.ReactElement {
       {genericError && (
         <div className="px-md py-sm bg-error/10 border border-error/30 rounded-xl text-body-md text-error">
           Failed to save: {genericError}
+        </div>
+      )}
+
+      {oauthErrorCode && (
+        <div className="px-md py-sm bg-error/10 border border-error/30 rounded-xl text-body-md text-error flex items-center justify-between gap-sm">
+          <span>{GOOGLE_OAUTH_ERROR_MESSAGES[oauthErrorCode] ?? 'Could not connect to Google Drive — please try again.'}</span>
+          <button type="button" onClick={() => setSearchParams({}, { replace: true })}
+            className="min-h-[44px] min-w-[44px] px-sm text-error hover:opacity-70" aria-label="Dismiss">
+            <MaterialIcon name="close" size={18} />
+          </button>
         </div>
       )}
 

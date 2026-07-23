@@ -85,6 +85,23 @@ describe('GET /oauth/google/callback', () => {
     expect(audit).not.toBeNull()
   })
 
+  test('connecting Google Drive nulls a stale smb* credential from a prior custom_path config (parity with BA G-4b\'s reverse direction)', async () => {
+    await prisma.tenantStorageConfig.upsert({
+      where: { tenantId: tidA },
+      create: { tenantId: tidA, provider: 'custom_path', smbHost: 'h', smbShare: 's', smbUsername: 'u', smbPasswordEncrypted: 'enc:v1:aaaa:bbbb:cccc' },
+      update: { provider: 'custom_path', smbHost: 'h', smbShare: 's', smbUsername: 'u', smbPasswordEncrypted: 'enc:v1:aaaa:bbbb:cccc' },
+    })
+    const { state } = await freshState()
+    const res = await request(server).get('/oauth/google/callback').query({ code: 'fake-code', state })
+    expect(res.status).toBe(302)
+    const row = await prisma.tenantStorageConfig.findUnique({ where: { tenantId: tidA } })
+    expect(row?.provider).toBe('google_drive')
+    expect(row?.smbHost).toBeNull()
+    expect(row?.smbShare).toBeNull()
+    expect(row?.smbUsername).toBeNull()
+    expect(row?.smbPasswordEncrypted).toBeNull()
+  })
+
   test('OC-03: replayed/already-consumed state → rejected, redirects with an error param, nothing new persisted (grill N-3)', async () => {
     const { state } = await freshState()
     await request(server).get('/oauth/google/callback').query({ code: 'fake-code', state }) // consumes it

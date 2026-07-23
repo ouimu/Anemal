@@ -23,10 +23,10 @@ vi.mock('../hooks/useStorageConfig', () => ({
 
 import StoragePage from '../views/settings/StoragePage'
 
-function renderPage() {
+function renderPage(initialEntries: string[] = ['/']) {
   const qc = new QueryClient()
   return render(
-    <MemoryRouter><QueryClientProvider client={qc}><StoragePage /></QueryClientProvider></MemoryRouter>,
+    <MemoryRouter initialEntries={initialEntries}><QueryClientProvider client={qc}><StoragePage /></QueryClientProvider></MemoryRouter>,
   )
 }
 
@@ -122,5 +122,23 @@ describe('StoragePage', () => {
     await waitFor(() => expect(h.mutateAsync).toHaveBeenLastCalledWith(
       expect.objectContaining({ provider: 'local', confirmBaseChange: true }),
     ))
+  })
+
+  it('renders a friendly inline message when the OAuth callback redirects back with an error code', () => {
+    renderPage(['/settings/storage?error=google_state_replayed'])
+    expect(screen.getByText(/already used — try connecting again/i)).toBeInTheDocument()
+  })
+
+  it('an unrecognized OAuth error code still shows a generic fallback message, not a raw code', () => {
+    renderPage(['/settings/storage?error=some_future_code'])
+    expect(screen.getByText(/Could not connect to Google Drive/i)).toBeInTheDocument()
+  })
+
+  it('when already connected to google_drive, selecting Network share shows empty editable password fields, not a false "password saved" state', () => {
+    state.data = { provider: 'google_drive', configured: true, connected: true }
+    renderPage()
+    fireEvent.click(screen.getByRole('radio', { name: /Network share/i }))
+    expect(screen.getByLabelText(/Password/i)).toHaveValue('')
+    expect(screen.queryByText(/Connected — password saved/i)).not.toBeInTheDocument()
   })
 })
