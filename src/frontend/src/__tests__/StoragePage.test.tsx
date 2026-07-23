@@ -40,7 +40,7 @@ beforeEach(() => {
   state.isPending = false
   state.googleAuthorizeIsPending = false
   delete (window as unknown as { location?: unknown }).location
-  window.location = { href: '' } as unknown as Location
+  ;(window as unknown as { location: { href: string } }).location = { href: '' }
 })
 
 describe('StoragePage', () => {
