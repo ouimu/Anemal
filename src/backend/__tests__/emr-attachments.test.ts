@@ -110,6 +110,21 @@ describe('emr-attachments — POST /:id/attachments (multipart upload)', () => {
     expect(fs.readFileSync(onDisk).toString()).toBe('%PDF-1.4 fake')
   })
 
+  test('EA-01b: Thai (UTF-8) filename is stored correctly, not mojibake', async () => {
+    const thaiName = 'คู่มือการใช้งาน.pdf'
+    const res = await request(server)
+      .post(`/api/medical-records/${medicalRecordId}/attachments`)
+      .set('Authorization', `Bearer ${doctorToken}`)
+      .attach('file', Buffer.from('%PDF-1.4 fake'), { filename: thaiName, contentType: 'application/pdf' })
+      .expect(201)
+
+    // Display name preserves the real UTF-8 Thai string (regression: multer's
+    // latin1 default previously stored "à¸„à¸¹à¹ˆ..." mojibake).
+    expect(res.body.data.fileName).toBe(thaiName)
+    // Storage key stays ASCII-safe (Thai → underscores) via sanitizeFilename.
+    expect(res.body.data.storageKey).toMatch(new RegExp(`^tenants/${tenantId}/emr/${medicalRecordId}/[0-9a-f-]+-_+\\.pdf$`))
+  })
+
   test('EA-02: staff (clinic_staff) also gets 201', async () => {
     await request(server)
       .post(`/api/medical-records/${medicalRecordId}/attachments`)

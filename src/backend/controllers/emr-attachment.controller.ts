@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from 'express'
 import { ValidationError } from '../utils/errors'
 import { uploadEmrAttachment, getAttachmentFileForDownload, deleteAttachment } from '../services/emr-attachment.service'
 import { registerAttachmentUrl, registerAttachmentUrlSchema } from '../services/medical-record.service'
+import { decodeMulterFilename } from '../utils/filename'
 
 /**
  * Dual-mode POST /:id/attachments: a multipart request (req.file present,
@@ -19,7 +20,7 @@ export async function handleAttachmentSubmit(req: Request, res: Response, next: 
         req.context!.tenantId,
         req.context?.branchId,
         medicalRecordId,
-        { buffer: req.file.buffer, mimetype: req.file.mimetype, originalname: req.file.originalname, size: req.file.size },
+        { buffer: req.file.buffer, mimetype: req.file.mimetype, originalname: decodeMulterFilename(req.file.originalname), size: req.file.size },
         fileType,
         req.context!.userId,
       )
