@@ -19,6 +19,23 @@ export class StorageKeyError extends AppError {
   }
 }
 
+// Grill finding #3: exists()/read() must distinguish "genuinely missing"
+// from "any other failure" — a network blip must never read the same as
+// data loss (clinic staff mid-consult would otherwise think a file was
+// deleted). Every driver throws one of these two, never a bare boolean
+// swallow, from read()/exists() failure paths.
+export class StorageNotFoundError extends AppError {
+  constructor(key: string) {
+    super(404, `Storage file not found: ${key}`, 'STORAGE_FILE_NOT_FOUND')
+  }
+}
+
+export class StorageUnavailableError extends AppError {
+  constructor(cause: unknown) {
+    super(503, 'เข้าถึงที่เก็บไฟล์ไม่ได้ตอนนี้ ลองใหม่อีกครั้ง', 'STORAGE_UNAVAILABLE', { cause: String(cause) })
+  }
+}
+
 // Trust-boundary check (do not simplify away): resolves the key against
 // baseDir and asserts the result stays inside baseDir. Catches both `..`
 // relative traversal and absolute-path keys (path.relative to a
