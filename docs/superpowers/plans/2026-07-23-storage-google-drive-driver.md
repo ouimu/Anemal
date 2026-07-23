@@ -18,22 +18,18 @@
 
 **Tech Stack:** Node/Express/TypeScript backend (Prisma/Postgres), React 18/Vite frontend, Jest/supertest (backend), Vitest/Testing Library (frontend). One new runtime dependency: `googleapis` (official Google API Node client, bundles `google-auth-library`'s `OAuth2Client`), isolated behind `GoogleDriveClient`/`createGoogleDriveClient` exactly as `@marsaud/smb2` is isolated behind `SmbClient`.
 
-## PR Split — data point for Ponytail (Step 5 makes the actual ruling)
+## PR Split (Ponytail Step-5 ruling, 2026-07-23 — REQUIRED)
 
-Following sub-project 1's precedent (which Ponytail split into Sub-PR A "core" / Sub-PR B "API+UI" after rejecting a single-PR plan on scope), my own assessment of this plan's scope:
+The single-PR plan was REJECTED on scope (criterion 4: 4 subsystems — DB/migration, backend crypto+driver core, backend API surface incl. a brand-new top-level public router, frontend — all >3; independently recounted footprint: 15 new files, ~14 modified, ~29 touched total). No over-engineering or cut was found — every mechanism traces to a resolved grill/BA finding and the architecture correctly mirrors the already-shipped `SmbShareDriver` pattern. This is a **split-only** ruling, identical in kind to sub-project 1's. Execute as two sequenced PRs on this **same branch** (`feature/tenant-storage-provider`) — no branch split, that is a locked user decision.
 
-- **New files: ~13** (`google-drive-client.ts` + `fakeGoogleDriveClient.ts`, `google-drive-driver.ts` + test, `oauth-state.ts` + test, `oauth-connect-nonce.repository.ts` + test, `oauth-google.controller.ts`, `oauth-google.routes.ts`, 2 new integration test files, 1 new frontend page `StorageConnectingPage.tsx`, 1 new migration file).
-- **Modified files: ~11** (`schema.prisma`, `storage-driver.ts`, `tenant-storage-config.repository.ts`, `storage-config.service.ts`, `settings.controller.ts`, `settings.routes.ts`, `app.ts`, `package.json`, `storage-config.service.test.ts`, plus 3 frontend files: `useStorageConfig.ts`, `StoragePage.tsx`, `App.tsx`).
-- **Total touched: ~24 files** — exceeds Ponytail criterion 6 (>15 new files is the literal trigger, but the combined new+modified footprint is the same shape sub-project 1 was rejected for).
-- **Subsystems touched: 4** — DB/migration, backend crypto+driver core (OAuth state signing, nonce table, Drive client/driver), backend API surface (2 new endpoints on 2 different routers — one of them a brand-new top-level public router in `app.ts`), frontend. Exceeds criterion 4 (>3 subsystems).
-- **New endpoints: 2** (`GET .../google/authorize`, `GET /oauth/google/callback`) plus 1 extended existing endpoint (`GET /clinic/storage-config` gains `connected`) — under criterion 7's threshold on its own, not a driver of a split.
-- **New dependencies: 1** (`googleapis`) — well under criterion 5.
+- **Sub-PR A — driver + crypto core, Tasks 1–6:** migration (5 `google*` columns + `OAuthConnectNonce` table), `GoogleDriveClient`/`FakeGoogleDriveClient` seam, `GoogleDriveDriver`, the `getStorageDriver` branch + repository/service plumbing for it, the HMAC state-signing helper (HKDF-derived key), the `OAuthConnectNonce` repository (atomic single-use consume). No user-facing surface — fully covered by unit tests against fakes, nothing depends on a live Google account. Ships safely un-hardened (Task 4's naive token write-back is inert until Sub-PR B wires the actual connect flow).
+- **Sub-PR B — OAuth endpoints + disconnect/refresh wiring + frontend, Tasks 7–13:** the `/authorize` endpoint, the `/oauth/google/callback` top-level route, disconnect-revokes-and-nulls, the token-refresh write-back's race-safe conditional update (hardens Sub-PR A's naive version), the live `connected` status field, and the frontend (radio option, Connect button, interstitial page, Disconnect). Depends on Sub-PR A having merged to this branch's base for that PR.
 
-**My assessment: this looks like it needs the same 2-PR split as sub-project 1**, cut at the same seam (driver/crypto core vs. OAuth-endpoints+UI):
-- **Sub-PR A — driver + crypto core, Tasks 1–6:** migration, `GoogleDriveClient`/`FakeGoogleDriveClient`, `GoogleDriveDriver`, the `getStorageDriver` branch + repository/service plumbing for it, the HMAC state-signing helper, the nonce repository. No user-facing surface — fully covered by unit tests against fakes, nothing depends on a live Google account.
-- **Sub-PR B — OAuth endpoints + disconnect/refresh wiring + frontend, Tasks 7–13:** the `/authorize` endpoint, the `/oauth/google/callback` top-level route, disconnect-revokes-and-nulls, the token-refresh write-back's race-safe conditional update, the live `connected` status field, and the frontend (radio option, Connect button, interstitial page, Disconnect). Depends on Sub-PR A having merged.
+Each sub-PR runs its own Step 6→8 (execute → code-review/qa → finish-branch). Sub-PR B starts only after Sub-PR A merges.
 
-Ponytail makes the final ruling at Step 5 — this section is the data point, not the decision.
+**Two non-blocking notes carried into Sub-PR A/B execution (Ponytail, not reject-worthy):**
+1. Task 7's `deriveTenantFrontendOrigin` includes an inert `FRONTEND_URL_PATTERN` branch for future per-tenant-subdomain resolution that doesn't exist yet — the `FRONTEND_URL` single-origin fallback already satisfies BA G-2a on its own. Consider dropping the pattern branch until subdomain routing actually lands (YAGNI); re-add then.
+2. `googleapis` is a heavyweight meta-package for what is `OAuth2Client` + four `drive.files.*` calls — `google-auth-library` + direct REST would be lighter. The `GoogleDriveClient` seam makes this a one-file swap later if it ever matters; not worth blocking Sub-PR A on.
 
 ## Global Constraints
 
