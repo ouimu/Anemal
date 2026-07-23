@@ -137,10 +137,9 @@ model TenantSettings {
 
 // Per-tenant BYO storage location (ADR-0023). One row per tenant; absence
 // of a row means "use the operator's default LocalDiskDriver" — no backfill
-// needed for existing tenants. provider values: 'local' | 'custom_path'
-// (future: 'google_drive' | 'onedrive' — kept as a dedicated table, not
-// columns on TenantSettings, specifically so those future OAuth-token
-// columns land here without bloating TenantSettings, per BA sign-off §3.4).
+// needed for existing tenants. provider values: 'local' | 'custom_path' |
+// 'google_drive' (future: 'onedrive'). google* columns are populated only
+// when provider = 'google_drive' — see ADR-0023's sub-project 2 amendment.
 model TenantStorageConfig {
   tenantId             Int      @id
   provider             String   @default("local") @db.VarChar(20)
@@ -148,11 +147,37 @@ model TenantStorageConfig {
   smbShare             String?  @db.VarChar(500)
   smbUsername          String?  @db.VarChar(255)
   smbPasswordEncrypted String?
+  // Google Drive (sub-project 2) — AES-256-GCM via SETTINGS_ENCRYPTION_KEY,
+  // same helper/key as smbPasswordEncrypted. Folder IDs are tenant-scoped
+  // (Anemal/tenant-{id}/emr, .../photo) even though each tenant has its own
+  // OAuth connection (grill N-2) — nothing stops the same Google account
+  // being connected to two tenants.
+  googleAccessTokenEncrypted  String?
+  googleRefreshTokenEncrypted String?
+  googleRootFolderId          String?
+  googleEmrFolderId           String?
+  googlePhotoFolderId         String?
   updatedAt            DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("tenant_storage_config")
+}
+
+// Single-use nonce for the Google Drive OAuth connect flow (grill N-3),
+// mirroring RefreshToken's tokenHash + rotation pattern rather than
+// inventing a new mechanism. Provider-generic (not "google"-specific) —
+// sub-project 3 (OneDrive) reuses this table verbatim.
+model OAuthConnectNonce {
+  nonceHash  String    @id
+  tenantId   Int
+  userId     Int
+  provider   String    @db.VarChar(20)
+  expiresAt  DateTime
+  consumedAt DateTime?
+
+  @@index([expiresAt])
+  @@map("oauth_connect_nonce")
 }
 
 model User {

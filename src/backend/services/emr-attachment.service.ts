@@ -2,6 +2,7 @@
 import { randomUUID } from 'crypto'
 import { AppError } from '../utils/errors'
 import { getStorageDriver } from '../config/storage-driver'
+import { logger } from '../utils/logger'
 import { sanitizeFilename } from '../utils/filename'
 import { getMedicalRecord, MedicalRecordError } from './medical-record.service'
 import * as recordRepo from '../models/medical-record.repository'
@@ -51,8 +52,10 @@ export async function uploadEmrAttachment(
       uploadedByUserId,
     )
   } catch (err) {
-    await driver.delete(storageKey)
-    throw err
+    await driver.delete(storageKey).catch((deleteErr: unknown) => {
+      logger.warn({ tenantId, medicalRecordId, storageKey, deleteErr: String(deleteErr) }, 'EMR attachment rollback-delete failed — orphaned file on storage, DB write itself failed')
+    })
+    throw err // the ORIGINAL error (e.g. DB failure) is what the caller sees, never masked by the delete failure
   }
 }
 
@@ -114,6 +117,9 @@ export async function deleteAttachment(
   await recordRepo.deleteAttachmentById(tenantId, medicalRecordId, attachmentId)
 
   if (attachment.storageKey) {
-    await (await getStorageDriver(tenantId)).delete(attachment.storageKey)
+    const driver = await getStorageDriver(tenantId)
+    await driver.delete(attachment.storageKey).catch((deleteErr: unknown) => {
+      logger.warn({ tenantId, medicalRecordId, attachmentId, storageKey: attachment.storageKey, deleteErr: String(deleteErr) }, 'EMR attachment file delete failed post-DB-commit — orphaned file, DB row is the source of truth')
+    })
   }
 }

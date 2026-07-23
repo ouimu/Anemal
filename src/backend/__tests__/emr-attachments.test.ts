@@ -17,6 +17,9 @@ import prisma from '../config/db'
 import { signToken } from '../config/jwt'
 import bcrypt from 'bcrypt'
 import { seedUserRoles, cleanupUserRoles } from '../tests/helpers/seedUserRoles'
+import * as storageDriverMod from '../config/storage-driver'
+import * as recordRepo from '../models/medical-record.repository'
+import { logger } from '../utils/logger'
 
 let server: Server
 let tenantId: number
@@ -394,5 +397,41 @@ describe('emr-attachments — audit trail', () => {
 
     const after = await prisma.auditLog.count({ where: { tenantId } })
     expect(after).toBeGreaterThanOrEqual(before + 2)
+  })
+})
+
+describe('emr-attachments — storage-layer failures are logged, not surfaced (ADR-0023)', () => {
+  afterEach(() => jest.restoreAllMocks())
+
+  test('EA-19: rollback-delete failure after a DB error during upload does not mask the original DB error, and is logged', async () => {
+    const loggerSpy = jest.spyOn(logger, 'warn').mockImplementation(() => undefined)
+    jest.spyOn(recordRepo, 'createAttachment').mockRejectedValueOnce(new Error('db down'))
+    const driver = { save: jest.fn().mockResolvedValue(undefined), delete: jest.fn().mockRejectedValueOnce(new Error('share down')), read: jest.fn(), exists: jest.fn() }
+    jest.spyOn(storageDriverMod, 'getStorageDriver').mockResolvedValueOnce(driver as unknown as storageDriverMod.StorageDriver)
+
+    await request(server)
+      .post(`/api/medical-records/${medicalRecordId}/attachments`)
+      .set('Authorization', `Bearer ${doctorToken}`)
+      .attach('file', Buffer.from('x'), { filename: 'x.pdf', contentType: 'application/pdf' })
+      .expect(500) // the ORIGINAL db error surfaces, not the delete failure
+
+    expect(loggerSpy).toHaveBeenCalledWith(expect.objectContaining({ storageKey: expect.any(String) }), expect.stringMatching(/rollback/i))
+  })
+
+  test('EA-20: post-commit file delete failure after a successful row delete still returns 204, and is logged', async () => {
+    const loggerSpy = jest.spyOn(logger, 'warn').mockImplementation(() => undefined)
+    const storageKey = `tenants/${tenantId}/emr/${medicalRecordId}/uuid-log-test.pdf`
+    const a = await prisma.attachment.create({
+      data: { tenantId, medicalRecordId, fileName: 'log-test.pdf', storageKey, mimeType: 'application/pdf', fileSize: 10, uploadedByUserId: doctorUserId },
+    })
+    const driver = { delete: jest.fn().mockRejectedValueOnce(new Error('share down')), save: jest.fn(), read: jest.fn(), exists: jest.fn() }
+    jest.spyOn(storageDriverMod, 'getStorageDriver').mockResolvedValueOnce(driver as unknown as storageDriverMod.StorageDriver)
+
+    await request(server)
+      .delete(`/api/medical-records/${medicalRecordId}/attachments/${a.id}`)
+      .set('Authorization', `Bearer ${doctorToken}`)
+      .expect(204) // DB row is the source of truth — a storage-layer failure here must not surface as an error
+
+    expect(loggerSpy).toHaveBeenCalledWith(expect.objectContaining({ storageKey }), expect.stringMatching(/orphan|delete/i))
   })
 })

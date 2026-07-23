@@ -51,6 +51,7 @@ const OperatingHoursPage = lazy(() => import('./views/settings/OperatingHoursPag
 const NotificationsPage  = lazy(() => import('./views/settings/NotificationsPage'))
 const PaymentPage        = lazy(() => import('./views/settings/PaymentPage'))
 const IntegrationsPage   = lazy(() => import('./views/settings/IntegrationsPage'))
+const StoragePage        = lazy(() => import('./views/settings/StoragePage'))
 const PreferencesPage    = lazy(() => import('./views/settings/PreferencesPage'))
 
 const Loader = () => (
@@ -157,6 +158,7 @@ export default function App() {
           <Route path="notifications" element={<RequirePermission perm="clinic.integrations.edit"><NotificationsPage/></RequirePermission>}/>
           <Route path="payment"       element={<RequirePermission perm="clinic.payment.edit"><PaymentPage/></RequirePermission>}/>
           <Route path="integrations"  element={<RequirePermission perm="clinic.integrations.edit"><IntegrationsPage/></RequirePermission>}/>
+          <Route path="storage"       element={<RequirePermission perm="clinic.integrations.edit"><StoragePage/></RequirePermission>}/>
           <Route path="branches"      element={<RequirePermission perm="clinic.branch.view"><AdminBranches/></RequirePermission>}/>
         </Route>
 
