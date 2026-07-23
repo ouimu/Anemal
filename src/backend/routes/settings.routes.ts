@@ -21,6 +21,7 @@ router.post('/clinic/integrations/test',  requirePlane('clinic'), requirePermiss
 router.put('/clinic/hours',               requirePlane('clinic'), requirePermission('clinic.hours.edit'),          validate(ctrl.hoursSchema),             ctrl.updateHours)
 router.get('/clinic/storage-config',      requirePlane('clinic'), requirePermission('clinic.profile.view'),        ctrl.getStorageConfig)
 router.put('/clinic/storage-config',      requirePlane('clinic'), requirePermission('clinic.integrations.edit'),   validate(ctrl.storageConfigSchema),     ctrl.updateStorageConfig)
+router.get('/clinic/storage-config/google/authorize', requirePlane('clinic'), requirePermission('clinic.integrations.edit'), ctrl.googleAuthorize)
 
 // S2.3 — personal preferences (any authenticated clinic user — plane check only)
 router.get('/personal', requirePlane('clinic'), ctrl.getPersonalPreferences)

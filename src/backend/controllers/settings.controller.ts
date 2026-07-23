@@ -8,6 +8,9 @@ import * as settingsSvc from '../services/tenant-settings.service'
 import * as prefsSvc from '../services/user-preferences.service'
 import * as connTest from '../services/connection-test.service'
 import * as storageConfigSvc from '../services/storage-config.service'
+import prisma from '../config/db'
+import { signOAuthState } from '../utils/oauth-state'
+import { createNonce } from '../models/oauth-connect-nonce.repository'
 
 const TIME_HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
 
@@ -178,6 +181,64 @@ export async function updateStorageConfig(req: Request, res: Response, next: Nex
     await storageConfigSvc.updateStorageConfig(tenantId, userId, req.body as storageConfigSvc.UpdateStorageConfigInput)
     const data = await storageConfigSvc.getStorageConfigForDisplay(tenantId)
     res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file'
+const OAUTH_STATE_TTL_MS = 10 * 60 * 1000
+
+/**
+ * BA finding G-2a: the redirect origin embedded in `state` is derived
+ * SERVER-SIDE from the tenant's own record — never from a client
+ * header/param/Referer, even though the value ends up signed. This
+ * deployment does not yet route the frontend by per-tenant subdomain, so
+ * FRONTEND_URL_PATTERN is an opt-in hook for when it does; until then every
+ * tenant resolves to the single configured frontend origin — still
+ * server-derived, never client-supplied.
+ */
+function deriveTenantFrontendOrigin(subdomain: string): string {
+  const pattern = process.env.FRONTEND_URL_PATTERN // e.g. 'https://{subdomain}.anemal.app'
+  if (pattern) return pattern.replace('{subdomain}', subdomain)
+  return process.env.FRONTEND_URL || 'http://localhost:5173'
+}
+
+function googleOAuthRedirectUri(): string {
+  return process.env.GOOGLE_OAUTH_REDIRECT_URI || `${process.env.BACKEND_URL || 'http://localhost:4000'}/oauth/google/callback`
+}
+
+export async function googleAuthorize(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID
+    const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET
+    // Grill N-6: checked lazily at request time, not at boot (would brick
+    // every deployment not using Drive) — a clean 503 instead of letting
+    // the admin land on Google's own confusing invalid_client error page.
+    if (!clientId || !clientSecret) {
+      res.status(503).json({ success: false, code: 'GOOGLE_OAUTH_NOT_CONFIGURED', error: 'Google Drive connection is not configured on this server' })
+      return
+    }
+
+    const { tenantId, userId } = req.context!
+    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { subdomain: true } })
+    if (!tenant) { res.status(404).json({ success: false, error: 'Tenant not found' }); return }
+
+    const rawNonce = await createNonce({ tenantId, userId, provider: 'google', expiresAt: new Date(Date.now() + OAUTH_STATE_TTL_MS) })
+    const origin = deriveTenantFrontendOrigin(tenant.subdomain)
+    const state = signOAuthState({ tenantId, userId, origin, nonce: rawNonce })
+
+    const params = new URLSearchParams({
+      client_id:     clientId,
+      redirect_uri:  googleOAuthRedirectUri(),
+      response_type: 'code',
+      access_type:   'offline',
+      // prompt=consent guarantees a fresh refresh token on EVERY connect,
+      // not just the first ever — access_type=offline alone does not
+      // reliably re-issue one on a second consent after a prior disconnect.
+      prompt: 'consent',
+      scope:  GOOGLE_DRIVE_SCOPE,
+      state,
+    })
+    res.json({ success: true, data: { url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}` } })
   } catch (err) { next(err) }
 }
 
