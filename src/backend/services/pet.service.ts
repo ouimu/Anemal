@@ -100,7 +100,7 @@ export async function uploadPetPhoto(tenantId: number, petId: number, file: PetP
   }
 
   const storageKey = buildPetPhotoKey(tenantId, petId, file.mimetype)
-  const driver = getStorageDriver()
+  const driver = await getStorageDriver(tenantId)
 
   if (pet.photoUrl && pet.photoUrl !== storageKey && isOwnTenantPhotoKey(tenantId, pet.photoUrl)) {
     await driver.delete(pet.photoUrl)
@@ -129,7 +129,7 @@ export async function getPetPhotoFile(tenantId: number, petId: number): Promise<
     throw new PetError('Invalid photo reference', 404)
   }
 
-  const driver = getStorageDriver()
+  const driver = await getStorageDriver(tenantId)
   if (!(await driver.exists(pet.photoUrl))) {
     throw new PetError('Photo file is missing', 404)
   }

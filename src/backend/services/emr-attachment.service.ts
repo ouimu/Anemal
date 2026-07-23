@@ -39,7 +39,7 @@ export async function uploadEmrAttachment(
 
   const safeName   = sanitizeFilename(file.originalname)
   const storageKey = `tenants/${tenantId}/emr/${medicalRecordId}/${randomUUID()}-${safeName}`
-  const driver     = getStorageDriver()
+  const driver     = await getStorageDriver(tenantId)
 
   await driver.save(storageKey, file.buffer, file.mimetype)
 
@@ -83,7 +83,7 @@ export async function getAttachmentFileForDownload(
 
   assertStorageKeyPrefix(tenantId, medicalRecordId, attachment.storageKey)
 
-  const driver = getStorageDriver()
+  const driver = await getStorageDriver(tenantId)
   if (!(await driver.exists(attachment.storageKey))) {
     throw new MedicalRecordError('Attachment file is missing', 404)
   }
@@ -114,6 +114,6 @@ export async function deleteAttachment(
   await recordRepo.deleteAttachmentById(tenantId, medicalRecordId, attachmentId)
 
   if (attachment.storageKey) {
-    await getStorageDriver().delete(attachment.storageKey)
+    await (await getStorageDriver(tenantId)).delete(attachment.storageKey)
   }
 }
