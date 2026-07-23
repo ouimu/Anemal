@@ -45,6 +45,10 @@ export class FakeSmbClient implements SmbClient {
     this.assertConnected()
     const buf = this.files.get(fromPath)
     if (!buf) throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    // SmbClient.rename() is a guaranteed-overwrite contract (createSmbClient's
+    // real wrapper always passes { replace: true } to the underlying library
+    // internally — see smb-client.ts) — callers never see or control that
+    // option, so the fake must always replace an existing target too.
     this.files.set(toPath, buf)
     this.files.delete(fromPath)
   }

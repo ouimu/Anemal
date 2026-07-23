@@ -140,7 +140,12 @@ export function createSmbClient(config: SmbClientConfig): SmbClient {
     async rename(fromPath: string, toPath: string): Promise<void> {
       if (!client) throw new Error('SmbClient: not connected — call connect() first')
       try {
-        await client.rename(fromPath, toPath)
+        // @marsaud/smb2's rename() only sets the SMB ReplaceIfExists flag
+        // when options.replace is truthy (default: no replace) — without
+        // this, SmbShareDriver's temp-then-rename save() would silently
+        // fail to overwrite an existing target on a real share, breaking
+        // pet-photo replace (stable overwrite-in-place key).
+        await client.rename(fromPath, toPath, { replace: true })
       } catch (err) {
         throw classify(err, config)
       }

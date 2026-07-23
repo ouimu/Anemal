@@ -25,6 +25,15 @@ describe('SmbShareDriver', () => {
     expect(renameSpy).toHaveBeenCalledWith(expect.stringMatching(/\.tmp-/), 'a/b.txt')
   })
 
+  test('save() over an existing key replaces it (pet-photo overwrite-in-place, P1 regression)', async () => {
+    const client = new FakeSmbClient()
+    const driver = new SmbShareDriver(fakeConfig, () => client)
+    await driver.save('tenants/1/photo/pet-1.jpg', Buffer.from('old-bytes'), 'image/jpeg')
+    await driver.save('tenants/1/photo/pet-1.jpg', Buffer.from('new-bytes'), 'image/jpeg')
+    const buf = await driver.read('tenants/1/photo/pet-1.jpg')
+    expect(buf.toString()).toBe('new-bytes')
+  })
+
   test('exists() is false before save and true after', async () => {
     const client = new FakeSmbClient()
     const driver = new SmbShareDriver(fakeConfig, () => client)
