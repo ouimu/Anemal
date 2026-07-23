@@ -1,7 +1,7 @@
 # Design: Per-Tenant Storage Provider — Microsoft OneDrive Driver (Sub-project 3 of 3)
 
 **Date:** 2026-07-23
-**Status:** Draft — **blocked on the product-owner answers in §0**, then BA sign-off + grill (CLAUDE.md Step 3/3.5)
+**Status:** Draft — **Q1–Q4 answered 2026-07-24 (see §0)**, unblocked; next is BA sign-off + grill (CLAUDE.md Step 3/3.5)
 **Author:** @ba-agent (Step 1–3 BA work: requirements + design + gap analysis)
 **Parent goal:** Each clinic picks where its EMR attachments + pet photos live. Sub-project 1 (custom network-share/SMB): driver core merged as PR #46, API + UI committed as PR #47 on `feature/tenant-storage-provider`. Sub-project 2 (Google Drive): Sub-PR A (driver + crypto core, incl. `oauth-state.ts`, `OAuthConnectNonce`) merged to the branch; Sub-PR B (OAuth endpoints + UI) in progress. This sub-project = OneDrive, same branch (locked single-branch decision), **implementation sequenced after Google Sub-PR B lands** — it reuses Sub-PR B's `/oauth/<provider>/callback` router shape, `/authorize` split-hop pattern, and Storage-page connect UI, not just Sub-PR A's primitives.
 **Builds on:** ADR-0022 (`StorageDriver` interface), ADR-0023 + its 2026-07-23 Google Drive amendment (`TenantStorageConfig`, `getStorageDriver(tenantId)`, `oauth-state.ts` HKDF state signing, `OAuthConnectNonce` atomic single-use consume, disconnect-nulls-tokens, switch-confirmation UI).
@@ -12,31 +12,21 @@
 
 ---
 
-## 0. Open questions for the product owner (answer before BA sign-off / grill)
+## 0. Product-owner decisions (resolved 2026-07-24)
 
-These are genuine business/product decisions, not technical details. Everything else in this document either inherits an already-locked decision from sub-projects 1–2 or is a technical call the pipeline can settle. Plain language, no jargon:
+These were genuine business/product decisions, not technical details — answered directly by the product owner, not assumed.
 
 **Q1 — Which kinds of Microsoft accounts should clinics be able to connect?**
-Microsoft has two kinds of accounts: *personal* accounts (regular free OneDrive, like a Gmail-style personal account) and *work/school* accounts (Microsoft 365 accounts a company pays for). Anemal is sold to businesses, and clinics that use Microsoft usually have paid Microsoft 365 — but some small clinics may only have the owner's personal account.
-Options: (a) work/school only, (b) personal only, (c) both.
-**BA recommendation: (c) both** — it is one setting on the Microsoft side, the code is identical, and it avoids turning away small clinics. *(For reference: the Google Drive sub-project effectively supports "both" too, since Google doesn't split account types this way.)*
+**Decision: (c) both** personal and work/school accounts. `{audience}` in the v2.0 endpoint resolves to `common` (M-1).
 
 **Q2 — Where in their OneDrive should the clinic's files live?**
-Two choices Microsoft offers, and they trade privacy against visibility:
-- **(a) A private app folder (recommended).** Anemal gets permission to see **only its own folder** and nothing else in the clinic's OneDrive. The folder appears at `Apps/<our app's registered name>/` in their OneDrive. This matches the "least access" choice already made for Google Drive.
-- **(b) A visible "Anemal" folder at the top of their OneDrive.** Looks nicer/easier to find, but requires the clinic to grant Anemal permission to **their entire OneDrive** — every file they have. Broader permission than we need.
-**BA recommendation: (a)** — same least-privilege reasoning as the locked Google `drive.file` decision. Note the folder's visible name is our Microsoft app registration's display name (see Q3), so choose that name carefully.
+**Decision: (a) private app folder** (`Files.ReadWrite.AppFolder` / approot) — matches the least-privilege choice already made for Google Drive. Files live at `Apps/Anemal/tenant-{id}/...`, invisible outside the app's own folder.
 
-**Q3 — You (the operator) need to create the Microsoft app registration — please confirm and pick the display name.**
-Just like you created the "Anemal Access GDrive" project in Google Cloud, someone must create a (free) *app registration* in Microsoft Entra (Azure). We will need: the account-type setting from Q1, the redirect address `http://localhost:4000/oauth/onedrive/callback` (production address added at deploy time, same as Google), a Client ID + Client Secret placed in the backend `.env`.
-Two things to decide/know:
-- **Display name:** this exact name is what clinics see on the Microsoft consent screen, *and* (if Q2 = a) it becomes the folder name in their OneDrive (`Apps/<display name>/`). Suggest simply **"Anemal"**. Please confirm the name.
-- **The Client Secret expires** (Microsoft caps it at 24 months, recommends 6). Unlike Google, this must be re-generated and re-pasted into `.env` before it expires or every clinic's OneDrive connection stops working. Are you OK owning that recurring task (a calendar reminder is enough)?
+**Q3 — Microsoft app registration ownership and display name.**
+**Decision: the dev team owns creating and maintaining the Entra app registration**, including the recurring Client Secret rotation (Microsoft caps it at 24 months) — a calendar reminder is the accepted mitigation (risk OD-3). **Display name: "Anemal"** (same as the existing Google Cloud project's naming, consistent branding on both consent screens and the OneDrive app folder name).
 
-**Q4 — Some clinics' IT departments will have to approve Anemal once. Accept that friction?**
-For clinics on *work/school* Microsoft accounts, the clinic's own Microsoft administrator may see a "Need admin approval" screen instead of a normal consent screen — this is common because (i) many companies switch off self-approval for staff, and (ii) Microsoft restricts approval for apps that haven't gone through its "publisher verification" program (which requires a Microsoft partner account — extra paperwork on our side).
-Options: (a) accept for v1 — affected clinics ask their IT admin to click approve once, we put one sentence about this in the connect help text; (b) pursue Microsoft publisher verification before shipping.
-**BA recommendation: (a) for v1** — verification can be done later without any code change.
+**Q4 — Accept "Need admin approval" consent friction for work/school accounts in v1?**
+**Decision: (a) accept for v1.** Affected clinics' IT admin approves once; the connect helper copy carries one sentence about this (§6). Microsoft publisher verification is not pursued now — can be added later without any code change.
 
 **FYI — no decision needed, but you should know:** unlike Google, **Microsoft provides no way for our software to cancel its own access** when a clinic clicks Disconnect. Disconnect will still work exactly as designed (we delete our stored keys immediately, so Anemal genuinely can no longer touch the account) — but the entry for Anemal remains *listed* in the clinic's Microsoft account settings until someone removes it there manually. The disconnect confirmation copy will say this plainly and link the right Microsoft page. There is no alternative to offer, so this is informational only.
 
@@ -49,7 +39,7 @@ Every row below is settled precedent. The grill should not re-litigate these; it
 | # | Inherited decision | Source | OneDrive application |
 |---|---|---|---|
 | I-1 | Build order custom-path → Google Drive → OneDrive, one branch | Locked user decision (memory + GDrive design §decision 1) | This is the final sub-project; starts after GDrive Sub-PR B |
-| I-2 | Least-privilege OAuth scope (app sees only its own files) | GDrive decision 2 (`drive.file`) | `Files.ReadWrite.AppFolder` (approot) — pending Q2 confirm |
+| I-2 | Least-privilege OAuth scope (app sees only its own files) | GDrive decision 2 (`drive.file`) | `Files.ReadWrite.AppFolder` (approot) — confirmed, Q2 |
 | I-3 | `StorageDriver` interface + `getStorageDriver(tenantId)` single switch point; zero call-site churn | ADR-0022/0023 | One more branch: `provider === 'onedrive'` → `OneDriveDriver` |
 | I-4 | Tenant-scoped folder prefix inside the cloud store even though each tenant has its own OAuth connection | Grill N-2 | `.../tenant-{id}/emr/{recordId}/`, `.../tenant-{id}/photo/` under approot — the approot folder is **per app + per Microsoft account**, so two Anemal tenants connected to the same Microsoft account share one approot; the prefix is required for exactly the N-2 reason |
 | I-5 | Error, never silent fallback to local, on runtime storage failure | Parent locked decision | `StorageNotFoundError` / `StorageUnavailableError` mapping, identical contract |
@@ -253,4 +243,4 @@ Acceptance: a connected tenant's EMR upload + pet-photo save/read/delete resolve
 | NFR impact noted | ✔ (§8 + OD-3 availability note) |
 | Acceptance criteria testable | ✔ (§9) |
 | Risks & dependencies recorded | ✔ (risk register; sequenced after GDrive Sub-PR B) |
-| **Product decisions resolved** | ✖ — **blocked on §0 Q1–Q4**. Not ready for BA sign-off or grill until answered |
+| **Product decisions resolved** | ✔ — Q1–Q4 answered 2026-07-24 (§0). Ready for BA sign-off + grill |
