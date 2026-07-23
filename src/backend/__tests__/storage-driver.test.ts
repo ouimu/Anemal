@@ -1,7 +1,11 @@
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
-import { LocalDiskDriver, StorageNotFoundError, StorageUnavailableError } from '../config/storage-driver'
+import { LocalDiskDriver, StorageNotFoundError, StorageUnavailableError, getStorageDriver } from '../config/storage-driver'
+import { SmbShareDriver } from '../config/smb-share-driver'
+import * as storageConfigSvc from '../services/storage-config.service'
+
+jest.mock('../services/storage-config.service')
 
 describe('LocalDiskDriver', () => {
   let baseDir: string
@@ -95,5 +99,23 @@ describe('LocalDiskDriver', () => {
     fs.mkdirSync(path.join(target, 'nested'), { recursive: true }) // probe.txt is now a directory
     await expect(restrictedDriver.read('probe.txt')).rejects.toBeInstanceOf(StorageUnavailableError)
     fs.rmSync(unreadableBase, { recursive: true, force: true })
+  })
+})
+
+describe('getStorageDriver(tenantId)', () => {
+  afterEach(() => jest.restoreAllMocks())
+
+  test('no TenantStorageConfig row → resolves a LocalDiskDriver', async () => {
+    jest.spyOn(storageConfigSvc, 'resolveStorageConfig').mockResolvedValue({ provider: 'local' })
+    const driver = await getStorageDriver(1)
+    expect(driver).toBeInstanceOf(LocalDiskDriver)
+  })
+
+  test('provider="custom_path" row → resolves a SmbShareDriver', async () => {
+    jest.spyOn(storageConfigSvc, 'resolveStorageConfig').mockResolvedValue({
+      provider: 'custom_path', host: 'h', share: 's', username: 'u', password: 'p',
+    })
+    const driver = await getStorageDriver(1)
+    expect(driver).toBeInstanceOf(SmbShareDriver)
   })
 })

@@ -6,6 +6,8 @@ import { promises as fs } from 'fs'
 import path from 'path'
 import { randomUUID } from 'crypto'
 import { AppError } from '../utils/errors'
+import { resolveStorageConfig } from '../services/storage-config.service'
+import { SmbShareDriver } from './smb-share-driver'
 
 export interface StorageDriver {
   save(key: string, body: Buffer, contentType: string): Promise<void>
@@ -102,6 +104,20 @@ export class LocalDiskDriver implements StorageDriver {
   }
 }
 
-export function getStorageDriver(): StorageDriver {
+/**
+ * Resolves the StorageDriver a tenant's storage operations should use.
+ * Async — does a per-tenant DB lookup (no caching, by design: one point-read
+ * per storage operation) and, for `custom_path`, decrypts the stored
+ * credential. Resolve once per service operation and reuse the instance for
+ * every subsequent driver call in that operation — never re-resolve
+ * mid-operation (see pet.service.ts/emr-attachment.service.ts call sites).
+ */
+export async function getStorageDriver(tenantId: number): Promise<StorageDriver> {
+  const resolved = await resolveStorageConfig(tenantId)
+  if (resolved.provider === 'custom_path') {
+    return new SmbShareDriver({
+      host: resolved.host, share: resolved.share, username: resolved.username, password: resolved.password,
+    })
+  }
   return new LocalDiskDriver()
 }
