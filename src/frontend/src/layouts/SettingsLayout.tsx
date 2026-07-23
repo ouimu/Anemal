@@ -17,6 +17,7 @@ const ALL_NAV = [
   { to: '/settings/notifications',  icon: 'notifications', label: 'Notifications',   roles: ['admin'] },
   { to: '/settings/payment',        icon: 'payments',      label: 'Payment',         roles: ['admin'] },
   { to: '/settings/integrations',   icon: 'hub',           label: 'Integrations',    roles: ['admin'] },
+  { to: '/settings/storage',        icon: 'dns',           label: 'Storage',         roles: ['admin'] },
   { to: '/settings/branches',       icon: 'apartment',     label: 'Branches',        roles: ['admin'] },
 ]
 
