@@ -51,6 +51,21 @@ describe('resolveStorageConfig', () => {
       provider: 'custom_path', host: '10.0.0.5', share: 'vetfiles', username: 'clinicuser', password: 'supersecret',
     })
   })
+
+  test('provider="google_drive" row → decrypts both tokens and passes through folder ids', async () => {
+    const encryptedAccess = encryptField('access-token-value')
+    const encryptedRefresh = encryptField('refresh-token-value')
+    ;(repo.getStorageConfig as jest.Mock).mockResolvedValue({
+      tenantId: 1, provider: 'google_drive',
+      googleAccessTokenEncrypted: encryptedAccess, googleRefreshTokenEncrypted: encryptedRefresh,
+      googleRootFolderId: 'root-1', googleEmrFolderId: 'emr-1', googlePhotoFolderId: 'photo-1',
+    })
+    const result = await resolveStorageConfig(1)
+    expect(result).toEqual({
+      provider: 'google_drive', accessToken: 'access-token-value', refreshToken: 'refresh-token-value',
+      rootFolderId: 'root-1', emrFolderId: 'emr-1', photoFolderId: 'photo-1',
+    })
+  })
 })
 
 describe('getStorageConfigForDisplay', () => {

@@ -10,6 +10,7 @@ import { logger } from '../utils/logger'
 export type ResolvedStorageConfig =
   | { provider: 'local' }
   | { provider: 'custom_path'; host: string; share: string; username: string; password: string }
+  | { provider: 'google_drive'; accessToken: string; refreshToken: string; rootFolderId: string | null; emrFolderId: string | null; photoFolderId: string | null }
 
 /**
  * Resolves what driver a tenant should use. Absence of a row and an
@@ -19,6 +20,17 @@ export type ResolvedStorageConfig =
 export async function resolveStorageConfig(tenantId: number): Promise<ResolvedStorageConfig> {
   const row = await repo.getStorageConfig(tenantId)
   if (!row || row.provider === 'local') return { provider: 'local' }
+
+  if (row.provider === 'google_drive') {
+    return {
+      provider:      'google_drive',
+      accessToken:   row.googleAccessTokenEncrypted ? decryptField(row.googleAccessTokenEncrypted) : '',
+      refreshToken:  row.googleRefreshTokenEncrypted ? decryptField(row.googleRefreshTokenEncrypted) : '',
+      rootFolderId:  row.googleRootFolderId,
+      emrFolderId:   row.googleEmrFolderId,
+      photoFolderId: row.googlePhotoFolderId,
+    }
+  }
 
   return {
     provider: 'custom_path',

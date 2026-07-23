@@ -3,6 +3,7 @@ import os from 'os'
 import path from 'path'
 import { LocalDiskDriver, StorageNotFoundError, StorageUnavailableError, getStorageDriver } from '../config/storage-driver'
 import { SmbShareDriver } from '../config/smb-share-driver'
+import { GoogleDriveDriver } from '../config/google-drive-driver'
 import * as storageConfigSvc from '../services/storage-config.service'
 
 jest.mock('../services/storage-config.service')
@@ -117,5 +118,16 @@ describe('getStorageDriver(tenantId)', () => {
     })
     const driver = await getStorageDriver(1)
     expect(driver).toBeInstanceOf(SmbShareDriver)
+  })
+})
+
+describe('getStorageDriver(tenantId) — google_drive branch', () => {
+  test('provider="google_drive" row → resolves a GoogleDriveDriver', async () => {
+    jest.spyOn(storageConfigSvc, 'resolveStorageConfig').mockResolvedValue({
+      provider: 'google_drive', accessToken: 'at', refreshToken: 'rt',
+      rootFolderId: 'root-1', emrFolderId: 'emr-1', photoFolderId: 'photo-1',
+    })
+    const driver = await getStorageDriver(1)
+    expect(driver).toBeInstanceOf(GoogleDriveDriver)
   })
 })

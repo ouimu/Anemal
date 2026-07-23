@@ -8,6 +8,8 @@ import { randomUUID } from 'crypto'
 import { AppError } from '../utils/errors'
 import { resolveStorageConfig } from '../services/storage-config.service'
 import { SmbShareDriver } from './smb-share-driver'
+import { GoogleDriveDriver } from './google-drive-driver'
+import * as tenantStorageConfigRepo from '../models/tenant-storage-config.repository'
 
 export interface StorageDriver {
   save(key: string, body: Buffer, contentType: string): Promise<void>
@@ -114,6 +116,25 @@ export class LocalDiskDriver implements StorageDriver {
  */
 export async function getStorageDriver(tenantId: number): Promise<StorageDriver> {
   const resolved = await resolveStorageConfig(tenantId)
+
+  if (resolved.provider === 'google_drive') {
+    // GOOGLE_OAUTH_CLIENT_ID/SECRET are checked lazily here, not at boot
+    // (grill N-6) — a tenant that connected Drive while the env vars were
+    // set still needs them present at read/write time to refresh tokens.
+    return new GoogleDriveDriver(
+      tenantId,
+      {
+        clientId:     process.env.GOOGLE_OAUTH_CLIENT_ID ?? '',
+        clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET ?? '',
+        accessToken:  resolved.accessToken,
+        refreshToken: resolved.refreshToken,
+      },
+      { rootFolderId: resolved.rootFolderId, emrFolderId: resolved.emrFolderId, photoFolderId: resolved.photoFolderId },
+      (ids) => tenantStorageConfigRepo.updateGoogleFolderIds(tenantId, ids),
+      (newAccessToken) => tenantStorageConfigRepo.writeBackRefreshedGoogleAccessToken(tenantId, newAccessToken),
+    )
+  }
+
   if (resolved.provider === 'custom_path') {
     return new SmbShareDriver({
       host: resolved.host, share: resolved.share, username: resolved.username, password: resolved.password,
