@@ -1,7 +1,7 @@
 # Design: Per-Tenant Storage Provider — Microsoft OneDrive Driver (Sub-project 3 of 3)
 
 **Date:** 2026-07-23
-**Status:** Draft — **Q1–Q4 answered 2026-07-24 (see §0)**, unblocked; next is BA sign-off + grill (CLAUDE.md Step 3/3.5)
+**Status:** Draft — **Q1–Q4 answered 2026-07-24 (see §0)**. BA sign-off 2026-07-24: APPROVE-WITH-FINDINGS (`docs/superpowers/specs/2026-07-24-storage-onedrive-driver-ba-signoff.md`) — F-OD-1/F-OD-2/F-OD-3 folded in below (§2 M-10, §3, §4, §7, §9, risk register, §6, DoR check). Next is the mandatory grill (CLAUDE.md Step 3.5).
 **Author:** @ba-agent (Step 1–3 BA work: requirements + design + gap analysis)
 **Parent goal:** Each clinic picks where its EMR attachments + pet photos live. Sub-project 1 (custom network-share/SMB): driver core merged as PR #46, API + UI committed as PR #47 on `feature/tenant-storage-provider`. Sub-project 2 (Google Drive): Sub-PR A (driver + crypto core, incl. `oauth-state.ts`, `OAuthConnectNonce`) merged to the branch; Sub-PR B (OAuth endpoints + UI) in progress. This sub-project = OneDrive, same branch (locked single-branch decision), **implementation sequenced after Google Sub-PR B lands** — it reuses Sub-PR B's `/oauth/<provider>/callback` router shape, `/authorize` split-hop pattern, and Storage-page connect UI, not just Sub-PR A's primitives.
 **Builds on:** ADR-0022 (`StorageDriver` interface), ADR-0023 + its 2026-07-23 Google Drive amendment (`TenantStorageConfig`, `getStorageDriver(tenantId)`, `oauth-state.ts` HKDF state signing, `OAuthConnectNonce` atomic single-use consume, disconnect-nulls-tokens, switch-confirmation UI).
@@ -84,7 +84,8 @@ The Microsoft identity platform provides no API for an app to revoke its own del
 **M-4 — Path-based addressing under approot: no folder-ID cache columns, and Drive's N-1 problem does not exist here.**
 Microsoft Graph addresses driveItems by **path**: `/me/drive/special/approot:/tenant-{id}/photo/pet-{id}.jpg:/content`. This is a fundamentally better fit for our server-built `tenants/{tenantId}/{emr|photo}/...` keys than Drive's id-based model:
 - **No `googleRootFolderId`-style columns.** The approot folder is auto-created by Microsoft on first access; deeper paths are addressed literally. The whole folder-ID caching + orphaned-ID self-heal machinery from GDrive (and its N-8/G-6 renamed-folder edge cases) largely disappears.
-- **`save()` is inherently overwrite-in-place**: a `PUT` to a path (or an upload session with `@microsoft.graph.conflictBehavior: "replace"`) creates-or-replaces atomically on Microsoft's side. Grill N-1's list-then-update dance is not needed — but the design states this explicitly (as N-1 taught us to) rather than assuming it, and the N-1-class regression test (photo replace produces one file, not two) is still the most important driver test (§9).
+- **`save()` is inherently overwrite-in-place**
+: a `PUT` to a path (or an upload session with `@microsoft.graph.conflictBehavior: "replace"`) creates-or-replaces atomically on Microsoft's side. Grill N-1's list-then-update dance is not needed — but the design states this explicitly (as N-1 taught us to) rather than assuming it, and the N-1-class regression test (photo replace produces one file, not two) is still the most important driver test (§9).
 - **Parent folders**: the driver must not *assume* `PUT`-by-path auto-creates missing intermediate folders (Graph behavior differs by service/version). `save()` ensures the parent chain exists first — `POST .../children` with `conflictBehavior: "fail"`, treating a `409 nameAlreadyExists` as success (idempotent ensure, race-safe by construction — the M-4 analog of N-8 is thereby *smaller* than on Drive: two racers converge on one folder instead of creating duplicates). If implementation testing proves auto-create reliable, the ensure step may be skipped on the happy path — an optimization, not a design change.
 - Admin renames/moves the tenant folder inside their own OneDrive: the path no longer resolves → next `save()` recreates the chain (files split across old/new location — same accepted posture as GDrive's self-heal), reads/deletes 404 normally. No cached-ID staleness dimension at all.
 
@@ -102,6 +103,12 @@ Simple `PUT .../content` is limited to ~4 MB on OneDrive. EMR attachments are ca
 The table and `oauth-state.ts` are reused verbatim (they were designed provider-generic — I-10). One gap found while reviewing them for reuse: `consumeNonce(rawNonce)` currently matches on `nonceHash + consumedAt IS NULL` only, **not on `provider`**. Once two providers share the table, a state minted for the Google flow verifies and consumes successfully at the OneDrive callback (same HKDF signing key, same table) and vice versa. Exploitability is low (the attacker still needs the victim's state *and* a valid auth code), but the fix is one line and closes a cross-flow replay class: `consumeNonce(rawNonce, provider)` adds `AND provider = ?` to the atomic UPDATE. Applied as part of this sub-project; the Google callback (Sub-PR B) passes `'google'`, the OneDrive callback passes `'onedrive'`. (The signed `state` itself needs no provider field — the callback route *is* the provider context, and the nonce row already stores it.)
 
 **M-8 — Env vars:** `ONEDRIVE_OAUTH_CLIENT_ID`, `ONEDRIVE_OAUTH_CLIENT_SECRET` in `src/backend/.env`, mirroring `GOOGLE_OAUTH_*`. Lazy-checked per I-13. Operational note (Q3): the secret expires (≤24 months) — a rotation reminder is the operator's task; an expired secret surfaces exactly like N-6's misconfiguration case (`503 ONEDRIVE_OAUTH_NOT_CONFIGURED` is wrong here — the vars are *present* — it surfaces as failed token refreshes → `connected: false` → reconnect attempts that error at the token exchange; the connect-flow error copy covers "contact support" for this case).
+
+**M-10 — Connect must null the *other* providers' secret columns, and best-effort-revoke a previous Google token (BA F-OD-1, extends I-14 to the connect direction).**
+I-14 nulls `oneDrive*` on disconnect (switch *away*). The symmetric case — connect *to* onedrive while a prior provider's secrets are still stored on the row — was missing from the original draft. Live precedent (already shipped): the Google callback nulls `smb*` on connect (`oauth-google.controller.ts:104`, added as a QA round-2 fix — "connecting Drive left a stale SMB credential at rest"). OneDrive inherits the same invariant, broadened because `google_drive` is now itself a live source-provider a tenant can be switching from:
+- The OneDrive callback's persist-tokens `upsert` nulls **`smb*` AND `google*`** columns (`smbHost`, `smbShare`, `smbUsername`, `smbPasswordEncrypted`, `googleAccessTokenEncrypted`, `googleRefreshTokenEncrypted`, `googleRootFolderId`, `googleEmrFolderId`, `googlePhotoFolderId`) in the same write that sets the three `oneDrive*` columns — no stale encrypted secret survives at rest on a row whose `provider` is now `onedrive`.
+- If the row being overwritten had `provider === 'google_drive'` with a stored Google refresh token, best-effort-revoke that token at Google before nulling it (mirrors the shipped Google-side N-10 "revoke a previous Google token on reconnect" — logged on failure, never blocks the connect). OneDrive itself still has no revoke capability (M-3 unchanged) — this is about cleaning up a *different* provider's live grant, not OneDrive's own.
+- This closes the same class of bug QA caught and fixed on the immediately preceding (Google) sub-project — repeating it here would be a regression of an already-paid-for lesson.
 
 **M-9 — Error classification (the `classify()` analog):**
 - HTTP 404 / `itemNotFound` → not-found (ENOENT-convention, → `StorageNotFoundError` / `exists() === false` / idempotent delete).
@@ -123,7 +130,7 @@ The table and `oauth-state.ts` are reused verbatim (they were designed provider-
 
 **OAuth connect flow (2 new routes, both pure pattern-copies of GDrive Sub-PR B):**
 - `GET /clinic/storage-config/onedrive/authorize` — `clinic.integrations.edit`, authenticated `fetch`, returns `{ url }` (I-8). URL = v2.0 authorize endpoint with client ID, scopes `offline_access Files.ReadWrite.AppFolder`, `response_type=code`, `prompt=select_account`, `redirect_uri=<server-base>/oauth/onedrive/callback`, and the signed `state` (server-derived origin, nonce with `provider: 'onedrive'`, 10-min expiry). Lazy env check → `503 ONEDRIVE_OAUTH_NOT_CONFIGURED` (I-13).
-- `GET /oauth/onedrive/callback` — public top-level route beside the Google one (I-9). Verifies state (signature → expiry → **atomic provider-matched nonce consume, M-7** → embedded tenant/user match → N-9 active re-checks) before anything is read or persisted; exchanges `code` at the v2.0 token endpoint; encrypts and persists both tokens + expiry with `provider: 'onedrive'`; **probes `GET /me/drive/special/approot` once** (creates the app folder server-side on first access and proves the grant actually works before we commit to it) and ensures `tenant-{id}/emr` + `tenant-{id}/photo`; writes the standard `settings_audit_log` entry; redirects to the interstitial then `/settings/storage` (I-17 UX reuse). All failure branches mirror GDrive's (consent-denied `?error=`, invalid-state → fixed default origin per I-11, nothing persisted on any failure).
+- `GET /oauth/onedrive/callback` — public top-level route beside the Google one (I-9). Verifies state (signature → expiry → **atomic provider-matched nonce consume, M-7** → embedded tenant/user match → N-9 active re-checks) before anything is read or persisted; exchanges `code` at the v2.0 token endpoint; **the persist `upsert` nulls `smb*` and `google*` columns and, if the overwritten row was `provider === 'google_drive'` with a stored refresh token, best-effort-revokes it at Google (M-10, BA F-OD-1)**, then encrypts and persists both tokens + expiry with `provider: 'onedrive'`; **probes `GET /me/drive/special/approot` once** (creates the app folder server-side on first access and proves the grant actually works before we commit to it) and ensures `tenant-{id}/emr` + `tenant-{id}/photo`; writes the standard `settings_audit_log` entry; redirects to the interstitial then `/settings/storage` (I-17 UX reuse). All failure branches mirror GDrive's (consent-denied `?error=`, invalid-state → fixed default origin per I-11, nothing persisted on any failure).
 - **Disconnect**: existing `updateStorageConfig` path — switch-confirmation, audit write, null the three `oneDrive*` columns (I-14). No revoke call exists to make (M-3).
 - **Status check**: `GET /clinic/storage-config` `connected` field now also populated when `provider === 'onedrive'` — live `GET /me/drive` ping, auth-invalid → `false`, transient → skip/log (I-16).
 
@@ -138,6 +145,8 @@ Extends `TenantStorageConfig` (same table, per its own design note). Three new n
 | `oneDriveAccessTokenEncrypted` | text, nullable | AES-256-GCM via `SETTINGS_ENCRYPTION_KEY` (I-7); replaced on every refresh |
 | `oneDriveRefreshTokenEncrypted` | text, nullable | AES-256-GCM; **rotates** — replaced on every refresh too (M-2), not only at connect |
 | `oneDriveTokenExpiresAt` | timestamp, nullable | access-token expiry (from `expires_in`); drives proactive refresh (M-2). Not a secret |
+
+**Connect-side column hygiene (M-10, BA F-OD-1):** the same `upsert` that writes the three `oneDrive*` columns above also nulls `smb*` and `google*` (`googleAccessTokenEncrypted`, `googleRefreshTokenEncrypted`, `googleRootFolderId`, `googleEmrFolderId`, `googlePhotoFolderId`) if either was set on the row being overwritten — no encrypted secret from a prior provider survives at rest past a switch, in either direction (I-14 disconnect, M-10 connect).
 
 `provider` value set extends to `local | custom_path | google_drive | onedrive` (the exact value ADR-0023 §3 and the schema comment reserved).
 
@@ -156,6 +165,8 @@ Extends `TenantStorageConfig` (same table, per its own design note). Three new n
 
 No new permission codes; no default-matrix change; no platform-plane involvement; `TenantStorageConfig` still holds no PII. Deny-by-default preserved — the callback remains the feature's single, precedent-blessed exception, now with the M-7 provider-match hardening.
 
+**Write-plan note (BA §3, non-blocking):** the `PUT /clinic/storage-config` Zod enum stays `['local','custom_path']` — connect to `onedrive` (like `google_drive`) is callback-only, never wired through the PUT path. Disconnect from `onedrive` is `PUT provider=local|custom_path`, with `updateStorageConfig` detecting `current.provider === 'onedrive'` and nulling `oneDrive*` (I-14).
+
 ---
 
 ## 6. UI
@@ -166,7 +177,7 @@ No new permission codes; no default-matrix change; no platform-plane involvement
 - Connected: same green/red status dot + **Disconnect** via the existing switch-confirmation dialog (I-17).
 - **Data-custody note (I-17 / BA G-3 parity), adapted:** connect and switch-confirmation copy states files are stored in *the connected Microsoft account's* OneDrive; if that account is lost or its access removed, the clinic loses access until reconnected. For work/school accounts custody sits with the clinic's own organization (mildly *better* than the Google-personal case); the copy stays account-neutral: "Files are stored in this Microsoft account's OneDrive...".
 - **Disconnect copy addition (M-3):** one sentence — disconnecting removes Anemal's access keys immediately, but the Anemal entry stays listed in the Microsoft account's app permissions until removed there.
-- **Q4 note in connect helper copy (if Q4 = a):** one sentence that work/school accounts may require the clinic's Microsoft administrator to approve access once.
+- **Q4 note in connect helper copy:** one sentence that work/school accounts may require the clinic's Microsoft administrator to approve access once (Q4 = a, unconditional — BA F-OD-3).
 - Existing Compassionate Care tokens only; no raw hex, no emoji.
 
 ## 7. Error handling
@@ -178,6 +189,7 @@ No new permission codes; no default-matrix change; no platform-plane involvement
 - Throttling (429): generic `StorageUnavailableError`, no retry loop this round — consistent with quota-exceeded's accepted posture (I-20).
 - Admin renames/deletes folders in their own OneDrive: path-miss behavior per M-4 — recreate-on-save, 404 on read/delete, no ID-staleness class.
 - Shared-Microsoft-account-two-tenants (I-20/N-2 analog): file visibility is already isolated by the `tenant-{id}` prefix; no app-side disconnect cross-break exists (M-3 upside); a *manual* revocation at Microsoft breaks all tenants on that account → each degrades to the normal reconnect-needed status. Documented, accepted.
+- **Connect over a prior provider (M-10, BA F-OD-1):** connecting OneDrive while the tenant's row currently holds `smb*` or `google*` secrets — the connect `upsert` nulls the foreign-provider columns in the same write; if the prior provider was `google_drive`, its refresh token is best-effort-revoked at Google first (failure logged, never blocks the OneDrive connect from completing).
 
 ## 8. Performance (accepted, documented)
 
@@ -192,6 +204,8 @@ Graph round-trips are slower than local disk — same acceptance as sub-projects
 - Disconnect test: switch succeeds, all three `oneDrive*` columns nulled, audit written, **no revoke call attempted** (M-3 — assert the absence).
 - Status-check tests: `connected: true` valid, `false` on auth-invalid, transient failure does not flip.
 - No changes to existing local/SMB/GDrive driver tests or call sites.
+- **Connect-side column hygiene (M-10, BA F-OD-1):** connecting OneDrive from a `custom_path` tenant leaves `smb*` NULL after the callback commits; connecting from a `google_drive` tenant leaves all `google*` columns NULL and asserts the Google-revoke call was attempted (success and failure-logged-but-non-blocking both covered); no encrypted foreign-provider secret is readable on the row after connect.
+- **Google-flow non-regression (BA F-OD-2):** after the `consumeNonce(rawNonce, provider)` signature change, a `'google'`-minted nonce still consumes successfully at the existing Google callback (`oauth-google.controller.ts`) — asserted alongside the new cross-provider-rejection test (a `'google'` nonce presented at the OneDrive callback, and vice versa, both rejected).
 
 ## 10. Explicitly out of scope
 
@@ -230,6 +244,8 @@ Acceptance: a connected tenant's EMR upload + pet-photo save/read/delete resolve
 | OD-4 | "Need admin approval" consent wall surprises work/school clinics | Med | Q4 decision; helper-copy sentence; distinct `consent_required` error copy | ba / uiux |
 | OD-5 | Upload-session path (>4 MB) under-tested vs simple PUT | Low | Explicit both-routes driver tests (§9); 25 MB cap bounds chunk count | qa |
 | OD-6 | No app-side revoke → stale grant listed at Microsoft after disconnect confuses an admin | Low | M-3 disconnect copy names the manual removal location; tokens nulled so access is genuinely dead | ba |
+| OD-7 | Connect-to-OneDrive leaves a prior provider's encrypted secret (Google refresh token / SMB password) at rest; a prior Google grant left live at Google | Med | M-10: connect `upsert` nulls `smb*`+`google*`; best-effort-revoke a previous Google token; regression tests (§9) mirroring the shipped Google-side fix | dev |
+| OD-8 | M-7's `consumeNonce` signature change silently bricks the shipped Google connect flow (wrong/omitted provider string) | Low-Med | §9 Google-flow non-regression test asserts a `'google'` nonce still consumes at the Google callback | dev / qa |
 
 ## Definition-of-Ready check (self-assessment)
 
@@ -238,9 +254,10 @@ Acceptance: a connected tenant's EMR upload + pet-photo save/read/delete resolve
 | Objective stated | ✔ (gap analysis) |
 | Actors/roles named | ✔ (clinic_admin write, all three roles read — inherited I-6) |
 | Permission codes assigned | ✔ (§5 — no new codes) |
-| Business rules / isolation listed | ✔ (§1 I-4/I-7/I-9/I-10, §2 M-7) |
-| Exceptions covered | ✔ (§7) |
+| Business rules / isolation listed | ✔ (§1 I-4/I-7/I-9/I-10, §2 M-7, M-10) |
+| Exceptions covered | ✔ (§7, incl. connect-over-prior-provider) |
 | NFR impact noted | ✔ (§8 + OD-3 availability note) |
-| Acceptance criteria testable | ✔ (§9) |
-| Risks & dependencies recorded | ✔ (risk register; sequenced after GDrive Sub-PR B) |
-| **Product decisions resolved** | ✔ — Q1–Q4 answered 2026-07-24 (§0). Ready for BA sign-off + grill |
+| Acceptance criteria testable | ✔ (§9, incl. M-10/F-OD-1 and F-OD-2 regression tests) |
+| Risks & dependencies recorded | ✔ (risk register incl. OD-7/OD-8; sequenced after GDrive Sub-PR B) |
+| **Product decisions resolved** | ✔ — Q1–Q4 answered 2026-07-24 (§0) |
+| **BA sign-off** | ✔ — APPROVE-WITH-FINDINGS 2026-07-24, F-OD-1/F-OD-2/F-OD-3 folded in above (`docs/superpowers/specs/2026-07-24-storage-onedrive-driver-ba-signoff.md`). Ready for mandatory grill (Step 3.5) |
