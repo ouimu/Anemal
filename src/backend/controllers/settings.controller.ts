@@ -7,6 +7,7 @@ import { z } from 'zod'
 import * as settingsSvc from '../services/tenant-settings.service'
 import * as prefsSvc from '../services/user-preferences.service'
 import * as connTest from '../services/connection-test.service'
+import * as storageConfigSvc from '../services/storage-config.service'
 
 const TIME_HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
 
@@ -69,6 +70,18 @@ export const hoursSchema = z.object({
     sun: dayHoursSchema,
   }).strict(),
 }).strict()
+
+export const storageConfigSchema = z.object({
+  provider:          z.enum(['local', 'custom_path']),
+  smbHost:           z.string().trim().min(1).max(255).optional(),
+  smbShare:          z.string().trim().min(1).max(500).optional(),
+  smbUsername:       z.string().trim().min(1).max(255).optional(),
+  smbPassword:       z.string().min(1).max(500).optional(),
+  confirmBaseChange: z.boolean().optional(),
+}).strict().refine(
+  (data) => data.provider !== 'custom_path' || (data.smbHost && data.smbShare && data.smbUsername),
+  { message: 'smbHost, smbShare, and smbUsername are required when provider is custom_path' },
+)
 
 export const personalPrefsSchema = z.object({
   language:            z.enum(['th', 'en']).optional(),
@@ -147,6 +160,24 @@ export async function testIntegrations(req: Request, res: Response, next: NextFu
       body.labApiKey ?? stored?.labApiKey ?? '',
     )
     res.json({ success: true, data: result })
+  } catch (err) { next(err) }
+}
+
+// ─── Storage config (ADR-0023) ────────────────────────────────────────────────
+
+export async function getStorageConfig(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await storageConfigSvc.getStorageConfigForDisplay(req.context!.tenantId)
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export async function updateStorageConfig(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { tenantId, userId } = req.context!
+    await storageConfigSvc.updateStorageConfig(tenantId, userId, req.body as storageConfigSvc.UpdateStorageConfigInput)
+    const data = await storageConfigSvc.getStorageConfigForDisplay(tenantId)
+    res.json({ success: true, data })
   } catch (err) { next(err) }
 }
 

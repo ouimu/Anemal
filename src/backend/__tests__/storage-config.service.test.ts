@@ -3,11 +3,22 @@ import { encryptField } from '../utils/encryption'
 
 jest.mock('../models/tenant-storage-config.repository')
 jest.mock('../models/settings-audit.repository')
-jest.mock('../config/smb-share-driver')
+jest.mock('../config/smb-client')
 import * as repo from '../models/tenant-storage-config.repository'
 import * as auditRepo from '../models/settings-audit.repository'
-import { SmbShareDriver } from '../config/smb-share-driver'
-import { SmbHostUnreachableError } from '../config/smb-client'
+import { createSmbClient, SmbHostUnreachableError } from '../config/smb-client'
+
+function fakeClient(overrides: Partial<Record<'connect' | 'writeFile' | 'unlink' | 'disconnect', jest.Mock>> = {}) {
+  return {
+    connect:    overrides.connect    ?? jest.fn().mockResolvedValue(undefined),
+    writeFile:  overrides.writeFile  ?? jest.fn().mockResolvedValue(undefined),
+    readFile:   jest.fn(),
+    unlink:     overrides.unlink     ?? jest.fn().mockResolvedValue(undefined),
+    rename:     jest.fn(),
+    exists:     jest.fn(),
+    disconnect: overrides.disconnect ?? jest.fn().mockResolvedValue(undefined),
+  }
+}
 import {
   resolveStorageConfig,
   getStorageConfigForDisplay,
@@ -73,8 +84,8 @@ describe('updateStorageConfig', () => {
 
   test('connect-and-test-write failure (host unreachable) → rejects with the specific error, persists nothing', async () => {
     (repo.getStorageConfig as jest.Mock).mockResolvedValue(null)
-    ;(SmbShareDriver as jest.Mock).mockImplementation(() => ({
-      save: jest.fn().mockRejectedValue(new SmbHostUnreachableError('h')),
+    ;(createSmbClient as jest.Mock).mockReturnValue(fakeClient({
+      connect: jest.fn().mockRejectedValue(new SmbHostUnreachableError('h')),
     }))
     await expect(updateStorageConfig(1, 42, {
       provider: 'custom_path', smbHost: 'h', smbShare: 's', smbUsername: 'u', smbPassword: 'p', confirmBaseChange: true,
@@ -84,8 +95,8 @@ describe('updateStorageConfig', () => {
 
   test('happy path (with confirmation) — encrypts password, persists, writes an audit entry, cleans up the test-write marker', async () => {
     (repo.getStorageConfig as jest.Mock).mockResolvedValue(null)
-    const deleteSpy = jest.fn().mockResolvedValue(undefined)
-    ;(SmbShareDriver as jest.Mock).mockImplementation(() => ({ save: jest.fn().mockResolvedValue(undefined), delete: deleteSpy }))
+    const unlinkSpy = jest.fn().mockResolvedValue(undefined)
+    ;(createSmbClient as jest.Mock).mockReturnValue(fakeClient({ unlink: unlinkSpy }))
     ;(repo.upsertStorageConfig as jest.Mock).mockResolvedValue({ tenantId: 1, provider: 'custom_path' })
     await updateStorageConfig(1, 42, {
       provider: 'custom_path', smbHost: 'h', smbShare: 's', smbUsername: 'u', smbPassword: 'p', confirmBaseChange: true,
@@ -98,14 +109,13 @@ describe('updateStorageConfig', () => {
       tenantId: 1, changedBy: 42, tableName: 'tenant_storage_config',
     })])
     // Resolved open question: the test-write marker is deleted, not left as a residual file.
-    expect(deleteSpy).toHaveBeenCalledWith(`tenants/1/.storage-config-test`)
+    expect(unlinkSpy).toHaveBeenCalledWith(`tenants/1/.storage-config-test`)
   })
 
   test('test-write marker cleanup failure is swallowed (logged, not thrown) — a transient delete failure must not block the config save that already succeeded its connect-test', async () => {
     (repo.getStorageConfig as jest.Mock).mockResolvedValue(null)
-    ;(SmbShareDriver as jest.Mock).mockImplementation(() => ({
-      save: jest.fn().mockResolvedValue(undefined),
-      delete: jest.fn().mockRejectedValue(new Error('share blip')),
+    ;(createSmbClient as jest.Mock).mockReturnValue(fakeClient({
+      unlink: jest.fn().mockRejectedValue(new Error('share blip')),
     }))
     ;(repo.upsertStorageConfig as jest.Mock).mockResolvedValue({ tenantId: 1, provider: 'custom_path' })
     await expect(updateStorageConfig(1, 42, {

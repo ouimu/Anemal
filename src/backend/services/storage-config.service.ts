@@ -3,7 +3,7 @@
 import * as repo from '../models/tenant-storage-config.repository'
 import * as auditRepo from '../models/settings-audit.repository'
 import { decryptField, encryptField } from '../utils/encryption'
-import { SmbShareDriver } from '../config/smb-share-driver'
+import { createSmbClient } from '../config/smb-client'
 import { AppError } from '../utils/errors'
 import { logger } from '../utils/logger'
 
@@ -91,20 +91,29 @@ export async function updateStorageConfig(
   }
 
   if (input.provider === 'custom_path') {
-    // Connect-and-test-write BEFORE persisting anything (decision 5) — a
-    // failure here (SmbHostUnreachableError / SmbShareNotFoundError /
-    // SmbAuthRejectedError) propagates as-is and nothing is written.
-    const testDriver = new SmbShareDriver({
+    // Connect-and-test-write BEFORE persisting anything (decision 5) — calls
+    // createSmbClient directly (not via SmbShareDriver) specifically so a
+    // connect-time failure surfaces as its distinct SmbHostUnreachableError /
+    // SmbShareNotFoundError / SmbAuthRejectedError rather than the generic
+    // StorageUnavailableError SmbShareDriver normalizes to for its normal
+    // read/write/delete/exists callers (see smb-share-driver.ts's own
+    // "PLAN DEVIATION" note — those two call paths deliberately diverge).
+    const client = createSmbClient({
       host: input.smbHost ?? '', share: input.smbShare ?? '',
       username: input.smbUsername ?? '', password: input.smbPassword ?? '',
     })
     const testKey = `tenants/${tenantId}/.storage-config-test`
-    await testDriver.save(testKey, Buffer.from('test-write'), 'text/plain')
-    // Best-effort cleanup — logged, never allowed to block the config save
-    // that follows a successful test-write.
-    await testDriver.delete(testKey).catch((deleteErr: unknown) => {
-      logger.warn({ tenantId, testKey, deleteErr: String(deleteErr) }, 'storage-config test-write marker cleanup failed — harmless orphan, ignored')
-    })
+    await client.connect()
+    try {
+      await client.writeFile(testKey, Buffer.from('test-write'))
+      // Best-effort cleanup — logged, never allowed to block the config save
+      // that follows a successful test-write.
+      await client.unlink(testKey).catch((deleteErr: unknown) => {
+        logger.warn({ tenantId, testKey, deleteErr: String(deleteErr) }, 'storage-config test-write marker cleanup failed — harmless orphan, ignored')
+      })
+    } finally {
+      await client.disconnect().catch(() => undefined)
+    }
 
     await repo.upsertStorageConfig(tenantId, {
       provider: 'custom_path',
