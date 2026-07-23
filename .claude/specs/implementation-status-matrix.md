@@ -6,7 +6,19 @@
 > This matrix is the canonical status source; @pm-agent updates it LAST on every
 > task (see CLAUDE.md → Tracking & Documentation).
 >
-> Current totals as of PR #43 (2026-07-22, "pet-photo migration to
+> Current totals as of PR #45 (2026-07-23, "EMR attachment UX + Thai filename
+> fixes", ADR-0022): bug-fix batch on the shipped EMR attachment UI. Thai/UTF-8
+> filenames were stored as mojibake because multer decodes multipart filenames
+> as latin1 — new `decodeMulterFilename` (`Buffer.from(name,'latin1').toString('utf8')`)
+> applied at the controller before persisting `fileName`; the storage key stays
+> ASCII-safe via `sanitizeFilename`. Added a supported-types hint
+> (JPG/PNG/GIF/WebP/PDF/Word/Excel · 25 MB) + `accept=` filter on the EMR upload
+> input, a `window.confirm` guard before deleting an attachment, and a
+> long-filename truncation fix (`block w-full` so the name clips instead of
+> overlapping the delete icon). No schema change, no new endpoint. Backend
+> 1078 → 1081 (filename Thai-decode unit + emr-attachments EA-01b), frontend
+> 301 → 304 (ClinicEMR.attachments hint/accept/confirm/truncate) — on top of
+> PR #43 (2026-07-22, "pet-photo migration to
 > StorageDriver + S3-stack teardown", ADR-0022, PR2/2): fast-follow to PR #42
 > — migrates pet-photo upload onto the same pluggable `StorageDriver` PR1
 > introduced, using a stable per-pet key (`tenants/{id}/photo/pet-{id}.{ext}`,
