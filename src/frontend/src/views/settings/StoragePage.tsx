@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import MaterialIcon from '../../components/MaterialIcon'
-import { useStorageConfig, useUpdateStorageConfig, type StorageConfigInput } from '../../hooks/useStorageConfig'
+import { useStorageConfig, useUpdateStorageConfig, useGoogleAuthorize, type StorageConfigInput } from '../../hooks/useStorageConfig'
 import { getErrorMessage } from '../../utils/errorMessage'
 
 function getErrorCode(error: unknown): string | undefined {
@@ -8,7 +8,7 @@ function getErrorCode(error: unknown): string | undefined {
 }
 
 interface StorageForm {
-  provider: 'local' | 'custom_path'
+  provider: 'local' | 'custom_path' | 'google_drive'
   smbHost: string
   smbShare: string
   smbUsername: string
@@ -20,11 +20,13 @@ const EMPTY_FORM: StorageForm = { provider: 'local', smbHost: '', smbShare: '', 
 export default function StoragePage(): React.ReactElement {
   const { data, isLoading } = useStorageConfig()
   const update = useUpdateStorageConfig()
+  const googleAuthorize = useGoogleAuthorize()
 
   const [form, setForm] = useState<StorageForm>(EMPTY_FORM)
   const [editingPassword, setEditingPassword] = useState(false)
   const [saved, setSaved] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [pendingSwitchAway, setPendingSwitchAway] = useState<'local' | 'custom_path' | null>(null)
 
   useEffect(() => {
     if (!data) return
@@ -38,8 +40,8 @@ export default function StoragePage(): React.ReactElement {
     setEditingPassword(!data.configured)
   }, [data])
 
-  function buildPayload(confirmBaseChange?: boolean): StorageConfigInput {
-    if (form.provider === 'local') return { provider: 'local', confirmBaseChange }
+  function buildPayload(provider: 'local' | 'custom_path', confirmBaseChange?: boolean): StorageConfigInput {
+    if (provider === 'local') return { provider: 'local', confirmBaseChange }
     const payload: StorageConfigInput = {
       provider: 'custom_path',
       smbHost: form.smbHost,
@@ -53,19 +55,31 @@ export default function StoragePage(): React.ReactElement {
 
   async function handleSave(e: React.FormEvent): Promise<void> {
     e.preventDefault()
+    if (form.provider === 'google_drive') return // Google Drive connects via OAuth, not this form's Save
     try {
-      await update.mutateAsync(buildPayload())
+      await update.mutateAsync(buildPayload(form.provider))
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } catch (err) {
-      if (getErrorCode(err) === 'STORAGE_SWITCH_CONFIRMATION_REQUIRED') setConfirmOpen(true)
+      if (getErrorCode(err) === 'STORAGE_SWITCH_CONFIRMATION_REQUIRED') { setPendingSwitchAway(form.provider); setConfirmOpen(true) }
     }
+  }
+
+  async function handleConnectGoogle(): Promise<void> {
+    const { url } = await googleAuthorize.mutateAsync()
+    window.location.href = url // leaves the app for Google's consent screen — full-page navigation, no popup
+  }
+
+  async function handleDisconnectGoogle(): Promise<void> {
+    setPendingSwitchAway('local')
+    setConfirmOpen(true)
   }
 
   async function handleConfirmSwitch(): Promise<void> {
     setConfirmOpen(false)
+    const provider = pendingSwitchAway ?? 'local'
     try {
-      await update.mutateAsync(buildPayload(true))
+      await update.mutateAsync(buildPayload(provider, true))
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } catch {
@@ -117,24 +131,19 @@ export default function StoragePage(): React.ReactElement {
 
         <div className="flex flex-col gap-sm">
           <label className="flex items-center gap-sm min-h-[44px] cursor-pointer">
-            <input
-              type="radio"
-              name="storage-provider"
-              checked={form.provider === 'local'}
-              onChange={() => setForm(p => ({ ...p, provider: 'local' }))}
-              className="w-5 h-5"
-            />
+            <input type="radio" name="storage-provider" checked={form.provider === 'local'}
+              onChange={() => setForm(p => ({ ...p, provider: 'local' }))} className="w-5 h-5" />
             <span className="text-body-md text-on-surface">Local (default)</span>
           </label>
           <label className="flex items-center gap-sm min-h-[44px] cursor-pointer">
-            <input
-              type="radio"
-              name="storage-provider"
-              checked={form.provider === 'custom_path'}
-              onChange={() => setForm(p => ({ ...p, provider: 'custom_path' }))}
-              className="w-5 h-5"
-            />
+            <input type="radio" name="storage-provider" checked={form.provider === 'custom_path'}
+              onChange={() => setForm(p => ({ ...p, provider: 'custom_path' }))} className="w-5 h-5" />
             <span className="text-body-md text-on-surface">Network share</span>
+          </label>
+          <label className="flex items-center gap-sm min-h-[44px] cursor-pointer">
+            <input type="radio" name="storage-provider" checked={form.provider === 'google_drive'}
+              onChange={() => setForm(p => ({ ...p, provider: 'google_drive' }))} className="w-5 h-5" />
+            <span className="text-body-md text-on-surface">Google Drive</span>
           </label>
         </div>
 
@@ -142,44 +151,27 @@ export default function StoragePage(): React.ReactElement {
           <div className="flex flex-col gap-md pl-lg border-l-2 border-outline-variant">
             <div className="flex flex-col gap-xs">
               <label htmlFor="smb-host" className="text-label-md text-on-surface-variant">Host / IP address</label>
-              <input
-                id="smb-host"
-                type="text"
-                value={form.smbHost}
-                onChange={e => setForm(p => ({ ...p, smbHost: e.target.value }))}
-                placeholder="192.168.1.10"
-                className="min-h-[44px] px-md border border-outline-variant rounded-xl text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary w-full"
-              />
+              <input id="smb-host" type="text" value={form.smbHost}
+                onChange={e => setForm(p => ({ ...p, smbHost: e.target.value }))} placeholder="192.168.1.10"
+                className="min-h-[44px] px-md border border-outline-variant rounded-xl text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary w-full" />
               <p className="text-label-md text-on-surface-variant">
                 Evaluated on the clinic server, not your PC — use the share's network address, not a locally mapped drive letter.
               </p>
               {fieldError('smbHost') && <p className="text-label-md text-error">{fieldError('smbHost')}</p>}
             </div>
-
             <div className="flex flex-col gap-xs">
               <label htmlFor="smb-share" className="text-label-md text-on-surface-variant">Share name</label>
-              <input
-                id="smb-share"
-                type="text"
-                value={form.smbShare}
-                onChange={e => setForm(p => ({ ...p, smbShare: e.target.value }))}
-                placeholder="vetfiles"
-                className="min-h-[44px] px-md border border-outline-variant rounded-xl text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary w-full"
-              />
+              <input id="smb-share" type="text" value={form.smbShare}
+                onChange={e => setForm(p => ({ ...p, smbShare: e.target.value }))} placeholder="vetfiles"
+                className="min-h-[44px] px-md border border-outline-variant rounded-xl text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary w-full" />
             </div>
-
             <div className="flex flex-col gap-xs">
               <label htmlFor="smb-username" className="text-label-md text-on-surface-variant">Username</label>
-              <input
-                id="smb-username"
-                type="text"
-                value={form.smbUsername}
+              <input id="smb-username" type="text" value={form.smbUsername}
                 onChange={e => setForm(p => ({ ...p, smbUsername: e.target.value }))}
-                className="min-h-[44px] px-md border border-outline-variant rounded-xl text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary w-full"
-              />
+                className="min-h-[44px] px-md border border-outline-variant rounded-xl text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary w-full" />
               {fieldError('smbUsername') && <p className="text-label-md text-error">{fieldError('smbUsername')}</p>}
             </div>
-
             <div className="flex flex-col gap-xs">
               <label htmlFor="smb-password" className="text-label-md text-on-surface-variant">Password</label>
               {!editingPassword ? (
@@ -187,37 +179,56 @@ export default function StoragePage(): React.ReactElement {
                   <span className="min-h-[44px] px-md flex items-center border border-outline-variant rounded-xl text-body-md text-on-surface-variant bg-surface-container-low flex-1">
                     Connected — password saved
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setEditingPassword(true)}
-                    className="min-h-[44px] min-w-[44px] px-md border border-outline-variant rounded-xl text-body-md text-on-surface hover:bg-surface-container-low"
-                  >
+                  <button type="button" onClick={() => setEditingPassword(true)}
+                    className="min-h-[44px] min-w-[44px] px-md border border-outline-variant rounded-xl text-body-md text-on-surface hover:bg-surface-container-low">
                     Change
                   </button>
                 </div>
               ) : (
-                <input
-                  id="smb-password"
-                  type="password"
-                  value={form.smbPassword}
+                <input id="smb-password" type="password" value={form.smbPassword}
                   onChange={e => setForm(p => ({ ...p, smbPassword: e.target.value }))}
-                  className="min-h-[44px] px-md border border-outline-variant rounded-xl text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary w-full"
-                />
+                  className="min-h-[44px] px-md border border-outline-variant rounded-xl text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary w-full" />
               )}
             </div>
           </div>
         )}
+
+        {form.provider === 'google_drive' && (
+          <div className="flex flex-col gap-md pl-lg border-l-2 border-outline-variant">
+            {/* BA finding G-3 — data-custody note, parity with the network-share/local switch-confirmation copy. */}
+            <p className="text-body-md text-on-surface-variant">
+              Files are stored in <strong>this Google account's</strong> Drive. If this account is lost or
+              access is revoked, the clinic loses access to those files until reconnected.
+            </p>
+            {data?.provider === 'google_drive' && data.configured ? (
+              <div className="flex items-center gap-sm">
+                <span className={`w-2.5 h-2.5 rounded-full ${data.connected ? 'bg-secondary' : 'bg-error'}`} aria-hidden="true" />
+                <span className="text-body-md text-on-surface">
+                  {data.connected ? 'Connected' : 'Not connected — reconnect required'}
+                </span>
+                <button type="button" onClick={handleDisconnectGoogle}
+                  className="ml-auto min-h-[44px] px-lg border border-outline-variant rounded-xl text-body-md text-on-surface hover:bg-surface-container-low">
+                  Disconnect
+                </button>
+              </div>
+            ) : (
+              <button type="button" onClick={handleConnectGoogle} disabled={googleAuthorize.isPending}
+                className="min-h-[44px] px-lg bg-primary text-surface rounded-xl text-body-md font-medium hover:opacity-90 transition-opacity disabled:opacity-50 self-start">
+                {googleAuthorize.isPending ? 'Connecting…' : 'Connect with Google'}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      <div className="sticky bottom-0 bg-background pt-sm pb-md flex items-center justify-end border-t border-outline-variant">
-        <button
-          type="submit"
-          disabled={update.isPending}
-          className="min-h-[44px] min-w-[44px] px-xl bg-primary text-surface rounded-xl text-body-md font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-        >
-          {update.isPending ? 'Saving…' : 'Save Changes'}
-        </button>
-      </div>
+      {form.provider !== 'google_drive' && (
+        <div className="sticky bottom-0 bg-background pt-sm pb-md flex items-center justify-end border-t border-outline-variant">
+          <button type="submit" disabled={update.isPending}
+            className="min-h-[44px] min-w-[44px] px-xl bg-primary text-surface rounded-xl text-body-md font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
+            {update.isPending ? 'Saving…' : 'Save Changes'}
+          </button>
+        </div>
+      )}
 
       {confirmOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-lg">
@@ -226,20 +237,15 @@ export default function StoragePage(): React.ReactElement {
             <p className="text-body-md text-on-surface-variant">
               Files already uploaded will stay at their current location and won't be visible at the new
               location until moved there manually. Backing them up is now your clinic's responsibility.
+              {data?.provider === 'google_drive' && ' This also disconnects the currently connected Google account.'}
             </p>
             <div className="flex justify-end gap-sm">
-              <button
-                type="button"
-                onClick={() => setConfirmOpen(false)}
-                className="min-h-[44px] px-lg border border-outline-variant rounded-xl text-body-md text-on-surface hover:bg-surface-container-low"
-              >
+              <button type="button" onClick={() => setConfirmOpen(false)}
+                className="min-h-[44px] px-lg border border-outline-variant rounded-xl text-body-md text-on-surface hover:bg-surface-container-low">
                 Cancel
               </button>
-              <button
-                type="button"
-                onClick={handleConfirmSwitch}
-                className="min-h-[44px] px-lg bg-primary text-surface rounded-xl text-body-md font-medium hover:opacity-90"
-              >
+              <button type="button" onClick={handleConfirmSwitch}
+                className="min-h-[44px] px-lg bg-primary text-surface rounded-xl text-body-md font-medium hover:opacity-90">
                 Confirm
               </button>
             </div>
