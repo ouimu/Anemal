@@ -168,3 +168,62 @@ describe('GET /oauth/google/callback', () => {
     expect(res.headers.location).toBe('http://localhost:5173/settings/storage/connecting')
   })
 })
+
+describe('handleGoogleOAuthCallback — M-10 reverse-direction column hygiene (round-2 grill finding 1, risk OD-11 High)', () => {
+  test('connecting Google Drive over a row whose provider was "onedrive" nulls all four oneDrive* columns in the same write', async () => {
+    await prisma.tenantStorageConfig.upsert({
+      where: { tenantId: tidA },
+      create: {
+        tenantId: tidA, provider: 'onedrive',
+        oneDriveAccessTokenEncrypted: 'enc:v1:aaaa:bbbb:cccc',
+        oneDriveRefreshTokenEncrypted: 'enc:v1:dddd:eeee:ffff',
+        oneDriveTokenExpiresAt: new Date(Date.now() + 3600_000),
+        oneDriveAccountIdHash: 'somehash',
+      },
+      update: {
+        provider: 'onedrive',
+        oneDriveAccessTokenEncrypted: 'enc:v1:aaaa:bbbb:cccc',
+        oneDriveRefreshTokenEncrypted: 'enc:v1:dddd:eeee:ffff',
+        oneDriveTokenExpiresAt: new Date(Date.now() + 3600_000),
+        oneDriveAccountIdHash: 'somehash',
+      },
+    })
+    const { state } = await freshState()
+    const res = await request(server).get('/oauth/google/callback').query({ code: 'fake-code', state })
+    expect(res.status).toBe(302)
+    const row = await prisma.tenantStorageConfig.findUnique({ where: { tenantId: tidA } })
+    expect(row?.provider).toBe('google_drive')
+    expect(row?.oneDriveAccessTokenEncrypted).toBeNull()
+    expect(row?.oneDriveRefreshTokenEncrypted).toBeNull()
+    expect(row?.oneDriveTokenExpiresAt).toBeNull()
+    expect(row?.oneDriveAccountIdHash).toBeNull()
+    // M-3: Microsoft provides no revoke endpoint — no revoke call exists to
+    // make for OneDrive; the mocked Google client's revoke isn't a stand-in
+    // for it, so there's nothing further to assert an absence of here beyond
+    // the nulled columns themselves being the only cleanup mechanism.
+  })
+
+  test('connecting Google Drive over a row whose provider was "custom_path" leaves oneDrive* columns untouched (still NULL, no-op — unaffected direction)', async () => {
+    // Explicitly reset oneDrive* to NULL — a prior test in this suite may
+    // have left them set, and Prisma upsert's `update` clause only touches
+    // fields it names, so this arrange step must be exhaustive to prove the
+    // "untouched" claim isn't riding on leftover state.
+    await prisma.tenantStorageConfig.upsert({
+      where: { tenantId: tidA },
+      create: { tenantId: tidA, provider: 'custom_path', smbHost: 'h', smbShare: 's', smbUsername: 'u', smbPasswordEncrypted: 'enc:v1:aaaa:bbbb:cccc' },
+      update: {
+        provider: 'custom_path', smbHost: 'h', smbShare: 's', smbUsername: 'u', smbPasswordEncrypted: 'enc:v1:aaaa:bbbb:cccc',
+        oneDriveAccessTokenEncrypted: null, oneDriveRefreshTokenEncrypted: null, oneDriveTokenExpiresAt: null, oneDriveAccountIdHash: null,
+      },
+    })
+    const { state } = await freshState()
+    const res = await request(server).get('/oauth/google/callback').query({ code: 'fake-code', state })
+    expect(res.status).toBe(302)
+    const row = await prisma.tenantStorageConfig.findUnique({ where: { tenantId: tidA } })
+    expect(row?.provider).toBe('google_drive')
+    expect(row?.oneDriveAccessTokenEncrypted).toBeNull()
+    expect(row?.oneDriveRefreshTokenEncrypted).toBeNull()
+    expect(row?.oneDriveTokenExpiresAt).toBeNull()
+    expect(row?.oneDriveAccountIdHash).toBeNull()
+  })
+})
