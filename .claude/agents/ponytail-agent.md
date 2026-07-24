@@ -1,7 +1,7 @@
 ---
 name: ponytail-agent
 model: opus
-effort: high
+effort: max
 description: >
   Independent simplicity gate for Anemal. Use PROACTIVELY after any /write-plan output and before
   /execute-plan — reviews the plan against the 7-point simplicity check (over-engineering,
