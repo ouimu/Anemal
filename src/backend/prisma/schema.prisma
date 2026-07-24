@@ -157,6 +157,22 @@ model TenantStorageConfig {
   googleRootFolderId          String?
   googleEmrFolderId           String?
   googlePhotoFolderId         String?
+  // HMAC-SHA256 (HKDF-derived key, distinct info string from oauth-state.ts)
+  // of the connected Google account's identifier — not reversible, not PII
+  // at rest. Retrofit column (sub-project 3, M-11) — populated + collision-
+  // checked by the (patched) Google callback going forward; NULL for any
+  // tenant connected before this migration until they reconnect.
+  googleAccountIdHash          String?
+  // Microsoft OneDrive (sub-project 3) — same encryption helper/key.
+  // Refresh token ROTATES (unlike Google's stable one) — replaced on every
+  // refresh, not only at connect (M-2). No folder-ID columns: Microsoft
+  // Graph addresses by path under the app-folder, not by cached ID (M-4) —
+  // the whole folder-ID-cache class of column that Google needs does not
+  // exist here.
+  oneDriveAccessTokenEncrypted  String?
+  oneDriveRefreshTokenEncrypted String?
+  oneDriveTokenExpiresAt        DateTime?
+  oneDriveAccountIdHash         String?
   updatedAt            DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
