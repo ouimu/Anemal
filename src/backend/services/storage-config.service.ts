@@ -12,6 +12,7 @@ export type ResolvedStorageConfig =
   | { provider: 'local' }
   | { provider: 'custom_path'; host: string; share: string; username: string; password: string }
   | { provider: 'google_drive'; accessToken: string; refreshToken: string; rootFolderId: string | null; emrFolderId: string | null; photoFolderId: string | null }
+  | { provider: 'onedrive'; accessToken: string; refreshToken: string; tokenExpiresAt: Date | null }
 
 /**
  * Resolves what driver a tenant should use. Absence of a row and an
@@ -21,6 +22,15 @@ export type ResolvedStorageConfig =
 export async function resolveStorageConfig(tenantId: number): Promise<ResolvedStorageConfig> {
   const row = await repo.getStorageConfig(tenantId)
   if (!row || row.provider === 'local') return { provider: 'local' }
+
+  if (row.provider === 'onedrive') {
+    return {
+      provider:      'onedrive',
+      accessToken:   row.oneDriveAccessTokenEncrypted ? decryptField(row.oneDriveAccessTokenEncrypted) : '',
+      refreshToken:  row.oneDriveRefreshTokenEncrypted ? decryptField(row.oneDriveRefreshTokenEncrypted) : '',
+      tokenExpiresAt: row.oneDriveTokenExpiresAt,
+    }
+  }
 
   if (row.provider === 'google_drive') {
     return {

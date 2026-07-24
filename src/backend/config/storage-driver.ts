@@ -9,6 +9,7 @@ import { AppError } from '../utils/errors'
 import { resolveStorageConfig } from '../services/storage-config.service'
 import { SmbShareDriver } from './smb-share-driver'
 import { GoogleDriveDriver } from './google-drive-driver'
+import { OneDriveDriver } from './onedrive-driver'
 import * as tenantStorageConfigRepo from '../models/tenant-storage-config.repository'
 
 export interface StorageDriver {
@@ -116,6 +117,22 @@ export class LocalDiskDriver implements StorageDriver {
  */
 export async function getStorageDriver(tenantId: number): Promise<StorageDriver> {
   const resolved = await resolveStorageConfig(tenantId)
+
+  if (resolved.provider === 'onedrive') {
+    // ONEDRIVE_OAUTH_CLIENT_ID/SECRET checked lazily here, not at boot
+    // (I-13, mirrors GDrive's N-6) — a tenant that connected OneDrive while
+    // the env vars were set still needs them present at read/write time.
+    return new OneDriveDriver(
+      tenantId,
+      {
+        clientId:     process.env.ONEDRIVE_OAUTH_CLIENT_ID ?? '',
+        clientSecret: process.env.ONEDRIVE_OAUTH_CLIENT_SECRET ?? '',
+        accessToken:  resolved.accessToken,
+        refreshToken: resolved.refreshToken,
+      },
+      (tokens) => tenantStorageConfigRepo.writeBackRefreshedOneDriveTokens(tenantId, tokens),
+    )
+  }
 
   if (resolved.provider === 'google_drive') {
     // GOOGLE_OAUTH_CLIENT_ID/SECRET are checked lazily here, not at boot
