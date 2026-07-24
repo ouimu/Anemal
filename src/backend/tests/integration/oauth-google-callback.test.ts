@@ -160,4 +160,11 @@ describe('GET /oauth/google/callback', () => {
     const res = await request(server).get('/oauth/google/callback').query({ code: 'fake-code', state })
     expect(res.headers.location).toContain('error=google_connect_failed')
   })
+
+  test('Google-flow non-regression: the callback still consumes a "google"-provider nonce successfully after the consumeNonce signature change (M-7, BA F-OD-2)', async () => {
+    const { state } = await freshState()
+    const res = await request(server).get('/oauth/google/callback').query({ code: 'fake-code', state })
+    expect(res.status).toBe(302)
+    expect(res.headers.location).toBe('http://localhost:5173/settings/storage/connecting')
+  })
 })

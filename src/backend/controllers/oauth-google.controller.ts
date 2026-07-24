@@ -46,7 +46,8 @@ export async function handleGoogleOAuthCallback(req: Request, res: Response): Pr
   }
 
   // Grill N-3: atomic single-statement consume, BEFORE the code exchange.
-  const nonceOk = await consumeNonce(verified.nonce)
+  // M-7: provider-matched — a 'onedrive'-minted nonce must not verify here.
+  const nonceOk = await consumeNonce(verified.nonce, 'google')
   if (!nonceOk) {
     res.redirect(`${verified.origin}/settings/storage?error=google_state_replayed`)
     return
