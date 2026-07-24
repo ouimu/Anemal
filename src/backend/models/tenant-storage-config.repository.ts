@@ -7,7 +7,7 @@ import { encryptField } from '../utils/encryption'
 import { GoogleDriveFolderIds } from '../config/google-drive-driver'
 
 export interface StorageConfigWriteData {
-  provider:                     'local' | 'custom_path' | 'google_drive'
+  provider:                     'local' | 'custom_path' | 'google_drive' | 'onedrive'
   smbHost?:                     string | null
   smbShare?:                    string | null
   smbUsername?:                 string | null
@@ -17,6 +17,11 @@ export interface StorageConfigWriteData {
   googleRootFolderId?:          string | null
   googleEmrFolderId?:           string | null
   googlePhotoFolderId?:         string | null
+  googleAccountIdHash?:         string | null
+  oneDriveAccessTokenEncrypted?:  string | null
+  oneDriveRefreshTokenEncrypted?: string | null
+  oneDriveTokenExpiresAt?:        Date | null
+  oneDriveAccountIdHash?:         string | null
 }
 
 /** Fetches the tenant's storage config row, or null if none exists (default local). */
@@ -54,5 +59,28 @@ export async function writeBackRefreshedGoogleAccessToken(tenantId: number, newA
   await prisma.tenantStorageConfig.updateMany({
     where: { tenantId, provider: 'google_drive', googleRefreshTokenEncrypted: { not: null } },
     data:  { googleAccessTokenEncrypted: encryptField(newAccessToken) },
+  })
+}
+
+/**
+ * Conditional update (M-2, extends the N-4/writeBackRefreshedGoogleAccessToken
+ * pattern to BOTH rotating tokens plus expiry — Microsoft rotates the
+ * refresh token on every use, unlike Google's stable one). Guarded against
+ * the disconnect race exactly like the Google analog: a refresh completing
+ * after disconnect matches zero rows and is silently dropped. EXEMPT from
+ * settings_audit_log (same reasoning as N-4/BA G-4a — a system token
+ * refresh, not an admin action).
+ */
+export async function writeBackRefreshedOneDriveTokens(
+  tenantId: number,
+  tokens: { accessToken: string; refreshToken: string; expiresAt: Date },
+): Promise<void> {
+  await prisma.tenantStorageConfig.updateMany({
+    where: { tenantId, provider: 'onedrive', oneDriveRefreshTokenEncrypted: { not: null } },
+    data: {
+      oneDriveAccessTokenEncrypted:  encryptField(tokens.accessToken),
+      oneDriveRefreshTokenEncrypted: encryptField(tokens.refreshToken),
+      oneDriveTokenExpiresAt:        tokens.expiresAt,
+    },
   })
 }

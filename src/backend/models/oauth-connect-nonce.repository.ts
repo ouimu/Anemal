@@ -31,16 +31,16 @@ export async function createNonce(input: CreateNonceInput): Promise<string> {
 }
 
 /**
- * Grill finding N-3: atomic single-statement consume — UPDATE ... WHERE
- * consumedAt IS NULL, checked by affected-row count, never a separate
- * verify-then-mark sequence (which would let two near-simultaneous
- * callbacks with the same state both pass a check before either marks
- * consumed). Returns true iff this call consumed the row.
+ * M-7: atomic single-statement consume, now ALSO predicated on provider —
+ * closes a cross-flow replay class once two providers share this table (a
+ * state minted for the Google flow must not verify at the OneDrive callback
+ * and vice versa). Still UPDATE ... WHERE ... consumedAt IS NULL, checked
+ * by affected-row count — never a separate verify-then-mark (N-3, unchanged).
  */
-export async function consumeNonce(rawNonce: string): Promise<boolean> {
+export async function consumeNonce(rawNonce: string, provider: string): Promise<boolean> {
   const nonceHash = hashNonce(rawNonce)
   const result = await prisma.oAuthConnectNonce.updateMany({
-    where: { nonceHash, consumedAt: null },
+    where: { nonceHash, provider, consumedAt: null },
     data:  { consumedAt: new Date() },
   })
   return result.count === 1

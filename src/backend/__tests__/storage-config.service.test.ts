@@ -66,6 +66,19 @@ describe('resolveStorageConfig', () => {
       rootFolderId: 'root-1', emrFolderId: 'emr-1', photoFolderId: 'photo-1',
     })
   })
+
+  test('provider="onedrive" row → decrypts both tokens and passes through expiry', async () => {
+    const encryptedAccess = encryptField('od-access-token')
+    const encryptedRefresh = encryptField('od-refresh-token')
+    const expiresAt = new Date('2026-08-01T00:00:00Z')
+    ;(repo.getStorageConfig as jest.Mock).mockResolvedValue({
+      tenantId: 1, provider: 'onedrive',
+      oneDriveAccessTokenEncrypted: encryptedAccess, oneDriveRefreshTokenEncrypted: encryptedRefresh,
+      oneDriveTokenExpiresAt: expiresAt,
+    })
+    const result = await resolveStorageConfig(1)
+    expect(result).toEqual({ provider: 'onedrive', accessToken: 'od-access-token', refreshToken: 'od-refresh-token', tokenExpiresAt: expiresAt })
+  })
 })
 
 describe('getStorageConfigForDisplay', () => {

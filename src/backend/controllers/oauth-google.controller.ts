@@ -46,7 +46,8 @@ export async function handleGoogleOAuthCallback(req: Request, res: Response): Pr
   }
 
   // Grill N-3: atomic single-statement consume, BEFORE the code exchange.
-  const nonceOk = await consumeNonce(verified.nonce)
+  // M-7: provider-matched — a 'onedrive'-minted nonce must not verify here.
+  const nonceOk = await consumeNonce(verified.nonce, 'google')
   if (!nonceOk) {
     res.redirect(`${verified.origin}/settings/storage?error=google_state_replayed`)
     return
@@ -99,9 +100,20 @@ export async function handleGoogleOAuthCallback(req: Request, res: Response): Pr
     // A stale SMB credential must not survive a switch to google_drive, same
     // invariant as BA G-4b for the reverse direction (disconnect nulls
     // google* columns) — connecting Drive nulls any smb* columns instead.
+    //
+    // M-10 REVERSE DIRECTION (round-2 grill finding 1, risk OD-11 — High):
+    // also null oneDrive* here. Nulling these columns is OneDrive's ONLY
+    // kill mechanism (M-3 — Microsoft provides no token-revocation endpoint),
+    // so if a clinic connects Google Drive over an existing provider='onedrive'
+    // row, the previously-connected OneDrive refresh token must not survive
+    // silently on the new google_drive row. Unconditional (nulls even when
+    // the row wasn't onedrive) — harmless no-op in that case, keeps this
+    // branch simple and matches the existing smb* nulling style.
     await tenantStorageConfigRepo.upsertStorageConfig(verified.tenantId, {
       provider: 'google_drive',
       smbHost: null, smbShare: null, smbUsername: null, smbPasswordEncrypted: null,
+      oneDriveAccessTokenEncrypted: null, oneDriveRefreshTokenEncrypted: null,
+      oneDriveTokenExpiresAt: null, oneDriveAccountIdHash: null,
       googleAccessTokenEncrypted:  encryptField(tokens.accessToken),
       googleRefreshTokenEncrypted: encryptField(tokens.refreshToken),
       googleRootFolderId:  folders.rootFolderId,
