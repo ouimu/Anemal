@@ -184,22 +184,17 @@ export function createOneDriveClient(cfg: OneDriveClientConfig): OneDriveClient 
     },
 
     async ping() {
-      // OD-13 PRIMARY variant (see Task 0's outcome record). If the spike
-      // recorded the FALLBACK result instead, swap this call to
-      // `/me/drive/special/approot` and read `parentReference.driveId`
-      // instead of `owner.user.id` — search this file for "OD-13 fallback".
-      const { status, body } = await callWithRefresh(() => graphFetch(`${GRAPH_BASE}/me/drive`, accessToken))
+      // OD-13 spike result (2026-07-24, real MS test account): `/me/drive`
+      // returns 403 accessDenied under Files.ReadWrite.AppFolder for a
+      // personal account — the approot fallback is the one that actually
+      // works, confirmed 200 with parentReference.driveId present. See
+      // docs/superpowers/specs/2026-07-23-storage-onedrive-driver-design.md.
+      const { status, body } = await callWithRefresh(() => graphFetch(`${GRAPH_BASE}/me/drive/special/approot`, accessToken))
       const err = classify(status, body)
       if (err) throw err
-      const accountId = (body as { owner?: { user?: { id?: string } } })?.owner?.user?.id
-      if (!accountId) throw new Error('OneDrive ping succeeded but returned no owner.user.id — check OD-13 spike result, may need the approot fallback')
+      const accountId = (body as { parentReference?: { driveId?: string } })?.parentReference?.driveId
+      if (!accountId) throw new Error('OneDrive ping succeeded but returned no parentReference.driveId')
       return { accountId }
-      // OD-13 fallback variant (only if Task 0 recorded the fallback result):
-      //   const { status, body } = await callWithRefresh(() => graphFetch(`${GRAPH_BASE}/me/drive/special/approot`, accessToken))
-      //   const err = classify(status, body); if (err) throw err
-      //   const accountId = (body as { parentReference?: { driveId?: string } })?.parentReference?.driveId
-      //   if (!accountId) throw new Error('...')
-      //   return { accountId }
     },
   }
 }

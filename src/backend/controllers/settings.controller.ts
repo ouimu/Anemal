@@ -242,6 +242,48 @@ export async function googleAuthorize(req: Request, res: Response, next: NextFun
   } catch (err) { next(err) }
 }
 
+const ONEDRIVE_SCOPE = 'offline_access Files.ReadWrite.AppFolder'
+
+function onedriveOAuthRedirectUri(): string {
+  return process.env.ONEDRIVE_OAUTH_REDIRECT_URI || `${process.env.BACKEND_URL || 'http://localhost:4000'}/oauth/onedrive/callback`
+}
+
+export async function onedriveAuthorize(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const clientId = process.env.ONEDRIVE_OAUTH_CLIENT_ID
+    const clientSecret = process.env.ONEDRIVE_OAUTH_CLIENT_SECRET
+    // I-13/M-8: checked lazily at request time, never at boot.
+    if (!clientId || !clientSecret) {
+      res.status(503).json({ success: false, code: 'ONEDRIVE_OAUTH_NOT_CONFIGURED', error: 'OneDrive connection is not configured on this server' })
+      return
+    }
+
+    const { tenantId, userId } = req.context!
+    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { subdomain: true } })
+    if (!tenant) { res.status(404).json({ success: false, error: 'Tenant not found' }); return }
+
+    const rawNonce = await createNonce({ tenantId, userId, provider: 'onedrive', expiresAt: new Date(Date.now() + OAUTH_STATE_TTL_MS) })
+    const origin = deriveTenantFrontendOrigin(tenant.subdomain)
+    const state = signOAuthState({ tenantId, userId, origin, nonce: rawNonce })
+
+    const params = new URLSearchParams({
+      client_id:     clientId,
+      redirect_uri:  onedriveOAuthRedirectUri(),
+      response_type: 'code',
+      // M-1: no prompt=consent needed — Microsoft re-issues a refresh token
+      // on every authorization with offline_access consented, unlike
+      // Google. prompt=select_account instead, so a multi-account admin
+      // explicitly picks (relevant given Q1 = both personal and work/school).
+      prompt: 'select_account',
+      scope:  ONEDRIVE_SCOPE,
+      state,
+    })
+    // M-1: audience resolves to 'common' per Q1's decision (both account
+    // types) — a single constant, not per-tenant configurable.
+    res.json({ success: true, data: { url: `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}` } })
+  } catch (err) { next(err) }
+}
+
 // ─── S2.3 Personal preferences (all roles) ───────────────────────────────────
 
 export async function getPersonalPreferences(req: Request, res: Response, next: NextFunction): Promise<void> {
