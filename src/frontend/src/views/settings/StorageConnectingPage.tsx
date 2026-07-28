@@ -14,7 +14,7 @@ export default function StorageConnectingPage(): React.ReactElement {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-md bg-background">
       <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-      <p className="text-body-lg text-on-surface">Connecting to Google Drive…</p>
+      <p className="text-body-lg text-on-surface">Connecting your storage…</p>
     </div>
   )
 }

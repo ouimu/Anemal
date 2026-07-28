@@ -2,12 +2,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../utils/api'
 
 export interface StorageConfigData {
-  provider: 'local' | 'custom_path' | 'google_drive'
+  provider: 'local' | 'custom_path' | 'google_drive' | 'onedrive'
   configured: boolean
   connected?: boolean
   smbHost?: string
   smbShare?: string
   smbUsername?: string
+  duplicateAccountWarning?: boolean
 }
 
 export interface StorageConfigInput {
@@ -41,5 +42,12 @@ export function useUpdateStorageConfig() {
 export function useGoogleAuthorize() {
   return useMutation({
     mutationFn: () => api.get<{ data: { url: string } }>('/api/settings/clinic/storage-config/google/authorize').then(r => r.data.data),
+  })
+}
+
+/** Mirrors useGoogleAuthorize() for the Microsoft OAuth connect-initiate endpoint. */
+export function useOneDriveAuthorize() {
+  return useMutation({
+    mutationFn: () => api.get<{ data: { url: string } }>('/api/settings/clinic/storage-config/onedrive/authorize').then(r => r.data.data),
   })
 }
