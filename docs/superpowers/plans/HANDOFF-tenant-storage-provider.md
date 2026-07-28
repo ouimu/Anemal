@@ -1,6 +1,6 @@
 # Handoff — Tenant Storage Provider Feature (ADR-0023)
 
-**Last updated:** 2026-07-28 (OneDrive Sub-PR B Tasks 8-12 complete, tested, PR #50 open)
+**Last updated:** 2026-07-28 (scheduled run — checked PR #50: still open, no reviews, checks green, nothing changed since last handoff. No action taken, still waiting on human merge.)
 **Branch:** `feature/tenant-storage-provider` (pushed, up to date with origin, do not create a new branch)
 
 ---
