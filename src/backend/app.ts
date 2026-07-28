@@ -32,6 +32,7 @@ import reminderRoutes from './routes/reminder.routes'
 import auditRoutes from './routes/audit.routes'
 import settingsRoutes from './routes/settings.routes'
 import oauthGoogleRoutes from './routes/oauth-google.routes'
+import oauthOnedriveRoutes from './routes/oauth-onedrive.routes'
 import systemSettingsRoutes from './routes/system-settings.routes'
 import roleRoutes from './routes/role.routes'
 import cronRoutes from './routes/cron.routes'
@@ -87,6 +88,7 @@ app.use('/api/reminders',       reminderRoutes)
 app.use('/api/audit',           auditRoutes)
 app.use('/api/settings',        settingsRoutes)
 app.use('/oauth',               oauthGoogleRoutes)
+app.use('/oauth',               oauthOnedriveRoutes)
 app.use('/clinic/roles',        roleRoutes)
 app.use('/api/cron',            cronRoutes)
 

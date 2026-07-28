@@ -84,7 +84,7 @@ describe('resolveStorageConfig', () => {
 describe('getStorageConfigForDisplay', () => {
   test('no row → { provider: "local", configured: false }, no password field present', async () => {
     (repo.getStorageConfig as jest.Mock).mockResolvedValue(null)
-    const result = await getStorageConfigForDisplay(1)
+    const result = await getStorageConfigForDisplay(1, false)
     expect(result).toEqual({ provider: 'local', configured: false })
     expect(result).not.toHaveProperty('smbPassword')
     expect(result).not.toHaveProperty('smbPasswordEncrypted')
@@ -94,7 +94,7 @@ describe('getStorageConfigForDisplay', () => {
     (repo.getStorageConfig as jest.Mock).mockResolvedValue({
       tenantId: 1, provider: 'custom_path', smbHost: 'h', smbShare: 's', smbUsername: 'u', smbPasswordEncrypted: 'enc:v1:...',
     })
-    const result = await getStorageConfigForDisplay(1)
+    const result = await getStorageConfigForDisplay(1, false)
     expect(result).toEqual({ provider: 'custom_path', configured: true, smbHost: 'h', smbShare: 's', smbUsername: 'u' })
   })
 })
@@ -236,7 +236,7 @@ describe('getStorageConfigForDisplay — google_drive live status check (design 
       googleAccessTokenEncrypted: encryptField('at'), googleRefreshTokenEncrypted: encryptField('rt'),
     })
     ;(createGoogleDriveClient as jest.Mock).mockReturnValue({ ping: jest.fn().mockResolvedValue(undefined) })
-    const result = await getStorageConfigForDisplay(1)
+    const result = await getStorageConfigForDisplay(1, false)
     expect(result).toEqual({ provider: 'google_drive', configured: true, connected: true })
   })
 
@@ -246,7 +246,7 @@ describe('getStorageConfigForDisplay — google_drive live status check (design 
       googleAccessTokenEncrypted: encryptField('at'), googleRefreshTokenEncrypted: encryptField('rt'),
     })
     ;(createGoogleDriveClient as jest.Mock).mockReturnValue({ ping: jest.fn().mockRejectedValue(new GoogleDriveAuthInvalidError()) })
-    const result = await getStorageConfigForDisplay(1)
+    const result = await getStorageConfigForDisplay(1, false)
     expect(result.connected).toBe(false)
   })
 
@@ -256,13 +256,134 @@ describe('getStorageConfigForDisplay — google_drive live status check (design 
       googleAccessTokenEncrypted: encryptField('at'), googleRefreshTokenEncrypted: encryptField('rt'),
     })
     ;(createGoogleDriveClient as jest.Mock).mockReturnValue({ ping: jest.fn().mockRejectedValue(new Error('ETIMEDOUT')) })
-    const result = await getStorageConfigForDisplay(1)
+    const result = await getStorageConfigForDisplay(1, false)
     expect(result.connected).toBe(true)
   })
 
   test('local/custom_path responses never include a connected field', async () => {
     (repo.getStorageConfig as jest.Mock).mockResolvedValue(null)
-    const result = await getStorageConfigForDisplay(1)
+    const result = await getStorageConfigForDisplay(1, false)
     expect(result).not.toHaveProperty('connected')
+  })
+})
+
+jest.mock('../config/onedrive-client')
+import { createOneDriveClient, OneDriveAuthInvalidError, OneDriveInsufficientScopeError } from '../config/onedrive-client'
+jest.mock('../utils/account-id-hash')
+import { checkDuplicateAccount } from '../utils/account-id-hash'
+
+describe('updateStorageConfig — disconnect from onedrive', () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  test('switching away from onedrive nulls all FOUR oneDrive* columns (incl. oneDriveAccountIdHash, round-2 grill finding 2) in the disconnect write', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue({
+      tenantId: 1, provider: 'onedrive',
+      oneDriveAccessTokenEncrypted: encryptField('at'), oneDriveRefreshTokenEncrypted: encryptField('rt'),
+      oneDriveTokenExpiresAt: new Date(), oneDriveAccountIdHash: 'hash-abc',
+    })
+    ;(repo.upsertStorageConfig as jest.Mock).mockResolvedValue({ tenantId: 1, provider: 'local' })
+
+    await updateStorageConfig(1, 42, { provider: 'local', confirmBaseChange: true })
+
+    expect(repo.upsertStorageConfig).toHaveBeenCalledWith(1, expect.objectContaining({
+      provider: 'local',
+      oneDriveAccessTokenEncrypted: null, oneDriveRefreshTokenEncrypted: null,
+      oneDriveTokenExpiresAt: null, oneDriveAccountIdHash: null,
+    }))
+  })
+
+  test('no revoke call is attempted for OneDrive (M-3 — assert the absence, mirroring the Google-side revoke-attempted assertion)', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue({
+      tenantId: 1, provider: 'onedrive', oneDriveRefreshTokenEncrypted: encryptField('rt'),
+    })
+    ;(repo.upsertStorageConfig as jest.Mock).mockResolvedValue({ tenantId: 1, provider: 'local' })
+
+    await updateStorageConfig(1, 42, { provider: 'local', confirmBaseChange: true })
+
+    expect(revokeGoogleToken).not.toHaveBeenCalled()
+    expect(repo.upsertStorageConfig).toHaveBeenCalled()
+  })
+
+  test('switching FROM onedrive TO custom_path requires confirmBaseChange (effectiveBaseKey treats onedrive as its own base)', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue({ tenantId: 1, provider: 'onedrive', oneDriveRefreshTokenEncrypted: null })
+    await expect(updateStorageConfig(1, 42, {
+      provider: 'custom_path', smbHost: 'h', smbShare: 's', smbUsername: 'u', smbPassword: 'p',
+    })).rejects.toBeInstanceOf(StorageConfigSwitchConfirmationRequiredError)
+    expect(repo.upsertStorageConfig).not.toHaveBeenCalled()
+  })
+})
+
+describe('getStorageConfigForDisplay — onedrive status + duplicate-account gating', () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  function onedriveRow(overrides: Record<string, unknown> = {}) {
+    return {
+      tenantId: 1, provider: 'onedrive',
+      oneDriveAccessTokenEncrypted: encryptField('at'), oneDriveRefreshTokenEncrypted: encryptField('rt'),
+      oneDriveAccountIdHash: null,
+      ...overrides,
+    }
+  }
+
+  test('connected:true on a valid ping', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue(onedriveRow());
+    (createOneDriveClient as jest.Mock).mockReturnValue({ ping: jest.fn().mockResolvedValue({ accountId: 'x' }) })
+    const result = await getStorageConfigForDisplay(1, false)
+    expect(result).toEqual({ provider: 'onedrive', configured: true, connected: true })
+  })
+
+  test('connected:false on an auth-invalid ping (401/invalid_grant)', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue(onedriveRow());
+    (createOneDriveClient as jest.Mock).mockReturnValue({ ping: jest.fn().mockRejectedValue(new OneDriveAuthInvalidError()) })
+    const result = await getStorageConfigForDisplay(1, false)
+    expect(result.connected).toBe(false)
+  })
+
+  test('a transient ping failure does NOT flip connected to false (I-16 "don\'t read a blip as data loss")', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue(onedriveRow());
+    (createOneDriveClient as jest.Mock).mockReturnValue({ ping: jest.fn().mockRejectedValue(new Error('ETIMEDOUT')) })
+    const result = await getStorageConfigForDisplay(1, false)
+    expect(result.connected).toBe(true)
+  })
+
+  test('a 403 (insufficient scope) on the ping is classified as auth-invalid, NOT transient — flips connected:false with distinct reconnect copy (round-2 grill finding 3, M-9)', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue(onedriveRow());
+    (createOneDriveClient as jest.Mock).mockReturnValue({ ping: jest.fn().mockRejectedValue(new OneDriveInsufficientScopeError()) })
+    const result = await getStorageConfigForDisplay(1, false)
+    expect(result.connected).toBe(false)
+  })
+
+  test('duplicateAccountWarning:true when another tenant holds the same oneDriveAccountIdHash, for a clinic.integrations.edit caller', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue(onedriveRow({ oneDriveAccountIdHash: 'hash-abc' }));
+    (createOneDriveClient as jest.Mock).mockReturnValue({ ping: jest.fn().mockResolvedValue({ accountId: 'x' }) });
+    (checkDuplicateAccount as jest.Mock).mockResolvedValue({ duplicate: true })
+    const result = await getStorageConfigForDisplay(1, true)
+    expect(checkDuplicateAccount).toHaveBeenCalledWith(expect.anything(), 'onedrive', 'hash-abc', 1)
+    expect(result.duplicateAccountWarning).toBe(true)
+  })
+
+  test('duplicateAccountWarning is ABSENT from the response for a clinic.profile.view-only caller (round-2 grill finding 5 — doctor/staff still get configured/connected, not this field)', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue(onedriveRow({ oneDriveAccountIdHash: 'hash-abc' }));
+    (createOneDriveClient as jest.Mock).mockReturnValue({ ping: jest.fn().mockResolvedValue({ accountId: 'x' }) })
+    const result = await getStorageConfigForDisplay(1, false)
+    expect(result).not.toHaveProperty('duplicateAccountWarning')
+    expect(checkDuplicateAccount).not.toHaveBeenCalled()
+  })
+
+  test('two branches of the same tenant do not trigger duplicateAccountWarning against each other (tenantId != ? predicate)', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue(onedriveRow({ oneDriveAccountIdHash: 'hash-abc' }));
+    (createOneDriveClient as jest.Mock).mockReturnValue({ ping: jest.fn().mockResolvedValue({ accountId: 'x' }) });
+    (checkDuplicateAccount as jest.Mock).mockResolvedValue({ duplicate: false })
+    const result = await getStorageConfigForDisplay(1, true)
+    expect(checkDuplicateAccount).toHaveBeenCalledWith(expect.anything(), 'onedrive', 'hash-abc', 1)
+    expect(result.duplicateAccountWarning).toBe(false)
+  })
+
+  test('a disconnected tenant\'s hash is NULL and no longer triggers warnings for other tenants (recomputed per read, not stale)', async () => {
+    (repo.getStorageConfig as jest.Mock).mockResolvedValue(onedriveRow({ oneDriveAccountIdHash: null }));
+    (createOneDriveClient as jest.Mock).mockReturnValue({ ping: jest.fn().mockResolvedValue({ accountId: 'x' }) })
+    const result = await getStorageConfigForDisplay(1, true)
+    expect(result).not.toHaveProperty('duplicateAccountWarning')
+    expect(checkDuplicateAccount).not.toHaveBeenCalled()
   })
 })

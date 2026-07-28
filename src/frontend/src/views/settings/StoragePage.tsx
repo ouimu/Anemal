@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import MaterialIcon from '../../components/MaterialIcon'
-import { useStorageConfig, useUpdateStorageConfig, useGoogleAuthorize, type StorageConfigInput } from '../../hooks/useStorageConfig'
+import { useStorageConfig, useUpdateStorageConfig, useGoogleAuthorize, useOneDriveAuthorize, type StorageConfigInput } from '../../hooks/useStorageConfig'
 import { getErrorMessage } from '../../utils/errorMessage'
 
 function getErrorCode(error: unknown): string | undefined {
@@ -20,8 +20,20 @@ const GOOGLE_OAUTH_ERROR_MESSAGES: Record<string, string> = {
   google_connect_failed:  'Could not connect to Google Drive — please try again.',
 }
 
+const ONEDRIVE_OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  onedrive_consent_denied:   'Microsoft sign-in was cancelled — try again if you want to connect OneDrive.',
+  onedrive_consent_required: 'Your Microsoft administrator needs to approve Anemal before this account can connect — ask your IT admin, then try again.',
+  onedrive_state_invalid:    'That Microsoft sign-in link was invalid or expired — try connecting again.',
+  onedrive_state_replayed:   'That Microsoft sign-in link was already used — try connecting again.',
+  onedrive_not_authorized:   'Your account no longer has permission to connect OneDrive — ask an admin to try again.',
+  onedrive_not_configured:   'OneDrive connection is not configured on this server yet.',
+  onedrive_connect_failed:   'Could not connect to OneDrive — please try again.',
+}
+
+const OAUTH_ERROR_MESSAGES: Record<string, string> = { ...GOOGLE_OAUTH_ERROR_MESSAGES, ...ONEDRIVE_OAUTH_ERROR_MESSAGES }
+
 interface StorageForm {
-  provider: 'local' | 'custom_path' | 'google_drive'
+  provider: 'local' | 'custom_path' | 'google_drive' | 'onedrive'
   smbHost: string
   smbShare: string
   smbUsername: string
@@ -34,6 +46,7 @@ export default function StoragePage(): React.ReactElement {
   const { data, isLoading } = useStorageConfig()
   const update = useUpdateStorageConfig()
   const googleAuthorize = useGoogleAuthorize()
+  const onedriveAuthorize = useOneDriveAuthorize()
   const [searchParams, setSearchParams] = useSearchParams()
   const oauthErrorCode = searchParams.get('error')
 
@@ -73,7 +86,7 @@ export default function StoragePage(): React.ReactElement {
 
   async function handleSave(e: React.FormEvent): Promise<void> {
     e.preventDefault()
-    if (form.provider === 'google_drive') return // Google Drive connects via OAuth, not this form's Save
+    if (form.provider === 'google_drive' || form.provider === 'onedrive') return // cloud providers connect via OAuth, not this form's Save
     try {
       await update.mutateAsync(buildPayload(form.provider))
       setSaved(true)
@@ -89,6 +102,16 @@ export default function StoragePage(): React.ReactElement {
   }
 
   async function handleDisconnectGoogle(): Promise<void> {
+    setPendingSwitchAway('local')
+    setConfirmOpen(true)
+  }
+
+  async function handleConnectOneDrive(): Promise<void> {
+    const { url } = await onedriveAuthorize.mutateAsync()
+    window.location.href = url // leaves the app for Microsoft's consent screen — full-page navigation, no popup
+  }
+
+  async function handleDisconnectOneDrive(): Promise<void> {
     setPendingSwitchAway('local')
     setConfirmOpen(true)
   }
@@ -142,7 +165,7 @@ export default function StoragePage(): React.ReactElement {
 
       {oauthErrorCode && (
         <div className="px-md py-sm bg-error/10 border border-error/30 rounded-xl text-body-md text-error flex items-center justify-between gap-sm">
-          <span>{GOOGLE_OAUTH_ERROR_MESSAGES[oauthErrorCode] ?? 'Could not connect to Google Drive — please try again.'}</span>
+          <span>{OAUTH_ERROR_MESSAGES[oauthErrorCode] ?? (oauthErrorCode.startsWith('onedrive_') ? 'Could not connect to OneDrive — please try again.' : 'Could not connect to Google Drive — please try again.')}</span>
           <button type="button" onClick={() => setSearchParams({}, { replace: true })}
             className="min-h-[44px] min-w-[44px] px-sm text-error hover:opacity-70" aria-label="Dismiss">
             <MaterialIcon name="close" size={18} />
@@ -172,6 +195,11 @@ export default function StoragePage(): React.ReactElement {
             <input type="radio" name="storage-provider" checked={form.provider === 'google_drive'}
               onChange={() => setForm(p => ({ ...p, provider: 'google_drive' }))} className="w-5 h-5" />
             <span className="text-body-md text-on-surface">Google Drive</span>
+          </label>
+          <label className="flex items-center gap-sm min-h-[44px] cursor-pointer">
+            <input type="radio" name="storage-provider" checked={form.provider === 'onedrive'}
+              onChange={() => setForm(p => ({ ...p, provider: 'onedrive' }))} className="w-5 h-5" />
+            <span className="text-body-md text-on-surface">Microsoft OneDrive</span>
           </label>
         </div>
 
@@ -247,9 +275,52 @@ export default function StoragePage(): React.ReactElement {
             )}
           </div>
         )}
+
+        {form.provider === 'onedrive' && (
+          <div className="flex flex-col gap-md pl-lg border-l-2 border-outline-variant">
+            <p className="text-body-md text-on-surface-variant">
+              Files are stored in <strong>this Microsoft account's</strong> OneDrive. If this account is lost or
+              access is removed, the clinic loses access to those files until reconnected.
+            </p>
+            <p className="text-body-md text-on-surface-variant">
+              Work or school Microsoft accounts may require your organization's administrator to approve
+              Anemal's access once before this will work.
+            </p>
+            {data?.provider === 'onedrive' && data.configured ? (
+              <div className="flex flex-col gap-sm">
+                <div className="flex items-center gap-sm">
+                  <span className={`w-2.5 h-2.5 rounded-full ${data.connected ? 'bg-secondary' : 'bg-error'}`} aria-hidden="true" />
+                  <span className="text-body-md text-on-surface">
+                    {data.connected ? 'Connected' : 'Not connected — reconnect required'}
+                  </span>
+                  <button type="button" onClick={handleDisconnectOneDrive}
+                    className="ml-auto min-h-[44px] px-lg border border-outline-variant rounded-xl text-body-md text-on-surface hover:bg-surface-container-low">
+                    Disconnect
+                  </button>
+                </div>
+                <p className="text-label-md text-on-surface-variant">
+                  Disconnecting removes Anemal's access keys immediately, but the Anemal entry stays listed in
+                  this Microsoft account's app permissions until removed there manually.
+                </p>
+              </div>
+            ) : (
+              <button type="button" onClick={handleConnectOneDrive} disabled={onedriveAuthorize.isPending}
+                className="min-h-[44px] px-lg bg-primary text-surface rounded-xl text-body-md font-medium hover:opacity-90 transition-opacity disabled:opacity-50 self-start">
+                {onedriveAuthorize.isPending ? 'Connecting…' : 'Connect with Microsoft'}
+              </button>
+            )}
+          </div>
+        )}
+
+        {data?.duplicateAccountWarning && (
+          <div className="px-md py-sm bg-surface-container-low border border-outline-variant rounded-xl text-body-md text-on-surface-variant">
+            This account is already connected to another clinic on Anemal — we recommend each clinic use a
+            separate account (branches of the same clinic sharing one account is fine).
+          </div>
+        )}
       </div>
 
-      {form.provider !== 'google_drive' && (
+      {form.provider !== 'google_drive' && form.provider !== 'onedrive' && (
         <div className="sticky bottom-0 bg-background pt-sm pb-md flex items-center justify-end border-t border-outline-variant">
           <button type="submit" disabled={update.isPending}
             className="min-h-[44px] min-w-[44px] px-xl bg-primary text-surface rounded-xl text-body-md font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
@@ -266,6 +337,15 @@ export default function StoragePage(): React.ReactElement {
               Files already uploaded will stay at their current location and won't be visible at the new
               location until moved there manually. Backing them up is now your clinic's responsibility.
               {data?.provider === 'google_drive' && ' This also disconnects the currently connected Google account.'}
+              {data?.provider === 'onedrive' && ' This also disconnects the currently connected Microsoft account.'}
+            </p>
+            <p className="text-body-md text-on-surface-variant">
+              Switching providers does not automatically move your existing files. The app won't see them until
+              you switch back — nothing is deleted, and switching back restores visibility at any time.
+            </p>
+            <p className="text-body-md text-on-surface-variant">
+              If a file is deleted while a different provider than the one storing it is active, the physical file
+              at the old provider is not removed and can no longer be reached through the app.
             </p>
             <div className="flex justify-end gap-sm">
               <button type="button" onClick={() => setConfirmOpen(false)}
