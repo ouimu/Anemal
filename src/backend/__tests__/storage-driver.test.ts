@@ -120,6 +120,37 @@ describe('getStorageDriver(tenantId)', () => {
     const driver = await getStorageDriver(1)
     expect(driver).toBeInstanceOf(SmbShareDriver)
   })
+
+  // Design §9 "no-migration/reversibility" round-trip: a provider switch never
+  // touches the physical bytes at the old provider — switching local -> B -> local
+  // must still see the exact file it saved before the switch away (ADR-0023).
+  test('switching away from local and back to local does not lose the file saved under local (provider A -> B -> A visibility)', async () => {
+    const envDir = fs.mkdtempSync(path.join(os.tmpdir(), 'anemal-roundtrip-'))
+    const original = process.env.ATTACHMENT_DIR
+    process.env.ATTACHMENT_DIR = envDir
+    try {
+      jest.spyOn(storageConfigSvc, 'resolveStorageConfig').mockResolvedValue({ provider: 'local' })
+      const localDriverA = await getStorageDriver(1)
+      await localDriverA.save('tenants/1/emr/roundtrip.txt', Buffer.from('still here'), 'text/plain')
+
+      jest.spyOn(storageConfigSvc, 'resolveStorageConfig').mockResolvedValue({
+        provider: 'custom_path', host: 'h', share: 's', username: 'u', password: 'p',
+      })
+      const smbDriverB = await getStorageDriver(1)
+      expect(smbDriverB).toBeInstanceOf(SmbShareDriver)
+      // The file at the old (local) provider is untouched — it simply isn't
+      // reachable through this driver, which is the expected "not moved" behavior.
+
+      jest.spyOn(storageConfigSvc, 'resolveStorageConfig').mockResolvedValue({ provider: 'local' })
+      const localDriverA2 = await getStorageDriver(1)
+      const buf = await localDriverA2.read('tenants/1/emr/roundtrip.txt')
+      expect(buf.toString()).toBe('still here')
+    } finally {
+      if (original === undefined) delete process.env.ATTACHMENT_DIR
+      else process.env.ATTACHMENT_DIR = original
+      fs.rmSync(envDir, { recursive: true, force: true })
+    }
+  })
 })
 
 describe('getStorageDriver(tenantId) — google_drive branch', () => {
