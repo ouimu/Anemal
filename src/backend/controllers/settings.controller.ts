@@ -11,6 +11,7 @@ import * as storageConfigSvc from '../services/storage-config.service'
 import prisma from '../config/db'
 import { signOAuthState } from '../utils/oauth-state'
 import { createNonce } from '../models/oauth-connect-nonce.repository'
+import { resolvePermissions } from '../services/permission.service'
 
 const TIME_HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
 
@@ -170,7 +171,9 @@ export async function testIntegrations(req: Request, res: Response, next: NextFu
 
 export async function getStorageConfig(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await storageConfigSvc.getStorageConfigForDisplay(req.context!.tenantId)
+    const { tenantId, userId } = req.context!
+    const perms = await resolvePermissions(userId, tenantId)
+    const data = await storageConfigSvc.getStorageConfigForDisplay(tenantId, perms.has('clinic.integrations.edit'))
     res.json({ success: true, data })
   } catch (err) { next(err) }
 }
@@ -179,7 +182,8 @@ export async function updateStorageConfig(req: Request, res: Response, next: Nex
   try {
     const { tenantId, userId } = req.context!
     await storageConfigSvc.updateStorageConfig(tenantId, userId, req.body as storageConfigSvc.UpdateStorageConfigInput)
-    const data = await storageConfigSvc.getStorageConfigForDisplay(tenantId)
+    const perms = await resolvePermissions(userId, tenantId)
+    const data = await storageConfigSvc.getStorageConfigForDisplay(tenantId, perms.has('clinic.integrations.edit'))
     res.json({ success: true, data })
   } catch (err) { next(err) }
 }

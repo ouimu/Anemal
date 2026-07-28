@@ -5,8 +5,11 @@ import * as auditRepo from '../models/settings-audit.repository'
 import { decryptField, encryptField } from '../utils/encryption'
 import { createSmbClient } from '../config/smb-client'
 import { revokeGoogleToken, createGoogleDriveClient, GoogleDriveAuthInvalidError } from '../config/google-drive-client'
+import { createOneDriveClient, OneDriveAuthInvalidError, OneDriveInsufficientScopeError } from '../config/onedrive-client'
+import { checkDuplicateAccount } from '../utils/account-id-hash'
 import { AppError } from '../utils/errors'
 import { logger } from '../utils/logger'
+import prisma from '../config/db'
 
 export type ResolvedStorageConfig =
   | { provider: 'local' }
@@ -65,6 +68,7 @@ export interface StorageConfigDisplay {
   smbHost?:     string
   smbShare?:    string
   smbUsername?: string
+  duplicateAccountWarning?: boolean
 }
 
 async function checkGoogleDriveConnected(row: { googleAccessTokenEncrypted: string | null; googleRefreshTokenEncrypted: string | null }): Promise<boolean> {
@@ -88,13 +92,56 @@ async function checkGoogleDriveConnected(row: { googleAccessTokenEncrypted: stri
   }
 }
 
-/** Never includes the password/tokens — a "configured" boolean stands in for them. */
-export async function getStorageConfigForDisplay(tenantId: number): Promise<StorageConfigDisplay> {
+async function checkOneDriveConnected(row: { oneDriveAccessTokenEncrypted: string | null; oneDriveRefreshTokenEncrypted: string | null }): Promise<boolean> {
+  if (!row.oneDriveAccessTokenEncrypted || !row.oneDriveRefreshTokenEncrypted) return false
+  const client = createOneDriveClient({
+    clientId:     process.env.ONEDRIVE_OAUTH_CLIENT_ID ?? '',
+    clientSecret: process.env.ONEDRIVE_OAUTH_CLIENT_SECRET ?? '',
+    accessToken:  decryptField(row.oneDriveAccessTokenEncrypted),
+    refreshToken: decryptField(row.oneDriveRefreshTokenEncrypted),
+  })
+  try {
+    await client.ping()
+    return true
+  } catch (err) {
+    // M-9, round-2 grill finding 3: 403 (insufficient scope) is classified the
+    // SAME as auth-invalid here — NOT the generic transient bucket, which
+    // would otherwise mask a permanently broken status check as green.
+    if (err instanceof OneDriveAuthInvalidError || err instanceof OneDriveInsufficientScopeError) return false
+    logger.warn({ err: String(err) }, 'OneDrive live status check failed transiently — connected stays true')
+    return true
+  }
+}
+
+/**
+ * Never includes the password/tokens — a "configured" boolean stands in for
+ * them. `callerHasIntegrationsEdit` gates `duplicateAccountWarning` (round-2
+ * grill finding 5) — a doctor/staff caller (clinic.profile.view only) still
+ * gets configured/connected, never this field, since recomputing it per-read
+ * would otherwise let a non-admin infer another tenant's connect/disconnect
+ * timing over repeated loads.
+ */
+export async function getStorageConfigForDisplay(tenantId: number, callerHasIntegrationsEdit: boolean): Promise<StorageConfigDisplay> {
   const row = await repo.getStorageConfig(tenantId)
   if (!row || row.provider === 'local') return { provider: 'local', configured: false }
+
+  if (row.provider === 'onedrive') {
+    const connected = await checkOneDriveConnected(row)
+    const display: StorageConfigDisplay = { provider: 'onedrive', configured: true, connected }
+    if (callerHasIntegrationsEdit && row.oneDriveAccountIdHash) {
+      const { duplicate } = await checkDuplicateAccount(prisma, 'onedrive', row.oneDriveAccountIdHash, tenantId)
+      display.duplicateAccountWarning = duplicate
+    }
+    return display
+  }
   if (row.provider === 'google_drive') {
     const connected = await checkGoogleDriveConnected(row)
-    return { provider: 'google_drive', configured: true, connected }
+    const display: StorageConfigDisplay = { provider: 'google_drive', configured: true, connected }
+    if (callerHasIntegrationsEdit && row.googleAccountIdHash) {
+      const { duplicate } = await checkDuplicateAccount(prisma, 'google_drive', row.googleAccountIdHash, tenantId)
+      display.duplicateAccountWarning = duplicate
+    }
+    return display
   }
   return {
     provider:    row.provider,
@@ -122,6 +169,7 @@ export interface UpdateStorageConfigInput {
 function effectiveBaseKey(row: { provider: string; smbHost?: string | null; smbShare?: string | null } | null): string {
   if (!row || row.provider === 'local') return 'local'
   if (row.provider === 'google_drive') return 'google_drive'
+  if (row.provider === 'onedrive') return 'onedrive'
   return `custom_path:${row.smbHost}:${row.smbShare}`
 }
 
@@ -155,7 +203,15 @@ export async function updateStorageConfig(
     })
   }
   const googleColumnResets = disconnectingFromGoogle
-    ? { googleAccessTokenEncrypted: null, googleRefreshTokenEncrypted: null, googleRootFolderId: null, googleEmrFolderId: null, googlePhotoFolderId: null }
+    ? { googleAccessTokenEncrypted: null, googleRefreshTokenEncrypted: null, googleRootFolderId: null, googleEmrFolderId: null, googlePhotoFolderId: null, googleAccountIdHash: null }
+    : {}
+
+  // M-3: no revoke call exists for OneDrive — nulling is the ONLY disconnect
+  // mechanism (deliberately no revoke attempt here — assert-the-absence is
+  // the test).
+  const disconnectingFromOneDrive = current?.provider === 'onedrive'
+  const oneDriveColumnResets = disconnectingFromOneDrive
+    ? { oneDriveAccessTokenEncrypted: null, oneDriveRefreshTokenEncrypted: null, oneDriveTokenExpiresAt: null, oneDriveAccountIdHash: null }
     : {}
 
   if (input.provider === 'custom_path') {
@@ -188,11 +244,13 @@ export async function updateStorageConfig(
       smbHost: input.smbHost, smbShare: input.smbShare, smbUsername: input.smbUsername,
       smbPasswordEncrypted: input.smbPassword ? encryptField(input.smbPassword) : current?.smbPasswordEncrypted,
       ...googleColumnResets,
+      ...oneDriveColumnResets,
     })
   } else {
     await repo.upsertStorageConfig(tenantId, {
       provider: 'local', smbHost: null, smbShare: null, smbUsername: null, smbPasswordEncrypted: null,
       ...googleColumnResets,
+      ...oneDriveColumnResets,
     })
   }
 
