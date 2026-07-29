@@ -129,24 +129,8 @@ Prefix your request with the agent name:
 
 ## Development Phases
 
-> Re-sequenced 2026-06-13 into a linear Phase 1–10. Redesign track (7 + 8) is the active priority; credential-gated work is postponed to Phase 9–10. Full map + QA validation: [`PHASE-RESEQUENCE.md`](PHASE-RESEQUENCE.md).
-
-| Phase | Focus | Status |
-|---|---|---|
-| Phase 1 | Foundation & Security (Auth, Multi-tenancy, Multi-Branch, Base Layout) | ✅ Complete (74) |
-| Phase 2 | Core Operations (Pet, Appointment, EMR, Prescriptions) | ✅ Complete (104) |
-| Phase 3 | Commercial Operations (Inventory, Billing, POS, Subscription) | ✅ Complete (131) |
-| Phase 4 | Advanced Operations & Commercial Scaling (Inpatient, Grooming, Blood Bank, Loyalty, Activity Logs) | ✅ Complete (155) |
-| Phase 5 *(was 1.5)* | Settings & Configuration (profile, hours, notifications, payment, integrations, encryption) | ✅ Complete (226) |
-| Phase 6 *(was Sessions A–E)* | Production-readiness enhancements (screen specs, PDF receipts, PromptPay QR UI, barcode scan, S3 upload) | ✅ Complete (226) |
-| **Phase 7** | **UI Redesign completion & sign-off** (Compassionate Care closeout of Appointments/Pets/EMR) | ✅ Complete (226) |
-| **Phase 8** *(was Phase 5)* | **RBAC, Platform Console & Restructure** (Role Editor, Platform Console UI, Multi-Role Assignment) | ✅ Complete (~394 tests) |
-| **Phase 9** | **i18n Rollout** — full clinic-screen Thai/English (16 screens, no library) | ✅ Complete (95 frontend tests) |
-| D-1–D-5 | Username login, company types, payment history, owner-first browse | ✅ Complete (447 backend tests) |
-| Codex Audit | Batches 1–5: stop-ship fixes, decision docs, QA automation, doc repair, re-audit fixes | ✅ Complete (835 backend + 143 frontend tests) |
-| Phase 10 *(was Session F)* | Payment Gateway & Subscription Billing (Omise/Stripe, webhooks, SaaS billing) | ⏸ Postponed (Omise + SMTP) |
-| Phase 11 *(was Session G)* | LINE/SMS Real Dispatch | ⏸ Postponed (LINE + Twilio) |
+Full phase changelog (test counts, PR/ADR mapping) and current status: [`.claude/roadmap/phase-history.md`](.claude/roadmap/phase-history.md). Kept out of this README so it doesn't drift — see that file for the authoritative record.
 
 ---
 
-*Last updated: 2026-07-09 — Codex audit remediation program (Batches 1–5, PRs #8–#13) closed out with a full QA re-verification (zero open findings) and a test-isolation flake fix (4e78e0b). 835 backend + 143 frontend tests passing. Next: Phase 10 (payment gateway, needs credentials).*
+*Last updated: 2026-07-24 — 1178 backend + 315 frontend tests passing (through Google Drive storage driver, ADR-0023). Next: OneDrive sub-project (blocked on product decisions) and Phase 10/11 (credential-gated).*
