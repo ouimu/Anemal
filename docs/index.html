@@ -2372,7 +2372,7 @@ all rows for tenant_id=1 are isolated from tenant_id=2</code></pre>
     <div class="meta"><span class="badge agent-dev">@dev-agent</span><span class="badge phase">Required</span></div>
     <p>Gives Claude Code scoped access to read and write files in the project directory.</p>
     <pre><code>claude mcp add filesystem npx @modelcontextprotocol/server-filesystem \
-  -- D:\Development\AnimalClinic</code></pre>
+  -- D:\Development\Anemal</code></pre>
   </div>
 
   <div class="task-card">
@@ -2405,7 +2405,7 @@ all rows for tenant_id=1 are isolated from tenant_id=2</code></pre>
   </div>
 
   <h2>Quick Setup — All at Once (PowerShell)</h2>
-  <pre><code>cd D:\Development\AnimalClinic
+  <pre><code>cd D:\Development\Anemal
 
 # 1. PostgreSQL (no token needed — uses DATABASE_URL)
 claude mcp add postgres npx @modelcontextprotocol/server-postgres `
@@ -2413,7 +2413,7 @@ claude mcp add postgres npx @modelcontextprotocol/server-postgres `
 
 # 2. Filesystem (scoped to project root)
 claude mcp add filesystem npx @modelcontextprotocol/server-filesystem `
-  -- D:\Development\AnimalClinic
+  -- D:\Development\Anemal
 
 # 3. GitHub (requires Personal Access Token)
 claude mcp add github npx @modelcontextprotocol/server-github `
@@ -2444,7 +2444,7 @@ claude mcp list</code></pre>
     "filesystem": {
       "command": "npx",
       "args": ["@modelcontextprotocol/server-filesystem",
-               "D:\\Development\\AnimalClinic"]
+               "D:\\Development\\Anemal"]
     },
     "github": {
       "command": "npx",
@@ -2474,7 +2474,7 @@ claude mcp list</code></pre>
     <pre><code>@uiux-agent Use the design MCP to extract current Stitch project into DESIGN.md
 @dev-agent Build AppointmentCard using tokens from DESIGN.md (brand-500, rounded-xl, 44px targets)
 @uiux-agent Validate AdminUsers.tsx against DESIGN.md — flag any color/radius/tap-target violations</code></pre>
-    <p><strong>DESIGN.md location:</strong> <code>D:\Development\AnimalClinic\DESIGN.md</code> — contains Anemal brand colors, typography scale, component tokens, layout rules.</p>
+    <p><strong>DESIGN.md location:</strong> <code>D:\Development\Anemal\DESIGN.md</code> — contains Anemal brand colors, typography scale, component tokens, layout rules.</p>
   </div>
 
   <h2>Per-Agent MCP Usage Guide</h2>
@@ -3386,8 +3386,8 @@ class="bg-primary-fixed text-on-primary-fixed
     </table>
 
     <h2 id="clone-install">Clone &amp; Install</h2>
-    <pre><code>git clone https://github.com/ouimu/AnimalClinic.git
-cd AnimalClinic
+    <pre><code>git clone https://github.com/ouimu/Anemal.git
+cd Anemal
 
 # Install backend dependencies
 cd src/backend

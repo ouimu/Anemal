@@ -1,7 +1,7 @@
 # Run this ONCE from PowerShell to remove the two remnant folders
 # that Cowork couldn't delete due to Windows file permissions.
 
-$root = "D:\Development\AnimalClinic"
+$root = "D:\Development\Anemal"
 
 Write-Host "`n=== Anemal Cleanup Remnants ===" -ForegroundColor Cyan
 

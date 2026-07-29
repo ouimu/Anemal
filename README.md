@@ -29,7 +29,7 @@ It runs seamlessly on **Web browsers** (front-desk / counter use) and **Tablets*
 ## Folder Structure
 
 ```
-AnimalClinic/
+Anemal/
 ├── .claude/                  # AI Agent context & project specs
 │   ├── agents/               # System prompts (<name>.md) + skill bodies (<name>/SKILL.md)
 │   ├── skills/                # Project domain skills (anemal-coding-rules, anemal-design-system, etc.)

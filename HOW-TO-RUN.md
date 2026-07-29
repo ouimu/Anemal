@@ -32,7 +32,7 @@ If your PostgreSQL uses a different user/password, update `DATABASE_URL` accordi
 
 ## Step 3 — Install Backend & Run DB Setup
 
-Open **PowerShell** in `D:\Development\AnimalClinic\`:
+Open **PowerShell** in `D:\Development\Anemal\`:
 
 ```powershell
 cd src\backend
