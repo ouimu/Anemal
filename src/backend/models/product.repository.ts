@@ -146,10 +146,14 @@ interface AlertRow {
   stockQty: number; minStockQty: number; expiryDate: Date | null; unitPrice: number | null
 }
 
+// R2-HI-02: the join predicate must tenant-scope BOTH tables, not just the outer WHERE —
+// an outer-WHERE-only filter still lets a malformed/cross-tenant `inventory_items` row
+// (matched purely on `productId`) leak into results if one ever exists.
 export function findLowStock(tenantId: number, branchId: number) {
   return prisma.$queryRaw<AlertRow[]>`
     SELECT i.id, i.name, i.category, i.unit, bi."stockQty", bi."minStockQty", bi."expiryDate", i."unitPrice"
-    FROM branch_inventory bi JOIN inventory_items i ON i.id = bi."productId"
+    FROM branch_inventory bi
+    JOIN inventory_items i ON i.id = bi."productId" AND i."tenantId" = ${tenantId}
     WHERE bi."tenantId" = ${tenantId} AND bi."branchId" = ${branchId} AND i."isActive" = TRUE
       AND bi."minStockQty" > 0 AND bi."stockQty" <= bi."minStockQty"
     ORDER BY bi."stockQty" ASC
@@ -160,7 +164,8 @@ export function findExpiringSoon(tenantId: number, branchId: number, withinDays:
   const cutoff = new Date(); cutoff.setDate(cutoff.getDate() + withinDays)
   return prisma.$queryRaw<AlertRow[]>`
     SELECT i.id, i.name, i.category, i.unit, bi."stockQty", bi."minStockQty", bi."expiryDate", i."unitPrice"
-    FROM branch_inventory bi JOIN inventory_items i ON i.id = bi."productId"
+    FROM branch_inventory bi
+    JOIN inventory_items i ON i.id = bi."productId" AND i."tenantId" = ${tenantId}
     WHERE bi."tenantId" = ${tenantId} AND bi."branchId" = ${branchId} AND i."isActive" = TRUE
       AND bi."expiryDate" IS NOT NULL AND bi."expiryDate" <= ${cutoff}
     ORDER BY bi."expiryDate" ASC
@@ -170,7 +175,8 @@ export function findExpiringSoon(tenantId: number, branchId: number, withinDays:
 export async function sumInventoryValue(tenantId: number, branchId: number): Promise<number> {
   const rows = await prisma.$queryRaw<{ value: number | null }[]>`
     SELECT COALESCE(SUM(bi."stockQty" * COALESCE(i."unitPrice", 0)), 0)::float8 AS value
-    FROM branch_inventory bi JOIN inventory_items i ON i.id = bi."productId"
+    FROM branch_inventory bi
+    JOIN inventory_items i ON i.id = bi."productId" AND i."tenantId" = ${tenantId}
     WHERE bi."tenantId" = ${tenantId} AND bi."branchId" = ${branchId} AND i."isActive" = TRUE
   `
   return Number(rows[0]?.value ?? 0)

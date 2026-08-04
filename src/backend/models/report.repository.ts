@@ -45,11 +45,12 @@ export function topServices(tenantId: number, limit: number): Promise<TopService
   `
 }
 
+// R2-HI-02: tenant-scope the joined `inventory_items` table too, not just `stock_movements`.
 export function inventoryUsage(tenantId: number, limit: number): Promise<UsageRow[]> {
   return prisma.$queryRaw<UsageRow[]>`
     SELECT i.id AS "itemId", i.name AS name, COALESCE(SUM(m.qty), 0)::float8 AS "qtyUsed"
     FROM stock_movements m
-    JOIN inventory_items i ON i.id = m."itemId"
+    JOIN inventory_items i ON i.id = m."itemId" AND i."tenantId" = ${tenantId}
     WHERE m."tenantId" = ${tenantId} AND m."movementType" = 'out'
     GROUP BY i.id, i.name ORDER BY "qtyUsed" DESC LIMIT ${limit}
   `
