@@ -3,6 +3,7 @@ import multer from 'multer'
 import { authMiddleware } from '../middlewares/auth.middleware'
 import { requirePlane, requirePermission } from '../middlewares/permission.middleware'
 import { validate } from '../middlewares/validate.middleware'
+import { uploadRateLimiter } from '../middlewares/rate-limit.middleware'
 import {
   handleListMedicalRecords, handleGetMedicalRecord,
   handleCreateMedicalRecord, handleUpdateMedicalRecord,
@@ -19,7 +20,7 @@ router.get('/',                          requirePlane('clinic'), requirePermissi
 router.get('/:id',                       requirePlane('clinic'), requirePermission('emr.view'),   handleGetMedicalRecord)
 router.post('/',                         requirePlane('clinic'), requirePermission('emr.create'), validate(createMedicalRecordSchema), handleCreateMedicalRecord)
 router.put('/:id',                       requirePlane('clinic'), requirePermission('emr.edit'),   validate(updateMedicalRecordSchema), handleUpdateMedicalRecord)
-router.post('/:id/attachments',          requirePlane('clinic'), requirePermission('emr.attach'), upload.single('file'), handleAttachmentSubmit)
+router.post('/:id/attachments',          requirePlane('clinic'), requirePermission('emr.attach'), uploadRateLimiter, upload.single('file'), handleAttachmentSubmit)
 router.get('/:id/attachments/:attId/download', requirePlane('clinic'), requirePermission('emr.view'), handleDownloadAttachment)
 router.delete('/:id/attachments/:attId', requirePlane('clinic'), requirePermission('emr.attach'), handleDeleteAttachment)
 
