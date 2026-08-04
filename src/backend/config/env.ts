@@ -19,6 +19,9 @@ export const config = {
   bcryptRounds: Number(process.env.BCRYPT_ROUNDS) || 12,
   // AES-256-GCM key for settings secrets — 32-byte hex (openssl rand -hex 32)
   settingsEncryptionKey: required('SETTINGS_ENCRYPTION_KEY'),
+  // Shared secret Vercel Cron sends as `Authorization: Bearer ${cronSecret}`.
+  // Must be set — an unset secret would otherwise let `Bearer undefined` pass.
+  cronSecret: required('CRON_SECRET'),
 }
 
 // G1 (ADR-0022): the local-disk storage driver is testing-only — it pools
