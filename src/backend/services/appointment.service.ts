@@ -95,6 +95,7 @@ export async function createWalkIn(tenantId: number, branchId: number | null, pe
 }
 
 export async function updateStatus(tenantId: number, branchId: number | null | undefined, id: number, status: AppointmentStatus) {
-  await getAppointment(tenantId, branchId, id)
-  return appointmentRepo.updateStatus(id, status)
+  const result = await appointmentRepo.updateStatus(tenantId, branchId, id, status)
+  if (result.count !== 1) throw new AppointmentError('Appointment not found', 404)
+  return getAppointment(tenantId, branchId, id)
 }

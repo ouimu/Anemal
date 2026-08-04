@@ -47,8 +47,11 @@ export function listAllDue() {
   })
 }
 
-export function markSent(id: number) {
-  return prisma.petReminder.update({ where: { id }, data: { status: 'sent', sentAt: new Date() } })
+// HI-02: scoped `updateMany` instead of a bare `update({where:{id}})`. The
+// background dispatcher (dispatchDue) is intentionally cross-tenant at the read
+// (listAllDue), but each write is still pinned to the reminder's own tenantId.
+export function markSent(tenantId: number, id: number) {
+  return prisma.petReminder.updateMany({ where: { id, tenantId }, data: { status: 'sent', sentAt: new Date() } })
 }
 
 export function findById(tenantId: number, id: number) {

@@ -41,7 +41,7 @@ export async function dispatchDue(): Promise<{ sent: number }> {
   const due = await reminderRepo.listAllDue()
   for (const r of due) {
     // TODO(phase4+): integrate LINE Messaging API / Twilio SMS here before marking sent.
-    await reminderRepo.markSent(r.id)
+    await reminderRepo.markSent(r.tenantId, r.id)
   }
   return { sent: due.length }
 }

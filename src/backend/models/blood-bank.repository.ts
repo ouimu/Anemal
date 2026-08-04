@@ -1,5 +1,6 @@
 // Blood bank repository (Phase 4, FR-10) — donors, donations, transfusions. Tenant-scoped.
 import prisma from '../config/db'
+import { NotFoundError } from '../utils/errors'
 
 const petSel = { select: { id: true, name: true, species: true } }
 
@@ -34,7 +35,12 @@ export function createDonation(
 ) {
   return prisma.$transaction(async (tx) => {
     const donation = await tx.bloodDonation.create({ data: { tenantId, ...data } })
-    await tx.bloodDonor.update({ where: { id: data.donorId }, data: { lastDonationAt: new Date(), isEligible: false } })
+    // HI-02: scoped `updateMany` instead of a bare `update({where:{id}})`.
+    const updated = await tx.bloodDonor.updateMany({
+      where: { id: data.donorId, tenantId },
+      data: { lastDonationAt: new Date(), isEligible: false },
+    })
+    if (updated.count !== 1) throw new NotFoundError('Donor')
     return donation
   })
 }

@@ -59,7 +59,9 @@ export async function redeem(tenantId: number, data: RedeemInput) {
     const cap = Math.floor(data.invoiceTotal * REDEEM_CAP_RATIO)
     if (data.points > cap) throw new LoyaltyError(`Points redeemed cannot exceed 20% of the invoice (max ${cap})`, 400)
   }
-  const updated = await loyaltyRepo.applyRedeem(tenantId, data.ownerId, data.points)
-  // 1 point = 1 baht discount.
-  return { ownerId: data.ownerId, pointsRedeemed: data.points, discount: data.points, remainingPoints: updated.loyaltyPoints }
+  await loyaltyRepo.applyRedeem(tenantId, data.ownerId, data.points)
+  // 1 point = 1 baht discount. applyRedeem now returns a batch payload ({count}), not the
+  // updated owner row (HI-02 scoped-updateMany fix) — compute the new balance from the
+  // pre-redemption read above instead of a second round trip.
+  return { ownerId: data.ownerId, pointsRedeemed: data.points, discount: data.points, remainingPoints: owner.loyaltyPoints - data.points }
 }

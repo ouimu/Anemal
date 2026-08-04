@@ -141,6 +141,11 @@ export function createWalkIn(tenantId: number, branchId: number | null, petId: n
   })
 }
 
-export function updateStatus(id: number, status: AppointmentStatus) {
-  return prisma.appointment.update({ where: { id }, data: { status } })
+// HI-02: a single scoped `updateMany` closes the check/use gap between the
+// preceding `getAppointment` read and this write — the caller must check `count`.
+export function updateStatus(tenantId: number, branchId: number | null | undefined, id: number, status: AppointmentStatus) {
+  return prisma.appointment.updateMany({
+    where: { id, tenantId, ...(branchId != null ? { branchId } : {}) },
+    data: { status },
+  })
 }

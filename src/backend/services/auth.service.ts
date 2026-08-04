@@ -73,7 +73,7 @@ export async function login(body: LoginRequest): Promise<LoginResponse> {
     throw new AuthError(`Login not allowed outside ${user.allowedStartTime}–${user.allowedEndTime}`, 403)
   }
 
-  await authRepo.touchLastLogin(user.id)
+  await authRepo.touchLastLogin(tenant.id, user.id)
 
   // 5. Compute permission version and check role
   const permSetVersion = await computePermSetVersion(user.id, tenant.id)
