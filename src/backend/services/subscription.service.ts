@@ -13,9 +13,23 @@
  * @module subscription.service
  */
 
+import { Prisma } from '@prisma/client'
 import { AppError } from '../utils/errors'
 import prisma from '../config/db'
 import { listPlans } from './platform-plans.service'
+
+/**
+ * R3-HI-04: the recommended DB-level fix in the Codex review (`SELECT ... FOR UPDATE` on
+ * `tenant_quotas WHERE resource = ...`) does not work against this schema — `TenantQuota`
+ * has one row per tenant with resources as columns (`maxBranches`, `maxUsers`, ...), not a
+ * `resource` column, and the row is optional (many tenants have none, falling back to
+ * `plan`/constants) — `FOR UPDATE` on zero rows locks nothing. `pg_advisory_xact_lock` is
+ * used instead: it's a pure serialization point keyed on tenant+resource, so it binds
+ * whether or not a `tenant_quotas` row exists. See BA finding R3-HI-04 / disagreement D1.
+ */
+type TxClient = Prisma.TransactionClient
+type Client = TxClient | typeof prisma
+type QuotaResource = 'branches' | 'users' | 'owners' | 'pets'
 
 /** Quota exceeded error — maps to HTTP 409 in controllers. */
 export class QuotaExceededError extends AppError {
@@ -62,8 +76,8 @@ const FALLBACK_USERS    = null
  *
  * @param tenantId - Tenant whose quota is being checked.
  */
-export async function getEffectiveQuota(tenantId: number): Promise<EffectiveTenantQuota> {
-  const tenant = await prisma.tenant.findUnique({
+async function getEffectiveQuotaWith(client: Client, tenantId: number): Promise<EffectiveTenantQuota> {
+  const tenant = await client.tenant.findUnique({
     where: { id: tenantId },
     include: {
       plan:  true,
@@ -79,20 +93,28 @@ export async function getEffectiveQuota(tenantId: number): Promise<EffectiveTena
   }
 }
 
+export function getEffectiveQuota(tenantId: number): Promise<EffectiveTenantQuota> {
+  return getEffectiveQuotaWith(prisma, tenantId)
+}
+
 /**
  * Assert that a new active user can be created for this tenant.
  * Throws QuotaExceededError (409) when the user limit is reached.
  *
  * @param tenantId - Tenant to check.
  */
-export async function assertCanAddUser(tenantId: number): Promise<void> {
-  const quota = await getEffectiveQuota(tenantId)
+async function assertCanAddUserWith(client: Client, tenantId: number): Promise<void> {
+  const quota = await getEffectiveQuotaWith(client, tenantId)
   if (quota.maxUsers === null) return
 
-  const current = await prisma.user.count({ where: { tenantId, isActive: true } })
+  const current = await client.user.count({ where: { tenantId, isActive: true } })
   if (current >= quota.maxUsers) {
     throw new QuotaExceededError('users', quota.maxUsers, current)
   }
+}
+
+export function assertCanAddUser(tenantId: number): Promise<void> {
+  return assertCanAddUserWith(prisma, tenantId)
 }
 
 /**
@@ -101,14 +123,18 @@ export async function assertCanAddUser(tenantId: number): Promise<void> {
  *
  * @param tenantId - Tenant to check.
  */
-export async function assertCanAddBranch(tenantId: number): Promise<void> {
-  const quota = await getEffectiveQuota(tenantId)
+async function assertCanAddBranchWith(client: Client, tenantId: number): Promise<void> {
+  const quota = await getEffectiveQuotaWith(client, tenantId)
   if (quota.maxBranches === null) return
 
-  const current = await prisma.branch.count({ where: { tenantId, isActive: true } })
+  const current = await client.branch.count({ where: { tenantId, isActive: true } })
   if (current >= quota.maxBranches) {
     throw new QuotaExceededError('branches', quota.maxBranches, current)
   }
+}
+
+export function assertCanAddBranch(tenantId: number): Promise<void> {
+  return assertCanAddBranchWith(prisma, tenantId)
 }
 
 /**
@@ -118,14 +144,18 @@ export async function assertCanAddBranch(tenantId: number): Promise<void> {
  *
  * @param tenantId - Tenant to check.
  */
-export async function assertCanAddOwner(tenantId: number): Promise<void> {
-  const quota = await getEffectiveQuota(tenantId)
+async function assertCanAddOwnerWith(client: Client, tenantId: number): Promise<void> {
+  const quota = await getEffectiveQuotaWith(client, tenantId)
   if (quota.maxOwners === null) return
 
-  const current = await prisma.owner.count({ where: { tenantId } })
+  const current = await client.owner.count({ where: { tenantId } })
   if (current >= quota.maxOwners) {
     throw new QuotaExceededError('owners', quota.maxOwners, current)
   }
+}
+
+export function assertCanAddOwner(tenantId: number): Promise<void> {
+  return assertCanAddOwnerWith(prisma, tenantId)
 }
 
 /**
@@ -135,14 +165,43 @@ export async function assertCanAddOwner(tenantId: number): Promise<void> {
  *
  * @param tenantId - Tenant to check.
  */
-export async function assertCanAddPet(tenantId: number): Promise<void> {
-  const quota = await getEffectiveQuota(tenantId)
+async function assertCanAddPetWith(client: Client, tenantId: number): Promise<void> {
+  const quota = await getEffectiveQuotaWith(client, tenantId)
   if (quota.maxPets === null) return
 
-  const current = await prisma.pet.count({ where: { tenantId, isActive: true } })
+  const current = await client.pet.count({ where: { tenantId, isActive: true } })
   if (current >= quota.maxPets) {
     throw new QuotaExceededError('pets', quota.maxPets, current)
   }
+}
+
+export function assertCanAddPet(tenantId: number): Promise<void> {
+  return assertCanAddPetWith(prisma, tenantId)
+}
+
+const QUOTA_ASSERTS: Record<QuotaResource, (client: Client, tenantId: number) => Promise<void>> = {
+  branches: assertCanAddBranchWith,
+  users:    assertCanAddUserWith,
+  owners:   assertCanAddOwnerWith,
+  pets:     assertCanAddPetWith,
+}
+
+/**
+ * R3-HI-04: run `create` inside a transaction serialized by a `pg_advisory_xact_lock`
+ * keyed on tenant+resource, with the quota re-checked INSIDE that lock. Two concurrent
+ * creates that both read "1 under the limit" outside the lock can no longer both pass —
+ * the second transaction blocks on the lock until the first commits, then re-checks the
+ * (now-updated) count and correctly loses the race with `QuotaExceededError` (409).
+ */
+export async function createWithQuotaLock<T>(
+  tenantId: number, resource: QuotaResource, create: (tx: TxClient) => Promise<T>,
+): Promise<T> {
+  return prisma.$transaction(async (tx) => {
+    const lockKey = `quota:${tenantId}:${resource}`
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`
+    await QUOTA_ASSERTS[resource](tx, tenantId)
+    return create(tx)
+  })
 }
 
 /**

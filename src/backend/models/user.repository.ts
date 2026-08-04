@@ -2,8 +2,11 @@
 // @db-agent: every read is scoped by tenantId; writes are guarded by a prior
 // tenant-scoped existence check in the service.
 
+import { Prisma } from '@prisma/client'
 import prisma from '../config/db'
 import type { UpdateUserRequest } from '../types'
+
+type Client = Prisma.TransactionClient | typeof prisma
 
 /** Shape of data accepted by the transactional user+role create. */
 export interface CreateUserData {
@@ -40,26 +43,39 @@ export function findUserById(tenantId: number, userId: number) {
  * @param data     - User fields (no password — pass passwordHash).
  * @param roleId   - The system or custom ClinicRole ID to assign.
  */
+// R3-HI-04: extracted so subscription.service.createWithQuotaLock can run this inside
+// its OWN outer (advisory-lock) transaction instead of nesting a second, independent
+// `prisma.$transaction` (Prisma has no nested-transaction support).
+export async function createUserWithRoleTx(
+  tx: Prisma.TransactionClient,
+  tenantId: number,
+  data: CreateUserData,
+  roleId: number,
+) {
+  const user = await tx.user.create({
+    data: { tenantId, ...data, roleId },
+    include: { roleRef: true },
+  })
+  await tx.userRole.create({
+    data: { userId: user.id, roleId, tenantId },
+  })
+  return user
+}
+
 export async function createUserWithRole(
   tenantId: number,
   data: CreateUserData,
   roleId: number,
 ) {
-  return prisma.$transaction(async (tx) => {
-    const user = await tx.user.create({
-      data: { tenantId, ...data, roleId },
-      include: { roleRef: true },
-    })
-    await tx.userRole.create({
-      data: { userId: user.id, roleId, tenantId },
-    })
-    return user
-  })
+  return prisma.$transaction((tx) => createUserWithRoleTx(tx, tenantId, data, roleId))
 }
 
-export async function updateUser(tenantId: number, userId: number, data: UpdateUserRequest) {
-  await prisma.user.updateMany({ where: { id: userId, tenantId }, data })
-  return prisma.user.findFirst({ where: { id: userId, tenantId }, include: { roleRef: true } })
+// `client` defaults to the shared `prisma` instance but accepts a `Prisma.TransactionClient`
+// so R3-HI-04's quota-lock transaction can apply a reactivation update inside the same lock
+// scope (a plain `prisma` read afterward would not see that transaction's uncommitted write).
+export async function updateUser(tenantId: number, userId: number, data: UpdateUserRequest, client: Client = prisma) {
+  await client.user.updateMany({ where: { id: userId, tenantId }, data })
+  return client.user.findFirst({ where: { id: userId, tenantId }, include: { roleRef: true } })
 }
 
 export async function setActive(tenantId: number, userId: number, isActive: boolean) {

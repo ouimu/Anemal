@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { AppError } from '../utils/errors'
 import * as petRepo from '../models/pet.repository'
-import { assertCanAddPet } from './subscription.service'
+import { createWithQuotaLock } from './subscription.service'
 import { getStorageDriver } from '../config/storage-driver'
 
 export const createPetSchema = z.object({
@@ -46,11 +46,13 @@ export async function getPet(tenantId: number, id: number, includeEmr = true) {
   return pet
 }
 
+// R3-HI-04: quota check + insert now happen inside one advisory-lock-serialized
+// transaction (subscription.service.createWithQuotaLock) instead of a preceding,
+// independent count check that a concurrent request could race past.
 export async function createPet(tenantId: number, data: CreatePetInput) {
-  await assertCanAddPet(tenantId)
   const owner = await petRepo.findOwner(tenantId, data.ownerId)
   if (!owner) throw new PetError('Owner not found', 404)
-  return petRepo.createPet(tenantId, data)
+  return createWithQuotaLock(tenantId, 'pets', (tx) => petRepo.createPet(tenantId, data, tx))
 }
 
 export async function updatePet(tenantId: number, id: number, data: UpdatePetInput) {

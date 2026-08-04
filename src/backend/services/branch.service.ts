@@ -2,7 +2,7 @@
 import { z } from 'zod'
 import { AppError } from '../utils/errors'
 import * as branchRepo from '../models/branch.repository'
-import { assertCanAddBranch } from './subscription.service'
+import { createWithQuotaLock } from './subscription.service'
 
 const HHMM = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Expected HH:MM')
 
@@ -44,9 +44,11 @@ export async function getBranch(tenantId: number, id: number) {
   return branch
 }
 
+// R3-HI-04: quota check + insert now happen inside one advisory-lock-serialized
+// transaction (see subscription.service.createWithQuotaLock) instead of a preceding,
+// independent count check that a concurrent request could race past.
 export async function createBranch(tenantId: number, data: CreateBranchInput) {
-  await assertCanAddBranch(tenantId)
-  return branchRepo.createBranch(tenantId, data)
+  return createWithQuotaLock(tenantId, 'branches', (tx) => branchRepo.createBranch(tenantId, data, tx))
 }
 
 export async function updateBranch(tenantId: number, id: number, data: UpdateBranchInput) {
