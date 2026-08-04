@@ -1,5 +1,6 @@
 // Invoice / billing service — invoice assembly, numbering, tax + co-located Zod schemas.
 import { z } from 'zod'
+import prisma from '../config/db'
 import { AppError } from '../utils/errors'
 import * as invoiceRepo from '../models/invoice.repository'
 import type { BuiltItem } from '../models/invoice.repository'
@@ -147,24 +148,31 @@ export async function listInvoices(
   return { invoices, total, page, limit }
 }
 
+/**
+ * HI-08: mark-paid, payment-history logging, and loyalty earn all happen inside one
+ * `prisma.$transaction`. The invoice is claimed atomically first
+ * (`paymentStatus: { not: 'paid' } → ConflictError` on a lost race), so two concurrent
+ * checkouts of the same invoice — or a client retry/replay after a dropped response —
+ * can never produce two payment rows or a double loyalty credit.
+ */
 export async function recordPayment(tenantId: number, branchId: number | null | undefined, id: number, paymentMethod: string, userId: number) {
-  const invoice = await getInvoice(tenantId, branchId, id)
-  if (invoice.paymentStatus === 'paid') throw new InvoiceError('Invoice is already paid', 409)
-  const paid = await invoiceRepo.recordPayment(tenantId, branchId, id, paymentMethod)
-  // Write payment history row (best-effort: skip if invoice lacks a branchId).
-  if (paid?.branchId != null) {
-    await invoiceRepo.createPaymentHistory({
-      tenantId,
-      branchId:     paid.branchId,
-      invoiceId:    id,
-      amount:       Number(paid.totalAmount),
-      method:       paymentMethod,
-      receivedById: userId,
-    })
-  }
-  // Loyalty: earn points on payment (best-effort; skips retail invoices with no owner).
-  await earnOnPayment(tenantId, id, Number(invoice.totalAmount))
-  return paid
+  return prisma.$transaction(async (tx) => {
+    const paid = await invoiceRepo.claimInvoicePaid(tx, tenantId, branchId, id, paymentMethod)
+    // Write payment history row (best-effort: skip if invoice lacks a branchId).
+    if (paid.branchId != null) {
+      await invoiceRepo.createPaymentHistory(tx, {
+        tenantId,
+        branchId:     paid.branchId,
+        invoiceId:    id,
+        amount:       Number(paid.totalAmount),
+        method:       paymentMethod,
+        receivedById: userId,
+      })
+    }
+    // Loyalty: earn points on payment (best-effort; skips retail invoices with no owner).
+    await earnOnPayment(tx, tenantId, id, Number(paid.totalAmount))
+    return paid
+  })
 }
 
 export async function listPaymentHistory(

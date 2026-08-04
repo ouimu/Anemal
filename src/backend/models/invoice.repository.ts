@@ -1,5 +1,6 @@
 // Invoice / billing repository — all Prisma access for invoices + invoice_items.
 // Retail stock deduction + movement logging happen inside the create transaction (TOCTOU-safe).
+import { Prisma } from '@prisma/client'
 import prisma from '../config/db'
 import { ConflictError, NotFoundError } from '../utils/errors'
 
@@ -166,29 +167,43 @@ export function countInvoices(tenantId: number, branchId: number | null | undefi
   return prisma.invoice.count({ where: listWhere(tenantId, branchId, status, date) })
 }
 
-export function recordPayment(tenantId: number, branchId: number | null | undefined, id: number, paymentMethod: string) {
-  return prisma.invoice
-    .updateMany({
-      where: {
-        id,
-        tenantId,
-        ...(branchId != null ? { branchId } : {}),
-      },
-      data: { paymentStatus: 'paid', paymentMethod, paidAt: new Date() },
-    })
-    .then(() => findInvoiceById(tenantId, branchId, id))
+/**
+ * HI-08: atomically claim an unpaid invoice inside a caller-supplied transaction.
+ * The `paymentStatus: { not: 'paid' }` predicate + `count !== 1` check make this the
+ * single authoritative write — a second concurrent request (or a replayed request)
+ * loses the race and gets a ConflictError instead of double-recording a payment.
+ */
+export async function claimInvoicePaid(
+  tx: Prisma.TransactionClient, tenantId: number, branchId: number | null | undefined, id: number, paymentMethod: string,
+) {
+  const claimed = await tx.invoice.updateMany({
+    where: {
+      id,
+      tenantId,
+      ...(branchId != null ? { branchId } : {}),
+      paymentStatus: { not: 'paid' },
+    },
+    data: { paymentStatus: 'paid', paymentMethod, paidAt: new Date() },
+  })
+  if (claimed.count !== 1) throw new ConflictError('Invoice is already paid', 'INVOICE_ALREADY_PAID')
+  const invoice = await tx.invoice.findFirst({ where: { id, tenantId }, include: { items: true, pet: { include: { owner: true } } } })
+  if (!invoice) throw new NotFoundError('Invoice')
+  return invoice
 }
 
-export function createPaymentHistory(data: {
-  tenantId:     number
-  branchId:     number
-  invoiceId:    number
-  amount:       number
-  method:       string
-  receivedById: number
-  note?:        string
-}) {
-  return prisma.paymentHistory.create({ data })
+export function createPaymentHistory(
+  tx: Prisma.TransactionClient,
+  data: {
+    tenantId:     number
+    branchId:     number
+    invoiceId:    number
+    amount:       number
+    method:       string
+    receivedById: number
+    note?:        string
+  },
+) {
+  return tx.paymentHistory.create({ data })
 }
 
 interface PaymentHistoryParams {
