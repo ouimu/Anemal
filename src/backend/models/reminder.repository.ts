@@ -51,7 +51,24 @@ export function listAllDue() {
 // background dispatcher (dispatchDue) is intentionally cross-tenant at the read
 // (listAllDue), but each write is still pinned to the reminder's own tenantId.
 export function markSent(tenantId: number, id: number) {
-  return prisma.petReminder.updateMany({ where: { id, tenantId }, data: { status: 'sent', sentAt: new Date() } })
+  return prisma.petReminder.updateMany({
+    where: { id, tenantId, status: 'processing' },
+    data:  { status: 'sent', sentAt: new Date() },
+  })
+}
+
+// R2-HI-04: atomic per-row claim so concurrent cron/worker runs (in-process
+// hourly worker + Vercel daily cron) cannot both process the same reminder.
+// Conditional `updateMany` + count check is the same primitive used for
+// refresh-token rotation (HI-04) and payment claims (HI-08).
+//
+// @returns true if this call won the claim, false if another run already did.
+export async function claimPending(tenantId: number, id: number): Promise<boolean> {
+  const claimed = await prisma.petReminder.updateMany({
+    where: { id, tenantId, status: 'pending' },
+    data:  { status: 'processing' },
+  })
+  return claimed.count === 1
 }
 
 export function findById(tenantId: number, id: number) {
