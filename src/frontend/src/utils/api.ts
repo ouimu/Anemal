@@ -2,6 +2,7 @@
 import axios from 'axios'
 import type { InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '../store/authStore'
+import { clearServerState } from './queryClient'
 
 declare module 'axios' {
   export interface AxiosRequestConfig {
@@ -28,8 +29,12 @@ api.interceptors.response.use(
   (err) => {
     const skipAuthRedirect = err.config?.skipAuthRedirect === true
     if (err.response?.status === 401 && !skipAuthRedirect) {
-      useAuthStore.getState().clearAuth()
-      window.location.href = '/login'
+      // HI-09: clear cached PII before dropping auth + navigating away.
+      void clearServerState().finally(() => {
+        useAuthStore.getState().clearAuth()
+        window.location.href = '/login'
+      })
+      return Promise.reject(err)
     }
     return Promise.reject(err)
   }

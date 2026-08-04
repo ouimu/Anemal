@@ -16,6 +16,7 @@ import { useAuthStore } from '../store/authStore'
 import { useAdminSettings } from '../hooks/useAdmin'
 import { useIdleLogout } from '../hooks/useIdleLogout'
 import IdleLogoutModal from '../components/IdleLogoutModal'
+import { clearServerState } from '../utils/queryClient'
 
 interface RequireAuthProps {
   children?: React.ReactNode
@@ -33,8 +34,11 @@ export function RequireAuth({ children }: RequireAuthProps): React.ReactElement 
     timeoutMinutes: idleTimeoutMinutes,
     enabled: isAuthenticated,
     onLogout: () => {
-      clearAuth()
-      window.location.href = '/login?reason=idle'
+      // HI-09: drop cached PII before clearing auth + navigating away.
+      void clearServerState().finally(() => {
+        clearAuth()
+        window.location.href = '/login?reason=idle'
+      })
     },
   })
 
