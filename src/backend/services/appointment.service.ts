@@ -70,16 +70,13 @@ export async function createAppointment(tenantId: number, branchId: number | nul
   if (!doctor) throw new AppointmentError('Doctor not found', 404)
 
   const start = new Date(data.scheduledAt)
-  const end   = new Date(start.getTime() + data.durationMin * 60_000)
-
-  const conflicts = await appointmentRepo.countDoctorConflicts(tenantId, branchId, data.doctorId, start, end)
-  if (conflicts > 0) {
-    throw new AppointmentError('Doctor already has an appointment in this time slot', 409)
-  }
 
   // Soft doctor-shift check (Phase 4) — warns but does not block.
   const warning = branchId ? await shiftWarning(tenantId, branchId, data.doctorId, start) : null
 
+  // R3-HI-01: conflict-check + insert now happen atomically inside the repository
+  // (advisory-lock-serialized transaction) — a lost race throws ConflictError (409),
+  // which propagates through the global error handler like any other AppError.
   const appt = await appointmentRepo.createAppointment(tenantId, branchId, data, start)
   return { ...appt, shiftWarning: warning }
 }
