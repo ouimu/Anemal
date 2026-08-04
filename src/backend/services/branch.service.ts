@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { AppError } from '../utils/errors'
 import * as branchRepo from '../models/branch.repository'
 import { createWithQuotaLock } from './subscription.service'
+import { isWithinJsonLimits } from '../utils/json-depth'
 
 const HHMM = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Expected HH:MM')
 
@@ -11,7 +12,12 @@ export const createBranchSchema = z.object({
   phone:          z.string().max(50).optional().nullable(),
   email:          z.string().email().max(255).optional().nullable(),
   address:        z.string().optional().nullable(),
-  operatingHours: z.record(z.unknown()).optional(),
+  // R3-HI-06: bound depth/breadth so a pathologically nested payload is rejected here
+  // (400) rather than reaching the audit-log sanitizer with unbounded structure.
+  operatingHours: z.record(z.unknown()).optional().refine(
+    (v) => v === undefined || isWithinJsonLimits(v),
+    { message: 'operatingHours is nested too deeply or too large' },
+  ),
   isActive:       z.boolean().optional(),
 }).strict()
 

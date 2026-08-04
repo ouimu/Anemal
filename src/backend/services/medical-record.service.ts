@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { AppError } from '../utils/errors'
 import * as recordRepo from '../models/medical-record.repository'
+import { isWithinJsonLimits } from '../utils/json-depth'
 
 export const createMedicalRecordSchema = z.object({
   petId:            z.number().int().positive(),
@@ -14,7 +15,12 @@ export const createMedicalRecordSchema = z.object({
   temperatureC:     z.number().min(0).max(999.9).optional().nullable(),
   heartRateBpm:     z.number().int().positive().max(3000).optional().nullable(),
   respRateRpm:      z.number().int().positive().max(3000).optional().nullable(),
-  anatomyAnnotation:z.any().optional().nullable(),
+  // R3-HI-06: bound depth/breadth so a pathologically nested payload is rejected here
+  // (400) rather than reaching the audit-log sanitizer with unbounded structure.
+  anatomyAnnotation:z.any().optional().nullable().refine(
+    (v) => v == null || isWithinJsonLimits(v),
+    { message: 'anatomyAnnotation is nested too deeply or too large' },
+  ),
 })
 
 export const updateMedicalRecordSchema = createMedicalRecordSchema.partial().omit({ petId: true, doctorId: true })
