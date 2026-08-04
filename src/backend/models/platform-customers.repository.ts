@@ -326,33 +326,41 @@ export function findTenantAdminUser(tenantId: number, userId: number): Promise<T
 }
 
 /**
- * Create a new clinic_admin user for an existing tenant (CO-2).
+ * Create a new clinic_admin user for an existing tenant (CO-2), within a
+ * caller-supplied transaction client.
  *
+ * R3-HI-04: this used to open its own `prisma.$transaction`, which meant the
+ * quota check (`assertCanAddUser`) in the service ran in a separate,
+ * unserialized read before this write — the same race the other four
+ * user/branch/owner/pet creation paths were fixed for. Taking `tx` lets the
+ * caller run this inside `subscription.service.createWithQuotaLock`'s
+ * advisory-lock-serialized transaction instead.
+ *
+ * @param tx       - Transaction client (from `createWithQuotaLock`).
  * @param tenantId - Owning tenant.
  * @param data     - User fields (password already hashed).
  * @param roleId   - The seeded clinic_admin ClinicRole id.
  */
-export async function createTenantAdminUser(
+export async function createTenantAdminUserTx(
+  tx: Prisma.TransactionClient,
   tenantId: number,
   data: { name: string; username: string; email: string | null; phone: string | null; passwordHash: string },
   roleId: number,
 ): Promise<TenantAdminUserRow> {
-  return prisma.$transaction(async (tx) => {
-    const user = await tx.user.create({
-      data: {
-        tenantId,
-        name:         data.name,
-        username:     data.username,
-        email:        data.email,
-        phone:        data.phone,
-        passwordHash: data.passwordHash,
-        roleId,
-      },
-      select: ADMIN_USER_SELECT,
-    })
-    await tx.userRole.create({ data: { userId: user.id, roleId, tenantId } })
-    return user
+  const user = await tx.user.create({
+    data: {
+      tenantId,
+      name:         data.name,
+      username:     data.username,
+      email:        data.email,
+      phone:        data.phone,
+      passwordHash: data.passwordHash,
+      roleId,
+    },
+    select: ADMIN_USER_SELECT,
   })
+  await tx.userRole.create({ data: { userId: user.id, roleId, tenantId } })
+  return user
 }
 
 /**
