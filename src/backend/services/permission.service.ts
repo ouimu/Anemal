@@ -93,12 +93,19 @@ function cacheKey(tenantId: number, userId: number): string {
 /**
  * Resolve the full set of permission codes for a user within a tenant.
  *
+ * ADR-0019 (D-7) / HI-06: a user holds exactly one role. This reads that
+ * single `user_roles` row directly (enforced unique on `(tenantId, userId)`
+ * — see migration `20260805090000_enforce_one_role_per_user`) rather than
+ * unioning permissions across rows; a stray duplicate row can no longer
+ * silently escalate effective permissions.
+ *
  * Results are cached for CACHE_TTL_MS. Subsequent calls within the TTL
  * return the cached Set directly without hitting the database.
  *
  * @param userId   - The user whose permissions to resolve.
  * @param tenantId - The tenant scope; all DB queries are filtered by this.
- * @returns A Set of permission code strings (e.g. `"appointments.view"`).
+ * @returns A Set of permission code strings (e.g. `"appointments.view"`), or
+ *   an empty Set if the user has no role assignment.
  */
 export async function resolvePermissions(
   userId:   number,
@@ -109,8 +116,8 @@ export async function resolvePermissions(
   const cached = permCache.get(key)
   if (cached && cached.expiresAt > now) return cached.perms
 
-  const userRoles = await prisma.userRole.findMany({
-    where: { userId, tenantId },
+  const userRole = await prisma.userRole.findUnique({
+    where: { tenantId_userId: { tenantId, userId } },
     include: {
       role: {
         include: {
@@ -120,12 +127,7 @@ export async function resolvePermissions(
     },
   })
 
-  const perms = new Set<string>()
-  for (const ur of userRoles) {
-    for (const rp of ur.role.permissions) {
-      perms.add(rp.permissionCode)
-    }
-  }
+  const perms = new Set<string>(userRole?.role.permissions.map((rp) => rp.permissionCode) ?? [])
 
   permCache.set(key, { perms, expiresAt: now + CACHE_TTL_MS })
   return perms
@@ -154,7 +156,9 @@ export function clearPermCache(): void {
 }
 
 /**
- * Compute the maximum `permVersion` across all roles assigned to a user.
+ * Compute the `permVersion` of the user's single assigned role (ADR-0019 /
+ * HI-06 — exactly one role per user, so there is no set to take a maximum
+ * over).
  *
  * `permVersion` is bumped on the `ClinicRole` row whenever its permission
  * set changes. Callers (e.g. JWT middleware) can compare this value against
@@ -163,16 +167,15 @@ export function clearPermCache(): void {
  *
  * @param userId   - The user to inspect.
  * @param tenantId - The tenant scope; all DB queries are filtered by this.
- * @returns The highest `permVersion` found, or `1` if the user has no roles.
+ * @returns The role's `permVersion`, or `1` if the user has no role assignment.
  */
 export async function computePermSetVersion(
   userId:   number,
   tenantId: number,
 ): Promise<number> {
-  const userRoles = await prisma.userRole.findMany({
-    where: { userId, tenantId },
+  const userRole = await prisma.userRole.findUnique({
+    where:   { tenantId_userId: { tenantId, userId } },
     include: { role: { select: { permVersion: true } } },
   })
-  if (userRoles.length === 0) return 1
-  return Math.max(...userRoles.map(ur => ur.role.permVersion))
+  return userRole?.role.permVersion ?? 1
 }

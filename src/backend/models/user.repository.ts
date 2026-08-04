@@ -86,12 +86,15 @@ export async function setPasswordHash(
 }
 
 /**
- * Replace all existing user_roles rows for a user (within a tenant) with a
- * single new role assignment, and update the legacy `roleId` FK on the User
- * row — all in one transaction.
+ * Replace a user's role assignment (within a tenant) and keep the `roleId`
+ * FK on the User row in sync — all in one transaction.
  *
- * BR-3 is guaranteed: the new row is created before the old ones are deleted,
- * so there is never a moment with zero roles.
+ * HI-06 / ADR-0019 (D-7): exactly one `user_roles` row exists per
+ * `(tenantId, userId)`, enforced by a DB unique constraint (migration
+ * `20260805090000_enforce_one_role_per_user`). This upserts on that unique
+ * key — a single atomic statement — rather than the previous
+ * insert-then-delete-the-rest approach, which would violate the unique
+ * constraint by trying to insert a second row before removing the old one.
  *
  * @param tenantId - Tenant scope (multi-tenancy isolation).
  * @param userId   - Target user.
@@ -103,15 +106,10 @@ export async function replaceUserRole(
   roleId:   number,
 ): Promise<void> {
   await prisma.$transaction(async (tx) => {
-    // Insert new role first (satisfies BR-3 at every point in the transaction).
     await tx.userRole.upsert({
-      where:  { userId_roleId: { userId, roleId } },
+      where:  { tenantId_userId: { tenantId, userId } },
       create: { userId, roleId, tenantId },
-      update: {},
-    })
-    // Remove all other roles for this user in this tenant.
-    await tx.userRole.deleteMany({
-      where: { userId, tenantId, roleId: { not: roleId } },
+      update: { roleId },
     })
     // Keep the legacy roleId FK in sync.
     await tx.user.updateMany({ where: { id: userId, tenantId }, data: { roleId } })

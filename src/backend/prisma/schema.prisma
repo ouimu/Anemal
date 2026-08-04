@@ -924,7 +924,11 @@ model RolePermission {
   @@map("role_permissions")
 }
 
-// Join table: users <-> roles (CR-01 multi-role support)
+// Join table: users <-> roles.
+// ADR-0019 (D-7): exactly ONE role per user — enforced by the unique
+// constraint on (tenantId, userId) below. HI-06: this table previously
+// allowed multiple roles per user (stale comment removed); resolvePermissions
+// now reads the single row directly instead of unioning across rows.
 // tenantId on join table enforces isolation: only query WHERE tenantId = :tenantId
 model UserRole {
   userId   Int
@@ -936,7 +940,7 @@ model UserRole {
   tenant Tenant     @relation(fields: [tenantId], references: [id])
 
   @@id([userId, roleId])
-  @@index([tenantId, userId])
+  @@unique([tenantId, userId])
   @@map("user_roles")
 }
 
