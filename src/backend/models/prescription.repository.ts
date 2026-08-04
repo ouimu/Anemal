@@ -1,5 +1,6 @@
 // Prescription repository — Prisma access incl. atomic per-branch stock deduction (Phase 4).
 import prisma from '../config/db'
+import { NotFoundError } from '../utils/errors'
 import type { CreatePrescriptionInput } from '../services/prescription.service'
 
 export function findMedicalRecord(tenantId: number, medicalRecordId: number) {
@@ -16,8 +17,18 @@ export function findBranchStock(tenantId: number, branchId: number, productId: n
   })
 }
 
-export function findPrescription(tenantId: number, id: number) {
-  return prisma.prescription.findFirst({ where: { id, tenantId } })
+// HI-01: Prescription has no branchId column of its own — branch scope is enforced
+// through its parent medicalRecord. Passing branchId here (instead of tenant-only)
+// closes the fail-open gap where a branch-scoped user could read/delete another
+// branch's prescription as long as the tenant matched.
+export function findPrescription(tenantId: number, branchId: number | null | undefined, id: number) {
+  return prisma.prescription.findFirst({
+    where: {
+      id,
+      tenantId,
+      ...(branchId != null ? { medicalRecord: { branchId } } : {}),
+    },
+  })
 }
 
 export function findPrescriptionWithDetails(tenantId: number, id: number) {
@@ -56,7 +67,12 @@ export function deductStockAndCreate(tenantId: number, branchId: number, data: C
 // Delete + restock branch_inventory + compensating 'in' movement.
 export function deleteAndRestock(tenantId: number, branchId: number, id: number, drugId: number, quantity: number) {
   return prisma.$transaction(async (tx) => {
-    await tx.prescription.deleteMany({ where: { id, tenantId } })
+    // Branch-scope the authoritative delete itself (HI-01), not only the preceding
+    // findPrescription check — closes the check/use gap for the write.
+    const deleted = await tx.prescription.deleteMany({
+      where: { id, tenantId, medicalRecord: { branchId } },
+    })
+    if (deleted.count === 0) throw new NotFoundError('Prescription')
     await tx.branchInventory.updateMany({
       where: { tenantId, branchId, productId: drugId },
       data: { stockQty: { increment: quantity } },

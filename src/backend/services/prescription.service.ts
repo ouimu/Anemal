@@ -35,7 +35,7 @@ export async function createPrescription(tenantId: number, branchId: number, dat
 }
 
 export async function deletePrescription(tenantId: number, branchId: number, id: number) {
-  const prescription = await prescriptionRepo.findPrescription(tenantId, id)
+  const prescription = await prescriptionRepo.findPrescription(tenantId, branchId, id)
   if (!prescription) throw new PrescriptionError('Prescription not found', 404)
   await prescriptionRepo.deleteAndRestock(tenantId, branchId, id, prescription.drugId, Number(prescription.quantity))
 }
