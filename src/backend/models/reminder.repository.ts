@@ -1,15 +1,22 @@
 // Proactive pet reminder repository (Phase 4, FR-03-09 / Module 4.7). Tenant-scoped.
 import prisma from '../config/db'
+import { NotFoundError } from '../utils/errors'
 import type { ReminderInput } from '../services/reminder.service'
 
 const petSel = { select: { id: true, name: true, species: true } }
 
+// Cross-tenant FK guard (CR-01): a client-supplied petId must belong to this tenant,
+// validated inside the same transaction as the write.
 export function create(tenantId: number, data: ReminderInput) {
-  return prisma.petReminder.create({
-    data: {
-      tenantId, petId: data.petId, reminderType: data.reminderType, message: data.message,
-      dueDate: new Date(data.dueDate), channel: data.channel ?? 'line',
-    },
+  return prisma.$transaction(async (tx) => {
+    const pet = await tx.pet.findFirst({ where: { id: data.petId, tenantId }, select: { id: true } })
+    if (!pet) throw new NotFoundError('Pet')
+    return tx.petReminder.create({
+      data: {
+        tenantId, petId: data.petId, reminderType: data.reminderType, message: data.message,
+        dueDate: new Date(data.dueDate), channel: data.channel ?? 'line',
+      },
+    })
   })
 }
 

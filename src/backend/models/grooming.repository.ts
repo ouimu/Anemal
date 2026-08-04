@@ -1,17 +1,28 @@
 // Grooming booking repository (Phase 4, FR-09). Tenant + branch scoped.
 import prisma from '../config/db'
+import { NotFoundError } from '../utils/errors'
 import type { BookingInput } from '../services/grooming.service'
 
 const petSel = { select: { id: true, name: true, species: true } }
 
+// Cross-tenant FK guard (CR-01): client-supplied petId/groomerId must belong to this
+// tenant, validated inside the same transaction as the write.
 export function createBooking(tenantId: number, branchId: number | null, data: BookingInput, createdBy?: number) {
-  return prisma.groomingBooking.create({
-    data: {
-      tenantId, branchId,
-      petId: data.petId, groomerId: data.groomerId ?? null, serviceType: data.serviceType,
-      scheduledAt: new Date(data.scheduledAt), durationMin: data.durationMin ?? 60,
-      specialInstructions: data.specialInstructions ?? null, createdBy: createdBy ?? null,
-    },
+  return prisma.$transaction(async (tx) => {
+    const pet = await tx.pet.findFirst({ where: { id: data.petId, tenantId }, select: { id: true } })
+    if (!pet) throw new NotFoundError('Pet')
+    if (data.groomerId != null) {
+      const groomer = await tx.user.findFirst({ where: { id: data.groomerId, tenantId }, select: { id: true } })
+      if (!groomer) throw new NotFoundError('Groomer')
+    }
+    return tx.groomingBooking.create({
+      data: {
+        tenantId, branchId,
+        petId: data.petId, groomerId: data.groomerId ?? null, serviceType: data.serviceType,
+        scheduledAt: new Date(data.scheduledAt), durationMin: data.durationMin ?? 60,
+        specialInstructions: data.specialInstructions ?? null, createdBy: createdBy ?? null,
+      },
+    })
   })
 }
 

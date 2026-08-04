@@ -2,6 +2,7 @@
 
 import prisma from '../config/db'
 import { Prisma } from '@prisma/client'
+import { NotFoundError } from '../utils/errors'
 import type {
   CreateMedicalRecordInput, UpdateMedicalRecordInput,
 } from '../services/medical-record.service'
@@ -76,8 +77,19 @@ async function recomputePetWeight(tx: Prisma.TransactionClient, tenantId: number
   `
 }
 
+// Cross-tenant FK guard (CR-01): client-supplied petId/doctorId/appointmentId must
+// belong to this tenant, validated inside the same transaction as the write.
 export function createRecord(tenantId: number, branchId: number | null | undefined, data: CreateMedicalRecordInput) {
   return prisma.$transaction(async (tx) => {
+    const pet = await tx.pet.findFirst({ where: { id: data.petId, tenantId }, select: { id: true } })
+    if (!pet) throw new NotFoundError('Pet')
+    const doctor = await tx.user.findFirst({ where: { id: data.doctorId, tenantId }, select: { id: true } })
+    if (!doctor) throw new NotFoundError('Doctor')
+    if (data.appointmentId != null) {
+      const appointment = await tx.appointment.findFirst({ where: { id: data.appointmentId, tenantId }, select: { id: true } })
+      if (!appointment) throw new NotFoundError('Appointment')
+    }
+
     const record = await tx.medicalRecord.create({
       data: {
         ...data,
@@ -92,6 +104,12 @@ export function createRecord(tenantId: number, branchId: number | null | undefin
 
 export function updateRecord(tenantId: number, id: number, data: UpdateMedicalRecordInput) {
   return prisma.$transaction(async (tx) => {
+    // Cross-tenant FK guard (CR-01): a client-supplied appointmentId must belong to
+    // this tenant, validated inside the same transaction as the write.
+    if (data.appointmentId != null) {
+      const appointment = await tx.appointment.findFirst({ where: { id: data.appointmentId, tenantId }, select: { id: true } })
+      if (!appointment) throw new NotFoundError('Appointment')
+    }
     const record = await tx.medicalRecord.update({ where: { id, tenantId }, data })
     if (data.weightKg != null) await recomputePetWeight(tx, tenantId, record.petId)
     return record

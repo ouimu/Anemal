@@ -51,8 +51,8 @@ export async function getMedicalRecord(tenantId: number, branchId: number | null
 }
 
 export async function createMedicalRecord(tenantId: number, branchId: number | null | undefined, data: CreateMedicalRecordInput) {
-  const pet = await recordRepo.findPet(tenantId, data.petId)
-  if (!pet) throw new MedicalRecordError('Pet not found', 404)
+  // FK ownership (petId/doctorId/appointmentId) is validated inside the write
+  // transaction in the repository (CR-01) — not as a preceding, TOCTOU-prone read here.
   return recordRepo.createRecord(tenantId, branchId, data)
 }
 

@@ -1,16 +1,27 @@
 // Hospitalization (inpatient) repository (Phase 4, FR-08). Tenant + branch scoped.
 import prisma from '../config/db'
+import { NotFoundError } from '../utils/errors'
 import type { AdmitInput, EditInput, CareInput } from '../services/hospitalization.service'
 
 const petSelect = { select: { id: true, name: true, species: true, photoUrl: true, owner: { select: { firstName: true, lastName: true } } } }
 
+// Cross-tenant FK guard (CR-01): client-supplied petId/doctorInCharge must belong to
+// this tenant, validated inside the same transaction as the write.
 export function admit(tenantId: number, branchId: number | null, data: AdmitInput) {
-  return prisma.hospitalization.create({
-    data: {
-      tenantId, branchId,
-      petId: data.petId, reason: data.reason, cageNo: data.cageNo ?? null,
-      doctorInCharge: data.doctorInCharge ?? null, dailyRate: data.dailyRate ?? 0, notes: data.notes ?? null,
-    },
+  return prisma.$transaction(async (tx) => {
+    const pet = await tx.pet.findFirst({ where: { id: data.petId, tenantId }, select: { id: true } })
+    if (!pet) throw new NotFoundError('Pet')
+    if (data.doctorInCharge != null) {
+      const doctor = await tx.user.findFirst({ where: { id: data.doctorInCharge, tenantId }, select: { id: true } })
+      if (!doctor) throw new NotFoundError('Doctor')
+    }
+    return tx.hospitalization.create({
+      data: {
+        tenantId, branchId,
+        petId: data.petId, reason: data.reason, cageNo: data.cageNo ?? null,
+        doctorInCharge: data.doctorInCharge ?? null, dailyRate: data.dailyRate ?? 0, notes: data.notes ?? null,
+      },
+    })
   })
 }
 
@@ -59,15 +70,19 @@ export function findByIdWithCareCount(tenantId: number, branchId: number | null 
 }
 
 export function update(tenantId: number, branchId: number | null | undefined, id: number, data: EditInput) {
-  return prisma.hospitalization
-    .updateMany({
+  return prisma.$transaction(async (tx) => {
+    if (data.doctorInCharge != null) {
+      const doctor = await tx.user.findFirst({ where: { id: data.doctorInCharge, tenantId }, select: { id: true } })
+      if (!doctor) throw new NotFoundError('Doctor')
+    }
+    return tx.hospitalization.updateMany({
       where: { id, tenantId, ...(branchId != null ? { branchId } : {}) },
       data: {
         reason: data.reason, cageNo: data.cageNo ?? null, doctorInCharge: data.doctorInCharge ?? null,
         dailyRate: data.dailyRate ?? 0, notes: data.notes ?? null,
       },
     })
-    .then(() => findById(tenantId, branchId, id))
+  }).then(() => findById(tenantId, branchId, id))
 }
 
 export function remove(tenantId: number, branchId: number | null | undefined, id: number) {

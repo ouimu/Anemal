@@ -1,7 +1,7 @@
 // Invoice / billing repository — all Prisma access for invoices + invoice_items.
 // Retail stock deduction + movement logging happen inside the create transaction (TOCTOU-safe).
 import prisma from '../config/db'
-import { ConflictError } from '../utils/errors'
+import { ConflictError, NotFoundError } from '../utils/errors'
 
 export interface BuiltItem {
   description: string
@@ -46,6 +46,13 @@ const monthBounds = () => {
 
 export function createInvoice(tenantId: number, data: CreateInvoiceData) {
   return prisma.$transaction(async (tx) => {
+    // 0. Cross-tenant FK guard (CR-01): a client-supplied petId must belong to this
+    // tenant, validated inside the write transaction — not as a preceding read.
+    if (data.petId != null) {
+      const pet = await tx.pet.findFirst({ where: { id: data.petId, tenantId }, select: { id: true } })
+      if (!pet) throw new NotFoundError('Pet')
+    }
+
     // 1. Deduct branch stock for retail lines (conditional update prevents overselling).
     for (const item of data.items) {
       if (!item.productId) continue
