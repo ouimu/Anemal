@@ -1,7 +1,10 @@
 // Hospitalization (inpatient) repository (Phase 4, FR-08). Tenant + branch scoped.
+import { Prisma } from '@prisma/client'
 import prisma from '../config/db'
-import { NotFoundError } from '../utils/errors'
+import { ConflictError, NotFoundError } from '../utils/errors'
 import type { AdmitInput, EditInput, CareInput } from '../services/hospitalization.service'
+
+type Client = Prisma.TransactionClient | typeof prisma
 
 const petSelect = { select: { id: true, name: true, species: true, photoUrl: true, owner: { select: { firstName: true, lastName: true } } } }
 
@@ -37,8 +40,12 @@ export function findActive(tenantId: number, branchId?: number | null) {
 // relation `include`, because `performedBy` is a bare FK to User.id with no tenantId in
 // its join condition — an `include` would resolve any tenant's user for a malformed/
 // legacy-imported row. Filtering the batch lookup by tenantId keeps names tenant-safe.
-export async function findById(tenantId: number, branchId: number | null | undefined, id: number) {
-  const hosp = await prisma.hospitalization.findFirst({
+// `client` defaults to the shared `prisma` instance but accepts a `Prisma.TransactionClient`
+// so R3-HI-02's discharge claim can read back the row inside its own open transaction
+// (a read against the plain `prisma` client would not see that transaction's uncommitted
+// write).
+async function findByIdWith(client: Client, tenantId: number, branchId: number | null | undefined, id: number) {
+  const hosp = await client.hospitalization.findFirst({
     where: { id, tenantId, ...(branchId != null ? { branchId } : {}) },
     include: {
       pet: petSelect,
@@ -49,7 +56,7 @@ export async function findById(tenantId: number, branchId: number | null | undef
 
   const performerIds = [...new Set(hosp.careLogs.map(c => c.performedBy).filter((v): v is number => v != null))]
   const performers = performerIds.length
-    ? await prisma.user.findMany({ where: { id: { in: performerIds }, tenantId }, select: { id: true, name: true } })
+    ? await client.user.findMany({ where: { id: { in: performerIds }, tenantId }, select: { id: true, name: true } })
     : []
   const performerMap = new Map(performers.map(p => [p.id, p]))
 
@@ -60,6 +67,10 @@ export async function findById(tenantId: number, branchId: number | null | undef
       performedByUser: c.performedBy != null ? (performerMap.get(c.performedBy) ?? null) : null,
     })),
   }
+}
+
+export function findById(tenantId: number, branchId: number | null | undefined, id: number) {
+  return findByIdWith(prisma, tenantId, branchId, id)
 }
 
 export function findByIdWithCareCount(tenantId: number, branchId: number | null | undefined, id: number) {
@@ -100,11 +111,23 @@ export function addCare(tenantId: number, hospitalizationId: number, data: CareI
   })
 }
 
-export function markDischarged(tenantId: number, branchId: number | null | undefined, id: number) {
-  return prisma.hospitalization
-    .updateMany({
-      where: { id, tenantId, ...(branchId != null ? { branchId } : {}) },
-      data: { status: 'discharged', dischargedAt: new Date() },
-    })
-    .then(() => findById(tenantId, branchId, id))
+/**
+ * R3-HI-02: atomically claim the discharge inside the caller's transaction. The
+ * `status: 'admitted'` predicate + `count !== 1` check make this the single authoritative
+ * write — a second concurrent discharge request (or a replay) loses the race and gets a
+ * ConflictError instead of re-billing an already-discharged stay. The caller is expected
+ * to create the auto-billed invoice in the SAME transaction, so an invoice-creation
+ * failure rolls the discharge back too (patient stays admitted, no orphaned invoice).
+ */
+export async function claimDischarged(
+  tx: Prisma.TransactionClient, tenantId: number, branchId: number | null | undefined, id: number,
+) {
+  const claimed = await tx.hospitalization.updateMany({
+    where: { id, tenantId, ...(branchId != null ? { branchId } : {}), status: 'admitted' },
+    data: { status: 'discharged', dischargedAt: new Date() },
+  })
+  if (claimed.count !== 1) throw new ConflictError('Patient is not currently admitted', 'HOSPITALIZATION_NOT_ADMITTED')
+  const h = await findByIdWith(tx, tenantId, branchId, id)
+  if (!h) throw new NotFoundError('Hospitalization')
+  return h
 }

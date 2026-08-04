@@ -1,5 +1,6 @@
 // Invoice / billing service — invoice assembly, numbering, tax + co-located Zod schemas.
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 import prisma from '../config/db'
 import { AppError } from '../utils/errors'
 import * as invoiceRepo from '../models/invoice.repository'
@@ -66,13 +67,25 @@ export function computeVat(
   return { taxRate: safeRate, taxAmount, totalAmount: round2(taxable + taxAmount) }
 }
 
-export async function createInvoice(tenantId: number, branchId: number, data: CreateInvoiceInput, createdBy?: number) {
+/**
+ * R3-HI-02: accepts an optional caller-supplied transaction so hospitalization discharge
+ * can create the auto-billed invoice inside the SAME transaction as the discharge claim,
+ * instead of this function opening its own independent transaction. When `tx` is omitted
+ * (the normal standalone "create an invoice" API call), one is opened here as before.
+ */
+export async function createInvoice(
+  tenantId: number, branchId: number, data: CreateInvoiceInput, createdBy?: number, tx?: Prisma.TransactionClient,
+): Promise<Awaited<ReturnType<typeof invoiceRepo.createInvoiceTx>>> {
+  if (!tx) {
+    return prisma.$transaction((innerTx) => createInvoice(tenantId, branchId, data, createdBy, innerTx))
+  }
+
   const builtItems: BuiltItem[] = []
   let petId: number | null = data.petId ?? null
 
   // Auto-pull medicine lines from a visit's prescriptions (stock already deducted at Rx time).
   if (data.medicalRecordId) {
-    const record = await invoiceRepo.findMedicalRecord(tenantId, data.medicalRecordId)
+    const record = await invoiceRepo.findMedicalRecord(tenantId, data.medicalRecordId, tx)
     if (!record) throw new InvoiceError('Medical record not found', 404)
     petId = petId ?? record.petId
     for (const rx of record.prescriptions) {
@@ -110,12 +123,12 @@ export async function createInvoice(tenantId: number, branchId: number, data: Cr
   // (ADR-0020 D2, closes the cashier taxRate-tampering vector). getOrCreateSettings
   // upserts a row with schema defaults (vatMode='exclusive', vatRate=7) if none exists
   // yet for this tenant, so this never throws for a tenant with no settings row (BA F3).
-  const settings = await tenantSettingsRepo.getOrCreateSettings(tenantId)
+  const settings = await tenantSettingsRepo.getOrCreateSettings(tenantId, tx)
   const { taxRate, taxAmount, totalAmount } = computeVat(
     settings.vatMode as VatMode, Number(settings.vatRate), taxable,
   )
 
-  return invoiceRepo.createInvoice(tenantId, {
+  return invoiceRepo.createInvoiceTx(tx, tenantId, {
     branchId,
     petId,
     medicalRecordId: data.medicalRecordId ?? null,

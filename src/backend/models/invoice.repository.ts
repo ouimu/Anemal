@@ -28,8 +28,11 @@ export interface CreateInvoiceData {
   createdBy?:      number | null
 }
 
-export function findMedicalRecord(tenantId: number, medicalRecordId: number) {
-  return prisma.medicalRecord.findFirst({
+// `client` defaults to the shared `prisma` instance but accepts a `Prisma.TransactionClient`
+// so callers building an invoice inside a larger transaction (R3-HI-02 discharge+invoice)
+// can pass `tx` — both satisfy the same delegate shape.
+export function findMedicalRecord(tenantId: number, medicalRecordId: number, client: Prisma.TransactionClient | typeof prisma = prisma) {
+  return client.medicalRecord.findFirst({
     where: { id: medicalRecordId, tenantId },
     include: {
       prescriptions: { include: { drug: { select: { id: true, name: true, unit: true, unitPrice: true } } } },
@@ -45,81 +48,90 @@ const monthBounds = () => {
   return { start, end, ym }
 }
 
-export function createInvoice(tenantId: number, data: CreateInvoiceData) {
-  return prisma.$transaction(async (tx) => {
-    // 0. Cross-tenant FK guard (CR-01): a client-supplied petId must belong to this
-    // tenant, validated inside the write transaction — not as a preceding read.
-    if (data.petId != null) {
-      const pet = await tx.pet.findFirst({ where: { id: data.petId, tenantId }, select: { id: true } })
-      if (!pet) throw new NotFoundError('Pet')
-    }
+/**
+ * Body of invoice creation, assuming `tx` is already an open transaction. Extracted so
+ * R3-HI-02 (hospitalization discharge) can run this inside its OWN outer transaction —
+ * alongside the discharge-claim `updateMany` — instead of nesting a second, independent
+ * `prisma.$transaction` (Prisma has no nested-transaction support; the caller's tx client
+ * must be reused directly).
+ */
+export async function createInvoiceTx(tx: Prisma.TransactionClient, tenantId: number, data: CreateInvoiceData) {
+  // 0. Cross-tenant FK guard (CR-01): a client-supplied petId must belong to this
+  // tenant, validated inside the write transaction — not as a preceding read.
+  if (data.petId != null) {
+    const pet = await tx.pet.findFirst({ where: { id: data.petId, tenantId }, select: { id: true } })
+    if (!pet) throw new NotFoundError('Pet')
+  }
 
-    // 1. Deduct branch stock for retail lines (conditional update prevents overselling).
-    for (const item of data.items) {
-      if (!item.productId) continue
-      const affected = await tx.$executeRaw`
-        UPDATE branch_inventory
-        SET "stockQty" = "stockQty" - ${item.qty}
-        WHERE "tenantId" = ${tenantId} AND "branchId" = ${data.branchId}
-          AND "productId" = ${item.productId} AND "stockQty" >= ${item.qty}
-      `
-      if (affected === 0) throw new ConflictError(`Insufficient stock for ${item.description}`, 'INSUFFICIENT_STOCK')
-    }
+  // 1. Deduct branch stock for retail lines (conditional update prevents overselling).
+  for (const item of data.items) {
+    if (!item.productId) continue
+    const affected = await tx.$executeRaw`
+      UPDATE branch_inventory
+      SET "stockQty" = "stockQty" - ${item.qty}
+      WHERE "tenantId" = ${tenantId} AND "branchId" = ${data.branchId}
+        AND "productId" = ${item.productId} AND "stockQty" >= ${item.qty}
+    `
+    if (affected === 0) throw new ConflictError(`Insufficient stock for ${item.description}`, 'INSUFFICIENT_STOCK')
+  }
 
-    // 2. Per-tenant, per-month sequence → INV-YYYY-MM-NNNN.
-    const { start, end, ym } = monthBounds()
-    const count = await tx.invoice.count({ where: { tenantId, issuedAt: { gte: start, lt: end } } })
-    const invoiceNo = `INV-${ym}-${String(count + 1).padStart(4, '0')}`
+  // 2. Per-tenant, per-month sequence → INV-YYYY-MM-NNNN.
+  const { start, end, ym } = monthBounds()
+  const count = await tx.invoice.count({ where: { tenantId, issuedAt: { gte: start, lt: end } } })
+  const invoiceNo = `INV-${ym}-${String(count + 1).padStart(4, '0')}`
 
-    // 3. Create invoice + nested items.
-    const invoice = await tx.invoice.create({
+  // 3. Create invoice + nested items.
+  const invoice = await tx.invoice.create({
+    data: {
+      tenantId,
+      branchId:        data.branchId ?? null,
+      petId:           data.petId ?? null,
+      medicalRecordId: data.medicalRecordId ?? null,
+      invoiceNo,
+      subtotal:        data.subtotal,
+      discount:        data.discount,
+      discountReason:  data.discountReason ?? null,
+      taxRate:         data.taxRate,
+      taxAmount:       data.taxAmount,
+      totalAmount:     data.totalAmount,
+      notes:           data.notes ?? null,
+      createdBy:       data.createdBy ?? null,
+      items: {
+        create: data.items.map((i) => ({
+          tenantId,
+          description: i.description,
+          itemType:   i.itemType,
+          quantity:   i.qty,
+          unitPrice:  i.unitPrice,
+          totalPrice: i.totalPrice,
+        })),
+      },
+    },
+    include: { items: true },
+  })
+
+  // 4. Log 'out' movements for retail lines.
+  for (const item of data.items) {
+    if (!item.productId) continue
+    await tx.stockMovement.create({
       data: {
         tenantId,
-        branchId:        data.branchId ?? null,
-        petId:           data.petId ?? null,
-        medicalRecordId: data.medicalRecordId ?? null,
-        invoiceNo,
-        subtotal:        data.subtotal,
-        discount:        data.discount,
-        discountReason:  data.discountReason ?? null,
-        taxRate:         data.taxRate,
-        taxAmount:       data.taxAmount,
-        totalAmount:     data.totalAmount,
-        notes:           data.notes ?? null,
-        createdBy:       data.createdBy ?? null,
-        items: {
-          create: data.items.map((i) => ({
-            tenantId,
-            description: i.description,
-            itemType:   i.itemType,
-            quantity:   i.qty,
-            unitPrice:  i.unitPrice,
-            totalPrice: i.totalPrice,
-          })),
-        },
+        branchId:      data.branchId ?? null,
+        itemId:        item.productId,
+        movementType:  'out',
+        qty:           item.qty,
+        referenceType: 'retail',
+        referenceId:   invoice.id,
+        performedBy:   data.createdBy ?? null,
       },
-      include: { items: true },
     })
+  }
 
-    // 4. Log 'out' movements for retail lines.
-    for (const item of data.items) {
-      if (!item.productId) continue
-      await tx.stockMovement.create({
-        data: {
-          tenantId,
-          branchId:      data.branchId ?? null,
-          itemId:        item.productId,
-          movementType:  'out',
-          qty:           item.qty,
-          referenceType: 'retail',
-          referenceId:   invoice.id,
-          performedBy:   data.createdBy ?? null,
-        },
-      })
-    }
+  return invoice
+}
 
-    return invoice
-  })
+export function createInvoice(tenantId: number, data: CreateInvoiceData) {
+  return prisma.$transaction((tx) => createInvoiceTx(tx, tenantId, data))
 }
 
 export function findInvoiceById(tenantId: number, branchId: number | null | undefined, id: number) {
