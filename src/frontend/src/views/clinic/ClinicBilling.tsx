@@ -684,27 +684,44 @@ async function downloadInvoicePdf(invoice: Invoice) {
   URL.revokeObjectURL(url)
 }
 
+// CR-02: invoice/item data is clinic-entered (untrusted) and lands in a raw
+// document.write() string — every dynamic string field must be HTML-escaped
+// before interpolation to prevent stored XSS via e.g. an item description.
+const HTML_ESCAPES: Record<string, string> = {
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+}
+function escapeHtml(value: unknown): string {
+  return String(value).replace(/[&<>"']/g, (ch) => HTML_ESCAPES[ch] ?? ch)
+}
+
 function printReceipt(invoice: Invoice, petLabel: string | undefined, method: string) {
   const items = (invoice.items ?? [])
-    .map((i) => `<tr><td>${i.description}</td><td style="text-align:center">${Number(i.quantity)}</td><td style="text-align:right">${baht(Number(i.unitPrice))}</td><td style="text-align:right">${baht(Number(i.totalPrice))}</td></tr>`)
+    .map((i) => `<tr><td>${escapeHtml(i.description)}</td><td style="text-align:center">${Number(i.quantity)}</td><td style="text-align:right">${baht(Number(i.unitPrice))}</td><td style="text-align:right">${baht(Number(i.totalPrice))}</td></tr>`)
     .join('')
-  const html = `<!doctype html><html><head><title>${invoice.invoiceNo}</title>
+  const invoiceNo = escapeHtml(invoice.invoiceNo)
+  const html = `<!doctype html><html><head><title>${invoiceNo}</title>
     <style>body{font-family:system-ui,sans-serif;padding:24px;color:#191c1e}h1{font-size:18px;margin:0}
     .muted{color:#45464d;font-size:12px}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:13px}
     th,td{padding:6px 4px;border-bottom:1px solid #e2e8f0}th{text-align:left;text-transform:uppercase;font-size:11px;color:#45464d}
     .tot{display:flex;justify-content:space-between;font-size:13px;margin-top:6px}.grand{font-weight:700;font-size:16px;border-top:2px solid #191c1e;padding-top:6px;margin-top:8px}</style></head>
     <body><h1>Anemal</h1><p class="muted">Tax invoice / receipt</p>
-    <p class="muted">Invoice: <b>${invoice.invoiceNo}</b> · ${new Date(invoice.issuedAt).toLocaleString()}</p>
-    ${petLabel ? `<p class="muted">Patient: ${petLabel}</p>` : ''}
+    <p class="muted">Invoice: <b>${invoiceNo}</b> · ${new Date(invoice.issuedAt).toLocaleString()}</p>
+    ${petLabel ? `<p class="muted">Patient: ${escapeHtml(petLabel)}</p>` : ''}
     <table><thead><tr><th>Item</th><th style="text-align:center">Qty</th><th style="text-align:right">Unit</th><th style="text-align:right">Total</th></tr></thead><tbody>${items}</tbody></table>
     <div style="margin-top:16px"><div class="tot"><span>Subtotal</span><span>${baht(Number(invoice.subtotal))}</span></div>
     <div class="tot"><span>Discount</span><span>-${baht(Number(invoice.discount))}</span></div>
     ${Number(invoice.taxAmount) > 0 ? `<div class="tot"><span>Tax (${Number(invoice.taxRate)}%)</span><span>${baht(Number(invoice.taxAmount))}</span></div>` : ''}
     <div class="tot grand"><span>Total</span><span>${baht(Number(invoice.totalAmount))}</span></div>
-    <p class="muted" style="margin-top:8px">Paid by ${method.replace('_', ' ')} · Thank you!</p></div>
+    <p class="muted" style="margin-top:8px">Paid by ${escapeHtml(method.replace('_', ' '))} · Thank you!</p></div>
     <script>window.onload=function(){window.print()}</script></body></html>`
   const w = window.open('', '_blank', 'width=420,height=640')
-  if (w) { w.document.write(html); w.document.close() }
+  if (w) {
+    // CR-02: sever the opener reference immediately so the popup cannot reach back
+    // into window.opener.sessionStorage (the clinic JWT lives there).
+    w.opener = null
+    w.document.write(html)
+    w.document.close()
+  }
 }
 
 // Itemized lines + subtotal/discount/tax/total. No chrome (no overlay, no
