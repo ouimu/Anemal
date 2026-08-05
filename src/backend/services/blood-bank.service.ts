@@ -55,18 +55,23 @@ export async function recordCollection(tenantId: number, data: CollectionInput, 
   const donor = await bbRepo.findDonorById(tenantId, data.donorId)
   if (!donor) throw new BloodBankError('Donor not found', 404)
 
-  // Eligibility: enforce minimum interval between donations (FR-10 safety).
+  // Eligibility: enforce minimum interval between donations (FR-10 safety). This is a
+  // friendly pre-check for the common case; R3-HI-03's atomic claim inside
+  // bbRepo.createDonation is what actually prevents a race between two concurrent
+  // collection requests reading the same stale `lastDonationAt`.
+  const interval = donationIntervalDays(donor.pet.species)
   if (donor.lastDonationAt) {
-    const interval = donationIntervalDays(donor.pet.species)
     const nextOk = new Date(donor.lastDonationAt); nextOk.setDate(nextOk.getDate() + interval)
     if (new Date() < nextOk) {
       throw new BloodBankError(`Donor not eligible until ${nextOk.toISOString().slice(0, 10)} (min ${interval}-day interval)`, 409, 'DONOR_NOT_ELIGIBLE')
     }
   }
+  const eligibleCutoff = new Date()
+  eligibleCutoff.setDate(eligibleCutoff.getDate() - interval)
   return bbRepo.createDonation(tenantId, {
     donorId: data.donorId, volumeMl: data.volumeMl, expiryDate: new Date(data.expiryDate),
     collectedBy: collectedBy ?? null, notes: data.notes ?? null,
-  })
+  }, eligibleCutoff)
 }
 
 export function listBags(tenantId: number, status?: string, branchId?: number | null) {

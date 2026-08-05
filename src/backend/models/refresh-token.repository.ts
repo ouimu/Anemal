@@ -48,30 +48,47 @@ export function findByHash(tokenHash: string): Promise<RefreshToken | null> {
 }
 
 /**
- * Rotate a refresh token: mark the old row consumed (rotatedAt = now) and
- * create a new row in the same family.
+ * Rotate a refresh token: atomically claim the old row (rotatedAt = now,
+ * only if still unrotated/unrevoked/unexpired) and create a new row in the
+ * same family.
+ *
+ * The claim uses a conditional `updateMany` + row-count check inside the
+ * same transaction as the read and the create, so two concurrent callers
+ * racing on the same `oldId` can never both succeed — only one produces a
+ * descendant. This closes the replay window described in HI-04: without the
+ * conditional claim, two requests can both observe `rotatedAt: null` and
+ * each mint a valid descendant token.
  *
  * @param oldId      - PK of the token being consumed.
  * @param newHash    - SHA-256 hash for the new token.
  * @param newFamilyId - Family lineage identifier (same as parent).
  * @param expiresAt  - Expiry for the new token.
- * @returns The newly created refresh token row.
+ * @returns The newly created refresh token row, or `null` if the old token
+ *   was already rotated, revoked, expired, or not found (caller must treat
+ *   this as an invalid/replayed token).
  */
 export async function rotateToken(
   oldId:      string,
   newHash:    string,
   newFamilyId: string,
   expiresAt:  Date,
-): Promise<RefreshToken> {
-  const old = await prisma.refreshToken.findUnique({ where: { id: oldId } })
-  if (!old) throw new Error('Token not found for rotation')
+): Promise<RefreshToken | null> {
+  return prisma.$transaction(async (tx) => {
+    const old = await tx.refreshToken.findUnique({ where: { id: oldId } })
+    if (!old) return null
 
-  const [, created] = await prisma.$transaction([
-    prisma.refreshToken.update({
-      where: { id: oldId },
-      data:  { rotatedAt: new Date() },
-    }),
-    prisma.refreshToken.create({
+    const claimed = await tx.refreshToken.updateMany({
+      where: {
+        id:        oldId,
+        rotatedAt: null,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      data: { rotatedAt: new Date() },
+    })
+    if (claimed.count !== 1) return null
+
+    return tx.refreshToken.create({
       data: {
         tokenHash:      newHash,
         familyId:       newFamilyId,
@@ -82,9 +99,8 @@ export async function rotateToken(
         plane:          old.plane,
         expiresAt,
       },
-    }),
-  ])
-  return created
+    })
+  })
 }
 
 /**

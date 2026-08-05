@@ -44,8 +44,10 @@ export function findActiveBranchesByTenant(tenantId: number) {
   })
 }
 
-export function touchLastLogin(userId: number) {
-  return prisma.user.update({ where: { id: userId }, data: { lastLoginAt: new Date() } })
+// HI-02: scoped `updateMany` instead of a bare `update({where:{id}})` — closes the
+// check/use gap between the tenant-scoped user lookup and this write.
+export function touchLastLogin(tenantId: number, userId: number) {
+  return prisma.user.updateMany({ where: { id: userId, tenantId }, data: { lastLoginAt: new Date() } })
 }
 
 /** Find a tenant by primary key (used by the refresh token flow for active-tenant check). */

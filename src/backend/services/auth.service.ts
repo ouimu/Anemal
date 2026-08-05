@@ -73,7 +73,7 @@ export async function login(body: LoginRequest): Promise<LoginResponse> {
     throw new AuthError(`Login not allowed outside ${user.allowedStartTime}–${user.allowedEndTime}`, 403)
   }
 
-  await authRepo.touchLastLogin(user.id)
+  await authRepo.touchLastLogin(tenant.id, user.id)
 
   // 5. Compute permission version and check role
   const permSetVersion = await computePermSetVersion(user.id, tenant.id)
@@ -330,7 +330,13 @@ export async function refreshClinicToken(rawRefreshToken: string): Promise<Refre
 
   const newRaw      = crypto.randomBytes(32).toString('hex')
   const newExpiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS)
-  await refreshTokenRepo.rotateToken(record.id, refreshTokenRepo.hashToken(newRaw), record.familyId, newExpiresAt)
+  const rotated = await refreshTokenRepo.rotateToken(
+    record.id, refreshTokenRepo.hashToken(newRaw), record.familyId, newExpiresAt,
+  )
+  if (!rotated) {
+    // Lost the atomic claim race to a concurrent refresh — treat as replay.
+    throw new AuthError(INVALID_TOKEN_MSG, 401)
+  }
 
   return { token: newToken, refreshToken: newRaw, expiresIn: JWT_EXPIRES_IN_SECONDS }
 }

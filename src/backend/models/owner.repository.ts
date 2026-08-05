@@ -1,6 +1,7 @@
 // Owner repository — all Prisma access for the owners table (CODING_RULES §2, §11).
 // Every function takes tenantId as its first parameter; services never touch Prisma.
 
+import { Prisma } from '@prisma/client'
 import prisma from '../config/db'
 import type { CreateOwnerInput, UpdateOwnerInput } from '../services/owner.service'
 
@@ -54,8 +55,10 @@ export function countActivePetsForOwner(tenantId: number, ownerId: number) {
   return prisma.pet.count({ where: { tenantId, ownerId, isActive: true } })
 }
 
-export function createOwner(tenantId: number, data: CreateOwnerInput) {
-  return prisma.owner.create({ data: { ...data, tenantId } })
+// `client` defaults to the shared `prisma` instance but accepts a `Prisma.TransactionClient`
+// so R3-HI-04's quota-lock transaction can create the owner inside the same lock scope.
+export function createOwner(tenantId: number, data: CreateOwnerInput, client: Prisma.TransactionClient | typeof prisma = prisma) {
+  return client.owner.create({ data: { ...data, tenantId } })
 }
 
 export function updateOwner(tenantId: number, id: number, data: UpdateOwnerInput) {

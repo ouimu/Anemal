@@ -1,6 +1,7 @@
 // Appointment repository — all Prisma access (incl. the raw-SQL overlap check).
 
 import prisma from '../config/db'
+import { ConflictError } from '../utils/errors'
 import type { CreateAppointmentInput, AppointmentStatus } from '../services/appointment.service'
 
 export function findInRange(tenantId: number, branchId: number | null | undefined, start: Date, end: Date, doctorId?: number) {
@@ -97,10 +98,12 @@ export function findById(tenantId: number, branchId: number | null | undefined, 
 
 // Overlap: existingStart < newEnd AND (existingStart + existingDuration) > newStart
 // branchId filter applied when present: a doctor's schedule is branch-scoped.
-export async function countDoctorConflicts(tenantId: number, branchId: number | null | undefined, doctorId: number, start: Date, end: Date): Promise<number> {
+async function countDoctorConflictsTx(
+  tx: PrismaTxOrClient, tenantId: number, branchId: number | null | undefined, doctorId: number, start: Date, end: Date,
+): Promise<number> {
   // DB columns are camelCase (Prisma maps tables, not columns) — must be double-quoted in raw SQL.
   if (branchId != null) {
-    const rows = await prisma.$queryRaw<{ count: bigint }[]>`
+    const rows = await tx.$queryRaw<{ count: bigint }[]>`
       SELECT COUNT(*) as count FROM appointments
       WHERE "tenantId" = ${tenantId}
         AND "branchId" = ${branchId}
@@ -111,7 +114,7 @@ export async function countDoctorConflicts(tenantId: number, branchId: number | 
     `
     return Number(rows[0]?.count ?? 0)
   }
-  const rows = await prisma.$queryRaw<{ count: bigint }[]>`
+  const rows = await tx.$queryRaw<{ count: bigint }[]>`
     SELECT COUNT(*) as count FROM appointments
     WHERE "tenantId" = ${tenantId}
       AND "doctorId" = ${doctorId}
@@ -122,8 +125,36 @@ export async function countDoctorConflicts(tenantId: number, branchId: number | 
   return Number(rows[0]?.count ?? 0)
 }
 
-export function createAppointment(tenantId: number, branchId: number | null, data: CreateAppointmentInput, scheduledAt: Date) {
-  return prisma.appointment.create({ data: { ...data, tenantId, branchId, scheduledAt } })
+type PrismaTxOrClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0] | typeof prisma
+
+/**
+ * R3-HI-01: conflict-check + insert wrapped in one transaction, serialized by a
+ * `pg_advisory_xact_lock` keyed on tenant+doctor+day. Two concurrent booking requests
+ * for the same doctor/day now execute the check-then-insert sequentially — the second
+ * transaction blocks on the lock until the first commits (or rolls back), so it always
+ * sees the first booking's row and correctly loses the race with a 409. An application-
+ * level count check alone (no lock) cannot prevent this because both requests can read
+ * "0 conflicts" before either writes. A DB-level GiST exclusion constraint would be the
+ * durable long-term fix (see BA finding R3-HI-01); this advisory lock is the accepted
+ * interim per the BA-approved remediation plan.
+ */
+export async function createAppointment(
+  tenantId: number, branchId: number | null, data: CreateAppointmentInput, scheduledAt: Date,
+) {
+  const durationMin = data.durationMin
+  const end = new Date(scheduledAt.getTime() + durationMin * 60_000)
+  const lockKey = `appt:${tenantId}:${data.doctorId}:${scheduledAt.toISOString().slice(0, 10)}`
+
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`
+
+    const conflicts = await countDoctorConflictsTx(tx, tenantId, branchId, data.doctorId, scheduledAt, end)
+    if (conflicts > 0) {
+      throw new ConflictError('Doctor already has an appointment in this time slot', 'APPOINTMENT_CONFLICT')
+    }
+
+    return tx.appointment.create({ data: { ...data, tenantId, branchId, scheduledAt } })
+  })
 }
 
 export function createWalkIn(tenantId: number, branchId: number | null, petId: number, doctorId: number, reason?: string | null) {
@@ -141,6 +172,11 @@ export function createWalkIn(tenantId: number, branchId: number | null, petId: n
   })
 }
 
-export function updateStatus(id: number, status: AppointmentStatus) {
-  return prisma.appointment.update({ where: { id }, data: { status } })
+// HI-02: a single scoped `updateMany` closes the check/use gap between the
+// preceding `getAppointment` read and this write — the caller must check `count`.
+export function updateStatus(tenantId: number, branchId: number | null | undefined, id: number, status: AppointmentStatus) {
+  return prisma.appointment.updateMany({
+    where: { id, tenantId, ...(branchId != null ? { branchId } : {}) },
+    data: { status },
+  })
 }

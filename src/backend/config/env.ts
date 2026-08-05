@@ -19,6 +19,14 @@ export const config = {
   bcryptRounds: Number(process.env.BCRYPT_ROUNDS) || 12,
   // AES-256-GCM key for settings secrets — 32-byte hex (openssl rand -hex 32)
   settingsEncryptionKey: required('SETTINGS_ENCRYPTION_KEY'),
+  // Shared secret Vercel Cron sends as `Authorization: Bearer ${cronSecret}`.
+  // Must be set — an unset secret would otherwise let `Bearer undefined` pass.
+  cronSecret: required('CRON_SECRET'),
+  // Feature flag (R2-HI-04): the reminder dispatch loop marks reminders "sent"
+  // with no real LINE/SMS/email provider integrated yet. Default OFF so a
+  // fresh deploy never silently fabricates delivery confirmations. Flip on
+  // only once a real provider is wired into reminder.service.ts.
+  reminderDispatchEnabled: process.env.REMINDER_DISPATCH_ENABLED === 'true',
 }
 
 // G1 (ADR-0022): the local-disk storage driver is testing-only — it pools

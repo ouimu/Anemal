@@ -54,7 +54,7 @@ export async function listPaymentHistory(req: Request, res: Response, next: Next
 
 export async function generatePromptpayQr(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const dataUrl = await promptpayQrService.generatePromptpayQr(req.context!.tenantId, Number(req.params.id))
+    const dataUrl = await promptpayQrService.generatePromptpayQr(req.context!.tenantId, req.context?.branchId, Number(req.params.id))
     res.json({ success: true, dataUrl })
   } catch (err) { next(err) }
 }

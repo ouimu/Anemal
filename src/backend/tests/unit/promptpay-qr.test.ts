@@ -7,7 +7,7 @@ import QRCode from 'qrcode'
 // Mock DB and settings repository for service-level tests
 jest.mock('../../config/db', () => ({
   invoice: {
-    findUnique: jest.fn(),
+    findFirst: jest.fn(),
   },
 }))
 jest.mock('../../models/tenant-settings.repository', () => ({
@@ -18,7 +18,7 @@ import prisma from '../../config/db'
 import { getOrCreateSettings } from '../../models/tenant-settings.repository'
 import { generatePromptpayQr } from '../../services/promptpay-qr.service'
 
-const mockFindUnique = prisma.invoice.findUnique as jest.Mock
+const mockFindFirst = prisma.invoice.findFirst as jest.Mock
 const mockGetOrCreateSettings = getOrCreateSettings as jest.Mock
 
 beforeEach(() => {
@@ -69,7 +69,7 @@ describe('QR-04b — QRCode.toDataURL produces a valid base64 PNG data URI', () 
 
 describe('Error — generatePromptpayQr throws 422 when promptpayId is null', () => {
   it('throws AppError with statusCode 422 when settings.promptpayId is null', async () => {
-    mockFindUnique.mockResolvedValue({
+    mockFindFirst.mockResolvedValue({
       totalAmount: 150,
       paymentStatus: 'pending',
     })
@@ -77,14 +77,14 @@ describe('Error — generatePromptpayQr throws 422 when promptpayId is null', ()
       promptpayId: null,
     })
 
-    await expect(generatePromptpayQr(1, 42)).rejects.toMatchObject({ statusCode: 422 })
+    await expect(generatePromptpayQr(1, null, 42)).rejects.toMatchObject({ statusCode: 422 })
   })
 })
 
 describe('Error — generatePromptpayQr throws 404 when invoice not found', () => {
-  it('throws AppError with statusCode 404 when prisma.invoice.findUnique returns null', async () => {
-    mockFindUnique.mockResolvedValue(null)
+  it('throws AppError with statusCode 404 when prisma.invoice.findFirst returns null', async () => {
+    mockFindFirst.mockResolvedValue(null)
 
-    await expect(generatePromptpayQr(1, 999)).rejects.toMatchObject({ statusCode: 404 })
+    await expect(generatePromptpayQr(1, null, 999)).rejects.toMatchObject({ statusCode: 404 })
   })
 })

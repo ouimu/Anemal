@@ -27,6 +27,14 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
   try {
     const payload = verifyToken(token)
 
+    // HI-03: a pending branch-selection token (signPendingToken, 5-minute TTL) is a
+    // partial identity — it must never be usable as a full API access token. Reject
+    // it here, before requirePlane/requirePermission ever see it.
+    if (payload.scope === 'branch_select') {
+      res.status(401).json({ success: false, error: 'Invalid or expired token' })
+      return
+    }
+
     // Clinic-plane: verify the tenant is still active before admitting the request.
     // Platform tokens carry tenantId === 0; skip the DB check for that plane.
     if (payload.plane === 'clinic' && payload.tenantId) {

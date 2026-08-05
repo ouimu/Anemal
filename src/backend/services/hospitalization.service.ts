@@ -1,5 +1,6 @@
 // Hospitalization (inpatient) service (Phase 4, FR-08). Discharge auto-bills via invoice service.
 import { z } from 'zod'
+import prisma from '../config/db'
 import { AppError } from '../utils/errors'
 import * as hospRepo from '../models/hospitalization.repository'
 import * as invoiceService from './invoice.service'
@@ -81,23 +82,32 @@ export async function deleteHospitalization(tenantId: number, branchId: number |
   await hospRepo.remove(tenantId, branchId, id)
 }
 
-// Discharge → mark discharged + auto-generate an invoice for the stay (days × dailyRate).
+/**
+ * Discharge → mark discharged + auto-generate an invoice for the stay (days × dailyRate).
+ * R3-HI-02: the discharge claim and the invoice creation run inside ONE transaction. A
+ * cheap existence pre-check (404 for a genuinely missing/wrong-tenant id) runs first for
+ * a clean not-found response; the atomic `claimDischarged` inside the transaction is what
+ * actually protects against a concurrent double-discharge (409 on a lost race), and if
+ * invoice creation fails after the claim, the whole transaction — claim included — rolls
+ * back, so the patient is left still admitted rather than discharged-but-unbilled.
+ */
 export async function discharge(tenantId: number, branchId: number, id: number, createdBy?: number) {
-  const h = await getHospitalization(tenantId, branchId, id)
-  if (h.status !== 'admitted') throw new HospitalizationError('Patient is not currently admitted', 409)
+  await getHospitalization(tenantId, branchId, id) // 404 if the id doesn't exist for this tenant/branch
 
-  const discharged = await hospRepo.markDischarged(tenantId, branchId, id)
-  const rate = Number(h.dailyRate)
+  return prisma.$transaction(async (tx) => {
+    const discharged = await hospRepo.claimDischarged(tx, tenantId, branchId, id)
+    const rate = Number(discharged.dailyRate)
 
-  let invoice = null
-  if (rate > 0) {
-    const ms = Date.now() - new Date(h.admittedAt).getTime()
-    const days = Math.max(1, Math.ceil(ms / (24 * 60 * 60 * 1000)))
-    invoice = await invoiceService.createInvoice(tenantId, branchId, {
-      petId: h.petId,
-      items: [{ description: `Hospitalization (${days} day${days > 1 ? 's' : ''})`, itemType: 'service', qty: days, unitPrice: rate }],
-      discount: 0,
-    }, createdBy)
-  }
-  return { hospitalization: discharged, invoice }
+    let invoice = null
+    if (rate > 0) {
+      const ms = Date.now() - new Date(discharged.admittedAt).getTime()
+      const days = Math.max(1, Math.ceil(ms / (24 * 60 * 60 * 1000)))
+      invoice = await invoiceService.createInvoice(tenantId, branchId, {
+        petId: discharged.petId,
+        items: [{ description: `Hospitalization (${days} day${days > 1 ? 's' : ''})`, itemType: 'service', qty: days, unitPrice: rate }],
+        discount: 0,
+      }, createdBy, tx)
+    }
+    return { hospitalization: discharged, invoice }
+  })
 }

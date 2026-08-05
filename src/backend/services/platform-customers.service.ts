@@ -437,8 +437,6 @@ export async function createTenantAdminUser(
     throw new WeakPasswordError()
   }
 
-  await subscriptionService.assertCanAddUser(tenantId)
-
   const clinicAdminRole = await roleRepo.findSystemRoleByKey('clinic_admin')
   if (!clinicAdminRole) throw new Error("System role 'clinic_admin' not seeded")
 
@@ -446,10 +444,17 @@ export async function createTenantAdminUser(
   const passwordHash = await bcrypt.hash(plaintext, config.bcryptRounds)
 
   try {
-    const user = await customersRepo.createTenantAdminUser(
-      tenantId,
-      { name: data.name, username: data.username, email: data.email ?? null, phone: data.phone ?? null, passwordHash },
-      clinicAdminRole.id,
+    // R3-HI-04: quota check + insert now happen inside one advisory-lock-serialized
+    // transaction (subscription.service.createWithQuotaLock) instead of a preceding,
+    // independent count check that a concurrent request (from this or any of the
+    // other 4 user-creation paths) could race past.
+    const user = await subscriptionService.createWithQuotaLock(tenantId, 'users', (tx) =>
+      customersRepo.createTenantAdminUserTx(
+        tx,
+        tenantId,
+        { name: data.name, username: data.username, email: data.email ?? null, phone: data.phone ?? null, passwordHash },
+        clinicAdminRole.id,
+      ),
     )
 
     await platformAuditRepo.createPlatformAuditLog({

@@ -66,10 +66,11 @@ export function findSettings(tenantId: number) {
 export function countVaccinationsBetween(tenantId: number, from: Date, to: Date, branchId?: number | null) {
   // ponytail: NULL-branch pets show in every branch. When branchId provided, include pet.branchId = branchId OR NULL.
   if (branchId) {
+    // R2-HI-02: tenant-scope the joined `pets` table too, not just `vaccinations`.
     return prisma.$queryRaw<{ count: bigint }[]>`
       SELECT COUNT(v.id)::bigint AS count
       FROM vaccinations v
-      JOIN pets p ON p.id = v."petId"
+      JOIN pets p ON p.id = v."petId" AND p."tenantId" = ${tenantId}
       WHERE v."tenantId" = ${tenantId}
         AND v."nextDueAt" <= ${to}
         AND v."nextDueAt" >= ${from}

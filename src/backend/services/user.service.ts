@@ -179,8 +179,6 @@ export async function createUser(
     throw new UserError('At least one contact (email or phone) is required', 422)
   }
 
-  await subscriptionService.assertCanAddUser(tenantId)
-
   if (!hasAssignRole) {
     throw new UserError('Assigning a role requires the staff.assign_role permission', 403)
   }
@@ -193,16 +191,22 @@ export async function createUser(
 
   const passwordHash = await bcrypt.hash(body.password, config.bcryptRounds)
   try {
-    const user = await userRepo.createUserWithRole(
-      tenantId,
-      {
-        name:     body.name,
-        username: body.username,
-        email:    body.email ?? null,
-        phone:    body.phone ?? null,
-        passwordHash,
-      },
-      roleRow.id,
+    // R3-HI-04: quota check + insert now happen inside one advisory-lock-serialized
+    // transaction (subscription.service.createWithQuotaLock) instead of a preceding,
+    // independent count check that a concurrent request could race past.
+    const user = await subscriptionService.createWithQuotaLock(tenantId, 'users', (tx) =>
+      userRepo.createUserWithRoleTx(
+        tx,
+        tenantId,
+        {
+          name:     body.name,
+          username: body.username,
+          email:    body.email ?? null,
+          phone:    body.phone ?? null,
+          passwordHash,
+        },
+        roleRow.id,
+      ),
     )
     const primaryAdminId = await userRepo.findPrimaryAdminId(tenantId)
     return safe(user, user.id === primaryAdminId)
@@ -225,9 +229,10 @@ export async function updateUser(
 
   // ADR-0016 D-6: restoring a deactivated user must re-check the seat quota,
   // same as createUser — restore should not be a quota-enforcement bypass.
-  if (body.isActive === true && existing.isActive === false) {
-    await subscriptionService.assertCanAddUser(tenantId)
-  }
+  // R3-HI-04: the quota check + reactivation write now happen inside one
+  // advisory-lock-serialized transaction, so two concurrent restores can no longer both
+  // pass a stale count read and jointly exceed the seat limit.
+  const isRestoring = body.isActive === true && existing.isActive === false
 
   if (body.roleId !== undefined) {
     if (!hasAssignRole) {
@@ -243,7 +248,9 @@ export async function updateUser(
     await userRepo.replaceUserRole(tenantId, userId, roleRow.id)
   }
 
-  const user = await userRepo.updateUser(tenantId, userId, body)
+  const user = isRestoring
+    ? await subscriptionService.createWithQuotaLock(tenantId, 'users', (tx) => userRepo.updateUser(tenantId, userId, body, tx))
+    : await userRepo.updateUser(tenantId, userId, body)
   if (!user) throw new UserError('User not found', 404)
   const primaryAdminId = await userRepo.findPrimaryAdminId(tenantId)
   return safe(user, user.id === primaryAdminId)

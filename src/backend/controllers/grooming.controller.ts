@@ -8,7 +8,13 @@ export async function createBooking(req: Request, res: Response, next: NextFunct
 
 export async function listBookings(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const branchId = req.query.branchId ? Number(req.query.branchId) : req.context?.branchId
+    // HI-01: the JWT's branch (req.context.branchId) is an authorization fact and must
+    // always win over a client-supplied query param. `?branchId=` is honored only for a
+    // tenant-wide admin session (req.context.branchId === null) — never as an override
+    // for a branch-scoped user.
+    const branchId = req.context?.branchId != null
+      ? req.context.branchId
+      : (req.query.branchId ? Number(req.query.branchId) : undefined)
     const date = typeof req.query.date === 'string' ? req.query.date : undefined
     res.json({ success: true, data: await svc.listBookings(req.context!.tenantId, branchId, date) })
   } catch (err) { next(err) }

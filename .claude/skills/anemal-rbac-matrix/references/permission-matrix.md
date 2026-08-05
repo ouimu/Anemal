@@ -65,8 +65,8 @@ Columns are the three **system clinic roles**. Custom roles start as a clone of 
 | `loyalty.manage` | Loyalty | E | - | E |
 | `reports.revenue.view` | Reports — Revenue | E | - | V |
 | `reports.inventory.view` | Reports — Inventory | E | V | V |
-| `reports.cost.view` | Reports — Cost analysis | E | - | V |
-| `reports.export` | Reports — export | E | - | V |
+| `reports.cost.view` | Reports — Cost analysis | E | - | - |
+| `reports.export` | Reports — export | E | - | - |
 | `clinic.profile.view` | Clinic settings | V | V | V |
 | `clinic.profile.edit` | Clinic settings (name/logo/addr/taxId) | E | - | - |
 | `clinic.branch.view` | Branches | V | V | V |
@@ -88,10 +88,18 @@ Columns are the three **system clinic roles**. Custom roles start as a clone of 
 > any route (ADR-0004 D4).
 
 ### Notes on key business decisions
-- **Doctor has no billing/POS access** — clinical only. Billing is Staff/Admin.
+- **Doctor has read-only billing visibility, no POS.** `billing.view` is granted for consult-flow
+  visibility ("has this owner paid?"); doctor holds no `billing.create` / `billing.payment` /
+  `billing.void`, so no financial mutation is possible. Billing mutation is Staff/Admin only.
+  (HI-05 / BA Option C, 2026-08-05 — resolves a prior self-contradiction between this note and
+  the grid above; the grid was already correct and enforced, this note was wrong.)
 - **Staff cannot write EMR clinical notes** (`emr.create/edit` denied) but can `emr.view` and
   `emr.attach` (upload lab/X-ray) and `prescriptions.dispense` (hand out what the doctor ordered).
-- **Only clinic_admin** edits clinic config, manages staff/roles, sees revenue & cost reports, audit.
+- **clinic_admin** edits clinic config, manages staff/roles, and sees cost reports + audit.
+  **clinic_staff** additionally sees `reports.revenue.view` (front-desk daily-close is a real,
+  enforced workflow) but not `reports.cost.view` / `reports.export` (margin/cost data — removed
+  from clinic_staff by HI-05 / BA Option C, 2026-08-05; those two grants were previously seeded
+  but enforced by no route or UI, so removing them cost zero regression).
 - **Doctor sees inventory (read)** to check stock when prescribing, but does not adjust it.
 - **Vaccination administration uses its own `vaccination.create` code**, separate from
   `emr.create` (full SOAP-note/medical-record creation). `clinic_staff` holds

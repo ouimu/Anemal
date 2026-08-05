@@ -139,6 +139,11 @@ const SYSTEM_ROLES = [
       'emr.view', 'emr.create', 'emr.edit', 'emr.attach', 'vaccination.create',
       'prescriptions.view', 'prescriptions.create', 'prescriptions.dispense',
       'inventory.view',
+      // HI-05 (BA Option C, 2026-08-05): billing.view KEPT for doctor —
+      // read-only invoice visibility for consult-flow ("has this owner
+      // paid?"); doctor has no billing.create/payment/void, so no financial
+      // mutation is possible. See permission-matrix.md "Notes on key
+      // business decisions".
       'billing.view',
       'inpatient.view', 'inpatient.manage',
       'bloodbank.view', 'bloodbank.manage',
@@ -163,7 +168,13 @@ const SYSTEM_ROLES = [
       'grooming.view', 'grooming.manage',
       'bloodbank.view',
       'loyalty.view', 'loyalty.manage',
-      'reports.revenue.view', 'reports.inventory.view', 'reports.cost.view', 'reports.export',
+      // HI-05 (BA Option C, 2026-08-05): reports.cost.view and reports.export
+      // removed from clinic_staff — dormant grants (enforced by no route or
+      // guard anywhere in src/), commercially sensitive, zero regression risk
+      // to remove. reports.revenue.view is KEPT — front-desk daily-close is a
+      // real, enforced workflow. See permission-matrix.md "Notes on key
+      // business decisions" for the reconciled policy.
+      'reports.revenue.view', 'reports.inventory.view',
       'clinic.profile.view',
       'clinic.branch.view',
     ],

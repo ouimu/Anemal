@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { Prisma } from '@prisma/client'
 import { AppError } from '../utils/errors'
 import * as ownerRepo from '../models/owner.repository'
-import { assertCanAddOwner } from './subscription.service'
+import { createWithQuotaLock } from './subscription.service'
 import { resolvePermissions } from './permission.service'
 
 /**
@@ -88,8 +88,10 @@ export async function getOwner(tenantId: number, id: number) {
   return owner
 }
 
+// R3-HI-04: quota check + insert now happen inside one advisory-lock-serialized
+// transaction (subscription.service.createWithQuotaLock) instead of a preceding,
+// independent count check that a concurrent request could race past.
 export async function createOwner(tenantId: number, data: CreateOwnerInput) {
-  await assertCanAddOwner(tenantId)
   const existingPhone = await ownerRepo.findOwnerByPhone(tenantId, data.phone)
   if (existingPhone) throw new OwnerError('Phone number already registered in this clinic', 409)
   if (data.idCardNumber) {
@@ -97,7 +99,7 @@ export async function createOwner(tenantId: number, data: CreateOwnerInput) {
     if (existingIdCard) throw new OwnerError('ID card number already registered in this clinic', 409)
   }
   try {
-    return await ownerRepo.createOwner(tenantId, data)
+    return await createWithQuotaLock(tenantId, 'owners', (tx) => ownerRepo.createOwner(tenantId, data, tx))
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
       throw new OwnerError('ID card number already registered in this clinic', 409)

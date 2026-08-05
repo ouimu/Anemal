@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import api from '../utils/api'
+import { clearServerState } from '../utils/queryClient'
 import { useAuthStore, AuthData } from '../store/authStore'
 import { useT } from '../i18n'
 import * as rememberedUsernames from '../utils/rememberedUsernames'
@@ -136,7 +137,14 @@ export function useLogin() {
 export function useLogout() {
   const clearAuth = useAuthStore((s) => s.clearAuth)
   const navigate  = useNavigate()
-  return () => { clearAuth(); navigate('/login') }
+  // HI-09: drop cached PII before clearing auth + navigating away, so a
+  // shared-tablet next user cannot read the previous identity's queries.
+  return () => {
+    void clearServerState().finally(() => {
+      clearAuth()
+      navigate('/login')
+    })
+  }
 }
 
 /** Updates the JWT to a specific branch (or null = all-branches for admins). */
@@ -146,6 +154,10 @@ export function useSwitchBranch() {
       api.post<{ success: boolean; data: { token: string } }>('/auth/switch-branch', { branchId }),
 
     onSuccess: (res, { branchId, branchName }) => {
+      // HI-09: a branch switch is an identity-scope transition too — cached
+      // owner/pet/invoice data fetched under the old branch scope must not
+      // remain readable after switching to a different branch.
+      void clearServerState()
       const state = useAuthStore.getState()
       state.setAuth({
         token:          res.data.data.token,

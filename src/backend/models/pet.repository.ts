@@ -1,5 +1,6 @@
 // Pet repository — all Prisma access for the pets table (CODING_RULES §2, §11).
 
+import { Prisma } from '@prisma/client'
 import prisma from '../config/db'
 import type { CreatePetInput, UpdatePetInput } from '../services/pet.service'
 
@@ -50,9 +51,11 @@ export function findOwner(tenantId: number, ownerId: number) {
   return prisma.owner.findFirst({ where: { id: ownerId, tenantId } })
 }
 
-export function createPet(tenantId: number, data: CreatePetInput) {
+// `client` defaults to the shared `prisma` instance but accepts a `Prisma.TransactionClient`
+// so R3-HI-04's quota-lock transaction can create the pet inside the same lock scope.
+export function createPet(tenantId: number, data: CreatePetInput, client: Prisma.TransactionClient | typeof prisma = prisma) {
   const { birthDate, weightKg, ...rest } = data
-  return prisma.pet.create({
+  return client.pet.create({
     data: {
       ...rest,
       tenantId,

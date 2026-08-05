@@ -9,6 +9,7 @@ import { useUiStore } from '../store/uiStore'
 import MaterialIcon from '../components/MaterialIcon'
 import { useIdleLogout } from '../hooks/useIdleLogout'
 import IdleLogoutModal from '../components/IdleLogoutModal'
+import { clearServerState } from '../utils/queryClient'
 
 const NAV = [
   { to: '/platform/customers', icon: 'business',        label: 'Customers' },
@@ -22,9 +23,12 @@ const PLATFORM_IDLE_MINUTES = Number(import.meta.env.VITE_PLATFORM_IDLE_TIMEOUT_
 /** Simple logout for platform plane. */
 function usePlatformLogout() {
   const clearAuth = usePlatformAuthStore((s) => s.clearAuth)
+  // HI-09: drop cached PII before clearing auth + navigating away.
   return () => {
-    clearAuth()
-    window.location.href = '/platform/login'
+    void clearServerState().finally(() => {
+      clearAuth()
+      window.location.href = '/platform/login'
+    })
   }
 }
 
@@ -39,8 +43,10 @@ export default function PlatformLayout() {
     timeoutMinutes: PLATFORM_IDLE_MINUTES,
     enabled: isAuth,
     onLogout: () => {
-      clearAuth()
-      window.location.href = '/platform/login?reason=idle'
+      void clearServerState().finally(() => {
+        clearAuth()
+        window.location.href = '/platform/login?reason=idle'
+      })
     },
   })
 

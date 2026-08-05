@@ -7,14 +7,21 @@ import prisma from '../config/db'
 import { getOrCreateSettings } from '../models/tenant-settings.repository'
 import { AppError } from '../utils/errors'
 
-export async function generatePromptpayQr(tenantId: number, invoiceId: number): Promise<string> {
+export async function generatePromptpayQr(
+  tenantId: number, branchId: number | null | undefined, invoiceId: number,
+): Promise<string> {
   if (!invoiceId || invoiceId <= 0) {
     throw new AppError(400, 'Invalid invoice ID', 'INVALID_INVOICE_ID')
   }
 
-  // Tenant-isolated invoice fetch — returns null if invoiceId belongs to a different tenant.
-  const invoice = await prisma.invoice.findUnique({
-    where: { id: invoiceId, tenantId },
+  // Tenant + branch isolated invoice fetch (HI-01) — returns null if invoiceId belongs
+  // to a different tenant, or (for a branch-scoped session) a different branch.
+  const invoice = await prisma.invoice.findFirst({
+    where: {
+      id: invoiceId,
+      tenantId,
+      ...(branchId != null ? { branchId } : {}),
+    },
     select: { totalAmount: true, paymentStatus: true },
   })
   if (!invoice) throw new AppError(404, 'Invoice not found', 'NOT_FOUND')

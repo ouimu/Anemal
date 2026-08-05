@@ -560,6 +560,30 @@ CREATE INDEX idx_pet_reminders_pet          ON pet_reminders(tenant_id, pet_id);
 -- ============================================================
 -- SECTION 10: ROW-LEVEL SECURITY (RLS Isolation)
 -- ============================================================
+-- R2-HI-01: NOT DEPLOYED. This section is a design target, not an
+-- executable migration set — it has never been applied to any environment.
+--
+-- Column-name drift: this file is written in snake_case (tenant_id,
+-- products, ...) but the live Prisma schema uses quoted camelCase
+-- ("tenantId", inventory_items, ...) — these statements cannot be run
+-- verbatim against the real database.
+--
+-- Deploying RLS for real requires, at minimum:
+--   1. A second, non-owner DB role (the app's current role bypasses RLS
+--      as table owner) plus a separate DATABASE_URL for that role.
+--   2. Wrapping every request in an interactive transaction so
+--      `SET LOCAL app.current_tenant_id` is scoped correctly — the current
+--      architecture uses one shared PrismaClient pool with no per-request
+--      transaction wrapper, so SET LOCAL has no safe place to attach.
+--   3. Integration coverage for the platform-plane bypass role (platform
+--      users have no tenant_id and must read across tenants by design).
+-- Until all three exist, turning on FORCE ROW LEVEL SECURITY would return
+-- zero rows for every tenant query, not enforce isolation.
+--
+-- Tenant isolation is enforced today at the repository layer only
+-- (WHERE tenant_id = :tenantId on every query — already audited and
+-- fixed across this branch's commit history).
+-- ============================================================
 
 ALTER TABLE tenants               ENABLE ROW LEVEL SECURITY;
 ALTER TABLE branches              ENABLE ROW LEVEL SECURITY;

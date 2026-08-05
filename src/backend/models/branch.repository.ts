@@ -14,8 +14,10 @@ export function findBranchById(tenantId: number, id: number) {
   return prisma.branch.findFirst({ where: { id, tenantId } })
 }
 
-export function createBranch(tenantId: number, data: CreateBranchInput) {
-  return prisma.branch.create({ data: { tenantId, ...data, operatingHours: asJson(data.operatingHours) } })
+// `client` defaults to the shared `prisma` instance but accepts a `Prisma.TransactionClient`
+// so R3-HI-04's quota-lock transaction can create the branch inside the same lock scope.
+export function createBranch(tenantId: number, data: CreateBranchInput, client: Prisma.TransactionClient | typeof prisma = prisma) {
+  return client.branch.create({ data: { tenantId, ...data, operatingHours: asJson(data.operatingHours) } })
 }
 
 export function updateBranch(tenantId: number, id: number, data: UpdateBranchInput) {
