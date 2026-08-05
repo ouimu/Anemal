@@ -27,6 +27,9 @@ let tenantId = 0
 let branchAId = 0
 let branchBId = 0
 
+let tenantBId = 0
+let branchTenantBId = 0
+
 beforeAll(async () => {
   const tenant = await prisma.tenant.create({
     data: { name: 'StockLotExpiry Unit Test', subdomain: `stock-lot-expiry-${Date.now()}` },
@@ -39,14 +42,23 @@ beforeAll(async () => {
   ])
   branchAId = branchA.id
   branchBId = branchB.id
+
+  const tenantB = await prisma.tenant.create({
+    data: { name: 'StockLotExpiry Tenant B', subdomain: `stock-lot-expiry-b-${Date.now()}` },
+  })
+  tenantBId = tenantB.id
+  const branchTenantB = await prisma.branch.create({
+    data: { tenantId: tenantBId, name: '__lot_test_branch_tenantB__', isActive: true },
+  })
+  branchTenantBId = branchTenantB.id
 })
 
 afterAll(async () => {
-  await prisma.stockMovement.deleteMany({ where: { tenantId } })
-  await prisma.branchInventory.deleteMany({ where: { tenantId } })
-  await prisma.inventoryItem.deleteMany({ where: { tenantId } })
-  await prisma.branch.deleteMany({ where: { tenantId } })
-  await prisma.tenant.deleteMany({ where: { id: tenantId } })
+  await prisma.stockMovement.deleteMany({ where: { tenantId: { in: [tenantId, tenantBId] } } })
+  await prisma.branchInventory.deleteMany({ where: { tenantId: { in: [tenantId, tenantBId] } } })
+  await prisma.inventoryItem.deleteMany({ where: { tenantId: { in: [tenantId, tenantBId] } } })
+  await prisma.branch.deleteMany({ where: { tenantId: { in: [tenantId, tenantBId] } } })
+  await prisma.tenant.deleteMany({ where: { id: { in: [tenantId, tenantBId] } } })
   await prisma.$disconnect()
 })
 
@@ -129,6 +141,40 @@ describe('stockIn — earliest-wins expiry + lot mismatch clears aggregate lotNo
     })
     expect(movement.lotNo).toBe('LOT-TRACE')
     expect(movement.expiryDate?.toISOString().slice(0, 10)).toBe('2027-03-15')
+  })
+})
+
+describe('stockIn — tenant isolation on the branch_inventory aggregate row', () => {
+  it("does not read or modify tenant A's aggregate row when called with tenant B's id", async () => {
+    const productId = await createProduct('Cross-Tenant Isolation Product')
+    const expiry = new Date('2027-07-01T00:00:00.000Z')
+    await productRepo.stockIn(tenantId, branchAId, productId, {
+      qty: 5, lotNo: 'LOT-TENANT-A', expiryDate: expiry.toISOString(),
+    })
+
+    const beforeBi = await prisma.branchInventory.findUniqueOrThrow({
+      where: { tenantId_branchId_productId: { tenantId, branchId: branchAId, productId } },
+    })
+
+    // Tenant B calls stockIn against the SAME productId/branch-shape but
+    // scoped to tenant B's own tenantId+branchId. The repository-layer
+    // tenantId scoping (composite unique key + WHERE predicate on every
+    // statement) must confine this to a tenant-B-scoped row and must never
+    // read or mutate tenant A's aggregate.
+    await productRepo.stockIn(tenantBId, branchTenantBId, productId, {
+      qty: 99, lotNo: 'LOT-TENANT-B-ATTACK', expiryDate: new Date('2020-01-01T00:00:00.000Z').toISOString(),
+    })
+
+    const afterBi = await prisma.branchInventory.findUniqueOrThrow({
+      where: { tenantId_branchId_productId: { tenantId, branchId: branchAId, productId } },
+    })
+
+    expect(Number(afterBi.stockQty)).toBe(Number(beforeBi.stockQty))
+    expect(afterBi.lotNo).toBe(beforeBi.lotNo)
+    expect(afterBi.expiryDate?.toISOString()).toBe(beforeBi.expiryDate?.toISOString())
+
+    // Clean up the tenant-B-scoped row the cross-tenant call created.
+    await prisma.branchInventory.deleteMany({ where: { tenantId: tenantBId, productId } })
   })
 })
 

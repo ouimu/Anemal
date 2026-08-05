@@ -35,12 +35,42 @@ export function createTransfer(tenantId: number, data: CreateTransferInput, perf
       },
     })
 
-    // 2b. Earliest-wins expiry reconciliation on the destination aggregate
-    // (mirrors stockIn — kept on $executeRaw only for the LEAST comparison).
+    // 2b. QA follow-up (post a563b7b): lot-mismatch clear + earliest-wins
+    // expiry reconciliation on the destination aggregate, folded into ONE
+    // atomic UPDATE computed under the row's UPDATE lock — mirrors the
+    // stockIn fix in product.repository.ts (same CASE precedence: no
+    // incoming lot -> keep; destination has no lot yet -> adopt source lot;
+    // mismatch -> clear to NULL; else unchanged). This is symmetric with the
+    // source side, which already loses its own lot identity via stockIn's
+    // atomic UPDATE when a different lot is later received there.
+    //
+    // Expiry stays in the date domain (see product.repository.ts stockIn for
+    // why binding a JS Date resolves to timestamptz and is
+    // session-TimeZone-dependent once cast back to `date`): pass the
+    // YYYY-MM-DD string cast to `::date` instead.
+    const sourceLot = source?.lotNo ?? null
     if (source?.expiryDate) {
+      const sourceExpiryDay = source.expiryDate.toISOString().slice(0, 10)
       await tx.$executeRaw`
         UPDATE "branch_inventory"
-        SET "expiryDate" = LEAST(COALESCE("expiryDate", ${source.expiryDate}), ${source.expiryDate})
+        SET
+          "lotNo" = CASE
+            WHEN ${sourceLot}::text IS NULL THEN "lotNo"
+            WHEN "lotNo" IS NULL THEN ${sourceLot}::text
+            WHEN "lotNo" IS DISTINCT FROM ${sourceLot}::text THEN NULL
+            ELSE "lotNo"
+          END,
+          "expiryDate" = LEAST(COALESCE("expiryDate", ${sourceExpiryDay}::date), ${sourceExpiryDay}::date)
+        WHERE "tenantId" = ${tenantId} AND "branchId" = ${data.toBranchId} AND "productId" = ${data.productId}
+      `
+    } else if (sourceLot) {
+      await tx.$executeRaw`
+        UPDATE "branch_inventory"
+        SET "lotNo" = CASE
+          WHEN "lotNo" IS NULL THEN ${sourceLot}::text
+          WHEN "lotNo" IS DISTINCT FROM ${sourceLot}::text THEN NULL
+          ELSE "lotNo"
+        END
         WHERE "tenantId" = ${tenantId} AND "branchId" = ${data.toBranchId} AND "productId" = ${data.productId}
       `
     }

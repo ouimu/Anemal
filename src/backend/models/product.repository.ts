@@ -115,34 +115,71 @@ export function setMinStock(tenantId: number, branchId: number, productId: numbe
 // per-receipt lot/expiry record (never aggregated, never overwritten).
 export function stockIn(tenantId: number, branchId: number, productId: number, data: StockInInput, performedBy?: number) {
   return prisma.$transaction(async (tx) => {
-    const existing = await tx.branchInventory.findUnique({
-      where: { tenantId_branchId_productId: { tenantId, branchId, productId } },
-      select: { lotNo: true },
-    })
-    const lotChanged = existing != null && data.lotNo != null && existing.lotNo !== data.lotNo
     const receivedExpiry = data.expiryDate ? new Date(data.expiryDate) : null
+    const lotParam = data.lotNo ?? null
 
     await tx.branchInventory.upsert({
       where: { tenantId_branchId_productId: { tenantId, branchId, productId } },
       update: {
         stockQty: { increment: data.qty },
-        ...(lotChanged ? { lotNo: null } : data.lotNo ? { lotNo: data.lotNo } : {}),
         ...(data.minStockQty != null ? { minStockQty: data.minStockQty } : {}),
       },
       create: {
         tenantId, branchId, productId,
         stockQty: data.qty, minStockQty: data.minStockQty ?? 0,
-        lotNo: data.lotNo ?? null, expiryDate: receivedExpiry,
+        lotNo: lotParam, expiryDate: receivedExpiry,
       },
     })
 
-    // Earliest-wins expiry update, kept on $executeRaw only for this one
-    // LEAST comparison (Prisma's fluent API cannot express "min of existing
-    // and incoming"); the tenantId+branchId+productId predicate stays scoped.
+    // QA follow-up (post a563b7b): the lot-mismatch decision and the
+    // earliest-wins expiry update are folded into ONE atomic UPDATE so both
+    // are computed under the row's UPDATE lock against the just-committed
+    // value — not from a separately-read `existing` snapshot, which left a
+    // TOCTOU window where two concurrent receipts could both read the same
+    // prior lotNo and produce an inconsistent final aggregate.
+    //
+    // Lot CASE precedence: no lotNo on this receipt -> keep as-is; aggregate
+    // has no lotNo yet -> adopt this receipt's lotNo (first population, e.g.
+    // the very first receipt against a freshly-created NULL-lotNo row);
+    // aggregate lotNo differs from this receipt's -> clear to NULL (can't
+    // honestly claim a single lot identity across two different lots); else
+    // unchanged.
+    //
+    // Expiry stays in the date domain end-to-end: both columns are
+    // `@db.Date`, but a bound JS `Date` param resolves to `timestamptz`, so
+    // LEAST(...)  cast back to `date` would be session-TimeZone-dependent
+    // (wrong day on a negative-UTC-offset server). Passing the plain
+    // `YYYY-MM-DD` string cast to `::date` keeps the comparison and the
+    // stored value TZ-independent, matching the `.slice(0,10)` convention
+    // already used elsewhere in this function.
+    //
+    // Design note (BA-accepted, not a bug): earliest-wins expiry is
+    // monotone — it can only move earlier, never resets forward, even after
+    // the near-expiry lot is fully consumed. findExpiringSoon already
+    // excludes stockQty<=0 rows, so this only matters while stock > 0.
     if (receivedExpiry) {
+      const receivedExpiryDay = receivedExpiry.toISOString().slice(0, 10)
       await tx.$executeRaw`
         UPDATE "branch_inventory"
-        SET "expiryDate" = LEAST(COALESCE("expiryDate", ${receivedExpiry}), ${receivedExpiry})
+        SET
+          "lotNo" = CASE
+            WHEN ${lotParam}::text IS NULL THEN "lotNo"
+            WHEN "lotNo" IS NULL THEN ${lotParam}::text
+            WHEN "lotNo" IS DISTINCT FROM ${lotParam}::text THEN NULL
+            ELSE "lotNo"
+          END,
+          "expiryDate" = LEAST(COALESCE("expiryDate", ${receivedExpiryDay}::date), ${receivedExpiryDay}::date)
+        WHERE "tenantId" = ${tenantId} AND "branchId" = ${branchId} AND "productId" = ${productId}
+      `
+    } else {
+      await tx.$executeRaw`
+        UPDATE "branch_inventory"
+        SET "lotNo" = CASE
+          WHEN ${lotParam}::text IS NULL THEN "lotNo"
+          WHEN "lotNo" IS NULL THEN ${lotParam}::text
+          WHEN "lotNo" IS DISTINCT FROM ${lotParam}::text THEN NULL
+          ELSE "lotNo"
+        END
         WHERE "tenantId" = ${tenantId} AND "branchId" = ${branchId} AND "productId" = ${productId}
       `
     }
