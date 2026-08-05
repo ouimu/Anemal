@@ -142,6 +142,59 @@ describe('stockIn — earliest-wins expiry + lot mismatch clears aggregate lotNo
     expect(movement.lotNo).toBe('LOT-TRACE')
     expect(movement.expiryDate?.toISOString().slice(0, 10)).toBe('2027-03-15')
   })
+
+  it('BA-required: resets (does not LEAST) the aggregate expiry/lot when a receipt lands after the bin was fully depleted', async () => {
+    const productId = await createProduct('Reset-On-Empty Product')
+    const staleNearExpiry = new Date('2027-01-05T00:00:00.000Z')
+    // Deliberately LATER than staleNearExpiry: under the old monotone
+    // earliest-wins rule (no reset path), LEAST(stale near, new far) would
+    // stay pinned at the stale near date forever, even though that lot is
+    // long gone. The fix must report the NEW date instead.
+    const newFarExpiry = new Date('2027-09-05T00:00:00.000Z')
+
+    await productRepo.stockIn(tenantId, branchAId, productId, {
+      qty: 3, lotNo: 'LOT-DEPLETED', expiryDate: staleNearExpiry.toISOString(),
+    })
+    // Dispense the lot to zero (simulates a sale/consumption draining the bin).
+    await prisma.branchInventory.update({
+      where: { tenantId_branchId_productId: { tenantId, branchId: branchAId, productId } },
+      data: { stockQty: 0 },
+    })
+
+    await productRepo.stockIn(tenantId, branchAId, productId, {
+      qty: 8, lotNo: 'LOT-FRESH', expiryDate: newFarExpiry.toISOString(),
+    })
+
+    const bi = await prisma.branchInventory.findUniqueOrThrow({
+      where: { tenantId_branchId_productId: { tenantId, branchId: branchAId, productId } },
+    })
+    expect(bi.expiryDate?.toISOString()).toBe(newFarExpiry.toISOString())
+    expect(bi.lotNo).toBe('LOT-FRESH')
+    expect(Number(bi.stockQty)).toBe(8)
+  })
+
+  it('BA-required: clears the aggregate expiryDate to NULL when a no-expiry receipt lands after the bin was fully depleted', async () => {
+    const productId = await createProduct('Reset-On-Empty No-Expiry Product')
+    const staleExpiry = new Date('2027-02-10T00:00:00.000Z')
+
+    await productRepo.stockIn(tenantId, branchAId, productId, {
+      qty: 2, lotNo: 'LOT-STALE', expiryDate: staleExpiry.toISOString(),
+    })
+    await prisma.branchInventory.update({
+      where: { tenantId_branchId_productId: { tenantId, branchId: branchAId, productId } },
+      data: { stockQty: 0 },
+    })
+
+    // Receiving into the now-empty bin with NO expiry/lot data must clear
+    // the stale date rather than leaving it in place.
+    await productRepo.stockIn(tenantId, branchAId, productId, { qty: 5 })
+
+    const bi = await prisma.branchInventory.findUniqueOrThrow({
+      where: { tenantId_branchId_productId: { tenantId, branchId: branchAId, productId } },
+    })
+    expect(bi.expiryDate).toBeNull()
+    expect(Number(bi.stockQty)).toBe(5)
+  })
 })
 
 describe('stockIn — tenant isolation on the branch_inventory aggregate row', () => {
@@ -230,22 +283,23 @@ describe('createTransfer — carries source lot expiry to destination (earliest-
     expect(Number(destBi.stockQty)).toBe(4)
   })
 
-  it('keeps the earliest expiry when a later-dated transfer lands on an existing destination row', async () => {
+  it('keeps the earliest expiry when a nearer-dated transfer lands on a destination row that already holds a far expiry', async () => {
     const productId = await createProduct('Transfer Earliest-Wins Product')
     const nearExpiry = new Date('2027-01-10T00:00:00.000Z')
     const farExpiry = new Date('2027-05-10T00:00:00.000Z')
 
-    // Source lot 1 (near expiry) transferred first.
-    await productRepo.stockIn(tenantId, branchAId, productId, {
-      qty: 5, lotNo: 'LOT-N', expiryDate: nearExpiry.toISOString(),
-    })
-    await transferRepo.createTransfer(tenantId, {
-      fromBranchId: branchAId, toBranchId: branchBId, productId, qty: 5,
+    // Seed the destination directly with a FAR expiry via its own prior
+    // receipt, so the destination aggregate is non-empty (stockQty > 0)
+    // before the transfer under test lands — this is what actually
+    // exercises the LEAST comparison instead of the reset-on-empty path.
+    await productRepo.stockIn(tenantId, branchBId, productId, {
+      qty: 3, lotNo: 'LOT-DEST-FAR', expiryDate: farExpiry.toISOString(),
     })
 
-    // Source lot 2 (far expiry) arrives at source, then transferred too.
+    // Source lot (near expiry) transferred from branch A into the
+    // already-far-dated destination.
     await productRepo.stockIn(tenantId, branchAId, productId, {
-      qty: 5, lotNo: 'LOT-F', expiryDate: farExpiry.toISOString(),
+      qty: 5, lotNo: 'LOT-N', expiryDate: nearExpiry.toISOString(),
     })
     await transferRepo.createTransfer(tenantId, {
       fromBranchId: branchAId, toBranchId: branchBId, productId, qty: 5,
@@ -255,6 +309,73 @@ describe('createTransfer — carries source lot expiry to destination (earliest-
       where: { tenantId_branchId_productId: { tenantId, branchId: branchBId, productId } },
     })
     expect(destBi.expiryDate?.toISOString()).toBe(nearExpiry.toISOString())
+    expect(Number(destBi.stockQty)).toBe(8)
+  })
+
+  it('replaces (does not LEAST) the destination expiry/lot when the transfer lands on an emptied-out destination bin', async () => {
+    const productId = await createProduct('Transfer Reset-On-Empty Product')
+    const staleFarExpiry = new Date('2027-05-20T00:00:00.000Z')
+    // Deliberately LATER than staleFarExpiry: if the destination were still
+    // LEAST'd against the stale value instead of reset outright, the result
+    // would stay pinned at staleFarExpiry (the earlier of the two) — so
+    // observing this later date proves replacement, not LEAST.
+    const laterThanStaleExpiry = new Date('2027-08-01T00:00:00.000Z')
+
+    // Destination receives a far-dated lot first, then is fully depleted.
+    await productRepo.stockIn(tenantId, branchBId, productId, {
+      qty: 4, lotNo: 'LOT-OLD', expiryDate: staleFarExpiry.toISOString(),
+    })
+    await prisma.branchInventory.update({
+      where: { tenantId_branchId_productId: { tenantId, branchId: branchBId, productId } },
+      data: { stockQty: 0 },
+    })
+
+    // A fresh lot with a later-than-stale expiry is transferred into the
+    // now-empty destination bin.
+    await productRepo.stockIn(tenantId, branchAId, productId, {
+      qty: 6, lotNo: 'LOT-NEW', expiryDate: laterThanStaleExpiry.toISOString(),
+    })
+    await transferRepo.createTransfer(tenantId, {
+      fromBranchId: branchAId, toBranchId: branchBId, productId, qty: 6,
+    })
+
+    const destBi = await prisma.branchInventory.findUniqueOrThrow({
+      where: { tenantId_branchId_productId: { tenantId, branchId: branchBId, productId } },
+    })
+    expect(destBi.expiryDate?.toISOString()).toBe(laterThanStaleExpiry.toISOString())
+    expect(destBi.lotNo).toBe('LOT-NEW')
+    expect(Number(destBi.stockQty)).toBe(6)
+  })
+
+  it('two sequential receipts onto an empty bin: the second still applies earliest-wins against the first (not an arbitrary overwrite)', async () => {
+    // True concurrency (two simultaneous transactions racing the same row)
+    // requires a live DB with real transaction interleaving, which this
+    // Jest process cannot simulate deterministically. This sequential test
+    // proves the reset-on-empty branch composes correctly with the
+    // earliest-wins branch: receipt #1 resets the empty bin outright,
+    // receipt #2 (bin now non-empty) LEASTs against receipt #1 as normal —
+    // together these are the two code paths true concurrent receipts would
+    // hit depending on commit order.
+    const productId = await createProduct('Sequential-Onto-Empty Product')
+    const firstExpiry = new Date('2027-03-01T00:00:00.000Z')
+    const secondEarlierExpiry = new Date('2027-02-01T00:00:00.000Z')
+
+    await productRepo.stockIn(tenantId, branchAId, productId, {
+      qty: 2, lotNo: 'LOT-FIRST', expiryDate: firstExpiry.toISOString(),
+    })
+    let bi = await prisma.branchInventory.findUniqueOrThrow({
+      where: { tenantId_branchId_productId: { tenantId, branchId: branchAId, productId } },
+    })
+    expect(bi.expiryDate?.toISOString()).toBe(firstExpiry.toISOString())
+
+    await productRepo.stockIn(tenantId, branchAId, productId, {
+      qty: 2, lotNo: 'LOT-SECOND', expiryDate: secondEarlierExpiry.toISOString(),
+    })
+    bi = await prisma.branchInventory.findUniqueOrThrow({
+      where: { tenantId_branchId_productId: { tenantId, branchId: branchAId, productId } },
+    })
+    expect(bi.expiryDate?.toISOString()).toBe(secondEarlierExpiry.toISOString())
+    expect(Number(bi.stockQty)).toBe(4)
   })
 
   it('records the source lot/expiry on both paired StockMovement rows', async () => {

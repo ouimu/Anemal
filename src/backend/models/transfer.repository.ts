@@ -35,14 +35,21 @@ export function createTransfer(tenantId: number, data: CreateTransferInput, perf
       },
     })
 
-    // 2b. QA follow-up (post a563b7b): lot-mismatch clear + earliest-wins
-    // expiry reconciliation on the destination aggregate, folded into ONE
-    // atomic UPDATE computed under the row's UPDATE lock — mirrors the
-    // stockIn fix in product.repository.ts (same CASE precedence: no
-    // incoming lot -> keep; destination has no lot yet -> adopt source lot;
-    // mismatch -> clear to NULL; else unchanged). This is symmetric with the
-    // source side, which already loses its own lot identity via stockIn's
-    // atomic UPDATE when a different lot is later received there.
+    // 2b. QA follow-up (post a563b7b) + BA ruling (this session, R3-HI-05
+    // 3rd round): lot-mismatch clear + earliest-wins/reset-on-empty expiry
+    // reconciliation on the destination aggregate, folded into ONE atomic
+    // UPDATE computed under the row's UPDATE lock — mirrors the stockIn fix
+    // in product.repository.ts exactly, including the empty-bin reset path:
+    // "stockQty" here is read AT THE START of this UPDATE, i.e. AFTER the
+    // increment from the upsert in step 2 above, so "stockQty" - data.qty
+    // recovers the destination's pre-transfer quantity. When that is <= 0
+    // (destination bin was empty before this transfer landed), the incoming
+    // source lot/expiry replaces the aggregate outright instead of being
+    // LEAST'd/merged against the now-meaningless stale value — otherwise the
+    // aggregate could never self-correct forward once a lot fully depletes.
+    // Both the lot CASE and the expiry CASE always run together in the same
+    // statement (this was the MED-1 gap: previously the lot-only branch ran
+    // without the expiry reset when the source carried no expiryDate).
     //
     // Expiry stays in the date domain (see product.repository.ts stockIn for
     // why binding a JS Date resolves to timestamptz and is
@@ -55,22 +62,30 @@ export function createTransfer(tenantId: number, data: CreateTransferInput, perf
         UPDATE "branch_inventory"
         SET
           "lotNo" = CASE
+            WHEN "stockQty" - ${data.qty}::numeric <= 0 THEN ${sourceLot}::text
             WHEN ${sourceLot}::text IS NULL THEN "lotNo"
             WHEN "lotNo" IS NULL THEN ${sourceLot}::text
             WHEN "lotNo" IS DISTINCT FROM ${sourceLot}::text THEN NULL
             ELSE "lotNo"
           END,
-          "expiryDate" = LEAST(COALESCE("expiryDate", ${sourceExpiryDay}::date), ${sourceExpiryDay}::date)
+          "expiryDate" = CASE
+            WHEN "stockQty" - ${data.qty}::numeric <= 0 THEN ${sourceExpiryDay}::date
+            ELSE LEAST(COALESCE("expiryDate", ${sourceExpiryDay}::date), ${sourceExpiryDay}::date)
+          END
         WHERE "tenantId" = ${tenantId} AND "branchId" = ${data.toBranchId} AND "productId" = ${data.productId}
       `
-    } else if (sourceLot) {
+    } else {
       await tx.$executeRaw`
         UPDATE "branch_inventory"
-        SET "lotNo" = CASE
-          WHEN "lotNo" IS NULL THEN ${sourceLot}::text
-          WHEN "lotNo" IS DISTINCT FROM ${sourceLot}::text THEN NULL
-          ELSE "lotNo"
-        END
+        SET
+          "lotNo" = CASE
+            WHEN "stockQty" - ${data.qty}::numeric <= 0 THEN ${sourceLot}::text
+            WHEN ${sourceLot}::text IS NULL THEN "lotNo"
+            WHEN "lotNo" IS NULL THEN ${sourceLot}::text
+            WHEN "lotNo" IS DISTINCT FROM ${sourceLot}::text THEN NULL
+            ELSE "lotNo"
+          END,
+          "expiryDate" = CASE WHEN "stockQty" - ${data.qty}::numeric <= 0 THEN NULL ELSE "expiryDate" END
         WHERE "tenantId" = ${tenantId} AND "branchId" = ${data.toBranchId} AND "productId" = ${data.productId}
       `
     }

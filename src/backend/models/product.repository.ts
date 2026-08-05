@@ -107,8 +107,11 @@ export function setMinStock(tenantId: number, branchId: number, productId: numbe
 // or differently-lotted batch already on the shelf. The aggregate
 // BranchInventory row can only carry one expiryDate/lotNo (it is a sum
 // across lots, not a lot table), so:
-//   - expiryDate is earliest-wins (SQL LEAST) so alerts never point past
-//     the soonest-expiring stock actually on hand.
+//   - expiryDate is earliest-wins (SQL LEAST) while stock remains, so alerts
+//     never point past the soonest-expiring stock actually on hand — but a
+//     receipt landing on an emptied-out bin (pre-receipt stockQty <= 0)
+//     replaces the expiry/lot outright instead of LEAST'ing against a stale,
+//     now-meaningless value, so the aggregate can self-correct forward.
 //   - lotNo is cleared to NULL on a mismatch — the aggregate can no longer
 //     honestly claim a single lot identity once two different lots exist.
 // The StockMovement row created for this receipt is the real, permanent
@@ -138,12 +141,16 @@ export function stockIn(tenantId: number, branchId: number, productId: number, d
     // TOCTOU window where two concurrent receipts could both read the same
     // prior lotNo and produce an inconsistent final aggregate.
     //
-    // Lot CASE precedence: no lotNo on this receipt -> keep as-is; aggregate
-    // has no lotNo yet -> adopt this receipt's lotNo (first population, e.g.
-    // the very first receipt against a freshly-created NULL-lotNo row);
-    // aggregate lotNo differs from this receipt's -> clear to NULL (can't
-    // honestly claim a single lot identity across two different lots); else
-    // unchanged.
+    // Lot CASE precedence: bin was empty pre-receipt (stockQty - qty <= 0,
+    // where "stockQty" is read AT THE START of this UPDATE — i.e. already
+    // includes the increment from the upsert above, so subtracting data.qty
+    // recovers the pre-receipt quantity) -> adopt this receipt's lotNo
+    // outright (an empty bin's stale lot identity is meaningless); no lotNo
+    // on this receipt -> keep as-is; aggregate has no lotNo yet -> adopt
+    // this receipt's lotNo (first population, e.g. the very first receipt
+    // against a freshly-created NULL-lotNo row); aggregate lotNo differs
+    // from this receipt's -> clear to NULL (can't honestly claim a single
+    // lot identity across two different lots); else unchanged.
     //
     // Expiry stays in the date domain end-to-end: both columns are
     // `@db.Date`, but a bound JS `Date` param resolves to `timestamptz`, so
@@ -153,33 +160,42 @@ export function stockIn(tenantId: number, branchId: number, productId: number, d
     // stored value TZ-independent, matching the `.slice(0,10)` convention
     // already used elsewhere in this function.
     //
-    // Design note (BA-accepted, not a bug): earliest-wins expiry is
-    // monotone — it can only move earlier, never resets forward, even after
-    // the near-expiry lot is fully consumed. findExpiringSoon already
-    // excludes stockQty<=0 rows, so this only matters while stock > 0.
+    // BA ruling (this session): earliest-wins expiry is otherwise monotone
+    // — it can only move earlier, never resets forward. Once a lot fully
+    // depletes (stockQty hits 0) the aggregate must be able to self-correct
+    // when a later, differently-dated lot arrives, so a receipt landing on
+    // an empty bin replaces the expiry outright instead of LEAST'ing it
+    // against the now-meaningless stale value.
     if (receivedExpiry) {
       const receivedExpiryDay = receivedExpiry.toISOString().slice(0, 10)
       await tx.$executeRaw`
         UPDATE "branch_inventory"
         SET
           "lotNo" = CASE
+            WHEN "stockQty" - ${data.qty}::numeric <= 0 THEN ${lotParam}::text
             WHEN ${lotParam}::text IS NULL THEN "lotNo"
             WHEN "lotNo" IS NULL THEN ${lotParam}::text
             WHEN "lotNo" IS DISTINCT FROM ${lotParam}::text THEN NULL
             ELSE "lotNo"
           END,
-          "expiryDate" = LEAST(COALESCE("expiryDate", ${receivedExpiryDay}::date), ${receivedExpiryDay}::date)
+          "expiryDate" = CASE
+            WHEN "stockQty" - ${data.qty}::numeric <= 0 THEN ${receivedExpiryDay}::date
+            ELSE LEAST(COALESCE("expiryDate", ${receivedExpiryDay}::date), ${receivedExpiryDay}::date)
+          END
         WHERE "tenantId" = ${tenantId} AND "branchId" = ${branchId} AND "productId" = ${productId}
       `
     } else {
       await tx.$executeRaw`
         UPDATE "branch_inventory"
-        SET "lotNo" = CASE
-          WHEN ${lotParam}::text IS NULL THEN "lotNo"
-          WHEN "lotNo" IS NULL THEN ${lotParam}::text
-          WHEN "lotNo" IS DISTINCT FROM ${lotParam}::text THEN NULL
-          ELSE "lotNo"
-        END
+        SET
+          "lotNo" = CASE
+            WHEN "stockQty" - ${data.qty}::numeric <= 0 THEN ${lotParam}::text
+            WHEN ${lotParam}::text IS NULL THEN "lotNo"
+            WHEN "lotNo" IS NULL THEN ${lotParam}::text
+            WHEN "lotNo" IS DISTINCT FROM ${lotParam}::text THEN NULL
+            ELSE "lotNo"
+          END,
+          "expiryDate" = CASE WHEN "stockQty" - ${data.qty}::numeric <= 0 THEN NULL ELSE "expiryDate" END
         WHERE "tenantId" = ${tenantId} AND "branchId" = ${branchId} AND "productId" = ${productId}
       `
     }
