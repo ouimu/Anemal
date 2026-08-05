@@ -309,6 +309,39 @@ describe('createTransfer — carries source lot expiry to destination (earliest-
       where: { tenantId_branchId_productId: { tenantId, branchId: branchBId, productId } },
     })
     expect(destBi.expiryDate?.toISOString()).toBe(nearExpiry.toISOString())
+    // Assert lotNo too: under the reset-on-empty path (destination was
+    // empty) lotNo would become 'LOT-N' outright; under a plain unconditional
+    // overwrite it would also become 'LOT-N'. Only true LEAST-with-mismatch
+    // clears it to NULL (destination had stock > 0 with a DIFFERENT lot) —
+    // this is what actually distinguishes LEAST from either alternative.
+    expect(destBi.lotNo).toBeNull()
+    expect(Number(destBi.stockQty)).toBe(8)
+  })
+
+  it('mirror of the above: keeps the earliest expiry when a FAR-dated transfer lands on a destination row that already holds a NEARER expiry', async () => {
+    // This is the case that an unconditional overwrite (or an accidentally
+    // reversed LEAST/GREATEST) would fail: destination already holds the
+    // near date; a far-dated transfer must NOT push it forward.
+    const productId = await createProduct('Transfer Earliest-Wins Mirror Product')
+    const nearExpiry = new Date('2027-01-15T00:00:00.000Z')
+    const farExpiry = new Date('2027-06-15T00:00:00.000Z')
+
+    await productRepo.stockIn(tenantId, branchBId, productId, {
+      qty: 3, lotNo: 'LOT-DEST-NEAR', expiryDate: nearExpiry.toISOString(),
+    })
+
+    await productRepo.stockIn(tenantId, branchAId, productId, {
+      qty: 5, lotNo: 'LOT-F', expiryDate: farExpiry.toISOString(),
+    })
+    await transferRepo.createTransfer(tenantId, {
+      fromBranchId: branchAId, toBranchId: branchBId, productId, qty: 5,
+    })
+
+    const destBi = await prisma.branchInventory.findUniqueOrThrow({
+      where: { tenantId_branchId_productId: { tenantId, branchId: branchBId, productId } },
+    })
+    expect(destBi.expiryDate?.toISOString()).toBe(nearExpiry.toISOString())
+    expect(destBi.lotNo).toBeNull()
     expect(Number(destBi.stockQty)).toBe(8)
   })
 
@@ -347,7 +380,34 @@ describe('createTransfer — carries source lot expiry to destination (earliest-
     expect(Number(destBi.stockQty)).toBe(6)
   })
 
-  it('two sequential receipts onto an empty bin: the second still applies earliest-wins against the first (not an arbitrary overwrite)', async () => {
+  it('records the source lot/expiry on both paired StockMovement rows', async () => {
+    const productId = await createProduct('Transfer Movement Traceability Product')
+    const expiry = new Date('2027-04-01T00:00:00.000Z')
+    await productRepo.stockIn(tenantId, branchAId, productId, {
+      qty: 6, lotNo: 'LOT-MOVE', expiryDate: expiry.toISOString(),
+    })
+
+    await transferRepo.createTransfer(tenantId, {
+      fromBranchId: branchAId, toBranchId: branchBId, productId, qty: 6,
+    })
+
+    const [outMovement, inMovement] = await Promise.all([
+      prisma.stockMovement.findFirstOrThrow({
+        where: { tenantId, itemId: productId, movementType: 'transfer_out' },
+      }),
+      prisma.stockMovement.findFirstOrThrow({
+        where: { tenantId, itemId: productId, movementType: 'transfer_in' },
+      }),
+    ])
+    expect(outMovement.lotNo).toBe('LOT-MOVE')
+    expect(inMovement.lotNo).toBe('LOT-MOVE')
+    expect(outMovement.expiryDate?.toISOString()).toBe(expiry.toISOString())
+    expect(inMovement.expiryDate?.toISOString()).toBe(expiry.toISOString())
+  })
+})
+
+describe('stockIn — sequential receipts onto an empty bin compose reset-on-empty with earliest-wins', () => {
+  it('the second receipt still applies earliest-wins against the first (not an arbitrary overwrite)', async () => {
     // True concurrency (two simultaneous transactions racing the same row)
     // requires a live DB with real transaction interleaving, which this
     // Jest process cannot simulate deterministically. This sequential test
@@ -376,30 +436,5 @@ describe('createTransfer — carries source lot expiry to destination (earliest-
     })
     expect(bi.expiryDate?.toISOString()).toBe(secondEarlierExpiry.toISOString())
     expect(Number(bi.stockQty)).toBe(4)
-  })
-
-  it('records the source lot/expiry on both paired StockMovement rows', async () => {
-    const productId = await createProduct('Transfer Movement Traceability Product')
-    const expiry = new Date('2027-04-01T00:00:00.000Z')
-    await productRepo.stockIn(tenantId, branchAId, productId, {
-      qty: 6, lotNo: 'LOT-MOVE', expiryDate: expiry.toISOString(),
-    })
-
-    await transferRepo.createTransfer(tenantId, {
-      fromBranchId: branchAId, toBranchId: branchBId, productId, qty: 6,
-    })
-
-    const [outMovement, inMovement] = await Promise.all([
-      prisma.stockMovement.findFirstOrThrow({
-        where: { tenantId, itemId: productId, movementType: 'transfer_out' },
-      }),
-      prisma.stockMovement.findFirstOrThrow({
-        where: { tenantId, itemId: productId, movementType: 'transfer_in' },
-      }),
-    ])
-    expect(outMovement.lotNo).toBe('LOT-MOVE')
-    expect(inMovement.lotNo).toBe('LOT-MOVE')
-    expect(outMovement.expiryDate?.toISOString()).toBe(expiry.toISOString())
-    expect(inMovement.expiryDate?.toISOString()).toBe(expiry.toISOString())
   })
 })
