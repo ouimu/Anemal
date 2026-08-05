@@ -103,26 +103,59 @@ export function setMinStock(tenantId: number, branchId: number, productId: numbe
   })
 }
 
+// R3-HI-05: a receipt's expiry/lot must never silently hide a nearer-expiry
+// or differently-lotted batch already on the shelf. The aggregate
+// BranchInventory row can only carry one expiryDate/lotNo (it is a sum
+// across lots, not a lot table), so:
+//   - expiryDate is earliest-wins (SQL LEAST) so alerts never point past
+//     the soonest-expiring stock actually on hand.
+//   - lotNo is cleared to NULL on a mismatch — the aggregate can no longer
+//     honestly claim a single lot identity once two different lots exist.
+// The StockMovement row created for this receipt is the real, permanent
+// per-receipt lot/expiry record (never aggregated, never overwritten).
 export function stockIn(tenantId: number, branchId: number, productId: number, data: StockInInput, performedBy?: number) {
   return prisma.$transaction(async (tx) => {
-    const bi = await tx.branchInventory.upsert({
+    const existing = await tx.branchInventory.findUnique({
+      where: { tenantId_branchId_productId: { tenantId, branchId, productId } },
+      select: { lotNo: true },
+    })
+    const lotChanged = existing != null && data.lotNo != null && existing.lotNo !== data.lotNo
+    const receivedExpiry = data.expiryDate ? new Date(data.expiryDate) : null
+
+    await tx.branchInventory.upsert({
       where: { tenantId_branchId_productId: { tenantId, branchId, productId } },
       update: {
         stockQty: { increment: data.qty },
-        ...(data.expiryDate ? { expiryDate: new Date(data.expiryDate) } : {}),
-        ...(data.lotNo ? { lotNo: data.lotNo } : {}),
+        ...(lotChanged ? { lotNo: null } : data.lotNo ? { lotNo: data.lotNo } : {}),
         ...(data.minStockQty != null ? { minStockQty: data.minStockQty } : {}),
       },
       create: {
         tenantId, branchId, productId,
         stockQty: data.qty, minStockQty: data.minStockQty ?? 0,
-        lotNo: data.lotNo ?? null, expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
+        lotNo: data.lotNo ?? null, expiryDate: receivedExpiry,
       },
     })
+
+    // Earliest-wins expiry update, kept on $executeRaw only for this one
+    // LEAST comparison (Prisma's fluent API cannot express "min of existing
+    // and incoming"); the tenantId+branchId+productId predicate stays scoped.
+    if (receivedExpiry) {
+      await tx.$executeRaw`
+        UPDATE "branch_inventory"
+        SET "expiryDate" = LEAST(COALESCE("expiryDate", ${receivedExpiry}), ${receivedExpiry})
+        WHERE "tenantId" = ${tenantId} AND "branchId" = ${branchId} AND "productId" = ${productId}
+      `
+    }
+
+    const bi = await tx.branchInventory.findUniqueOrThrow({
+      where: { tenantId_branchId_productId: { tenantId, branchId, productId } },
+    })
+
     await tx.stockMovement.create({
       data: {
         tenantId, branchId, itemId: productId, movementType: 'in', qty: data.qty,
         referenceType: 'manual', notes: data.lotNo ? `Lot ${data.lotNo}` : null, performedBy: performedBy ?? null,
+        lotNo: data.lotNo ?? null, expiryDate: receivedExpiry,
       },
     })
     return bi
@@ -167,6 +200,7 @@ export function findExpiringSoon(tenantId: number, branchId: number, withinDays:
     FROM branch_inventory bi
     JOIN inventory_items i ON i.id = bi."productId" AND i."tenantId" = ${tenantId}
     WHERE bi."tenantId" = ${tenantId} AND bi."branchId" = ${branchId} AND i."isActive" = TRUE
+      AND bi."stockQty" > 0
       AND bi."expiryDate" IS NOT NULL AND bi."expiryDate" <= ${cutoff}
     ORDER BY bi."expiryDate" ASC
   `

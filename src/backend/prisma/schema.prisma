@@ -497,6 +497,8 @@ model StockMovement {
   destinationBranchId Int?
   notes               String?
   performedBy         Int?
+  lotNo               String?   @db.VarChar(100) // R3-HI-05: per-receipt lot traceability
+  expiryDate          DateTime? @db.Date          // R3-HI-05: per-receipt expiry traceability
   createdAt           DateTime @default(now())
 
   tenant Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
