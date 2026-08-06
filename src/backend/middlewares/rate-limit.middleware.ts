@@ -7,7 +7,7 @@
  * @module rate-limit.middleware
  */
 
-import rateLimit from 'express-rate-limit'
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 
 /** Maximum login attempts per window before a 429 is returned. */
 const MAX_LOGIN_ATTEMPTS = 10
@@ -66,9 +66,12 @@ export const uploadRateLimiter = rateLimit({
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   skip: () => process.env.NODE_ENV === 'test',
+  // The IP fallback must go through `ipKeyGenerator`, which normalises IPv6 to a
+  // CIDR subnet — a raw `req.ip` would let one IPv6 client rotate addresses within
+  // its own /56 and bypass the limit. express-rate-limit refuses to boot without it.
   keyGenerator: (req) => {
     const ctx = req.context
-    return ctx?.userId != null ? `user:${ctx.userId}` : (req.ip ?? 'unknown')
+    return ctx?.userId != null ? `user:${ctx.userId}` : ipKeyGenerator(req.ip ?? 'unknown')
   },
   handler: (_req, res) => {
     res.status(429).json({

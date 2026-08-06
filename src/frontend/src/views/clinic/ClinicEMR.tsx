@@ -83,9 +83,15 @@ function AnatomyCanvas({ value, onChange }: { value: AnatomyAnnotation | null; o
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [template])
 
+  // Canvas is rendered at w-full but has a fixed 400x200 backing store, so CSS
+  // pixels must be scaled into canvas pixels or strokes land offset from the cursor.
   const getPos = (e: React.PointerEvent) => {
-    const rect = canvasRef.current!.getBoundingClientRect()
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top }
+    const canvas = canvasRef.current!
+    const rect = canvas.getBoundingClientRect()
+    return {
+      x: (e.clientX - rect.left) * (canvas.width / rect.width),
+      y: (e.clientY - rect.top) * (canvas.height / rect.height),
+    }
   }
 
   const onDown = (e: React.PointerEvent) => {
