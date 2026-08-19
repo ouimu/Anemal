@@ -10,21 +10,3 @@ attachments/
 backups/
 .vercel
 .env*
-
-# --- Local-only tracking/history docs (2026-07-24 cleanup) ---
-# These stay on disk for agents/humans to read but are NOT committed —
-# see .claude/standards/doc-git-policy.md for the kept-vs-local rule.
-/HistoryLog.md
-/CHANGELOG.md
-/PHASE-RESEQUENCE.md
-/design-alignment-plan.md
-/RecommendByCodex/
-.claude/roadmap/index.md
-.claude/roadmap/phase-history.md
-.claude/roadmap/ACTIVE/
-.claude/roadmap/archive/
-.claude/specs/RBAC_Platform_Restructure_Spec.md
-.claude/specs/System_Specification.md
-.claude/specs/implementation-status-matrix.md
-docs/manuals/clinic-user-manual/proofreading-checklist.md
-docs/manuals/clinic-user-manual/screen-inventory.md
