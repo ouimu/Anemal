@@ -47,7 +47,7 @@ vi.mock('../store/authStore', () => ({
   useAuthStore: useAuthStoreMock,
 }))
 
-import { useLogin } from './useAuth'
+import { useLogin, useSwitchBranch, IdentityLoadError } from './useAuth'
 
 const step2Response = {
   requiresBranchSelection: false as const,
@@ -131,3 +131,206 @@ describe('useLogin — remember-me username persistence', () => {
     expect(navigateMock).toHaveBeenCalled()
   })
 })
+
+describe('useLogin — atomic identity resolution (ADR-0024)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    sessionStorage.removeItem('vc_auth')
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: { userId: 1, tenantId: 1, branchId: 1, name: 'Alice', email: 'a@b.com', roleIds: [1], permissions: ['pets.view'] } }),
+    }) as unknown as typeof fetch
+  })
+
+  // T4/T3 — branch-select happy path: exactly one GET /auth/me, setAuth
+  // receives permissionsLoaded: true, navigate fires only after setAuth (AC-2, AC-3)
+  it('branch-select success — exactly one /auth/me call, setAuth carries permissionsLoaded: true, navigate fires after setAuth', async () => {
+    postMock.mockResolvedValueOnce({ data: { data: step1Response } })
+    const { result } = renderHook(() => useLogin(), { wrapper })
+    act(() => { result.current.loginMutation.mutate({ subdomain: 'dev-clinic', username: 'alice', password: 'pw', remember: false }) })
+    await waitFor(() => expect(result.current.branchSelection).not.toBeNull())
+
+    postMock.mockResolvedValueOnce({ data: { data: step2Response } })
+    await act(async () => {
+      await result.current.selectBranchMutation.mutateAsync({ pendingToken: 'pending-token', branchId: 1 })
+    })
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+    expect(authState.setAuth).toHaveBeenCalledWith(expect.objectContaining({ permissionsLoaded: true }))
+    const setAuthOrder  = authState.setAuth.mock.invocationCallOrder[0]
+    const navigateOrder = navigateMock.mock.invocationCallOrder[0]
+    expect(setAuthOrder).toBeLessThan(navigateOrder)
+  })
+
+  // T5 — the picker stays mounted (branchSelection non-null) until the mutation
+  // resolves; setBranchSelection(null) never races ahead of setAuth (AC-1)
+  it('branch-select success — branchSelection stays non-null until setAuth has been called', async () => {
+    postMock.mockResolvedValueOnce({ data: { data: step1Response } })
+    const { result } = renderHook(() => useLogin(), { wrapper })
+    act(() => { result.current.loginMutation.mutate({ subdomain: 'dev-clinic', username: 'alice', password: 'pw', remember: false }) })
+    await waitFor(() => expect(result.current.branchSelection).not.toBeNull())
+
+    postMock.mockResolvedValueOnce({ data: { data: step2Response } })
+    let sawBranchSelectionAtSuccessTime: BranchSelectionStateLike | null = null
+    authState.setAuth.mockImplementationOnce(() => {
+      sawBranchSelectionAtSuccessTime = result.current.branchSelection
+    })
+    await act(async () => {
+      await result.current.selectBranchMutation.mutateAsync({ pendingToken: 'pending-token', branchId: 1 })
+    })
+
+    expect(sawBranchSelectionAtSuccessTime).not.toBeNull()
+    expect(result.current.branchSelection).toBeNull() // cleared only after setAuth, in onSuccess
+  })
+
+  // T6 — /auth/select-branch succeeds, /auth/me fails: no setAuth, no persisted
+  // session, no navigate, picker stays mounted, isError true, exactly one fetch (AC-9, AC-12)
+  it.each([
+    ['fetch rejects',        () => Promise.reject(new Error('network down')), true],
+    ['401 response',         () => Promise.resolve({ ok: false, status: 401, json: async () => ({}) }), true],
+    ['404 response',         () => Promise.resolve({ ok: false, status: 404, json: async () => ({}) }), true],
+    ['500 response',         () => Promise.resolve({ ok: false, status: 500, json: async () => ({}) }), true],
+  ])('branch-select — /auth/me %s after select-branch succeeds: no setAuth/navigate, picker survives', async (_label, fetchImpl, expectIdentityError) => {
+    postMock.mockResolvedValueOnce({ data: { data: step1Response } })
+    const { result } = renderHook(() => useLogin(), { wrapper })
+    act(() => { result.current.loginMutation.mutate({ subdomain: 'dev-clinic', username: 'alice', password: 'pw', remember: false }) })
+    await waitFor(() => expect(result.current.branchSelection).not.toBeNull())
+
+    postMock.mockResolvedValueOnce({ data: { data: step2Response } })
+    globalThis.fetch = vi.fn(fetchImpl) as unknown as typeof fetch
+
+    act(() => {
+      result.current.selectBranchMutation.mutate({ pendingToken: 'pending-token', branchId: 1 })
+    })
+    await waitFor(() => expect(result.current.selectBranchMutation.isError).toBe(true))
+
+    expect(authState.setAuth).not.toHaveBeenCalled()
+    expect(sessionStorage.getItem('vc_auth')).toBeNull()
+    expect(navigateMock).not.toHaveBeenCalled()
+    expect(result.current.branchSelection).not.toBeNull()
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+    // A non-ok response is reported as IdentityLoadError (so the UI can show a
+    // specific message); a raw network throw propagates as its native error.
+    expect(result.current.selectBranchMutation.error instanceof IdentityLoadError).toBe(expectIdentityError)
+  })
+
+  // T8 — re-tap retry after a T6-style failure, same pendingToken, second
+  // attempt succeeds: setAuth/navigate now fire, one POST + one GET on the retry itself
+  it('branch-select — retry with the same pendingToken after a failed /auth/me succeeds cleanly', async () => {
+    postMock.mockResolvedValueOnce({ data: { data: step1Response } })
+    const { result } = renderHook(() => useLogin(), { wrapper })
+    act(() => { result.current.loginMutation.mutate({ subdomain: 'dev-clinic', username: 'alice', password: 'pw', remember: false }) })
+    await waitFor(() => expect(result.current.branchSelection).not.toBeNull())
+
+    postMock.mockResolvedValueOnce({ data: { data: step2Response } })
+    globalThis.fetch = vi.fn().mockRejectedValueOnce(new Error('network down'))
+    await act(async () => {
+      try {
+        await result.current.selectBranchMutation.mutateAsync({ pendingToken: 'pending-token', branchId: 1 })
+      } catch { /* expected */ }
+    })
+    expect(authState.setAuth).not.toHaveBeenCalled()
+
+    postMock.mockResolvedValueOnce({ data: { data: step2Response } })
+    const retryFetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: { userId: 1, tenantId: 1, branchId: 1, name: 'Alice', email: 'a@b.com', roleIds: [1], permissions: ['pets.view'] } }),
+    })
+    globalThis.fetch = retryFetch as unknown as typeof fetch
+    await act(async () => {
+      await result.current.selectBranchMutation.mutateAsync({ pendingToken: 'pending-token', branchId: 1 })
+    })
+
+    expect(authState.setAuth).toHaveBeenCalledTimes(1)
+    expect(navigateMock).toHaveBeenCalled()
+    expect(postMock).toHaveBeenCalledTimes(3) // login + failed select + retried select
+    expect(retryFetch).toHaveBeenCalledTimes(1) // one /auth/me on the retry itself
+  })
+
+  // T9 — direct/admin path: success unchanged, failure surfaces an error
+  // instead of stopping silently (AC-4, AC-10)
+  it('direct-login success — one /auth/me call, permissionsLoaded: true, navigate fires', async () => {
+    postMock.mockResolvedValueOnce({ data: { data: step2Response } })
+    const { result } = renderHook(() => useLogin(), { wrapper })
+    await act(async () => {
+      await result.current.loginMutation.mutateAsync({ subdomain: 'dev-clinic', username: 'alice', password: 'pw', remember: false })
+    })
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+    expect(authState.setAuth).toHaveBeenCalledWith(expect.objectContaining({ permissionsLoaded: true }))
+    expect(navigateMock).toHaveBeenCalled()
+  })
+
+  it('direct-login — /auth/me failure surfaces isError, no setAuth/navigate, and a clean re-submit retry succeeds', async () => {
+    postMock.mockResolvedValueOnce({ data: { data: step2Response } })
+    globalThis.fetch = vi.fn().mockRejectedValueOnce(new Error('network down'))
+    const { result } = renderHook(() => useLogin(), { wrapper })
+
+    act(() => {
+      result.current.loginMutation.mutate({ subdomain: 'dev-clinic', username: 'alice', password: 'pw', remember: false })
+    })
+    await waitFor(() => expect(result.current.loginMutation.isError).toBe(true))
+
+    expect(authState.setAuth).not.toHaveBeenCalled()
+    expect(sessionStorage.getItem('vc_auth')).toBeNull()
+    expect(navigateMock).not.toHaveBeenCalled()
+
+    postMock.mockResolvedValueOnce({ data: { data: step2Response } })
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: { userId: 1, tenantId: 1, branchId: 1, name: 'Alice', email: 'a@b.com', roleIds: [1], permissions: ['pets.view'] } }),
+    })
+    await act(async () => {
+      await result.current.loginMutation.mutateAsync({ subdomain: 'dev-clinic', username: 'alice', password: 'pw', remember: false })
+    })
+    expect(authState.setAuth).toHaveBeenCalledTimes(1)
+    expect(navigateMock).toHaveBeenCalled()
+  })
+
+  // T13/T14 — /auth/me 200 with permissions: [] (legit zero-permission role)
+  // still establishes the session, distinguishable from a T6-style failure (AC-13)
+  it('branch-select — /auth/me 200 with permissions: [] still succeeds (not treated as a failure)', async () => {
+    postMock.mockResolvedValueOnce({ data: { data: step1Response } })
+    const { result } = renderHook(() => useLogin(), { wrapper })
+    act(() => { result.current.loginMutation.mutate({ subdomain: 'dev-clinic', username: 'alice', password: 'pw', remember: false }) })
+    await waitFor(() => expect(result.current.branchSelection).not.toBeNull())
+
+    postMock.mockResolvedValueOnce({ data: { data: step2Response } })
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: { userId: 1, tenantId: 1, branchId: 1, name: 'Alice', email: 'a@b.com', roleIds: [1], permissions: [] } }),
+    }) as unknown as typeof fetch
+
+    await act(async () => {
+      await result.current.selectBranchMutation.mutateAsync({ pendingToken: 'pending-token', branchId: 1 })
+    })
+
+    expect(authState.setAuth).toHaveBeenCalledWith(
+      expect.objectContaining({ permissionsLoaded: true, permissions: [] }),
+    )
+    expect(navigateMock).toHaveBeenCalled()
+  })
+})
+
+// Minimal shape used only to type a locally-captured branchSelection snapshot in the test above.
+type BranchSelectionStateLike = { pendingToken: string; branches: { id: number; name: string }[] }
+
+describe('useSwitchBranch — permissionsLoaded regression guard (AC-11, R-1)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('setAuth is called with permissionsLoaded: true explicitly present in the payload', async () => {
+    postMock.mockResolvedValueOnce({ data: { data: { token: 'new-jwt' } } })
+    const { result } = renderHook(() => useSwitchBranch(), { wrapper })
+
+    await act(async () => {
+      await result.current.mutateAsync({ branchId: 2, branchName: 'North' })
+    })
+
+    expect(authState.setAuth).toHaveBeenCalledWith(
+      expect.objectContaining({ permissionsLoaded: true }),
+    )
+  })
+})
+

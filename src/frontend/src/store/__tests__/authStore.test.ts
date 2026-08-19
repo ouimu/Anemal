@@ -26,6 +26,7 @@ const sampleAuth: AuthData = {
   name:           'Alice',
   companyName:    'Acme Clinic',
   branchName:     'Main',
+  permissionsLoaded: true,
 }
 
 describe('authStore — sessionStorage-only persistence', () => {
@@ -61,5 +62,53 @@ describe('authStore — sessionStorage-only persistence', () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sampleAuth))
     await import('../authStore')
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+  })
+
+  it('setAuth requires permissionsLoaded at the type level and round-trips it through sessionStorage', async () => {
+    const { useAuthStore } = await import('../authStore')
+    useAuthStore.getState().setAuth(sampleAuth)
+    expect(useAuthStore.getState().permissionsLoaded).toBe(true)
+    const persisted = JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(persisted.permissionsLoaded).toBe(true)
+  })
+
+  it('a persisted blob missing the permissionsLoaded key entirely restores via the permissions.length > 0 fallback', async () => {
+    const legacyBlob: Partial<AuthData> = { ...sampleAuth }
+    delete legacyBlob.permissionsLoaded
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(legacyBlob))
+    const { useAuthStore } = await import('../authStore')
+    // legacyBlob.permissions is non-empty, so the fallback computes true
+    expect(useAuthStore.getState().permissionsLoaded).toBe(true)
+  })
+
+  it('a persisted blob missing the key with empty permissions falls back to false', async () => {
+    const legacyBlob: Partial<AuthData> = { ...sampleAuth, permissions: [] }
+    delete legacyBlob.permissionsLoaded
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(legacyBlob))
+    const { useAuthStore } = await import('../authStore')
+    expect(useAuthStore.getState().permissionsLoaded).toBe(false)
+  })
+
+  // F-1 regression guard: the REAL pre-fix shape. Old refreshPermissions() built
+  // `next = { ...get(), ...patch }` (snapshotting the still-false in-memory flag)
+  // and persisted that BEFORE the following `set({ ...patch, permissionsLoaded: true })`
+  // flipped it — so every successful pre-fix login persisted permissionsLoaded:
+  // false alongside a fully populated permissions array. normalise()'s fallback
+  // must be an OR (a present-but-false value + non-empty permissions still
+  // rescues to true), not a typeof-guard that trusts a present `false` verbatim —
+  // otherwise every live pre-fix session hangs on an infinite permission-gate
+  // spinner on the first reload after this ships.
+  it('a pre-fix blob with permissionsLoaded: false and real permissions still restores as loaded', async () => {
+    const preFixBlob: AuthData = { ...sampleAuth, permissionsLoaded: false }
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(preFixBlob))
+    const { useAuthStore } = await import('../authStore')
+    expect(useAuthStore.getState().permissionsLoaded).toBe(true)
+  })
+
+  it('an explicit permissionsLoaded: false with empty permissions stays false (unknown, not rescued)', async () => {
+    const blob: AuthData = { ...sampleAuth, permissionsLoaded: false, permissions: [] }
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(blob))
+    const { useAuthStore } = await import('../authStore')
+    expect(useAuthStore.getState().permissionsLoaded).toBe(false)
   })
 })

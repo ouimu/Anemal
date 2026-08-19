@@ -22,11 +22,15 @@ export interface AuthData {
   name:           string
   companyName:    string
   branchName:     string
+  /**
+   * INV-PERM-1: `permissionsLoaded === true` means `permissions` is the
+   * authoritative, server-resolved set for the current token. `false` means
+   * unknown — never treat as empty.
+   */
+  permissionsLoaded: boolean
 }
 
 interface AuthState extends AuthData {
-  /** True once refreshPermissions() has written permissions from /auth/me into the store. */
-  permissionsLoaded:  boolean
   setAuth:            (data: AuthData) => void
   clearAuth:          () => void
   isAuthenticated:    () => boolean
@@ -57,6 +61,7 @@ const EMPTY: AuthData = {
   name:           '',
   companyName:    '',
   branchName:     '',
+  permissionsLoaded: false,
 }
 
 /**
@@ -77,6 +82,15 @@ function normalise(raw: Partial<AuthData>): AuthData {
     name:           raw.name           ?? '',
     companyName:    raw.companyName    ?? '',
     branchName:     raw.branchName     ?? '',
+    // OR, not typeof-guard: pre-fix builds could persist permissionsLoaded:
+    // false alongside a fully populated permissions array (old refreshPermissions()
+    // snapshotted the pre-update flag into the blob it wrote, before flipping it
+    // in memory), so a false-but-present value must still be rescued by the
+    // permissions.length fallback. Post-fix, setAuth never persists a non-empty
+    // permissions array without permissionsLoaded: true, so "non-empty" continues
+    // to genuinely imply "server-resolved" — INV-PERM-1 holds either way.
+    permissionsLoaded: raw.permissionsLoaded === true
+      || (Array.isArray(raw.permissions) && raw.permissions.length > 0),
   }
 }
 
@@ -102,13 +116,14 @@ const persisted = loadPersisted()
 export const useAuthStore = create<AuthState>((set, get) => ({
   ...EMPTY,
   ...(persisted ?? {}),
-  permissionsLoaded: persisted !== null && persisted.permissions.length > 0,
 
   setAuth: (data) => {
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data))
     } catch { /* storage unavailable (private mode) — keep in-memory only */ }
-    // permissionsLoaded stays false — permissions come from /auth/me, not the login response
+    // INV-PERM-1: permissionsLoaded === true ⇒ permissions is the
+    // authoritative, server-resolved set for the current token. false ⇒
+    // unknown, never treat as empty. Callers must pass it explicitly.
     set(data)
   },
 

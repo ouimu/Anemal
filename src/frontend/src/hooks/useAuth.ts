@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import api from '../utils/api'
 import { clearServerState } from '../utils/queryClient'
-import { useAuthStore, AuthData } from '../store/authStore'
+import { useAuthStore } from '../store/authStore'
 import { useT } from '../i18n'
 import * as rememberedUsernames from '../utils/rememberedUsernames'
 
@@ -43,40 +43,35 @@ export interface BranchSelectionState {
   branches:     { id: number; name: string }[]
 }
 
-async function fetchMe(token: string): Promise<MeResponse | null> {
+/** Thrown when `/auth/me` cannot be resolved for a freshly issued token. */
+export class IdentityLoadError extends Error {}
+
+/**
+ * Resolves the caller's identity (roles/permissions) for a freshly issued
+ * token. Per ADR-0024, identity resolution is atomic with login: any failure
+ * here — network throw, non-2xx response, or a malformed body — rejects the
+ * caller's mutation instead of being swallowed, so no `setAuth` with an
+ * unresolved identity can ever happen. Every failure surfaces as
+ * `IdentityLoadError` (the grill's C1 ruling: the UI must be able to show a
+ * specific "could not load your permissions" message — see LoginView.tsx —
+ * distinct from "could not select branch"). The original error is not
+ * swallowed: it is attached via `cause` for diagnostics, not converted to a
+ * generic/`null` value.
+ */
+async function fetchMe(token: string): Promise<MeResponse> {
+  let res: Response
   try {
-    const res = await fetch('/auth/me', { headers: { Authorization: `Bearer ${token}` } })
-    if (!res.ok) return null
+    res = await fetch('/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+  } catch (cause) {
+    throw new IdentityLoadError('Could not load permissions', { cause })
+  }
+  if (!res.ok) throw new IdentityLoadError('Could not load permissions')
+  try {
     const json = await res.json()
     return (json.data ?? json) as MeResponse
-  } catch { return null }
-}
-
-async function applyLogin(
-  login: LoginStep2Response,
-  setAuth: (data: AuthData) => void,
-  branchName = '',
-): Promise<void> {
-  const me = await fetchMe(login.token)
-  setAuth({
-    token:          login.token,
-    plane:          'clinic',
-    userId:         login.userId,
-    tenantId:       login.tenantId,
-    // login.branchId is what the issued JWT actually scopes requests to (null = admin
-    // bypass, all branches). me.branchId is the user's assigned home branch — a different
-    // concept — and must never be used here, or the switcher can show a branch selected
-    // while every request is actually unscoped. login.branchId is always present.
-    branchId:       login.branchId,
-    roleIds:        me?.roleIds  ?? [],
-    role:           login.role,
-    permissions:    me?.permissions    ?? [],
-    permSetVersion: me?.permSetVersion ?? 0,
-    name:           login.name,
-    companyName:    login.companyName ?? '',
-    branchName,
-  })
-  try { await useAuthStore.getState().refreshPermissions() } catch { /* server enforces */ }
+  } catch (cause) {
+    throw new IdentityLoadError('Could not load permissions', { cause })
+  }
 }
 
 export function useLogin() {
@@ -89,37 +84,87 @@ export function useLogin() {
   const t         = useT()
 
   const loginMutation = useMutation({
-    mutationFn: ({ remember: _rem, ...creds }: LoginPayload) =>
-      api.post<{ success: boolean; data: LoginStep1Response | LoginStep2Response }>('/auth/login', creds),
+    // Discriminated return: the branch-selection-required response has no
+    // token yet (nothing to resolve identity for); the direct/admin response
+    // has one and identity must resolve before the mutation can succeed
+    // (ADR-0024 — atomic with login, one /auth/me call either way).
+    mutationFn: async ({ remember: _rem, ...creds }: LoginPayload) => {
+      const res = await api.post<{ success: boolean; data: LoginStep1Response | LoginStep2Response }>(
+        '/auth/login', creds,
+      )
+      const data = res.data.data
+      if (data.requiresBranchSelection) return { kind: 'branchSelection' as const, data }
+      const me = await fetchMe(data.token)
+      return { kind: 'ready' as const, data, me }
+    },
 
-    onSuccess: (res, vars) => {
+    onSuccess: (result, vars) => {
       setRemember(vars.remember)
       setPendingUsername(vars.username)
       setPendingSubdomain(vars.subdomain)
-      const data = res.data.data
-      if (data.requiresBranchSelection) {
-        setBranchSelection({ pendingToken: data.pendingToken, branches: data.branches })
-      } else {
-        // Admin bypass: branchId is null → use 'All Branches' label
-        const branchName = data.branchId === null ? t('nav.allBranches') : ''
-        void applyLogin(data, setAuth, branchName).then(() => {
-          if (vars.remember) rememberedUsernames.upsert(vars.subdomain, vars.username)
-          else rememberedUsernames.remove(vars.subdomain, vars.username)
-          navigate(data.role === 'admin' ? '/clinic-admin/dashboard' : '/clinic/dashboard')
-        })
+      if (result.kind === 'branchSelection') {
+        setBranchSelection({ pendingToken: result.data.pendingToken, branches: result.data.branches })
+        return
       }
+      const { data, me } = result
+      // Admin bypass: branchId is null → use 'All Branches' label
+      const branchName = data.branchId === null ? t('nav.allBranches') : ''
+      setAuth({
+        token:          data.token,
+        plane:          'clinic',
+        userId:         data.userId,
+        tenantId:       data.tenantId,
+        // data.branchId is what the issued JWT actually scopes requests to (null = admin
+        // bypass, all branches). me.branchId is the user's assigned home branch — a different
+        // concept — and must never be used here, or the switcher can show a branch selected
+        // while every request is actually unscoped. data.branchId is always present.
+        branchId:       data.branchId,
+        roleIds:        me.roleIds,
+        role:           data.role,
+        permissions:    me.permissions,
+        permSetVersion: me.permSetVersion ?? 0,
+        name:           data.name,
+        companyName:    data.companyName ?? '',
+        branchName,
+        permissionsLoaded: true,
+      })
+      if (vars.remember) rememberedUsernames.upsert(vars.subdomain, vars.username)
+      else rememberedUsernames.remove(vars.subdomain, vars.username)
+      navigate(data.role === 'admin' ? '/clinic-admin/dashboard' : '/clinic/dashboard')
     },
   })
 
   const selectBranchMutation = useMutation({
-    mutationFn: ({ pendingToken, branchId }: { pendingToken: string; branchId: number }) =>
-      api.post<{ success: boolean; data: LoginStep2Response }>('/auth/select-branch', { pendingToken, branchId }),
-
-    onSuccess: async (res, vars) => {
+    mutationFn: async ({ pendingToken, branchId }: { pendingToken: string; branchId: number }) => {
+      const res = await api.post<{ success: boolean; data: LoginStep2Response }>(
+        '/auth/select-branch', { pendingToken, branchId },
+      )
       const data = res.data.data
+      const me = await fetchMe(data.token)
+      return { data, me }
+    },
+
+    // A rejected mutationFn (either the POST itself, or fetchMe) skips
+    // onSuccess entirely — no setAuth, no bookkeeping, no navigate, and
+    // branchSelection (component state, untouched) keeps the picker mounted.
+    onSuccess: ({ data, me }, vars) => {
       const selectedBranch = branchSelection?.branches.find(b => b.id === vars.branchId)
+      setAuth({
+        token:          data.token,
+        plane:          'clinic',
+        userId:         data.userId,
+        tenantId:       data.tenantId,
+        branchId:       data.branchId,
+        roleIds:        me.roleIds,
+        role:           data.role,
+        permissions:    me.permissions,
+        permSetVersion: me.permSetVersion ?? 0,
+        name:           data.name,
+        companyName:    data.companyName ?? '',
+        branchName:     selectedBranch?.name ?? '',
+        permissionsLoaded: true,
+      })
       setBranchSelection(null)
-      await applyLogin(data, setAuth, selectedBranch?.name ?? '')
       if (remember) rememberedUsernames.upsert(pendingSubdomain, pendingUsername)
       else rememberedUsernames.remove(pendingSubdomain, pendingUsername)
       navigate(data.role === 'admin' ? '/clinic-admin/dashboard' : '/clinic/dashboard')
@@ -172,6 +217,7 @@ export function useSwitchBranch() {
         name:           state.name,
         companyName:    state.companyName,
         branchName,
+        permissionsLoaded: true,
       })
     },
   })
