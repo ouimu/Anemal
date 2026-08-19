@@ -133,4 +133,4 @@ Full phase changelog (test counts, PR/ADR mapping) and current status: [`.claude
 
 ---
 
-*Last updated: 2026-07-24 — 1178 backend + 315 frontend tests passing (through Google Drive storage driver, ADR-0023). Next: OneDrive sub-project (blocked on product decisions) and Phase 10/11 (credential-gated).*
+*Last updated: 2026-08-06 — 1243+ backend + 330 frontend tests (Codex security review remediation: CRITICAL 2/2, HIGH 20/20 closed, PR #53; exact backend count unverified this session — Postgres unreachable). Next: Phase 10/11 (credential-gated).*

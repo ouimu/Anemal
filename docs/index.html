@@ -4595,6 +4595,7 @@ cd ../frontend &amp;&amp; rm -rf node_modules &amp;&amp; npm install</code></pre
         <tr><td><span class="badge phase">Local-disk storage driver (PR1+PR2)</span></td><td>Unified <code>StorageDriver</code> abstraction (<code>storage-driver.ts</code>) replaces the broken S3 presign path for both EMR attachments and pet photos (both were 503 STORAGE_NOT_CONFIGURED with no AWS creds configured) — boot-guarded, refuses to start in <code>NODE_ENV=production</code> unless <code>ALLOW_LOCAL_STORAGE_IN_PROD=true</code> (grill G1). PR1: EMR upload collapses presign→PUT→confirm to one multipart <code>POST</code>; legacy <code>fileUrl</code> registration (ADR-0021) preserved. PR2: pet-photo migrates to a stable per-pet key (overwrite-in-place, zero orphans, grill G2), closes a client-writable-<code>photoUrl</code> cross-tenant read hole (BA §2.3 R-1), adds <code>AuthedPetImage</code> replacing every raw <code>&lt;img src={'{'}photoUrl{'}'}&gt;</code> site, and deletes the entire S3 stack + <code>@aws-sdk/*</code> deps. Two QA rounds on PR2 (round 1 REJECT — cross-tenant delete vector + missing multer limit; round 2 APPROVE after fixes). Two-PR split was a Ponytail Step-5 scope ruling (PRs #42/#43, ADR-0022)</td><td><span class="cl-status complete">Complete</span></td><td>1058 → 1078 backend / 289 → 301 frontend</td><td>2026-07-22</td></tr>
         <tr><td><span class="badge phase">EMR attachment UX + Thai filename</span></td><td>Bug-fix batch on the shipped EMR attachment UI: Thai/UTF-8 filenames no longer stored as mojibake (new <code>decodeMulterFilename</code>, latin1→utf8, since multer decodes multipart filenames as latin1), supported-types hint + <code>accept=</code> filter on the upload input, delete-confirmation dialog, and a long-filename truncation fix (<code>block w-full</code>, name no longer overlaps the delete icon). No schema change, no new endpoint (PR #45, ADR-0022)</td><td><span class="cl-status complete">Complete</span></td><td>1078 → 1081 backend / 301 → 304 frontend</td><td>2026-07-23</td></tr>
         <tr><td><span class="badge phase">Per-tenant network-share (SMB) storage driver — Sub-PR A</span></td><td>Backend core only, not yet user-facing — sub-project 1 of 3 on the still-open <code>feature/tenant-storage-provider</code> branch. New <code>TenantStorageConfig</code> model, app-layer <code>SmbShareDriver</code> (per-tenant encrypted credentials, atomic temp-then-rename writes), <code>getStorageDriver(tenantId)</code> now async across all 5 pet/EMR-attachment call sites, not-found-vs-unavailable error split. QA-caught P1 SMB rename-overwrite bug fixed with a regression test. Sub-PR B (storage-config API + Clinic Settings UI) not yet shipped (PR #46, ADR-0023)</td><td><span class="cl-status active">In progress</span></td><td>1078 → 1103 backend (net) / 304 frontend (unchanged)</td><td>2026-07-23</td></tr>
+        <tr><td><span class="badge phase">Codex review remediation</span></td><td>CRITICAL/HIGH security findings closed (CR-01/02, HI-01–09, R2-HI-01–04, R3-HI-01–07); R2-HI-01 (RLS) closed via documented deferral, not deployment (PR #53)</td><td><span class="cl-status complete">Complete</span></td><td>1243+ BE / 330 FE</td><td>2026-08-06</td></tr>
         <tr><td><span class="badge phase">Phase 10</span></td><td>Payment gateway + SaaS billing</td><td><span class="cl-status paused">Paused</span></td><td>—</td><td>Needs credentials</td></tr>
         <tr><td><span class="badge phase">Phase 11</span></td><td>LINE/SMS dispatch</td><td><span class="cl-status paused">Paused</span></td><td>—</td><td>Needs credentials</td></tr>
       </tbody>
@@ -4602,6 +4603,35 @@ cd ../frontend &amp;&amp; rm -rf node_modules &amp;&amp; npm install</code></pre
   </div>
 
   <hr/>
+
+  <!-- CODEX_REVIEW_REMEDIATION_BLOCK -->
+  <div class="cl-phase-block" id="cl-codex-review-remediation" style="border-left:4px solid #16a34a">
+    <div class="cl-phase-header">
+      <div class="cl-phase-num">🛡️</div>
+      <div>
+        <div class="cl-phase-title">Codex Security Review — CRITICAL/HIGH Remediation</div>
+        <div class="cl-phase-subtitle">PR #53 · 22+ commits on <code>fix/codex-review-critical-high</code> · closes all CRITICAL and HIGH findings from an external Codex code review (<code>CodexCodeReview.md</code>, local-only)</div>
+      </div>
+      <div class="cl-phase-meta">
+        <div class="cl-phase-date">2026-08-06</div>
+        <span class="cl-status complete">Complete</span>
+      </div>
+    </div>
+    <div class="cl-phase-body">
+      <p>Multi-round remediation (initial CR/HI batch, then R2-HI and R3-HI follow-up rounds as fixes surfaced further edge cases) closing every CRITICAL (2/2) and HIGH (20/20) severity finding from an external security review. Gated through the full pipeline: Ponytail-agent 7-point simplicity gate APPROVED, QA-agent APPROVED on final round (after 2 rejection/fix cycles on R3-HI-05's lot/expiry transfer symmetry). MEDIUM/LOW findings intentionally out of scope for this branch.</p>
+      <ul class="cl-deliverables">
+        <li><strong>Cross-tenant isolation</strong> — FK guards inside write transactions on invoice/hospitalization/grooming/medical-record paths (CR-01); branch-scoped JWT now wins over a client-supplied <code>?branchId=</code> query param (HI-01); raw SQL joins tenant-scoped on both sides (R2-HI-02); rollback path no longer deletes superadmin users on abort (R2-HI-03).</li>
+        <li><strong>Auth / tokens</strong> — <code>scope: 'branch_select'</code> pending tokens rejected as API tokens (HI-03); concurrent refresh-token rotations now yield exactly one 200 via atomic claim, clinic + platform (HI-04); exactly-one-role-per-user invariant enforced (HI-06, ADR-0019); missing <code>CRON_SECRET</code> now fails closed instead of open (HI-07).</li>
+        <li><strong>Concurrency / atomicity</strong> — advisory-lock serialized appointment conflict checks (R3-HI-01); atomic discharge+invoice transaction (R3-HI-02); atomic bag-claim + donor eligibility claim (R3-HI-03); advisory-lock quota checks across branch/user/owner/pet (R3-HI-04, plus a platform-customers quota-lock gap closed same finding); earliest-wins lot/expiry tracking with reset-on-empty and symmetric transfer semantics (R3-HI-05, 2 QA rounds).</li>
+        <li><strong>Availability</strong> — audit-log sanitizer rewritten from unbounded native recursion (a deeply-nested attacker payload threw <code>RangeError</code> outside Express's error chain and crashed the process) to an iterative, depth/node-bounded implementation with input caps (R3-HI-06); per-identity rate limiting added to multer upload routes (R3-HI-07).</li>
+        <li><strong>Data integrity / other</strong> — bare-id updates replaced with tenant-scoped <code>updateMany</code> (HI-02); RBAC matrix self-contradiction reconciled + staff seed tightened (HI-05); atomic payment+loyalty transaction, replay-safe claim (HI-08); query cache cleared on logout/401/branch-switch (HI-09); reminder dispatch gated behind a feature flag with atomic claim (R2-HI-04); receipt HTML escaped and popup <code>opener</code> severed (CR-02).</li>
+        <li><strong>Row-level security (R2-HI-01) — documented deferral, not deployment.</strong> The canonical RLS design is preserved as an undeployed target, but the current Prisma setup runs a single connection pool under a single DB role — enabling RLS as originally scoped would deny every query rather than scope it. Closed via an explicit rationale commit rather than shipping a change that would break the app; full RLS deployment requires a connection-pool/role redesign, tracked as a follow-up.</li>
+        <li><strong>QA regression coverage added</strong> — <code>src/backend/tests/integration/codex-review-regression.test.ts</code> (CR-01, HI-01, HI-03, HI-04) and <code>src/backend/tests/unit/audit-sanitize-depth.test.ts</code> (R3-HI-06), closing a gap where these fixes were previously verified only by diff reading.</li>
+      </ul>
+      <span class="cl-test-count">1243+ backend (2 new regression suites; exact cumulative count unverified this session — local Postgres at localhost:5432 unreachable throughout, consistent with how this branch's commits were validated all session) / 330 frontend (unchanged) · <code>tsc --noEmit</code> clean both sides, verified on <code>main</code> post-merge · Ponytail-agent APPROVE (7-point gate) · @qa-agent APPROVE (final round)</span>
+    </div>
+  </div>
+  <!-- /CODEX_REVIEW_REMEDIATION_BLOCK -->
 
   <!-- USAGE_STATS_QUOTA_FIX_BLOCK -->
   <div class="cl-phase-block" id="cl-usage-stats-quota-fix" style="border-left:4px solid #16a34a">
