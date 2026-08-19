@@ -159,7 +159,7 @@ Phase changelog (test counts + PR mapping) and the full ADR/design-doc index liv
   4. Refresh README.md's one-line "Last updated" footer (test counts + next-up note) — do NOT re-add a phase table there, it's a pointer to `phase-history.md`.
   5. Update the HTML in docs/(index.html, functional_spec_detailed.html).
   `HistoryLog.md` and `CHANGELOG.md` are FROZEN (historical only) — never append to them. Touch CLAUDE.md itself only when an orchestration rule changes — not for per-phase status.
-  **Git note:** items 1–3 above (and `docs/adr/`, `docs/superpowers/plans/`, `docs/superpowers/specs/`) are local-only per `.claude/standards/doc-git-policy.md` — refresh them on disk as instructed, but never `git add`/force-add them; `.gitignore` already excludes these paths.
+  **Git note:** items 1–3 above (and `docs/adr/`, `docs/superpowers/plans/`, `docs/superpowers/specs/`) are tracked in Git per `.claude/standards/doc-git-policy.md` (updated 2026-08-19 — no more local-only doc category, needed for cross-machine dev continuity) — `git add`/commit them like any other file.
 - `.claude/specs/implementation-status-matrix.md` is the canonical module-level implementation-status source; `@pm-agent` updates it LAST on every task, alongside the phase status/test count/HTML docs it already updates last.
 - `@ba-agent` provides content for `docs/functional_spec_detailed.html`, update all specification documents in .claude/specs/ ; `@pm-agent` commits
 - Run QA protocol at end of every task: `.claude/roadmap/qa-protocols.md`

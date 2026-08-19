@@ -2,36 +2,25 @@
 
 > **Status:** Authoritative — every agent/skill that creates a new `.md` file must follow this.
 > **Created:** 2026-07-24 (mass cleanup — removed 149 tracking/history/status .md files from Git)
+> **Superseded:** 2026-08-19 — reversed the "local-only" category. User develops across multiple
+> machines (laptop A + laptop B) and needs full project-status continuity (current phase, remaining
+> tasks, BA/QA sign-off records, pipeline artifacts) to survive a plain `git clone` on either one.
+> Local-only docs silently failed that: a fresh clone had zero memory of where the project stood.
 
 ## The rule
 
-Two categories. Every markdown file is one or the other — never "figure it out later."
+**Everything commits.** All `.md`/`.sql`/planning docs the pipeline produces — status logs, phase
+history, roadmap, specs, per-feature pipeline artifacts (brainstorm, BA sign-off, grill, plan,
+QA sign-off, ADR) — are tracked in Git. There is no local-only doc category anymore.
 
-### 1. Application-necessary → commit to Git
-Defines how the app or the agent pipeline itself works. Someone cloning this repo fresh needs it.
-
-- `CLAUDE.md`, `AGENTS.md`, `README.md`, `CONTEXT.md`, `DESIGN.md`, `HOW-TO-RUN.md`
-- `.claude/agents/**`, `.claude/skills/**`, `.claude/commands/**`, `.claude/standards/**`
-- `.claude/roadmap/qa-protocols.md` (active procedure, not a status log)
-- `design_prototype/**` (read-only design reference)
-
-### 2. History / tracking / status → local-only, NEVER commit
-Chronological record of what happened. Useful to the current agent session, dead weight to Git — every reader clones it forever, and it churns every task.
-
-- `HistoryLog.md`, `CHANGELOG.md`, `PHASE-RESEQUENCE.md`, `design-alignment-plan.md`, `RecommendByCodex/`
-- `.claude/roadmap/index.md`, `.claude/roadmap/phase-history.md`, `.claude/roadmap/ACTIVE/**`, `.claude/roadmap/archive/**`
-- `.claude/specs/RBAC_Platform_Restructure_Spec.md`, `System_Specification.md`, `implementation-status-matrix.md` (self-declared historical / superseded by phase-history.md)
-- `docs/adr/**`, `docs/superpowers/plans/**`, `docs/superpowers/specs/**` — per-feature dated pipeline artifacts (brainstorm, BA sign-off, grill, plan, QA sign-off, ADR)
-- Working checklists like `docs/manuals/*/proofreading-checklist.md`, `screen-inventory.md`
-
-All of these are listed in `.gitignore` under "Local-only tracking/history docs". They still get created and read normally by the pipeline (grill-with-docs, BA sign-off, etc. still write real files) — they just never enter the Git index.
+Still `.gitignore`d, unrelated to this doc: secrets (`.env*`), build output (`dist/`, `build/`,
+`coverage/`), `node_modules/`, `.vercel` (machine-specific project link), `attachments/`, `backups/`.
+Those stay out because they're either sensitive or regenerable, not because they're "just history."
 
 ## Before creating any new .md file
 
 1. **Check if it already exists.** Grep `.claude/`, `docs/`, and root for a file covering the same topic before writing a new one — don't spawn a duplicate tracker.
-2. **Classify it** against the two lists above. If it's a dated/per-feature/status/history doc → it goes in a path already covered by a `.gitignore` pattern (or add a new pattern here + in `.gitignore` if it's a new *kind* of tracking doc, not just a new instance of an existing kind).
-3. **If Application-necessary** → commit it normally, no exception process needed.
-4. **Never `git add -f` an ignored doc.** If a file under an ignored path genuinely needs to ship in Git (rare — e.g. one specific ADR becomes load-bearing for a live security control), move it out of the ignored path into `.claude/standards/` or reference its content directly in the Application-necessary doc that needs it. Don't force-add a status-log path.
+2. **Commit it.** No classification step, no exception process — every doc the pipeline writes goes into Git normally.
 
 ## Does a new doc need workflow refresh?
 
