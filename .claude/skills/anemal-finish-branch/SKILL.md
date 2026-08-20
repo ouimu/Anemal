@@ -28,6 +28,23 @@ Run in order, stop on first failure and report it (don't retry blindly):
 3. `git fetch origin` then check the branch is pushed and up to date with
    its remote tracking branch.
 4. Confirm current branch is not `main`/`master`.
+5. **Check `main`'s current backend suite status** — `git fetch origin`, then run the backend
+   test suite against `origin/main` (or check the most recent CI result on `main` if available).
+   If `main` is currently red:
+   - **Exemption (self-fix branch):** if THIS branch's own backend suite is green AND it
+     specifically resolves the tests currently failing on `main` — i.e. every test name
+     failing on `main` is one this branch either turns green OR deliberately deletes with a
+     recorded deleted-coverage justification — proceed, noting the pre-existing red state and
+     which tests it fixes or removes in the PR body. (The delete case is not hypothetical:
+     a branch repairing tests that assert a retired requirement resolves them by removal, and
+     a green-only reading would deadlock exactly the branch that fixes `main`.) This is the only branch type allowed
+     to merge while `main` is red; it is the mechanism by which `main` gets back to green.
+   - **Otherwise:** STOP. Report which suite/tests are failing on `main` and that this is a
+     pre-existing break, not introduced by the current branch. Do not create a PR until either
+     a self-fix branch (per the exemption above) lands, or `main` is otherwise made green.
+   (Rule added 2026-08-20 after a 2-week undetected red-`main` incident — see CLAUDE.md
+   "Red-suite ship gate". The exemption was added the same day, before first use, once the
+   original wording was found to deadlock the very branch written to fix `main`.)
 
 ## 2. Test gate
 

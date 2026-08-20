@@ -6,7 +6,7 @@ jest.mock('../../config/db', () => ({
   __esModule: true,
   default: {
     tenant:       { findUnique: jest.fn() },
-    user:         { findUnique: jest.fn(), update: jest.fn(), findFirst: jest.fn() },
+    user:         { findUnique: jest.fn(), update: jest.fn(), updateMany: jest.fn().mockResolvedValue({ count: 1 }), findFirst: jest.fn() },
     refreshToken: { create: jest.fn().mockResolvedValue({ id: 'rt-1', tokenHash: 'h', familyId: 'f', plane: 'clinic', expiresAt: new Date(), createdAt: new Date(), branchId: null }) },
     branch:       { findFirst: jest.fn(), findMany: jest.fn() },
     userBranch:   { findMany: jest.fn() },

@@ -167,6 +167,15 @@ Phase changelog (test counts + PR mapping) and the full ADR/design-doc index liv
 - **Handoff on stop (mandatory, every stop, no exceptions):** whenever work on a multi-step feature pauses for ANY reason — end of session, waiting on a human decision, a pipeline gate not yet run, context about to compact, or anything else — write/overwrite `docs/superpowers/plans/HANDOFF-<feature-slug>.md` before stopping. Required contents: exact current pipeline step + status, exact next action and exact next agent/skill to invoke (not "continue the feature" — the literal next command), links to every doc produced so far (design, BA sign-off, grill record(s), plan, PRs), and if blocked on a human decision, a pointer to the relevant `PENDING-DECISION-*.md` instead of duplicating it. Overwrite in place each stop (git log already has history); delete once the feature ships.
 - **Handoff on start (mandatory, every new session and every scheduled-task run):** before doing anything else on a feature already in flight, check for `docs/superpowers/plans/HANDOFF-<feature-slug>.md`. If present, read it first and resume from its stated next action — do not re-derive status from git log/docs archaeology, and do not restart or duplicate work it says is already done. This applies equally to a human-started session and a routine/cron-triggered scheduled task waking up cold.
 - Interrupted work: save resume state to the HANDOFF file above, show prompt to continue, delete when complete
+- **Red-suite ship gate (added 2026-08-20):** a red backend suite on `main` blocks the next
+  merge. `/anemal-finish-branch` (Step 8) must refuse to open a PR — or must halt before
+  merge — if `main`'s current backend suite is red, independent of the feature branch's own
+  test gate. This closes the gap that let 28 backend tests sit red on `main` for ~2 weeks
+  unnoticed after PR #53 (2026-08-06 to 2026-08-20). **Exemption:** a branch whose own suite
+  is green and specifically resolves the tests currently failing on `main` — turning them
+  green, or deleting them with a recorded deleted-coverage justification — may still merge while
+  `main` is red — it is how `main` gets back to green — and must say so in its PR body. See
+  `anemal-finish-branch` SKILL.md §1.5 for the mechanic.
 
 ---
 

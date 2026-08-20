@@ -20,15 +20,15 @@ beforeAll(async () => {
       owner          = { count: () => Promise.resolve(0) }
       tenant         = { findUnique: () => Promise.resolve(null) }
       tenantSettings = { findUnique: () => Promise.resolve(null) }
-      // Phase 8 (T-5B-01): resolvePermissions queries userRole; return full admin permission set
+      // ADR-0019 (D-7): resolvePermissions queries userRole.findUnique (single role per user).
       userRole = {
-        findMany: () => Promise.resolve([{
+        findUnique: () => Promise.resolve({
           role: {
             permissions: [
               { permissionCode: 'clinic.profile.view' },
             ],
           },
-        }]),
+        }),
       }
       clinicRole = { findMany: () => Promise.resolve([]) }
     },

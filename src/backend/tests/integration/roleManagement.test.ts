@@ -336,6 +336,7 @@ describe('PUT /clinic/roles/:roleId/permissions', () => {
 describe('DELETE /clinic/roles/:roleId', () => {
   let deleteTargetId = 0
   let inUseRoleId    = 0
+  let inUseUserId    = 0
 
   beforeAll(async () => {
     // Create two custom roles: one to delete freely, one that will be in-use
@@ -354,15 +355,33 @@ describe('DELETE /clinic/roles/:roleId', () => {
     deleteTargetId = freeRes.body.data.id
     inUseRoleId    = inUseRes.body.data.id
 
-    // Assign the in-use role to the admin user (admin already has adminRole, this is extra)
+    // ADR-0019 (D-7): a user has exactly one role — `userRole` is unique on
+    // (tenantId, userId), so a second role can no longer be attached to the
+    // already-roled admin user. Instead, create a dedicated user in the same
+    // tenant whose SOLE role is inUseRoleId — `users.roleId` and the
+    // `user_roles` row must name the same role (C-5), or countRoleUsage's
+    // unscoped query would pass this test while asserting nothing.
+    const passwordHash = await bcrypt.hash(PASSWORD, 4)
+    const inUseUser = await prisma.user.create({
+      data: {
+        tenantId:     tid,
+        name:         'In Use Role Holder',
+        username:     'in_use_role_holder',
+        email:        'inuse@rm.test',
+        passwordHash,
+        roleId:       inUseRoleId,
+      },
+    })
+    inUseUserId = inUseUser.id
     await prisma.userRole.create({
-      data: { userId: adminUserId, roleId: inUseRoleId, tenantId: tid },
+      data: { userId: inUseUserId, roleId: inUseRoleId, tenantId: tid },
     })
   })
 
   afterAll(async () => {
-    // Cleanup in-use role assignment if test left it
+    // Cleanup in-use role assignment + fixture user if the test left it
     await prisma.userRole.deleteMany({ where: { roleId: inUseRoleId } })
+    await prisma.user.deleteMany({ where: { id: inUseUserId } })
     await prisma.rolePermission.deleteMany({ where: { roleId: inUseRoleId } })
     await prisma.clinicRole.deleteMany({ where: { id: inUseRoleId } }).catch(() => undefined)
   })

@@ -14,7 +14,7 @@ import { seedUserRoles, cleanupUserRoles } from '../tests/helpers/seedUserRoles'
 
 let server: Server
 let tidA: number, tidB: number
-let tokenA: string, tokenB: string
+let tokenA: string, tokenB: string, tokenA2: string
 let petId: number, doctorId: number, recordId: number, drugId: number, retailId: number
 let branchAId: number
 const SUB_A = `bill-a-${Date.now()}`
@@ -36,9 +36,14 @@ beforeAll(async () => {
   const uB = await prisma.user.create({ data: { tenantId: tidB, name: 'Doc B', username: `bill_adm_b_${ts % 100000}`, email: `bill-b-${ts}@t.local`, passwordHash: hash, roleId: adminRole.id } })
   const bA = await prisma.branch.create({ data: { tenantId: tidA, name: 'Main' } })
   const bB = await prisma.branch.create({ data: { tenantId: tidB, name: 'Main' } })
+  // Second branch in tenant A (not tenant B's bB) — used to distinguish the
+  // "wrong branch, same tenant" case (bill-17) from the cross-tenant case
+  // (bill-09). bB belongs to tenant B and must never stand in for this.
+  const bA2 = await prisma.branch.create({ data: { tenantId: tidA, name: 'Annex' } })
   branchAId = bA.id
   tokenA = signToken({ userId: uA.id, tenantId: tidA, branchId: bA.id, plane: 'clinic', permSetVersion: 1, role: 'admin' })
   tokenB = signToken({ userId: uB.id, tenantId: tidB, branchId: bB.id, plane: 'clinic', permSetVersion: 1, role: 'admin' })
+  tokenA2 = signToken({ userId: uA.id, tenantId: tidA, branchId: bA2.id, plane: 'clinic', permSetVersion: 1, role: 'admin' })
   doctorId = uA.id
 
   await seedUserRoles(prisma, [
@@ -145,6 +150,35 @@ describe('bill-3.2 — Invoice generation & payment', () => {
 
   test('bill-09: tenant B cannot pay tenant A invoice → 404', async () => {
     await request(server).put(`/api/invoices/${invoiceId}/payment`).set(auth(tokenB)).send({ paymentMethod: 'cash' }).expect(404)
+  })
+
+  // ADR-0025 four-case table: 409 may only ever describe an invoice inside the
+  // caller's own tenant+branch scope. bill-17/bill-18 cover the remaining two
+  // 404 rows (wrong branch same tenant, nonexistent id); bill-06 above already
+  // covers the fourth row (already paid, own scope → 409).
+  test('bill-17: same-tenant, wrong-branch pay attempt → 404', async () => {
+    await request(server).put(`/api/invoices/${invoiceId}/payment`).set(auth(tokenA2)).send({ paymentMethod: 'cash' }).expect(404)
+  })
+
+  test('bill-18: same-tenant, nonexistent invoice id → 404', async () => {
+    await request(server).put('/api/invoices/999999999/payment').set(auth(tokenA)).send({ paymentMethod: 'cash' }).expect(404)
+  })
+
+  // QA finding: bill-17 reuses `invoiceId`, which bill-05/bill-06 already left
+  // paid — so it can't tell a correctly-scoped claim from one where the branch
+  // clause was silently dropped (an unscoped `updateMany` still matches zero
+  // rows via `paymentStatus: { not: 'paid' }` alone). bill-19 uses a fresh,
+  // still-UNPAID invoice so a dropped branch clause would flip this to a 200
+  // and mutate the row — the regression this branch's fix is meant to close.
+  test('bill-19: wrong-branch pay attempt on an UNPAID invoice → 404, and the invoice stays unpaid', async () => {
+    const created = await request(server).post('/api/invoices').set(auth(tokenA))
+      .send({ items: [{ description: 'Nail trim', itemType: 'service', qty: 1, unitPrice: 100 }] }).expect(201)
+    const freshInvoiceId = created.body.data.id as number
+
+    await request(server).put(`/api/invoices/${freshInvoiceId}/payment`).set(auth(tokenA2)).send({ paymentMethod: 'cash' }).expect(404)
+
+    const stillUnpaid = await prisma.invoice.findUnique({ where: { id: freshInvoiceId } })
+    expect(stillUnpaid?.paymentStatus).not.toBe('paid')
   })
 })
 

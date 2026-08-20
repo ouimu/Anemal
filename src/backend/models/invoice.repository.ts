@@ -184,6 +184,16 @@ export function countInvoices(tenantId: number, branchId: number | null | undefi
  * The `paymentStatus: { not: 'paid' }` predicate + `count !== 1` check make this the
  * single authoritative write — a second concurrent request (or a replayed request)
  * loses the race and gets a ConflictError instead of double-recording a payment.
+ *
+ * ADR-0025: `count !== 1` alone conflates four distinct causes (wrong tenant,
+ * wrong branch, nonexistent id, already-paid-in-scope) into one 409. On that
+ * path only, an existence check re-runs in the IDENTICAL tenant+branch scope
+ * as the claim above — never wider — to distinguish "not visible to caller"
+ * (404) from "already paid in caller's own scope" (409). Widening this scope
+ * (e.g. dropping the branch clause, or reusing findInvoiceById) would create a
+ * cross-tenant existence oracle on a money endpoint; see ADR-0025 constraint 1.
+ * This check runs only after the atomic claim fails, never before it — moving
+ * it earlier would reopen the TOCTOU race HI-08 closes (ADR-0025 constraint 2).
  */
 export async function claimInvoicePaid(
   tx: Prisma.TransactionClient, tenantId: number, branchId: number | null | undefined, id: number, paymentMethod: string,
@@ -197,7 +207,14 @@ export async function claimInvoicePaid(
     },
     data: { paymentStatus: 'paid', paymentMethod, paidAt: new Date() },
   })
-  if (claimed.count !== 1) throw new ConflictError('Invoice is already paid', 'INVOICE_ALREADY_PAID')
+  if (claimed.count !== 1) {
+    const existsInScope = await tx.invoice.findFirst({
+      where: { id, tenantId, ...(branchId != null ? { branchId } : {}) },
+      select: { id: true },
+    })
+    if (!existsInScope) throw new NotFoundError('Invoice')
+    throw new ConflictError('Invoice is already paid', 'INVOICE_ALREADY_PAID')
+  }
   const invoice = await tx.invoice.findFirst({ where: { id, tenantId }, include: { items: true, pet: { include: { owner: true } } } })
   if (!invoice) throw new NotFoundError('Invoice')
   return invoice

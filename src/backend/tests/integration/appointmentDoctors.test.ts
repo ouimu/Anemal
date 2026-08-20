@@ -155,19 +155,6 @@ describe('findDoctorsForBranch (repository)', () => {
     expect(result.map(d => d.name)).toContain('Custom Vet User')
   })
 
-  it('includes a multi-role user if any one role is Doctor-derived', async () => {
-    const passwordHash = await bcrypt.hash(PASSWORD, 10)
-    const multiRoleUser = await prisma.user.create({
-      data: { tenantId: tid, username: 'multi_role', name: 'Multi Role User', passwordHash, roleId: staffSystemRoleId, branchId: branchAId, isActive: true },
-    })
-    await prisma.userBranch.create({ data: { tenantId: tid, userId: multiRoleUser.id, branchId: branchAId } })
-    await prisma.userRole.create({ data: { tenantId: tid, userId: multiRoleUser.id, roleId: staffSystemRoleId } })
-    await prisma.userRole.create({ data: { tenantId: tid, userId: multiRoleUser.id, roleId: doctorSystemRoleId } })
-
-    const result = await findDoctorsForBranch(tid, branchAId)
-    expect(result.map(d => d.name)).toContain('Multi Role User')
-  })
-
   it('response objects contain only id and name', async () => {
     const result = await findDoctorsForBranch(tid, branchAId)
     for (const d of result) {
