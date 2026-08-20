@@ -4596,6 +4596,7 @@ cd ../frontend &amp;&amp; rm -rf node_modules &amp;&amp; npm install</code></pre
         <tr><td><span class="badge phase">EMR attachment UX + Thai filename</span></td><td>Bug-fix batch on the shipped EMR attachment UI: Thai/UTF-8 filenames no longer stored as mojibake (new <code>decodeMulterFilename</code>, latin1→utf8, since multer decodes multipart filenames as latin1), supported-types hint + <code>accept=</code> filter on the upload input, delete-confirmation dialog, and a long-filename truncation fix (<code>block w-full</code>, name no longer overlaps the delete icon). No schema change, no new endpoint (PR #45, ADR-0022)</td><td><span class="cl-status complete">Complete</span></td><td>1078 → 1081 backend / 301 → 304 frontend</td><td>2026-07-23</td></tr>
         <tr><td><span class="badge phase">Per-tenant network-share (SMB) storage driver — Sub-PR A</span></td><td>Backend core only, not yet user-facing — sub-project 1 of 3 on the still-open <code>feature/tenant-storage-provider</code> branch. New <code>TenantStorageConfig</code> model, app-layer <code>SmbShareDriver</code> (per-tenant encrypted credentials, atomic temp-then-rename writes), <code>getStorageDriver(tenantId)</code> now async across all 5 pet/EMR-attachment call sites, not-found-vs-unavailable error split. QA-caught P1 SMB rename-overwrite bug fixed with a regression test. Sub-PR B (storage-config API + Clinic Settings UI) not yet shipped (PR #46, ADR-0023)</td><td><span class="cl-status active">In progress</span></td><td>1078 → 1103 backend (net) / 304 frontend (unchanged)</td><td>2026-07-23</td></tr>
         <tr><td><span class="badge phase">Codex review remediation</span></td><td>CRITICAL/HIGH security findings closed (CR-01/02, HI-01–09, R2-HI-01–04, R3-HI-01–07); R2-HI-01 (RLS) closed via documented deferral, not deployment (PR #53)</td><td><span class="cl-status complete">Complete</span></td><td>1243+ BE / 330 FE</td><td>2026-08-06</td></tr>
+        <tr><td><span class="badge phase">Login identity-resolution atomicity</span></td><td>Removed branch-select login flash: <code>/auth/me</code> folded into the branch-selection mutation, session established only after both succeed, no half-built <code>sessionStorage</code> on failure (PR #54, ADR-0024)</td><td><span class="cl-status complete">Complete</span></td><td>309 → 330 FE</td><td>2026-08-20</td></tr>
         <tr><td><span class="badge phase">Phase 10</span></td><td>Payment gateway + SaaS billing</td><td><span class="cl-status paused">Paused</span></td><td>—</td><td>Needs credentials</td></tr>
         <tr><td><span class="badge phase">Phase 11</span></td><td>LINE/SMS dispatch</td><td><span class="cl-status paused">Paused</span></td><td>—</td><td>Needs credentials</td></tr>
       </tbody>
@@ -4603,6 +4604,33 @@ cd ../frontend &amp;&amp; rm -rf node_modules &amp;&amp; npm install</code></pre
   </div>
 
   <hr/>
+
+  <!-- LOGIN_IDENTITY_RESOLUTION_BLOCK -->
+  <div class="cl-phase-block" id="cl-login-identity-resolution" style="border-left:4px solid #16a34a">
+    <div class="cl-phase-header">
+      <div class="cl-phase-num">🔐</div>
+      <div>
+        <div class="cl-phase-title">Login Identity Resolution Is Atomic — Branch-Select Flash Fixed</div>
+        <div class="cl-phase-subtitle">PR #54 · ADR-0024 · production bug: after picking a branch, the login form re-rendered for a full <code>GET /auth/me</code> round trip before reaching the dashboard — reads as being kicked out, especially on tablet</div>
+      </div>
+      <div class="cl-phase-meta">
+        <div class="cl-phase-date">2026-08-20</div>
+        <span class="cl-status complete">Complete</span>
+      </div>
+    </div>
+    <div class="cl-phase-body">
+      <p>Root cause: <code>selectBranchMutation.onSuccess</code> called <code>setBranchSelection(null)</code> before awaiting <code>applyLogin()</code>, and the branch picker is a conditional render inside <code>LoginView</code> rather than its own route — so the picker unmounted and the bare login form was visible for one full <code>/auth/me</code> round trip. Two further defects on the same path: a duplicated <code>/auth/me</code> call firing on every login, and half-built sessions persisted to <code>sessionStorage</code> when identity resolution failed.</p>
+      <ul class="cl-deliverables">
+        <li><strong>Atomic session establishment (ADR-0024)</strong> — a clinic session (store + <code>sessionStorage</code>) is now written only after BOTH branch selection AND <code>/auth/me</code> identity resolution succeed; <code>/auth/me</code> is folded directly into the branch-selection mutation instead of firing as a second round trip.</li>
+        <li><strong>Failure handling</strong> — if identity resolution fails, nothing is persisted; the branch picker stays mounted and shows a distinct error instead of silently bouncing back to a blank login form.</li>
+        <li><strong>Compile-time regression guard</strong> — <code>permissionsLoaded</code> is now a required field on the <code>setAuth</code> payload, turning the exact class of bug this branch fixed (a call site — <code>useSwitchBranch</code> — omitting it) into a <code>tsc</code> error instead of a runtime one.</li>
+        <li><strong>Gates</strong> — @ba-agent APPROVED WITH CONDITIONS (C1/C2/C3 resolved at the grill); <code>/grill-with-docs</code> PASSED (4 findings resolved, ADR-0024 recorded); @ponytail-agent APPROVE 7/7; @qa-agent APPROVE unconditional after 3 rounds (blocked the first submission on 3 findings, including one that would have hung every live session on first reload post-deploy); 9/9 P5 browser smoke at 768×1024 and 1024×768 against a seeded database.</li>
+        <li><strong>Backlog raised, deliberately deferred</strong> — <code>AUTH-BL-1</code> (401 on <code>refreshPermissions()</code> should hard-redirect via <code>clearAuth()</code>), <code>AUTH-BL-2</code> (non-ok/non-401 response leaves <code>permissionsLoaded</code> stuck <code>false</code>), <code>AUTH-BL-3</code> (<code>/403</code> is an unrecoverable dead end for a legitimately zero-permission session). See <code>.claude/roadmap/phase-history.md</code> Backlog section.</li>
+      </ul>
+      <span class="cl-test-count">330 frontend passing (309 → 330, +21 new tests) · <code>tsc --noEmit</code> clean · <code>eslint</code> 0 errors · Ponytail-agent APPROVE (7/7) · @qa-agent APPROVE (unconditional, round 3) — <strong>not fully green:</strong> 28 pre-existing backend failures (incomplete Prisma mocks) and 8 pre-existing frontend collection failures (broken <code>@tanstack/react-query</code> mock), both verified identical on <code>main</code> before this merge and unrelated to this branch</span>
+    </div>
+  </div>
+  <!-- /LOGIN_IDENTITY_RESOLUTION_BLOCK -->
 
   <!-- CODEX_REVIEW_REMEDIATION_BLOCK -->
   <div class="cl-phase-block" id="cl-codex-review-remediation" style="border-left:4px solid #16a34a">

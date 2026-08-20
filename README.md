@@ -133,4 +133,4 @@ Full phase changelog (test counts, PR/ADR mapping) and current status: [`.claude
 
 ---
 
-*Last updated: 2026-08-06 — 1243+ backend + 330 frontend tests (Codex security review remediation: CRITICAL 2/2, HIGH 20/20 closed, PR #53; exact backend count unverified this session — Postgres unreachable). Next: Phase 10/11 (credential-gated).*
+*Last updated: 2026-08-20 — 330 frontend tests passing (+21, login identity-resolution atomicity fix, ADR-0024, PR #54). 28 backend test failures and 8 frontend collection failures are pre-existing, unrelated to this branch — see `.claude/roadmap/phase-history.md`. Next: Phase 10/11 (credential-gated).*
