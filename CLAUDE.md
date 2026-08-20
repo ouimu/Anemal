@@ -130,7 +130,8 @@ design_prototype/        # Compassionate Care UI (read-only)
   skills/anemal-{coding-rules,design-system,screen-specs,functional-reqs,
                  db-context,rbac-matrix,platform-console,ba-toolkit}/
   specs/RBAC_Platform_Restructure_Spec.md, database-schema.sql
-  roadmap/ACTIVE/remaining-tasks.md, qa-protocols.md, archive/  # completed phase task lists live in archive/
+  roadmap/index.md, phase-history.md, qa-protocols.md, archive/  # completed phase task lists live in archive/
+                                                                 # (ACTIVE/remaining-tasks.md was retired — see Tracking note)
 src/
   backend/{config,controllers,middlewares,models,services,routes}/
   frontend/src/{components,views,hooks,utils,store}/
@@ -146,7 +147,7 @@ src/
 
 ## Phases & Shipped-Work History
 
-Phase changelog (test counts + PR mapping) and the full ADR/design-doc index live in `.claude/roadmap/phase-history.md`, not here — keep CLAUDE.md generic across sessions. **To get current project status:** read the newest `docs/superpowers/plans/HANDOFF-*.md` first, then `.claude/roadmap/ACTIVE/remaining-tasks.md` and `.claude/specs/implementation-status-matrix.md`. `@pm-agent` appends each shipped phase to `phase-history.md` (LAST, per Tracking rules below).
+Phase changelog (test counts + PR mapping) and the full ADR/design-doc index live in `.claude/roadmap/phase-history.md`, not here — keep CLAUDE.md generic across sessions. **To get current project status:** read the newest `docs/superpowers/plans/HANDOFF-*.md` first, then `.claude/roadmap/index.md` and `.claude/specs/implementation-status-matrix.md`. `@pm-agent` appends each shipped phase to `phase-history.md` (LAST, per Tracking rules below).
 
 ---
 
@@ -155,13 +156,13 @@ Phase changelog (test counts + PR mapping) and the full ADR/design-doc index liv
 - `@pm-agent` documents LAST on every shipped task — refresh ALL of the following, not a subset:
   1. Append the shipped phase (status + test count) to `.claude/roadmap/phase-history.md` (canonical changelog).
   2. Refresh `.claude/roadmap/index.md` header (Updated date + Status line — test counts, latest shipped phase, what's blocked).
-  3. Refresh `.claude/roadmap/ACTIVE/remaining-tasks.md` header (Updated date + current test totals) — only if that task didn't already fully update it.
+  3. (Retired 2026-08-20.) `.claude/roadmap/ACTIVE/remaining-tasks.md` no longer exists — untracked in `13a39e3` and never restored when `13e74ed` reversed that policy. `index.md` now carries the Updated date + current test totals; do not recreate the ACTIVE/ file.
   4. Refresh README.md's one-line "Last updated" footer (test counts + next-up note) — do NOT re-add a phase table there, it's a pointer to `phase-history.md`.
-  5. Update the HTML in docs/(index.html, functional_spec_detailed.html).
+  5. Update the HTML in `docs/index.html`. (`docs/functional_spec_detailed.html` was deleted in `d2390ff` and is NOT to be recreated.)
   `HistoryLog.md` and `CHANGELOG.md` are FROZEN (historical only) — never append to them. Touch CLAUDE.md itself only when an orchestration rule changes — not for per-phase status.
   **Git note:** items 1–3 above (and `docs/adr/`, `docs/superpowers/plans/`, `docs/superpowers/specs/`) are tracked in Git per `.claude/standards/doc-git-policy.md` (updated 2026-08-19 — no more local-only doc category, needed for cross-machine dev continuity) — `git add`/commit them like any other file.
 - `.claude/specs/implementation-status-matrix.md` is the canonical module-level implementation-status source; `@pm-agent` updates it LAST on every task, alongside the phase status/test count/HTML docs it already updates last.
-- `@ba-agent` provides content for `docs/functional_spec_detailed.html`, update all specification documents in .claude/specs/ ; `@pm-agent` commits
+- `@ba-agent` updates all specification documents in `.claude/specs/`; `@pm-agent` commits. (The old `docs/functional_spec_detailed.html` target is gone — see item 5 above.)
 - Run QA protocol at end of every task: `.claude/roadmap/qa-protocols.md`
 - **Handoff on stop (mandatory, every stop, no exceptions):** whenever work on a multi-step feature pauses for ANY reason — end of session, waiting on a human decision, a pipeline gate not yet run, context about to compact, or anything else — write/overwrite `docs/superpowers/plans/HANDOFF-<feature-slug>.md` before stopping. Required contents: exact current pipeline step + status, exact next action and exact next agent/skill to invoke (not "continue the feature" — the literal next command), links to every doc produced so far (design, BA sign-off, grill record(s), plan, PRs), and if blocked on a human decision, a pointer to the relevant `PENDING-DECISION-*.md` instead of duplicating it. Overwrite in place each stop (git log already has history); delete once the feature ships.
 - **Handoff on start (mandatory, every new session and every scheduled-task run):** before doing anything else on a feature already in flight, check for `docs/superpowers/plans/HANDOFF-<feature-slug>.md`. If present, read it first and resume from its stated next action — do not re-derive status from git log/docs archaeology, and do not restart or duplicate work it says is already done. This applies equally to a human-started session and a routine/cron-triggered scheduled task waking up cold.

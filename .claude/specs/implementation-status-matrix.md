@@ -1,7 +1,18 @@
 # Anemal — Implementation Status Matrix
 
-**Updated:** 2026-08-06
-**Status:** All modules shipped through Phase 9 + storage (ADR-0023) remain implemented and unchanged. This update reflects the Codex security review remediation branch (`fix/codex-review-critical-high`, PR #53), which hardened existing modules rather than adding new ones — no module moved status this pass.
+**Updated:** 2026-08-20
+**Status:** All modules shipped through Phase 9 + storage (ADR-0023) + Codex security remediation remain implemented and unchanged. This update reflects the login identity-resolution atomicity fix (PR #54, ADR-0024) — a hardening fix to the existing clinic login module (branch selection + `/auth/me`), not a new module. No module moved status this pass.
+
+## Login identity resolution (2026-08-20, ADR-0024)
+
+| Area | Change | Notes |
+|------|--------|-------|
+| Clinic login (branch select → session) | `/auth/me` folded into the branch-selection mutation; session (`sessionStorage` + store) written only after BOTH branch selection and identity resolution succeed | Fixes the full-round-trip login-form re-render ("kicked out") flash on tablet after picking a branch |
+| Clinic login | Removed the duplicated `/auth/me` call that previously fired once per login | — |
+| Clinic login | On identity-resolution failure, nothing is persisted to `sessionStorage`; branch picker stays mounted with a distinct error instead of a half-built session | Prevents corrupt/partial sessions surviving a failed login |
+| Auth store contract | `permissionsLoaded` is now a required field on the `setAuth` payload | Makes the class of regression this branch fixed (`useSwitchBranch` omitting it) a compile-time error, not a runtime one |
+
+Known gaps deliberately deferred, not fixed on this branch (tracked in `.claude/roadmap/phase-history.md` Backlog): `AUTH-BL-1` (401 on `refreshPermissions()` should hard-redirect), `AUTH-BL-2` (non-ok/non-401 leaves `permissionsLoaded` stuck `false`), `AUTH-BL-3` (`/403` is a dead end for a legitimately zero-permission session).
 
 ## Security remediation coverage (2026-08-06)
 

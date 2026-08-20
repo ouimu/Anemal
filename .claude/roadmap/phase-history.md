@@ -6,10 +6,30 @@ Shipped-phase changelog (test counts + PR/ADR mapping) and status of in-flight w
 
 ## Current status / next action
 
-- **Codex security review remediation is fully shipped** — all CRITICAL (2/2) and HIGH (20/20) findings from `CodexCodeReview.md` closed and merged to `main` via PR #53 (2026-08-06). R2-HI-01 (row-level security) closed via documented deferral (single-pool/single-role Prisma setup would zero out every query under full RLS) rather than deployment — canonical design preserved as an undeployed target. Ponytail-agent 7-point gate APPROVED; QA-agent APPROVED (final round, after 2 rejection/fix cycles on R3-HI-05). MEDIUM/LOW findings intentionally out of scope.
-- `fix/codex-review-critical-high` branch retained post-merge pending stale-branch cleanup pass; see cleanup note below.
-- **Latest tests:** 1243+ backend (2 new regression suites added — `codex-review-regression.test.ts`, `audit-sanitize-depth.test.ts` — exact cumulative count unverified this session, local Postgres at `localhost:5432` unreachable throughout, consistent with how the rest of this branch's 22+ commits were validated) / 330 frontend (unchanged — no frontend test changes this branch). `tsc --noEmit` clean on both backend and frontend, verified on `main` post-merge.
-- **On resume:** read newest `docs/superpowers/plans/HANDOFF-*.md` first, then `.claude/roadmap/ACTIVE/remaining-tasks.md`.
+- **Login identity-resolution atomicity fix is fully shipped** — `fix(auth): make login identity resolution atomic, remove branch-select login flash`, merged to `main` as `56107e3` via PR #54 (2026-08-20). Per ADR-0024, a clinic session is now established only when branch selection AND `/auth/me` identity resolution have both succeeded; `/auth/me` is folded into the branch-selection mutation instead of firing as a second round trip, and half-built sessions are no longer persisted to `sessionStorage` on failure. Gates: @ba-agent APPROVED WITH CONDITIONS (C1/C2/C3 resolved at the grill), `/grill-with-docs` PASSED (4 findings resolved, ADR-0024 recorded), @ponytail-agent APPROVE 7/7, @qa-agent APPROVE unconditional after 3 rounds (blocked the first submission on 3 findings, one of which would have hung every live session on first reload post-deploy), plus a 9/9 P5 browser smoke at 768×1024 and 1024×768 against a seeded database.
+- **Latest tests:** 330 frontend passing on `main` (was 309 pre-merge — 21 new tests this branch). `tsc --noEmit` clean, `eslint` 0 errors.
+- **Known-red, pre-existing, NOT caused by this branch** (verified identical on `main` @ `13e74ed` before the merge — do not present the suite as fully green):
+  - Backend: 28 failed / 1265 passed / 1293 total across 9 suites — incomplete Prisma mocks (`prisma.userRole.findUnique is not a function`); survives `prisma generate`.
+  - Frontend: 8 test files fail at collection, contributing 0 tests each (`No "QueryClient" export is defined on the @tanstack/react-query mock`) — Dashboard, Pets, Appointments, Branches, ClinicSettings, PetDetail have no coverage while appearing fine in the headline count.
+- Backlog raised by this branch (deliberately deferred, not fixed here) — see **Backlog** section below: `AUTH-BL-1`, `AUTH-BL-2`, `AUTH-BL-3`, plus the two known-red test items above.
+- `docs/superpowers/plans/HANDOFF-branch-select-login-flash.md` is now resolved and should be deleted once this documentation pass lands.
+- **On resume:** read newest `docs/superpowers/plans/HANDOFF-*.md` first. `.claude/roadmap/ACTIVE/remaining-tasks.md` does not currently exist in the tree.
+
+---
+
+## Backlog
+
+Deferred items raised during shipped work, not yet scheduled to a phase.
+
+| ID | Item | Raised in | Notes |
+|----|------|-----------|-------|
+| `AUTH-BL-1` | `refreshPermissions()` on a 401 should `clearAuth()` + hard `window.location.href` redirect instead of leaving stale state | PR #54 (login flash fix) | Frontend auth store |
+| `AUTH-BL-2` | `refreshPermissions()` on a non-ok, non-401 response bare-returns, leaving `permissionsLoaded` stuck `false` forever | PR #54 | Frontend auth store |
+| `AUTH-BL-3` | `/403` is an unrecoverable dead end for a legitimately zero-permission session — stub route sits outside `RequireAuth`, no nav, no logout, and `LoginView` bounces already-authenticated users away from `/login` | PR #54 | Needs a designed recovery path (logout affordance at minimum) |
+| — | 28 backend test failures from incomplete Prisma mocks (`prisma.userRole.findUnique is not a function`) | Verified pre-existing on `main` @ `13e74ed`, surfaced during PR #54 gate work | Survives `prisma generate`; needs mock repair, not a product fix |
+| — | 8 frontend test files fail at collection (`No "QueryClient" export is defined on the @tanstack/react-query mock`), 0 tests collected from Dashboard/Pets/Appointments/Branches/ClinicSettings/PetDetail | Verified pre-existing on `main` @ `13e74ed`, surfaced during PR #54 gate work | These modules currently have no real coverage despite the suite reporting green |
+
+QA also carried forward (from the PR #54 sign-off, next auth-touching branch): **F-5** (vacuous `sessionStorage` assertion at `useAuth.test.ts:208`), **N-1** (untested malformed-body path in `fetchMe`), **N-2** (likely won't-fix).
 
 ---
 
@@ -53,6 +73,7 @@ Tests = cumulative backend / frontend after that phase. `—` = pre-dates PR/ADR
 | OneDrive Sub-PR B (OAuth + UI) | `authorize`/`callback` (same signed-state pattern), disconnect + duplicate-account banner, 4th storage radio; closes ADR-0023 (all 3 sub-projects shipped) | #50 | 0023 | 1243 / 330 |
 | **feature/tenant-storage-provider → main** | Final merge of the entire ADR-0023 feature branch (77 commits) into `main`, verified green post-merge | #51 | 0023 | 1243 / 330 |
 | Codex review remediation (CRITICAL/HIGH) | 22+ commits closing CR-01/02, HI-01–09, R2-HI-01–04, R3-HI-01–07: cross-tenant FK guards, branch-scope precedence, refresh-token/appointment/discharge/bag-claim atomicity, RBAC role invariant, quota-lock gaps, unbounded audit-sanitize recursion, per-identity upload rate limit; R2-HI-01 closed via documented RLS deferral (not deployment) | #53 | — | 1243+ BE (2 new suites, exact count unverified — Postgres unreachable) / 330 FE |
+| Login identity-resolution atomicity | Removed branch-select login flash: `/auth/me` folded into branch-selection mutation, session only established after both succeed, no half-built `sessionStorage` on failure | #54 | 0024 | — / 330 (309→330, +21) |
 
 ## Pending phases
 
@@ -83,5 +104,6 @@ ADRs in `docs/adr/`, design specs + plans + grill/QA records in `docs/superpower
 | 0021 | EMR file attachments (presign/S3) | #41 |
 | 0022 | Unified local-disk `StorageDriver` (Ponytail-required 2-PR split) | #42, #43, #45 |
 | 0023 | Per-tenant BYO-storage — SMB (sub-1), Google Drive (sub-2), OneDrive (sub-3) — all shipped, merged to main | #46, #47, #48, #49, #50, #51 |
+| 0024 | Login identity resolution is atomic — session established only after branch selection AND `/auth/me` both succeed | #54 |
 
-Other trackers: `.claude/roadmap/archive/bugfix-pipeline-2026-07-tracker.md` (2026-07 bugfix pipeline, all shipped), `.claude/roadmap/archive/pet-emr-inpatient-fixes.md`, `.claude/roadmap/ACTIVE/remaining-tasks.md`.
+Other trackers: `.claude/roadmap/archive/bugfix-pipeline-2026-07-tracker.md` (2026-07 bugfix pipeline, all shipped), `.claude/roadmap/archive/pet-emr-inpatient-fixes.md`. (`.claude/roadmap/ACTIVE/remaining-tasks.md` is retired and absent from the tree — the Backlog section above replaces it.)
