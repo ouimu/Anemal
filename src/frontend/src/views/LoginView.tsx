@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useLogin } from '../hooks/useAuth'
+import { useLogin, IdentityLoadError } from '../hooks/useAuth'
 import { useAuthStore } from '../store/authStore'
 import { Navigate } from 'react-router-dom'
 import { useT } from '../i18n'
@@ -55,7 +55,9 @@ export default function LoginView() {
   }
 
   const errorMsg = login.error
-    ? ((login.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? t('login.invalidCredentials'))
+    ? (login.error instanceof IdentityLoadError
+        ? t('login.selectBranchIdentityError')
+        : ((login.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? t('login.invalidCredentials')))
     : null
 
   return (
@@ -154,7 +156,11 @@ export default function LoginView() {
               {selectBranchMutation.isError && (
                 <div className="flex items-start gap-sm bg-error-container/30 border border-error/30 rounded-lg px-md py-sm">
                   <span className="material-symbols-outlined text-error flex-shrink-0 mt-0.5" style={{ fontSize: '18px' }}>error_outline</span>
-                  <p className="text-body-md text-error">{t('login.selectBranchError')}</p>
+                  <p className="text-body-md text-error">
+                    {selectBranchMutation.error instanceof IdentityLoadError
+                      ? t('login.selectBranchIdentityError')
+                      : t('login.selectBranchError')}
+                  </p>
                 </div>
               )}
               <button
