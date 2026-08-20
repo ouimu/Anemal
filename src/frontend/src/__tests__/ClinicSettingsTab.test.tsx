@@ -9,7 +9,8 @@ const { mutateAsync, settingsData } = vi.hoisted(() => ({
   },
 }))
 
-vi.mock('@tanstack/react-query', () => ({
+vi.mock('@tanstack/react-query', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@tanstack/react-query')>()),
   useQuery: () => ({ data: settingsData, isLoading: false }),
   useMutation: () => ({ mutateAsync, isPending: false }),
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),

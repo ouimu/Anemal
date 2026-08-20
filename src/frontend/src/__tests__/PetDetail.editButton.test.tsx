@@ -13,7 +13,8 @@ const mockPet = {
 
 const state: { permissions: string[] } = { permissions: [] }
 
-vi.mock('@tanstack/react-query', () => ({
+vi.mock('@tanstack/react-query', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@tanstack/react-query')>()),
   useQuery: () => ({ data: { data: mockPet }, isLoading: false }),
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
 }))

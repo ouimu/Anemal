@@ -12,7 +12,8 @@ const users = [
   { id: 3, name: 'Front Desk', role: { key: 'clinic_staff' } },
 ]
 
-vi.mock('@tanstack/react-query', () => ({
+vi.mock('@tanstack/react-query', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@tanstack/react-query')>()),
   useQuery: ({ queryKey }: { queryKey: unknown[] }) =>
     queryKey[0] === 'branches'
       ? { data: branches, isLoading: false }

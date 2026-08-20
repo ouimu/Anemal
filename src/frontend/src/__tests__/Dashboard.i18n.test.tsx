@@ -6,7 +6,8 @@ vi.mock('../store/uiStore', () => ({
   useUiStore: (selector: (s: { language: string }) => unknown) =>
     selector({ language: 'th' }),
 }))
-vi.mock('@tanstack/react-query', () => ({
+vi.mock('@tanstack/react-query', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@tanstack/react-query')>()),
   useQuery: () => ({ data: undefined, isLoading: false }),
 }))
 vi.mock('../store/authStore', () => ({
