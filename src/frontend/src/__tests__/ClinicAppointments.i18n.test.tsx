@@ -7,7 +7,8 @@ import { MemoryRouter } from 'react-router-dom'
 vi.mock('../store/uiStore', () => ({
   useUiStore: (s: (s: { language: string }) => unknown) => s({ language: 'th' }),
 }))
-vi.mock('@tanstack/react-query', () => ({
+vi.mock('@tanstack/react-query', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@tanstack/react-query')>()),
   useQuery: () => ({ data: [], isLoading: false }),
   useMutation: () => ({ mutate: vi.fn() }),
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
