@@ -133,4 +133,4 @@ Full phase changelog (test counts, PR/ADR mapping) and current status: [`.claude
 
 ---
 
-*Last updated: 2026-08-20 — 330 frontend tests passing (+21, login identity-resolution atomicity fix, ADR-0024, PR #54). 28 backend test failures and 8 frontend collection failures are pre-existing, unrelated to this branch — see `.claude/roadmap/phase-history.md`. Next: Phase 10/11 (credential-gated).*
+*Last updated: 2026-08-21 — backend 1292 passing / 0 failing / 91 suites, frontend 351 passing / 55 files. `main` is fully green for the first time in ~2 weeks (PRs #57, #59, #56 repaired the stranded ADR-0019 backend failures, hardened integration fixtures, and fixed 8 zero-collecting frontend mocks). See `.claude/roadmap/phase-history.md`. Next: Phase 10/11 (credential-gated).*
