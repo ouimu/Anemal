@@ -34,7 +34,6 @@ let tidB = 0
 let adminToken = ''      // tenant A clinic_admin (has roles.view + roles.manage)
 let staffToken = ''      // tenant A clinic_staff (no roles.* perms)
 let adminBToken = ''     // tenant B clinic_admin (for tenant-isolation tests)
-let adminUserIdA = 0
 let adminRoleId = 0
 let staffRoleId = 0
 
@@ -83,7 +82,6 @@ beforeAll(async () => {
       data: { tenantId: tidB, branchId: b.branchId, name: 'Admin B', username: 'admin_re_b', email: 'admin@b.test', passwordHash, roleId: adminRole.id },
     }),
   ])
-  adminUserIdA = uAdminA.id
 
   await prisma.userRole.createMany({
     data: [
@@ -255,7 +253,24 @@ describe('AC-4 DELETE /clinic/roles/:id', () => {
     expect(clone.status).toBe(201)
     const inUseId = clone.body.data.id
 
-    await prisma.userRole.create({ data: { userId: adminUserIdA, roleId: inUseId, tenantId: tidA } })
+    // ADR-0019 (D-7): a user has exactly one role — `userRole` is unique on
+    // (tenantId, userId), so a second role can no longer be attached to the
+    // already-roled admin user. Create a dedicated tenant-A user whose SOLE
+    // role is inUseId — `users.roleId` and the `user_roles` row must name
+    // the same role (C-5), or countRoleUsage's unscoped query would pass
+    // this test while asserting nothing about scoping.
+    const passwordHash = await bcrypt.hash(PASSWORD, 4)
+    const inUseUser = await prisma.user.create({
+      data: {
+        tenantId:     tidA,
+        name:         'Editor InUse Holder',
+        username:     'editor_inuse_holder',
+        email:        'editor-inuse@t5f01.test',
+        passwordHash,
+        roleId:       inUseId,
+      },
+    })
+    await prisma.userRole.create({ data: { userId: inUseUser.id, roleId: inUseId, tenantId: tidA } })
 
     const res = await request(server)
       .delete(`/clinic/roles/${inUseId}`)
@@ -264,6 +279,7 @@ describe('AC-4 DELETE /clinic/roles/:id', () => {
 
     // cleanup
     await prisma.userRole.deleteMany({ where: { roleId: inUseId } })
+    await prisma.user.deleteMany({ where: { id: inUseUser.id } })
     await prisma.rolePermission.deleteMany({ where: { roleId: inUseId } })
     await prisma.clinicRole.deleteMany({ where: { id: inUseId } }).catch(() => undefined)
   })
