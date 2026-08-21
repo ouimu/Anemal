@@ -7,7 +7,7 @@ import bcrypt from 'bcrypt'
 import app from '../../app'
 import prisma from '../../config/db'
 
-const SUB = 'appt-tenant-own-test'
+const SUB = `appt-tenant-own-test-${Date.now()}`
 const PASSWORD = 'TestPass1!'
 
 let server: Server

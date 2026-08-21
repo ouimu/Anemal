@@ -26,7 +26,7 @@ import { signPlatformToken } from '../../config/jwt'
 import { seedUserRoles, cleanupUserRoles } from '../helpers/seedUserRoles'
 import { walkRoutes, EnumeratedRoute } from '../helpers/expressRouteWalker'
 
-const SUB = 'role-route-matrix'
+const SUB = `role-route-matrix-${Date.now()}`
 const PASSWORD = 'TestPass1!'
 
 type ClinicRoleKey = 'clinic_admin' | 'doctor' | 'clinic_staff'
@@ -166,7 +166,7 @@ beforeAll(async () => {
   staffToken  = await login('staff_rrm')
 
   const platformUser = await prisma.platformUser.create({
-    data: { name: 'RRM Platform Admin', email: 'rrm-platform-admin@test.anemal', passwordHash: 'x', role: 'platform_super_admin' },
+    data: { name: 'RRM Platform Admin', email: `rrm-platform-admin-${Date.now()}@test.anemal`, passwordHash: 'x', role: 'platform_super_admin' },
   })
   platformUserId = platformUser.id
   platformToken = signPlatformToken({ platformUserId: platformUser.id, plane: 'platform', role: 'platform_super_admin' })

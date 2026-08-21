@@ -21,7 +21,7 @@ import bcrypt from 'bcrypt'
 import app from '../../app'
 import prisma from '../../config/db'
 
-const SUB = 'rbac-rg-guard'
+const SUB = `rbac-rg-guard-${Date.now()}`
 const SUB2 = 'rbac-rg-guard-2'
 const PASSWORD = 'TestPass1!'
 

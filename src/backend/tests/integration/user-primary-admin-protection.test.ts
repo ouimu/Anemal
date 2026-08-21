@@ -12,7 +12,7 @@ import app from '../../app'
 import prisma from '../../config/db'
 import { clearPermCache } from '../../services/permission.service'
 
-const SUB = 'primary-admin-t1'
+const SUB = `primary-admin-t1-${Date.now()}`
 const PASSWORD = 'TestPass1!'
 
 let server: Server

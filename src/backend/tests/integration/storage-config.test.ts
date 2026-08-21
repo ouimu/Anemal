@@ -31,7 +31,7 @@ jest.mock('../../config/smb-client', () => {
 
 import app from '../../app'
 
-const SUB_A = 'storage-cfg-a'
+const SUB_A = `storage-cfg-a-${Date.now()}`
 const PASSWORD = 'TestPass1!'
 
 let server: Server

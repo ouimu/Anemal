@@ -18,8 +18,8 @@ import bcrypt from 'bcrypt'
 import app from '../../app'
 import prisma from '../../config/db'
 
-const SUB_A = 'codex-reg-a'
-const SUB_B = 'codex-reg-b'
+const SUB_A = `codex-reg-a-${Date.now()}`
+const SUB_B = `codex-reg-b-${Date.now()}`
 const PASSWORD = 'TestPass1!'
 
 let server: Server

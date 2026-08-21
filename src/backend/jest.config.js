@@ -3,6 +3,12 @@ module.exports = {
   testEnvironment: 'node',
   rootDir:         '.',
   testMatch:       ['**/tests/**/*.test.ts', '**/__tests__/**/*.test.ts'],
+  // Git worktrees created under .claude/worktrees/ contain a full second checkout
+  // of this repo. Without this ignore, jest discovers their copies too and runs
+  // every suite twice against the same test database — the duplicate runs then
+  // collide on unique fixtures and report failures that have nothing to do with
+  // the code under test.
+  testPathIgnorePatterns: ['/node_modules/', '/\.claude/worktrees/'],
   globals: {
     'ts-jest': { tsconfig: './tsconfig.json', isolatedModules: true }
   },

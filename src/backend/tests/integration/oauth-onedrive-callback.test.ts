@@ -23,7 +23,7 @@ jest.mock('../../config/onedrive-client', () => {
 import app from '../../app'
 import { exchangeCodeForTokens } from '../../config/onedrive-client'
 
-const SUB_A = 'oauth-onedrive-cb-a'
+const SUB_A = `oauth-onedrive-cb-a-${Date.now()}`
 process.env.ONEDRIVE_OAUTH_CLIENT_ID = 'test-client-id'
 process.env.ONEDRIVE_OAUTH_CLIENT_SECRET = 'test-client-secret'
 process.env.FRONTEND_URL = 'http://localhost:5173'

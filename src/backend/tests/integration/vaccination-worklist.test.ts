@@ -7,7 +7,7 @@ import app from '../../app'
 import prisma from '../../config/db'
 import { clearPermCache } from '../../services/permission.service'
 
-const SUBDOMAIN = 'vax-worklist-test'
+const SUBDOMAIN = `vax-worklist-test-${Date.now()}`
 const PASSWORD  = 'TestPass1!'
 
 let server: Server

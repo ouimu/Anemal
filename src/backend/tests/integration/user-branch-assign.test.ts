@@ -17,7 +17,7 @@ import app from '../../app'
 import prisma from '../../config/db'
 import { clearPermCache } from '../../services/permission.service'
 
-const SUB = 'branch-assign-t3'
+const SUB = `branch-assign-t3-${Date.now()}`
 const PASSWORD = 'TestPass1!'
 
 let server: Server
