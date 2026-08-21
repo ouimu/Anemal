@@ -247,3 +247,50 @@ describe('role-route authorization matrix — plane sweep (platform token -> gua
     })
   }
 })
+
+/**
+ * Targeted guard regression for the one financial write in the clinic API:
+ * `PUT /api/invoices/:id/payment` (QA Step 7 backlog, ADR-0025).
+ *
+ * The enumerated sweeps above already reach this route, but only by walking
+ * `app` — the coverage names neither the route nor `billing.payment`, so a
+ * grep for either finds nothing and a reviewer cannot see that the money
+ * endpoint is guarded. These cases pin it by name, and assert the 403 *reason*
+ * (response body) rather than only the status: a platform token denied for a
+ * missing permission and one denied for a wrong plane both return 403, so a
+ * status-only assertion cannot tell `requirePlane` deletion from
+ * `requirePermission` deletion.
+ *
+ * Deny half is mandatory coverage per `.claude/skills/anemal-rbac-matrix`;
+ * 403-for-unauthorized-role per `.claude/roadmap/qa-protocols.md` §3.4.
+ * Role↔permission facts are re-derived from the DB (`rolePerms`), not
+ * hard-coded, so a seed change that hands `billing.payment` to doctor breaks
+ * the invariant assertion instead of silently voiding the deny case.
+ */
+describe("PUT /api/invoices/:id/payment — billing.payment guard (targeted)", () => {
+  const PAYMENT_URL = buildUrl('/api/invoices/:id/payment')
+
+  /** Empty body: `validate(paymentSchema)` is chained AFTER both guards, so a caller that gets past them lands on 400, never 401/403. */
+  const callPayment = (token: string) =>
+    request(server).put(PAYMENT_URL).set('Authorization', `Bearer ${token}`).send({})
+
+  it('allows a clinic role holding billing.payment (clinic_staff)', async () => {
+    expect(rolePerms.clinic_staff.has('billing.payment')).toBe(true)
+    const res = await callPayment(staffToken)
+    expect(res.status).not.toBe(401)
+    expect(res.status).not.toBe(403)
+  })
+
+  it('denies a clinic role lacking billing.payment (doctor) with 403', async () => {
+    expect(rolePerms.doctor.has('billing.payment')).toBe(false)
+    const res = await callPayment(doctorToken)
+    expect(res.status).toBe(403)
+    expect(res.body.error).toContain("missing permission 'billing.payment'")
+  })
+
+  it('rejects a platform-plane token with 403 before any permission check', async () => {
+    const res = await callPayment(platformToken)
+    expect(res.status).toBe(403)
+    expect(res.body.error).toContain("requires 'clinic' plane")
+  })
+})
