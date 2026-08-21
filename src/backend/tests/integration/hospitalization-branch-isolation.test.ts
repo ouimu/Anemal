@@ -23,8 +23,8 @@ import bcrypt from 'bcrypt'
 import app from '../../app'
 import prisma from '../../config/db'
 
-const SUB = 'hosp-branch-iso-test'
-const OTHER_SUB = 'hosp-branch-iso-test-other'
+const SUB = `hosp-branch-iso-test-${Date.now()}`
+const OTHER_SUB = `hosp-branch-iso-test-other-${Date.now()}`
 const PASSWORD = 'TestPass1!'
 
 let server: Server

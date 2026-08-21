@@ -9,7 +9,7 @@ import app from '../../app'
 import prisma from '../../config/db'
 import { signPlatformToken } from '../../config/jwt'
 
-const SUB_MARKER = 'utc-bounds-test'
+const SUB_MARKER = `utc-bounds-test-${Date.now()}`
 let server: Server
 let platformToken = ''
 let platformUserId = 0

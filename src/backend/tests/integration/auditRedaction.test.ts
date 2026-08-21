@@ -16,7 +16,7 @@ interface PlanUpdateAuditDetails {
 }
 
 const SENTINEL = 'SENTINEL-SECRET-VALUE-DO-NOT-PERSIST'
-const SUB_A = 'audit-redaction-a'
+const SUB_A = `audit-redaction-a-${Date.now()}`
 const PASSWORD = 'TestPass1!'
 
 let server: Server

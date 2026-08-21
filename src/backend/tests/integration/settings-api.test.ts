@@ -11,8 +11,8 @@ import { testLab } from '../../services/connection-test.service'
 import { signPlatformToken } from '../../config/jwt'
 import { seedUserRoles, cleanupUserRoles } from '../helpers/seedUserRoles'
 
-const SUB_A = 'settings-api-a'
-const SUB_B = 'settings-api-b'
+const SUB_A = `settings-api-a-${Date.now()}`
+const SUB_B = `settings-api-b-${Date.now()}`
 const PASSWORD = 'TestPass1!'
 
 let server: Server

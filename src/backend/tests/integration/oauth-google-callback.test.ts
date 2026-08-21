@@ -23,7 +23,7 @@ jest.mock('../../config/google-drive-client', () => {
 import app from '../../app'
 import { exchangeCodeForTokens } from '../../config/google-drive-client'
 
-const SUB_A = 'oauth-gdrive-cb-a'
+const SUB_A = `oauth-gdrive-cb-a-${Date.now()}`
 process.env.GOOGLE_OAUTH_CLIENT_ID = 'test-client-id'
 process.env.GOOGLE_OAUTH_CLIENT_SECRET = 'test-client-secret'
 process.env.FRONTEND_URL = 'http://localhost:5173'

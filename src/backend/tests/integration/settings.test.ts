@@ -4,8 +4,8 @@ import prisma from '../../config/db'
 import * as tenantSettingsService from '../../services/tenant-settings.service'
 import * as systemSettingsService from '../../services/system-settings.service'
 
-const SUB_A = 'settings-a-test'
-const SUB_B = 'settings-b-test'
+const SUB_A = `settings-a-test-${Date.now()}`
+const SUB_B = `settings-b-test-${Date.now()}`
 let tidA = 0
 let tidB = 0
 let userA = 0

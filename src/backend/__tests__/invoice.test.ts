@@ -8,13 +8,13 @@ import request from 'supertest'
 import { Server } from 'http'
 import app from '../app'
 import prisma from '../config/db'
-import { signToken } from '../config/jwt'
+import { signToken, signPlatformToken } from '../config/jwt'
 import bcrypt from 'bcrypt'
 import { seedUserRoles, cleanupUserRoles } from '../tests/helpers/seedUserRoles'
 
 let server: Server
 let tidA: number, tidB: number
-let tokenA: string, tokenB: string, tokenA2: string
+let tokenA: string, tokenB: string, tokenA2: string, tokenDocA: string, tokenPlatform: string
 let petId: number, doctorId: number, recordId: number, drugId: number, retailId: number
 let branchAId: number
 const SUB_A = `bill-a-${Date.now()}`
@@ -32,7 +32,11 @@ beforeAll(async () => {
   const tB = await prisma.tenant.create({ data: { name: 'Bill B', subdomain: SUB_B } })
   tidA = tA.id; tidB = tB.id
   const adminRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
+  // Doctor holds no `billing.payment` (permission-matrix: E | - | E across
+  // admin | doctor | staff), so it is the deny case for the payment route.
+  const doctorRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } })
   const uA = await prisma.user.create({ data: { tenantId: tidA, name: 'Doc A', username: `bill_adm_a_${ts % 100000}`, email: `bill-a-${ts}@t.local`, passwordHash: hash, roleId: adminRole.id } })
+  const uDocA = await prisma.user.create({ data: { tenantId: tidA, name: 'Vet A', username: `bill_doc_a_${ts % 100000}`, email: `bill-doc-a-${ts}@t.local`, passwordHash: hash, roleId: doctorRole.id } })
   const uB = await prisma.user.create({ data: { tenantId: tidB, name: 'Doc B', username: `bill_adm_b_${ts % 100000}`, email: `bill-b-${ts}@t.local`, passwordHash: hash, roleId: adminRole.id } })
   const bA = await prisma.branch.create({ data: { tenantId: tidA, name: 'Main' } })
   const bB = await prisma.branch.create({ data: { tenantId: tidB, name: 'Main' } })
@@ -44,11 +48,17 @@ beforeAll(async () => {
   tokenA = signToken({ userId: uA.id, tenantId: tidA, branchId: bA.id, plane: 'clinic', permSetVersion: 1, role: 'admin' })
   tokenB = signToken({ userId: uB.id, tenantId: tidB, branchId: bB.id, plane: 'clinic', permSetVersion: 1, role: 'admin' })
   tokenA2 = signToken({ userId: uA.id, tenantId: tidA, branchId: bA2.id, plane: 'clinic', permSetVersion: 1, role: 'admin' })
+  tokenDocA = signToken({ userId: uDocA.id, tenantId: tidA, branchId: bA.id, plane: 'clinic', permSetVersion: 1, role: 'doctor' })
+  // Platform-plane token for the requirePlane deny case. authMiddleware skips
+  // the tenant lookup for platform tokens (tenantId 0), so no platform_users
+  // row is needed — the request is rejected before any DB access.
+  tokenPlatform = signPlatformToken({ platformUserId: 999999, plane: 'platform', role: 'platform_super_admin' })
   doctorId = uA.id
 
   await seedUserRoles(prisma, [
-    { userId: uA.id, tenantId: tidA, roleKey: 'clinic_admin' },
-    { userId: uB.id, tenantId: tidB, roleKey: 'clinic_admin' },
+    { userId: uA.id,    tenantId: tidA, roleKey: 'clinic_admin' },
+    { userId: uDocA.id, tenantId: tidA, roleKey: 'doctor' },
+    { userId: uB.id,    tenantId: tidB, roleKey: 'clinic_admin' },
   ])
 
   const owner = await prisma.owner.create({ data: { tenantId: tidA, firstName: 'Jane', lastName: 'Doe', phone: `08${ts.toString().slice(-8)}` } })
@@ -179,6 +189,39 @@ describe('bill-3.2 — Invoice generation & payment', () => {
 
     const stillUnpaid = await prisma.invoice.findUnique({ where: { id: freshInvoiceId } })
     expect(stillUnpaid?.paymentStatus).not.toBe('paid')
+  })
+
+  // ── Authorization deny-path (route guards, not business logic) ─────────────
+  // PUT /:id/payment is guarded by requirePlane('clinic') + requirePermission
+  // ('billing.payment'). Nothing asserted these guards, so removing either one
+  // went undetected — on the endpoint that moves money. Each test below uses a
+  // FRESH UNPAID invoice and re-reads the row, so dropping a guard flips the
+  // result to 200 with a mutated row rather than merely changing a status code.
+  const freshUnpaidInvoice = async (): Promise<number> => {
+    const created = await request(server).post('/api/invoices').set(auth(tokenA))
+      .send({ items: [{ description: 'Guard probe', itemType: 'service', qty: 1, unitPrice: 50 }] }).expect(201)
+    return created.body.data.id as number
+  }
+
+  test('bill-20: doctor lacks billing.payment → 403, invoice untouched', async () => {
+    const id = await freshUnpaidInvoice()
+    await request(server).put(`/api/invoices/${id}/payment`).set(auth(tokenDocA)).send({ paymentMethod: 'cash' }).expect(403)
+    const row = await prisma.invoice.findUnique({ where: { id } })
+    expect(row?.paymentStatus).not.toBe('paid')
+  })
+
+  test('bill-21: platform-plane token cannot pay a clinic invoice → 403, invoice untouched', async () => {
+    const id = await freshUnpaidInvoice()
+    await request(server).put(`/api/invoices/${id}/payment`).set(auth(tokenPlatform)).send({ paymentMethod: 'cash' }).expect(403)
+    const row = await prisma.invoice.findUnique({ where: { id } })
+    expect(row?.paymentStatus).not.toBe('paid')
+  })
+
+  test('bill-22: unauthenticated payment attempt → 401, invoice untouched', async () => {
+    const id = await freshUnpaidInvoice()
+    await request(server).put(`/api/invoices/${id}/payment`).send({ paymentMethod: 'cash' }).expect(401)
+    const row = await prisma.invoice.findUnique({ where: { id } })
+    expect(row?.paymentStatus).not.toBe('paid')
   })
 })
 

@@ -6,7 +6,7 @@ import prisma from '../../config/db'
 import { seedUserRoles, cleanupUserRoles } from '../helpers/seedUserRoles'
 import app from '../../app'
 
-const SUB_A = 'storage-onedrive-auth-a'
+const SUB_A = `storage-onedrive-auth-a-${Date.now()}`
 const PASSWORD = 'TestPass1!'
 
 let server: Server

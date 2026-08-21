@@ -11,7 +11,7 @@ import app from '../../app'
 import prisma from '../../config/db'
 import { findDoctorsForBranch, findDoctorById } from '../../models/appointment.repository'
 
-const SUB = 'appt-doctors-test'
+const SUB = `appt-doctors-test-${Date.now()}`
 const PASSWORD = 'TestPass1!'
 
 let server: Server

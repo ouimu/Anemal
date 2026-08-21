@@ -7,8 +7,8 @@ import app from '../../app'
 import prisma from '../../config/db'
 import { seedUserRoles, cleanupUserRoles } from '../helpers/seedUserRoles'
 
-const SUB_A = 'invoice-qr-a'
-const SUB_B = 'invoice-qr-b'
+const SUB_A = `invoice-qr-a-${Date.now()}`
+const SUB_B = `invoice-qr-b-${Date.now()}`
 const PASSWORD = 'TestPass1!'
 
 let server: Server

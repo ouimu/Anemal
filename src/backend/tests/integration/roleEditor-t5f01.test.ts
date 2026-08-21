@@ -24,8 +24,8 @@ import app from '../../app'
 import prisma from '../../config/db'
 import { clearPermCache } from '../../services/permission.service'
 
-const SUB_A = 'role-editor-a'
-const SUB_B = 'role-editor-b'
+const SUB_A = `role-editor-a-${Date.now()}`
+const SUB_B = `role-editor-b-${Date.now()}`
 const PASSWORD = 'TestPass1!'
 
 let server: Server
