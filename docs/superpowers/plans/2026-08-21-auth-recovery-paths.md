@@ -26,7 +26,22 @@ Source re-read for this plan (exact lines cited below): `App.tsx`, `guards/Requi
 **Correction to the BA sign-off's own arithmetic (flagged, not a blocker):** §11 of the sign-off
 states "22 AC"; the actual enumeration in §6 (8 upheld + 2 restated + 9 new − 1 withdrawn) totals
 **19** uniquely named AC. This plan consolidates the 19 actually enumerated in §6, not 22 — see
-§2 below. Flagged for @ba-agent's awareness; does not block Step 4.
+§2 below. Flagged for @ba-agent's awareness; does not block Step 4. **Confirmed accepted by
+@ponytail-agent's review** (`docs/superpowers/plans/2026-08-21-auth-recovery-paths-ponytail.md`).
+
+**Revision note (post-Ponytail, this revision):** @ponytail-agent REJECTED the first pass on
+Criterion 1 (over-engineering), all other criteria passed. Two findings adopted verbatim
+(absolute `/403` deleted rather than made recoverable; `TREE_403` map replaced by one-segment
+path derivation), one structural fix (Task 3.3 folded into 3.1, since it was verification-only),
+and one BA/Ponytail conflict resolved by the coordinator in Ponytail's favor (AUTH-401-03/F-7
+dropped — the ternary and its test were guarding a branch nothing in production can reach, the
+same reasoning that already withdrew AUTH-403-04). Net: **29 → 25 numbered tasks** (this plan's
+own recount against the shipped file — Tasks 3.3/3.4/3.5 removed, 3.3 folded into 3.1, Task 5.3
+removed; the coordinator's message cited 33→29, which does not match a direct count of the
+first-pass document as written — flagged in §7 below, not treated as a discrepancy worth
+blocking on), **18 AC** (19 → 18, AUTH-401-03 dropped), new component API surface **1 → 0**.
+Superseded content is struck through in place below rather than silently removed, so the
+reasoning stays legible.
 
 ---
 
@@ -50,39 +65,53 @@ states "22 AC"; the actual enumeration in §6 (8 upheld + 2 restated + 9 new −
    (a), the 403 child route renders only inside `<Outlet/>` — **X3 (`/preferences` reachability,
    AUTH-403-07) is already satisfied by the existing shell composition once the 403 route is
    nested under it.** No new wiring needed for AUTH-403-07 beyond nesting the route correctly.
-4. **`platformApi.ts` (separate axios instance, `utils/platformApi.ts:30-44`) already redirects
-   401s to `/platform/login`, correctly, with no clinic leakage.** F-7's "api.ts" finding is about
-   `src/frontend/src/utils/api.ts:35` (the **clinic** axios instance) and
-   `src/frontend/src/store/authStore.ts:153` (`refreshPermissions`'s 401 branch) — both hard-code
-   `/login`. Per F-6, `authStore.plane` is never `'platform'` in production, so `authStore.ts:153`'s
-   platform case is defensive/dead-code-guarding, not a live bug fix — implemented anyway per
-   BA's explicit ruling (AUTH-401-03 kept, unlike the withdrawn AUTH-403-04) because it is one
-   ternary, costs nothing, and closes the "AUTH-3 cements F-7" risk BA named. `api.ts` needs no
-   plane branch (its `useAuthStore` import is clinic-only by construction — it cannot read a
-   platform token) — its task is `?reason=` only.
+4. ~~`platformApi.ts` ... AUTH-401-03 kept ... ternary, costs nothing~~ — **superseded by
+   Ponytail's Criterion-1 finding, adopted by the coordinator.** `authStore.ts:74`
+   (`normalise()`) only ever *reads* `raw.plane ?? 'clinic'` — nothing in production code writes
+   `plane: 'platform'` onto the clinic `authStore` (F-6, confirmed by grep). `platformApi.ts`
+   (`utils/platformApi.ts:30-44`) already redirects platform 401s to `/platform/login` correctly,
+   through its own isolated instance. So the defensive ternary in `authStore.ts:153` would guard
+   a branch nothing can reach, and its test (old Task 5.3) would have to *forge* `plane:
+   'platform'` onto the clinic store to exercise it — the same shape of unreachable-state
+   objection that already withdrew AUTH-403-04 (§6.3 of the BA sign-off). Applying that reasoning
+   inconsistently — withdrawing one unreachable-state AC while keeping another — was the actual
+   defect in the first-pass plan. **Dropped: the plane ternary in `authStore.ts:153`, Task 5.3,
+   and AC AUTH-401-03.** Recorded under **B-3** (`.claude/roadmap` backlog — already scheduled to
+   delete the dead `/platform/auth/me` branch in `refreshPermissions`; this is the same branch).
+   `api.ts` needs no plane branch either (its `useAuthStore` import is clinic-only by
+   construction) — its task remains `?reason=` only.
 5. **`RequirePermission` guards 27 distinct route elements** across the three trees (8 in
    `/clinic-admin`, 11 in `/clinic`, 8 in `/settings` — matches BA's count in §4.2). One is
    nested **two path segments deep**: `App.tsx:163`, `<Route path="storage/connecting">` under
    `/settings`, giving URL `/settings/storage/connecting`. A relative `<Navigate to="403"
    relative="path"/>` fired from that route resolves against the **URL**, not the route tree, and
    in react-router v6 that means dropping only the last URL segment —
-   `/settings/storage/403`, not `/settings/403`. **This is exactly the failure C-4 warns about.**
-   The plan below verifies relative-Navigate behaviour with a test targeting this specific route
-   first (Task 2.3), and falls back to an explicit tree-prefix map if it fails — which, given the
-   analysis above, it will.
+   `/settings/storage/403`, not `/settings/403` (confirmed independently by @ponytail-agent,
+   which also checked `relative="route"`: `/settings/storage/connecting/403` — also wrong).
+   **This is exactly the failure C-4 warns about.** The plan below verifies relative-Navigate
+   behaviour with a spike test targeting this specific route first (Task 2.1), then implements
+   the fix as a **one-segment path derivation** — `pathname.split('/')[1]` — rather than a
+   hand-maintained tree-prefix map (Ponytail's Criterion-1 finding: only three trees ever contain
+   `RequirePermission`, the first URL segment identifies all three at any depth, and a derived
+   value cannot drift out of sync with `App.tsx` the way a parallel hand-maintained map
+   eventually would).
 
 ---
 
-## 2. AC → task → test map (19 AC, each with a falsifiability clause per C-11/G5)
+## 2. AC → task → test map (18 AC, each with a falsifiability clause per C-11/G5)
+
+**AUTH-401-03 dropped this revision** (see Revision note above / §1 finding 4) — Ponytail's
+unreachable-state objection, adopted by the coordinator over BA's original ruling to keep it.
+19 → 18.
 
 | AC ID | One-line requirement | Falsifiability clause — what reverting breaks | Test (new/extended) |
 |---|---|---|---|
-| AUTH-403-01 | Denial inside a permission-holder's own tree renders in-shell; held nav items work | Reverting Task 3.1–3.4 makes `/clinic/403` render the old absolute stub (no sidebar) — test fails because no sidebar nav exists to click | `App.routing.test.tsx` §"in-shell denial" |
+| AUTH-403-01 | Denial inside a permission-holder's own tree renders in-shell; held nav items work | Reverting Task 3.1–3.2 makes `/clinic/403` render the old absolute stub (no sidebar) — test fails because no sidebar nav exists to click | `App.routing.test.tsx` §"in-shell denial" |
 | AUTH-403-02 | Zero-permission user: sidebar shows no denying items, footer logout present, logout ends session | Reverting Task 1.1/1.2 restores the Dashboard trap item / unfiltered admin NAV — test fails because a nav item is present for a route the mock denies | `App.routing.test.tsx` §"zero-permission recovery" + `ClinicLayout.test.tsx`/`AdminLayout.test.tsx` filter tests |
-| AUTH-403-03 | From 403, ≥1 non-logout affordance reaches a rendering route (`/preferences`); `/login`→dashboard→403 chain is ≤3 navigations, exact | Reverting Task 3.1 restores the absolute `/403` with no shell → `/preferences` link assertion fails (element never renders under a shell); chain-length assertion fails because the old code terminates at a bare div at hop 1, not hop 3 in-shell | `App.routing.test.tsx` §"no dead end" |
+| AUTH-403-03 | From 403, ≥1 non-logout affordance reaches a rendering route (`/preferences`); `/login`→dashboard→403 chain is ≤3 navigations, exact | Reverting Task 3.2 restores the absolute `/403` with no shell → `/preferences` link assertion fails (element never renders under a shell); chain-length assertion fails because the old code terminates at a bare div at hop 1, not hop 3 in-shell | `App.routing.test.tsx` §"no dead end" |
 | AUTH-403-05 | Nav honesty: no nav item leads to a route the user is denied | Reverting Task 1.1/1.2 makes a `dashboard.view`-lacking user see the Dashboard link (or any admin item) — test fails | `ClinicLayout.test.tsx`, `AdminLayout.test.tsx` (new files) |
 | AUTH-403-06 | 403 route never redirects — no guard, no role-`<Navigate>` on it | Reverting Task 3.2 (adding a guard/redirect to the 403 element) would make this test's "zero navigation" assertion fail | `App.routing.test.tsx` §"terminal render" |
-| AUTH-403-07 | `/preferences` reachable from 403 (X3) | Reverting Task 3.1 (unnesting the 403 route from the shell) removes `TopNav`/`ProfileMenu` from the render — link assertion fails | `App.routing.test.tsx` §"no dead end" (shared case with 403-03) |
+| AUTH-403-07 | `/preferences` reachable from 403 (X3) | Reverting Task 3.2 (unnesting the 403 route from the shell) removes `TopNav`/`ProfileMenu` from the render — link assertion fails | `App.routing.test.tsx` §"no dead end" (shared case with 403-03) |
 | AUTH-REFRESH-01 | Self-edit + refresh non-ok → warning, not success toast | Reverting Task 4.4 (RoleList branching on outcome) restores the unconditional success toast — test fails | `RoleList.test.tsx` §"honest refresh" |
 | AUTH-REFRESH-02 | Self-edit + refresh ok → success toast (regression guard) | Reverting Task 4.1–4.3 (authStore total contract) breaks the `.ok` read entirely — test throws instead of asserting | `RoleList.test.tsx` §"honest refresh" |
 | AUTH-REFRESH-03 | `fetch` throw inside refresh is caught, not an unhandled rejection, same warning as 01 | Reverting Task 4.2 (try/catch) makes the throw escape `onSuccess` — test's rejection-tracking assertion fails | `authStore.test.ts` §"refreshPermissions total contract" + `RoleList.test.tsx` |
@@ -92,8 +121,7 @@ states "22 AC"; the actual enumeration in §6 (8 upheld + 2 restated + 9 new −
 | AUTH-INV-PERM-01 | Failed refresh leaves `permissionsLoaded`/`permissions` untouched | Reverting Task 4.1–4.3 either flips `permissionsLoaded` to `false` or lets the malformed-body branch fabricate `[]` — test fails | `authStore.test.ts` (already-passing pre-existing cases, re-run + one new untouched-on-401 case) |
 | AUTH-401-01 | authStore 401 → `/login?reason=session-expired`; idle unaffected | Reverting Task 5.1 restores bare `/login` — `reason` param assertion fails; idle case is a separate pre-existing test, unaffected either way | `authStore.test.ts` §"401 reason" |
 | AUTH-401-02 | `api.ts` interceptor 401 → same `reason=session-expired`; `skipAuthRedirect` unaffected | Reverting Task 5.2 restores bare `/login` on the dominant path — test fails; `skipAuthRedirect` case is the pre-existing `api.test.ts` test, re-run unmodified | `api.test.ts` §"reason param" (extended) |
-| AUTH-401-03 | Platform-plane 401 never lands on clinic `/login` | Reverting Task 5.3 (the defensive plane ternary in `authStore.ts`) makes a forced `plane:'platform'` state redirect to `/login` instead of `/platform/login` — test fails | `authStore.test.ts` §"plane-correct 401" |
-| AUTH-401-04 | Unknown `?reason=` → no banner, value never reflected into DOM | Reverting Task 5.4 (allow-list) restores the old `=== 'idle'` boolean check, which happens to also satisfy "no banner for unknown reason" — so the *reflection* half of this AC is what's load-bearing: a naive `{t(reasonParam)}` interpolation would leak the raw string into the DOM and this test's `queryByText(rawReason)` assertion would find it | `LoginView.i18n.test.tsx` / new `LoginView.reason.test.tsx` |
+| AUTH-401-04 | Unknown `?reason=` → no banner, value never reflected into DOM | Reverting Task 5.3 (allow-list) restores the old `=== 'idle'` boolean check, which happens to also satisfy "no banner for unknown reason" — so the *reflection* half of this AC is what's load-bearing: a naive `{t(reasonParam)}` interpolation would leak the raw string into the DOM and this test's `queryByText(rawReason)` assertion would find it | `LoginView.i18n.test.tsx` / new `LoginView.reason.test.tsx` |
 | AUTH-TEST-F5 | `useAuth.test.ts:208` no longer vacuous | Re-introducing the mocked-`setAuth` vacuous assertion (i.e. reverting Task 6.1) is itself the defect being fixed — the new assertion targets a real, unmocked call path so it fails if that call path regresses | `useAuth.test.ts` (edited in place) |
 | AUTH-TEST-N1 | `fetchMe` malformed-body → `IdentityLoadError` | Removing the `try/catch` around `res.json()` in `fetchMe` (`useAuth.ts:69-74`) makes the new `it.each` row fail — this is the falsifiability check named explicitly in the PM brief | `useAuth.test.ts` (new `it.each` row) |
 
@@ -127,27 +155,33 @@ Exact paths under `src/frontend/src/` unless stated.
   not part of the shipped suite) — render `RequirePermission` under a `MemoryRouter` with
   `initialEntries: ['/settings/storage/connecting']`, nested exactly as `App.tsx` nests it
   (`/settings` → `storage/connecting`), deny the permission, and assert the resulting location.
-  This is the verification step C-4 requires — run it, do not assume.
-- **2.2** Based on 2.1's outcome (predicted to fail per §1 finding 5 — relative navigate drops
-  only the last URL segment, landing on `/settings/storage/403` not `/settings/storage/connecting`
-  → wrong sibling): implement the **explicit tree-prefix map** fallback in
-  `guards/RequirePermission.tsx`:
+  This is the verification step C-4 requires — run it, do not assume. **Keep this task as-is per
+  Ponytail's review** — it independently confirmed both `relative="path"`
+  (→ `/settings/storage/403`, wrong) and `relative="route"`
+  (→ `/settings/storage/connecting/403`, also wrong), so the spike still earns its cost as real
+  C-4 compliance, not speculative caution.
+- **2.2** ~~Based on 2.1's outcome ... implement the explicit tree-prefix map fallback ...
+  `TREE_403` ... `useLocation()` longest-prefix match ...~~ — **superseded by Ponytail's
+  Criterion-1 finding.** No map is needed: only three trees ever contain `RequirePermission`
+  (`/clinic-admin`, `/clinic`, `/settings`), and the first URL path segment identifies the tree
+  at any nesting depth, including the two-segment-deep `storage/connecting` case from 2.1. Edit
+  `guards/RequirePermission.tsx`: import `useLocation` from `react-router-dom`; replace line 61's
+  `<Navigate to="/403" replace />` with:
   ```
-  const TREE_403: Record<string, string> = {
-    '/clinic-admin': '/clinic-admin/403',
-    '/clinic':       '/clinic/403',
-    '/settings':     '/settings/403',
-  }
+  const { pathname } = useLocation()
+  const tree = pathname.split('/')[1] // 'clinic-admin' | 'clinic' | 'settings'
+  return <Navigate to={`/${tree}/403`} replace />
   ```
-  Use `useLocation()` to find the matching prefix (longest-prefix match against
-  `location.pathname`); fall back to the absolute `/403` if no prefix matches (belt-and-braces
-  per C-2). Replace line 61's `<Navigate to="/403" replace />` with this lookup.
-- **2.3** Delete the scratch spike test from 2.1; its finding (explicit map wins) is now proven
-  by Group 3's routing tests instead. Record the outcome inline as a code comment in
-  `RequirePermission.tsx` above `TREE_403` (one line: why relative-Navigate was rejected, citing
-  the two-segment-deep route that breaks it) so a future engineer doesn't "simplify" it back.
+  Two lines, no map, no longest-prefix matching, no no-match branch to design for — and it
+  cannot drift out of sync with `App.tsx`'s route tree the way a parallel hand-maintained map
+  eventually would.
+- **2.3** Delete the scratch spike test from 2.1; its finding (derivation over a map) is now
+  proven by Group 3's routing tests instead. Record the outcome inline as a code comment above
+  the `tree` line in `RequirePermission.tsx` (one line: why relative-Navigate was rejected,
+  citing the two-segment-deep route that breaks both its modes) so a future engineer doesn't
+  "simplify" it back.
 
-### Group 3 — Shape (a) routing: 403 child routes (C-1, C-2, C-3, C-6, AUTH-403-01/02/03/06/07)
+### Group 3 — Shape (a) routing: 403 child routes (C-1, C-3, C-6, AUTH-403-01/02/03/06/07)
 
 - **3.1** `App.routing.test.tsx` (new file) — write failing tests (`MemoryRouter` + the guard
   mocking pattern already used in `guards.test.tsx`, but exercising `App`'s actual route tree via
@@ -164,29 +198,36 @@ Exact paths under `src/frontend/src/` unless stated.
      effect fires from the 403 element itself (it is not a no-op regression of `ClinicLayout:31`
      — that redirect is `ClinicLayout`'s own, pre-existing, and out of scope per Grill G3; this
      assertion is scoped to the 403 *element*, not the shell).
+  5. "stale bookmark resolves, not dead-ends" — a zero-permission user navigates directly to the
+     (now-deleted) absolute `/403`: the catch-all (`App.tsx:185`) sends them to `/login`;
+     `LoginView`'s authenticated bounce (`LoginView.tsx:42-47`) sends them to their dashboard;
+     the dashboard route denies them and lands them on `/clinic/403` **in-shell** — assert the
+     chain terminates there, with real sidebar/footer-logout/`TopNav` present (this is Ponytail's
+     Criterion-1 finding: the router already resolves this case better than a hand-rolled
+     standalone fallback would, once verified end-to-end rather than assumed).
+  Includes 3.1's former verification-only companion task (old Task 3.3 — folded in here, since
+  running these assertions against the restructured tree *is* the verification step, not a
+  separate task).
 - **3.2** `App.tsx` — restructure the route tree:
-  - Remove the standalone `<Route path="/403" element={<ForbiddenView/>}/>` (line 180) — replaced
-    by 3 nested routes below plus a recoverable fallback (3.4).
+  - **Delete** the standalone `<Route path="/403" element={<ForbiddenView/>}/>` (line 180)
+    entirely — **not** replaced by a recoverable standalone fallback. Per Ponytail's Criterion-1
+    finding (adopted, reverses this plan's original C-2 stance): the existing catch-all
+    (`App.tsx:185`, `<Route path="*" element={<Navigate to="/login" replace/>}/>`) plus
+    `LoginView`'s authenticated-user bounce already resolve a stale/direct `/403` hit to the
+    correct in-shell 403 (sidebar, footer logout, `TopNav`/preferences link) in 3 hops — strictly
+    more recoverable than a shell-less page with two hand-rolled links, at a cost of a deletion
+    instead of a route + a prop + a test + a uiux item. It also closes Trap 1 (BA §3, Ruling 3):
+    an unauthenticated visitor can no longer render `/403` directly and see a stale shell.
   - Add `<Route path="403" element={<ForbiddenView/>}/>` as a child of the `/clinic-admin` route
     (inside the block at lines 97-111), the `/clinic` route (lines 137-152), and the `/settings`
     route (lines 155-165).
   - `ForbiddenView` itself (lines 65-73) is unchanged — it already renders body-only content
     (icon/heading/copy), which is what makes it safe to nest three times: it does not render
-    `ClinicLayout`/`AdminLayout`/`SettingsLayout`, satisfying C-3 by construction.
-- **3.3** Wire Group 2's `TREE_403` lookup (already implemented in `RequirePermission.tsx`) — no
-  further `App.tsx` change needed here; this task is verification-only: run `App.routing.test.tsx`
-  from 3.1 against the now-restructured tree and confirm all four cases pass.
-- **3.4** C-2 — make the absolute `/403` fallback (kept for stale bookmarks / any future
-  `RequirePermission` mount with no matching tree prefix) recoverable instead of a dead end. Add
-  a `standalone` prop to `ForbiddenView` (default `false`); when `true`, render two extra links
-  below the existing body copy: a logout action (reuse `useLogout()` from `hooks/useAuth.ts`,
-  same as the layouts do) and a `/preferences` link. Re-add
-  `<Route path="/403" element={<ForbiddenView standalone/>}/>` as the last route before the
-  catch-all. Flagged per C-2 as a judgement call Ponytail may trim — if trimmed, this task and
-  its one test case are the only things to drop.
-- **3.5** `App.routing.test.tsx` — add one more case for 3.4: navigating directly to `/403`
-  (no matching tree, e.g. accessed with no referring guard) renders the standalone variant with
-  both the logout and `/preferences` links, no shell chrome.
+    `ClinicLayout`/`AdminLayout`/`SettingsLayout`, satisfying C-3 by construction. **No
+    `standalone` prop, no second render mode** — `ForbiddenView`'s API surface stays exactly what
+    it is today.
+  - Run `App.routing.test.tsx` from 3.1 (all 5 cases, including the new stale-bookmark case)
+    against the restructured tree and confirm green.
 
 ### Group 4 — `refreshPermissions()` total contract + F-2 + honest RoleList warning (C-7, C-8, A2)
 
@@ -261,26 +302,29 @@ Exact paths under `src/frontend/src/` unless stated.
   saved, but your session could not refresh. Reload to see your updated access." (EN); TH
   translation matching the existing `roles.*` key style. Referenced by Task 4.4.
 
-### Group 5 — 401 explains itself, on the right plane (C-9: F-4 + F-7 + AUTH-BL-1)
+### Group 5 — 401 explains itself (C-9: F-4 + AUTH-BL-1)
 
 - **5.1** `store/__tests__/authStore.test.ts` — extend Group 4's total-contract test case 3
   (401 branch) to also assert `window.location.href` ends with `?reason=session-expired` (not
   `?reason=idle`). Then edit `store/authStore.ts:153`:
-  `window.location.href = '/login'` → `` `/login?reason=session-expired` ``. Also add the
-  plane-correct branch (F-7, AUTH-401-03) here: `` plane === 'platform' ? '/platform/login?reason=session-expired' : '/login?reason=session-expired' ``.
+  `window.location.href = '/login'` → `` `/login?reason=session-expired` ``. **No plane branch
+  here** — see the dropped item below.
 - **5.2** `utils/api.test.ts` — add a failing case: 401 with no `skipAuthRedirect` →
   `window.location.href` is `/login?reason=session-expired`. Re-run the existing two cases
   unmodified (plain-401 case will need its literal `/login` assertion updated to match — this
   is the "restatement" the plan must apply, not a new AC). Edit `utils/api.ts:35`:
   `window.location.href = '/login'` → `` '/login?reason=session-expired' ``.
-- **5.3** `store/__tests__/authStore.test.ts` — add the AUTH-401-03 case: force
-  `plane: 'platform'` on the in-memory store (via `setAuth` with a platform-shaped payload —
-  documented as a forced/synthetic state per F-6, since production code never sets this), call
-  `refreshPermissions()` on a mocked 401 response, assert the redirect target is
-  `/platform/login?reason=session-expired`, never `/login...`. This is the defensive branch
-  added in 5.1; this task is the test that exercises it.
-- **5.4** `views/LoginView.tsx` — replace the single `showIdleBanner` boolean (line 13) with an
-  allow-list map:
+- ~~5.3 — add the AUTH-401-03 case: force `plane: 'platform'` on the in-memory clinic store...~~
+  **Dropped.** This task existed only to exercise a defensive ternary that itself guards a state
+  nothing in production writes (F-6: `authStore.ts:74` only ever *reads* `raw.plane ?? 'clinic'`;
+  `platformApi.ts:30-44` already redirects real platform 401s to `/platform/login` correctly,
+  through its own isolated instance). A test that must forge `plane: 'platform'` onto the clinic
+  store to reach the branch it's testing is the same shape of problem that withdrew AUTH-403-04.
+  Recorded under **B-3** instead (already-scheduled backlog item to delete the dead
+  `/platform/auth/me` branch in `refreshPermissions` — this ternary would have been the same kind
+  of dead weight, one door down).
+- **5.3** (renumbered from 5.4) `views/LoginView.tsx` — replace the single `showIdleBanner`
+  boolean (line 13) with an allow-list map:
   ```
   const REASON_COPY: Record<string, string> = {
     idle:              'login.idleLogoutMessage',
@@ -293,16 +337,16 @@ Exact paths under `src/frontend/src/` unless stated.
   defined, nothing otherwise. This satisfies AUTH-401-04: an unrecognised `reason` value is
   never looked up (returns `undefined`, no banner) and the raw query value is never interpolated
   into the DOM (only a fixed copy-key from the map is).
-- **5.5** `i18n/index.ts` — add `login.sessionExpiredMessage` (EN + TH), copy distinguishing it
-  from idle per the BA doc's semantic caution: EN "Your session has ended — please sign in
-  again." (deliberately not reusing idle's "due to inactivity" framing, since this reason is
-  server-driven, not a client-side timer).
-- **5.6** `__tests__/LoginView.i18n.test.tsx` — re-run unmodified (regression guard for the
-  existing `?reason=idle` Thai-banner test, pinned at line 44-49) — must stay green untouched.
-  Add a new test file `__tests__/LoginView.reason.test.tsx` (or extend the i18n file) covering:
-  `?reason=session-expired` renders the new banner; `?reason=bogus-value` renders no banner and
-  `bogus-value` does not appear anywhere in the rendered output (AUTH-401-04's DOM-reflection
-  check).
+- **5.4** (renumbered from 5.5) `i18n/index.ts` — add `login.sessionExpiredMessage` (EN + TH),
+  copy distinguishing it from idle per the BA doc's semantic caution: EN "Your session has ended
+  — please sign in again." (deliberately not reusing idle's "due to inactivity" framing, since
+  this reason is server-driven, not a client-side timer).
+- **5.5** (renumbered from 5.6) `__tests__/LoginView.i18n.test.tsx` — re-run unmodified
+  (regression guard for the existing `?reason=idle` Thai-banner test, pinned at line 44-49) —
+  must stay green untouched. Add a new test file `__tests__/LoginView.reason.test.tsx` (or extend
+  the i18n file) covering: `?reason=session-expired` renders the new banner; `?reason=bogus-value`
+  renders no banner and `bogus-value` does not appear anywhere in the rendered output
+  (AUTH-401-04's DOM-reflection check).
 
 ### Group 6 — Test-only fixes (F-5, N-1)
 
@@ -330,8 +374,8 @@ Exact paths under `src/frontend/src/` unless stated.
   2. `ForbiddenView`'s body copy placement now that it renders inside `<main>` under a sidebar
      (Group 3) instead of full-bleed — confirm spacing/centering tokens still read correctly at
      the narrower content width.
-  3. The `standalone` variant (Task 3.4) — confirm the logout + `/preferences` links meet
-     44×44px targets and Material Symbols icon usage, no raw hex.
+  3. ~~The `standalone` variant (Task 3.4)~~ — **dropped**, that variant no longer exists
+     (Ponytail Criterion-1: absolute `/403` deleted, not made recoverable — see Group 3).
   4. The warning toast (Task 4.5/4.6) — confirm the `warning` variant's token choice and the
      reload button's icon/placement.
   No new design tokens, icons, or component types expected; flag back to @pm-agent if any of the
@@ -346,11 +390,11 @@ list in the original PM brief (§4) and the grill record:
   `'redirects to /403 when authenticated but permission missing'` cases (lines 155-162, 187-199)
   assert `data-to === '/403'` against a **mocked** `Navigate`, which does not exercise real
   routing — these stay valid as unit tests of `RequirePermission`'s *old* absolute-redirect
-  behavior and must be updated to assert against `TREE_403`'s output instead (e.g. wrap the
-  render in a location context, or assert the guard calls the lookup with the right prefix).
-  This is a required edit, listed here rather than in Group 2/3 because it is the single
-  highest-risk regression point — @qa-agent owns confirming it, not treating a stale pass as
-  green.
+  behavior and must be updated to assert against the derived `` `/${tree}/403` `` output instead
+  (mock `useLocation` alongside the existing `Navigate`/`Outlet` mocks at the top of the file, set
+  `pathname` per case, assert the resulting `data-to`). This is a required edit, listed here
+  rather than in Group 2/3 because it is the single highest-risk regression point — @qa-agent
+  owns confirming it, not treating a stale pass as green.
 - `store/__tests__/authStore.test.ts` (all pre-existing F-1/INV-PERM-1 cases, lines 39-113) —
   re-run unmodified, must stay green; Group 4/5 only add new `describe` blocks.
 - `utils/api.test.ts` (existing 3 cases) — case 1 (line 25-31) needs its literal `/login`
@@ -387,8 +431,8 @@ the 401 branch. Group 6 is fully independent and can run first or last.
 
 - **Files touched, production:** `App.tsx`, `guards/RequirePermission.tsx`, `layouts/ClinicLayout.tsx`,
   `layouts/AdminLayout.tsx`, `store/authStore.ts`, `components/roles/RoleList.tsx`, `utils/api.ts`,
-  `views/LoginView.tsx`, `i18n/index.ts` — **9 files**, 0 new production files (the `standalone`
-  prop reuses the existing `ForbiddenView`; no new component file).
+  `views/LoginView.tsx`, `i18n/index.ts` — **9 files**, 0 new production files. `ForbiddenView`'s
+  API surface is unchanged (no `standalone` prop — that variant was cut per Ponytail's review).
 - **Files touched, tests:** `guards/guards.test.tsx` (edited), `store/__tests__/authStore.test.ts`
   (extended), `utils/api.test.ts` (extended), `__tests__/RoleList.test.tsx` (extended),
   `__tests__/RoleEditorView.test.tsx` (type fix only), `hooks/useAuth.test.ts` (extended),
@@ -399,21 +443,37 @@ the 401 branch. Group 6 is fully independent and can run first or last.
 - **New endpoints/hooks/mutations: 0** — no backend change, no new API call, no new React Query
   hook. `refreshPermissions`'s *return type* changes; it is not a new API.
 - **New dependencies: 0.**
-- **LOC estimate:** the routing restructure is ~15 lines across `App.tsx` +
-  `RequirePermission.tsx`; the nav fixes are ~12 lines; the refresh contract is ~20 lines; the
-  RoleList warning is ~25 lines; the 401/reason work is ~15 lines. Production diff well under 150
-  LOC; test diff is the bulk of the change, as expected for a recovery-path/honesty fix with a
-  hard falsifiability requirement (C-11).
+- **New component API surface: 0** (was 1 — the `ForbiddenView standalone` prop — in the
+  pre-Ponytail pass; cut along with the absolute `/403` route it served).
+- **LOC estimate:** the routing restructure is now ~8 lines across `App.tsx` (3 nested routes,
+  1 deletion) + `RequirePermission.tsx` (2-line derivation, down from a ~10-line map); the nav
+  fixes are ~12 lines; the refresh contract is ~20 lines (no plane ternary); the RoleList warning
+  is ~25 lines; the 401/reason work is ~10 lines (no plane branch). Production diff comfortably
+  under 100 LOC; test diff is the bulk of the change, as expected for a recovery-path/honesty fix
+  with a hard falsifiability requirement (C-11).
 
-This is the smaller of the two shapes per the BA sign-off's own file-count correction (§2,
-"Answering PM's Ponytail argument head-on") — 9 production files for a fix that touches three
-independent trust boundaries (routing, refresh contract, 401 handling) is proportionate, not
-over-scoped.
+9 production files for a fix that touches three independent trust boundaries (routing, refresh
+contract, 401 handling) is proportionate, not over-scoped — and this revision removes every
+piece of surface Ponytail identified as buying safety the router or a two-line derivation already
+provided for free: the absolute-`/403` recovery page, its `standalone` prop, its test, its uiux
+review item, the `TREE_403` map, and the plane-correctness ternary + its forged-state test.
 
 ---
 
 ## 6. Handoff
 
-Ready for **Step 5 — @ponytail-agent** review against the 7-point gate. On APPROVE, proceeds to
-**Step 6 — /execute-plan** (`@dev-agent` ∥ `@uiux-agent` per Group 7). No @db-agent task — no
-schema/migration touched, confirmed in §0 of the BA sign-off ("No new endpoint... no DB change").
+Ready for re-review by **@ponytail-agent** against the 7-point gate (this is the revision
+requested after the Criterion-1 REJECT). On APPROVE, proceeds to **Step 6 — /execute-plan**
+(`@dev-agent` ∥ `@uiux-agent` per Group 7). No @db-agent task — no schema/migration touched,
+confirmed in §0 of the BA sign-off ("No new endpoint... no DB change").
+
+## 7. Note back to the coordinator (not a blocker)
+
+The coordinator's revision request cited the pre-revision task count as 33 (giving "33 → 29").
+A direct count of the numbered tasks as actually written in the prior version of this file
+(1.1–7.1) totals **29**, not 33, so the corrected total after applying all four required edits is
+**25**, not 29. I've applied the edits as specified regardless — the discrepancy is in the
+before-number, not in which edits were requested or how they were applied — but flagging it so
+the task-count figure the coordinator carries forward is the one that reconciles against the
+file. Everything else in the revision request (the two adopted findings, the 3.3 fold, the
+AUTH-401-03/B-3 drop) matches this document exactly.
