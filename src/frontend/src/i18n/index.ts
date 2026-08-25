@@ -347,6 +347,11 @@ const en: Dict = {
   'roles.addRole': 'Add role',
   'roles.noRoles': 'This user has no roles. Assign at least one role.',
   'roles.loadError': 'Cannot load roles. Contact your admin.',
+  'roles.refreshFailedWarning': 'Permissions were saved, but your session could not refresh. Reload to see your updated access.',
+  'roles.reloadPage': 'Reload page',
+
+  // Login page — 401 explains itself (ADR-0026 decision 7)
+  'login.sessionExpiredMessage': 'Your session has ended — please sign in again.',
 }
 
 const th: Dict = {
@@ -678,6 +683,11 @@ const th: Dict = {
   'roles.addRole': 'เพิ่มบทบาท',
   'roles.noRoles': 'ผู้ใช้นี้ยังไม่มีบทบาท กรุณามอบหมายอย่างน้อยหนึ่งบทบาท',
   'roles.loadError': 'ไม่สามารถโหลดบทบาทได้ กรุณาติดต่อผู้ดูแลระบบ',
+  'roles.refreshFailedWarning': 'บันทึกสิทธิ์แล้ว แต่ไม่สามารถรีเฟรชเซสชันของคุณได้ กรุณาโหลดหน้าใหม่เพื่อดูสิทธิ์ที่อัปเดต',
+  'roles.reloadPage': 'โหลดหน้าใหม่',
+
+  // Login page — 401 explains itself (ADR-0026 decision 7)
+  'login.sessionExpiredMessage': 'เซสชันของคุณสิ้นสุดลง กรุณาเข้าสู่ระบบอีกครั้ง',
 }
 
 const DICTS: Record<Language, Dict> = { en, th }

@@ -6,11 +6,22 @@ import { useT } from '../i18n'
 import * as rememberedUsernames from '../utils/rememberedUsernames'
 import loginVetHospital from '../assets/login-vet-hospital.png'
 
+/** Allow-list of recognised `?reason=` values -> their i18n copy key. */
+const REASON_COPY: Record<string, string> = {
+  idle:              'login.idleLogoutMessage',
+  'session-expired': 'login.sessionExpiredMessage',
+}
+
 export default function LoginView() {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated())
   const role = useAuthStore(s => s.role)
   const t = useT()
-  const showIdleBanner = new URLSearchParams(window.location.search).get('reason') === 'idle'
+  // AUTH-401-04 (ADR-0026 decision 7): an unrecognised `?reason=` value must
+  // never render a banner, and the raw query value must never be
+  // interpolated into the DOM — only a fixed copy-key from this allow-list
+  // is ever looked up.
+  const reasonParam = new URLSearchParams(window.location.search).get('reason')
+  const reasonCopyKey = reasonParam !== null ? REASON_COPY[reasonParam] : undefined
 
   const detectedSubdomain = (() => {
     const host = window.location.hostname
@@ -94,12 +105,12 @@ export default function LoginView() {
         <section className="flex-1 min-h-0 md:w-1/2 lg:w-2/5 flex flex-col justify-center items-center p-sm md:px-xl md:py-sm bg-surface overflow-hidden">
           <div className="w-full max-w-[440px]">
 
-            {showIdleBanner && (
+            {reasonCopyKey !== undefined && (
               <div className="mb-sm flex items-start gap-sm bg-secondary-container/30 border border-secondary/30 rounded-lg px-md py-xs">
                 <span className="material-symbols-outlined text-secondary flex-shrink-0 mt-0.5" style={{ fontSize: '18px' }}>
                   info
                 </span>
-                <p className="text-body-md text-on-surface">{t('login.idleLogoutMessage')}</p>
+                <p className="text-body-md text-on-surface">{t(reasonCopyKey)}</p>
               </div>
             )}
 

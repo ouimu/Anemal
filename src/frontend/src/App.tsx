@@ -61,7 +61,15 @@ const Loader = () => (
   </div>
 )
 
-/** Stub 403 view — full implementation deferred to T-5E-03+. */
+/**
+ * 403 view (ADR-0026). Body-only content, no layout of its own — nested as a
+ * child route under /clinic-admin, /clinic, and /settings so it renders
+ * inside that tree's real shell (sidebar, TopNav, reachable logout) via
+ * <Outlet/>. Must NEVER render ClinicLayout/AdminLayout/SettingsLayout or
+ * re-compose sidebar chrome itself: doing so would reintroduce
+ * ClinicLayout.tsx:31's admin redirect and produce an unbounded
+ * /403 -> dashboard -> denied -> /403 loop.
+ */
 const ForbiddenView = () => (
   <div className="flex flex-col items-center justify-center h-screen gap-4 text-center">
     <span className="material-symbols-outlined text-6xl text-error">lock</span>
@@ -108,6 +116,8 @@ export default function App() {
           <Route path="blood-bank"   element={<RequirePermission perm="bloodbank.view"><AdminBloodBank/></RequirePermission>}/>
           <Route path="audit"        element={<RequirePermission perm="audit.view"><AdminAudit/></RequirePermission>}/>
           <Route path="roles"        element={<RequirePermission perm="roles.view"><RoleEditorView/></RequirePermission>}/>
+          {/* ADR-0026: denial renders in-shell, inside AdminLayout's <Outlet/>. */}
+          <Route path="403" element={<ForbiddenView/>}/>
         </Route>
 
         {/* ── Legacy /admin/* redirects → /clinic-admin/* ── */}
@@ -149,6 +159,8 @@ export default function App() {
           <Route path="inpatient"    element={<RequirePermission perm="inpatient.view"><ClinicInpatient/></RequirePermission>}/>
           {/* Doctor has no grooming access — gate on grooming.view which doctor role lacks */}
           <Route path="grooming"     element={<RequirePermission perm="grooming.view"><ClinicGrooming/></RequirePermission>}/>
+          {/* ADR-0026: denial renders in-shell, inside ClinicLayout's <Outlet/>. */}
+          <Route path="403" element={<ForbiddenView/>}/>
         </Route>
 
         {/* ── Settings section (/settings/*) ── auth-only, role filtered in layout */}
@@ -162,6 +174,8 @@ export default function App() {
           <Route path="storage"       element={<RequirePermission perm="clinic.integrations.edit"><StoragePage/></RequirePermission>}/>
           <Route path="storage/connecting" element={<RequirePermission perm="clinic.integrations.edit"><StorageConnectingPage/></RequirePermission>}/>
           <Route path="branches"      element={<RequirePermission perm="clinic.branch.view"><AdminBranches/></RequirePermission>}/>
+          {/* ADR-0026: denial renders in-shell, inside SettingsLayout's <Outlet/>. */}
+          <Route path="403" element={<ForbiddenView/>}/>
         </Route>
 
         {/* ── My Preferences (personal, all clinic roles) ── standalone, outside the clinic settings shell */}
@@ -176,8 +190,12 @@ export default function App() {
         {/* Back-compat: old in-shell path → standalone page */}
         <Route path="/settings/preferences" element={<Navigate to="/preferences" replace/>}/>
 
-        {/* Access denied stub — target of RequirePermission on deny */}
-        <Route path="/403" element={<ForbiddenView/>}/>
+        {/* ADR-0026: no standalone /403 route. A denial always renders as a
+            child of one of the three clinic-plane layouts above, in-shell
+            (sidebar + TopNav + logout reachable) — never a shell-less page.
+            A stale bookmark to the old absolute /403 falls through to the
+            catch-all below, which resolves it in 3 hops through LoginView's
+            authenticated bounce back to the correct in-shell denial. */}
 
         {/* Legacy + catch-all */}
         <Route path="/dashboard" element={<Navigate to="/clinic/dashboard" replace/>}/>

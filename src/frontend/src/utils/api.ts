@@ -32,7 +32,7 @@ api.interceptors.response.use(
       // HI-09: clear cached PII before dropping auth + navigating away.
       void clearServerState().finally(() => {
         useAuthStore.getState().clearAuth()
-        window.location.href = '/login'
+        window.location.href = '/login?reason=session-expired'
       })
       return Promise.reject(err)
     }

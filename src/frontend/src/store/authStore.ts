@@ -43,8 +43,15 @@ interface AuthState extends AuthData {
    * Re-fetches /auth/me (clinic plane) or /platform/auth/me (platform plane)
    * using the stored token, then writes updated permissions and roleIds back to
    * the store AND to persisted storage.  The caller decides when to invoke this.
+   *
+   * ADR-0026 decision 5: total contract over every exit — no token, a
+   * network throw, a 401, a non-ok response, a malformed body, and success
+   * each resolve `{ ok: boolean }` explicitly. `permissionsLoaded`/
+   * `permissions` are only ever mutated on the success path (or reset by
+   * `clearAuth()` on 401) — never fabricated to `[]`/`true` on a failure the
+   * caller could not actually resolve (F-2, AUTH-INV-PERM-01).
    */
-  refreshPermissions: () => Promise<void>
+  refreshPermissions: () => Promise<{ ok: boolean }>
 }
 
 /** Sentinel value used for the logged-out / pre-login state. */
@@ -141,40 +148,58 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   refreshPermissions: async () => {
     const { token, plane } = get()
-    if (!token) return
+    if (!token) return { ok: false }
 
     const endpoint = plane === 'platform' ? '/platform/auth/me' : '/auth/me'
-    const res = await fetch(endpoint, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    let res: Response
+    try {
+      res = await fetch(endpoint, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    } catch {
+      // Network throw — could not tell, not "no permissions". Never mutate
+      // permissionsLoaded/permissions here (F-2/AUTH-INV-PERM-01).
+      return { ok: false }
+    }
 
     if (res.status === 401) {
       get().clearAuth()
-      window.location.href = '/login'
-      return
+      window.location.href = '/login?reason=session-expired'
+      return { ok: false }
     }
 
-    if (!res.ok) return
+    if (!res.ok) return { ok: false }
 
-    const json = await res.json()
-    const body = (json.data ?? json) as {
-      permissions: string[]
+    let json: unknown
+    try {
+      json = await res.json()
+    } catch {
+      return { ok: false }
+    }
+    const body = ((json as { data?: unknown }).data ?? json) as {
+      permissions?: unknown
       roleIds?: number[]
       permSetVersion?: number
     }
 
+    // F-2: a malformed `permissions` field must never manufacture "[] +
+    // permissionsLoaded: true" (authoritatively none) out of "could not
+    // tell". Bail out before touching the store at all.
+    if (!Array.isArray(body.permissions)) return { ok: false }
+
     const patch: Partial<AuthData> = {
-      permissions:    Array.isArray(body.permissions) ? body.permissions : [],
-      roleIds:        Array.isArray(body.roleIds)     ? body.roleIds     : get().roleIds,
-      permSetVersion: body.permSetVersion             ?? get().permSetVersion,
+      permissions:    body.permissions,
+      roleIds:        Array.isArray(body.roleIds) ? body.roleIds : get().roleIds,
+      permSetVersion: body.permSetVersion         ?? get().permSetVersion,
     }
 
     // Persist the updated data so the next page load reflects the new permissions.
-    const next: AuthData = { ...get(), ...patch }
+    const next: AuthData = { ...get(), ...patch, permissionsLoaded: true }
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next))
     } catch { /* ignore */ }
 
     set({ ...patch, permissionsLoaded: true })
+    return { ok: true }
   },
 }))

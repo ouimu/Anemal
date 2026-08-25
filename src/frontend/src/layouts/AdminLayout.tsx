@@ -9,22 +9,25 @@ import MaterialIcon from '../components/MaterialIcon'
 import TopNav from '../components/TopNav'
 
 const NAV = [
-  { to: '/clinic-admin/dashboard',    icon: 'dashboard',    label: 'nav.overview' },
+  { to: '/clinic-admin/dashboard',    icon: 'dashboard',    label: 'nav.overview',           perm: 'clinic.profile.view' },
   // Clinic-wide settings shell (/settings/*) surfaced from the dashboard sidebar,
   // directly under Overview — distinct from the appointment/notification config below.
-  { to: '/settings/clinic-profile',   icon: 'tune',         label: 'nav.clinicSettings' },
-  { to: '/clinic-admin/users',        icon: 'group',        label: 'nav.users' },
-  { to: '/clinic-admin/usage',        icon: 'bar_chart',    label: 'nav.usage' },
-  { to: '/clinic-admin/settings',     icon: 'event',        label: 'nav.appointmentSettings' },
-  { to: '/clinic-admin/subscription', icon: 'credit_card',  label: 'nav.subscription' },
-  { to: '/clinic-admin/blood-bank',   icon: 'bloodtype',    label: 'nav.bloodBank' },
-  { to: '/clinic-admin/audit',        icon: 'policy',       label: 'nav.auditLog' },
-  { to: '/clinic-admin/roles',        icon: 'admin_panel_settings', label: 'nav.roles' },
+  // Cross-tree link (target route lives under /settings, not /clinic-admin) —
+  // still gated so it doesn't appear for a user who'd land on /settings/403.
+  { to: '/settings/clinic-profile',   icon: 'tune',         label: 'nav.clinicSettings',      perm: 'clinic.profile.view' },
+  { to: '/clinic-admin/users',        icon: 'group',        label: 'nav.users',               perm: 'staff.view' },
+  { to: '/clinic-admin/usage',        icon: 'bar_chart',    label: 'nav.usage',                perm: 'clinic.profile.view' },
+  { to: '/clinic-admin/settings',     icon: 'event',        label: 'nav.appointmentSettings',  perm: 'clinic.profile.view' },
+  { to: '/clinic-admin/subscription', icon: 'credit_card',  label: 'nav.subscription',         perm: 'clinic.profile.view' },
+  { to: '/clinic-admin/blood-bank',   icon: 'bloodtype',    label: 'nav.bloodBank',            perm: 'bloodbank.view' },
+  { to: '/clinic-admin/audit',        icon: 'policy',       label: 'nav.auditLog',             perm: 'audit.view' },
+  { to: '/clinic-admin/roles',        icon: 'admin_panel_settings', label: 'nav.roles',        perm: 'roles.view' },
 ]
 
 export default function AdminLayout() {
-  const role     = useAuthStore(s => s.role)
-  const name     = useAuthStore(s => s.name)
+  const role          = useAuthStore(s => s.role)
+  const name          = useAuthStore(s => s.name)
+  const hasPermission = useAuthStore(s => s.hasPermission)
   const logout   = useLogout()
   const t        = useT()
   const { sidebarOpen, toggleSidebar } = useUiStore()
@@ -73,7 +76,7 @@ export default function AdminLayout() {
 
         {/* Nav */}
         <nav className="flex flex-col flex-1 py-sm overflow-y-auto">
-          {NAV.map(item => (
+          {NAV.filter(item => !item.perm || hasPermission(item.perm)).map(item => (
             <NavLink
               key={item.to}
               to={item.to}

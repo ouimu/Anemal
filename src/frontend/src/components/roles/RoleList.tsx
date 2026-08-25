@@ -27,7 +27,7 @@ import { SEALED_ROLE_KEY } from '../../hooks/useUserRoles'
 // ── Toast helper (inline, no external lib needed) ────────────────────────────
 
 interface ToastState {
-  type: 'success' | 'error'
+  type: 'success' | 'error' | 'warning'
   message: string
 }
 
@@ -157,10 +157,17 @@ export default function RoleList({
   const updateMut = useUpdateRolePermissionsMutation()
   const deleteMut = useDeleteRoleMutation()
 
-  /** Show auto-dismissing toast */
+  /**
+   * Shows a toast. Success/error auto-dismiss after 4s; a warning about
+   * known-divergent authorization state (ADR-0026 decision 6) must persist
+   * until the user acts on it via the reload control — an auto-dismissing
+   * warning would erase the evidence of the failure it exists to report.
+   */
   const showToast = (t: ToastState) => {
     setToast(t)
-    window.setTimeout(() => setToast(null), 4_000)
+    if (t.type !== 'warning') {
+      window.setTimeout(() => setToast(null), 4_000)
+    }
   }
 
   const toggleExpand = (id: string) =>
@@ -171,11 +178,18 @@ export default function RoleList({
       { roleId: role.id, ...delta },
       {
         onSuccess: async () => {
-          showToast({ type: 'success', message: 'Permissions updated' })
-          // AC-8: refresh own permissions if the edited role is in current user's roles
+          // AC-8 / ADR-0026 decision 6: when the edited role is one of the
+          // current user's own roles, the toast must depend on whether the
+          // refresh actually succeeded — a success toast the server hasn't
+          // confirmed is the "false success" this ADR removes.
           if (userRoleIds.map(String).includes(role.id)) {
-            await refreshPerms()
+            const result = await refreshPerms()
+            if (!result.ok) {
+              showToast({ type: 'warning', message: t('roles.refreshFailedWarning') })
+              return
+            }
           }
+          showToast({ type: 'success', message: 'Permissions updated' })
         },
         onError: (err) => {
           showToast({ type: 'error', message: err.message ?? 'Failed to update permissions' })
@@ -375,14 +389,29 @@ export default function RoleList({
                       }`}
         >
           <MaterialIcon
-            name={toast.type === 'success' ? 'check_circle' : 'error_outline'}
+            name={toast.type === 'success' ? 'check_circle' : toast.type === 'warning' ? 'warning' : 'error_outline'}
             size={20}
           />
           <p className="text-body-sm font-bold">{toast.message}</p>
+          {toast.type === 'warning' ? (
+            /* ADR-0026 decision 6: reload is the primary action, not an
+               afterthought next to dismiss — a warning about known-divergent
+               authorization state must not be dismissible without it. */
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="ml-auto min-h-[44px] min-w-[44px] px-md flex items-center gap-xs
+                         rounded-lg border border-error-on-container hover:bg-error/10
+                         transition-colors font-bold"
+            >
+              <MaterialIcon name="refresh" size={16} />
+              <span className="hidden sm:inline">{t('roles.reloadPage')}</span>
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => setToast(null)}
-            className="ml-auto min-h-[44px] min-w-[44px] flex items-center justify-center
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center
                        hover:opacity-70 rounded-full transition-opacity"
             aria-label="Dismiss"
           >

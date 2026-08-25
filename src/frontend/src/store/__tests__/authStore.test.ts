@@ -112,3 +112,96 @@ describe('authStore — sessionStorage-only persistence', () => {
     expect(useAuthStore.getState().permissionsLoaded).toBe(false)
   })
 })
+
+describe('refreshPermissions total contract (ADR-0026, C-7/C-8, F-2)', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    sessionStorage.clear()
+    vi.resetModules()
+    vi.stubGlobal('fetch', vi.fn())
+    delete (window as unknown as { location?: unknown }).location
+    ;(window as unknown as { location: { href: string } }).location = { href: '' }
+  })
+
+  /** Seeds a fresh authStore module instance with a logged-in session. */
+  async function seedLoggedIn() {
+    const { useAuthStore } = await import('../authStore')
+    useAuthStore.getState().setAuth(sampleAuth)
+    return useAuthStore
+  }
+
+  it('1. no token -> resolves { ok: false }, no fetch call', async () => {
+    const { useAuthStore } = await import('../authStore')
+    // Fresh module, never logged in -> token === ''
+    const result = await useAuthStore.getState().refreshPermissions()
+    expect(result).toEqual({ ok: false })
+    expect(globalThis.fetch).not.toHaveBeenCalled()
+  })
+
+  it('2. fetch rejects (network throw) -> resolves { ok: false }, no unhandled rejection', async () => {
+    const useAuthStore = await seedLoggedIn()
+    vi.mocked(globalThis.fetch).mockRejectedValueOnce(new Error('network down'))
+    await expect(useAuthStore.getState().refreshPermissions()).resolves.toEqual({ ok: false })
+  })
+
+  it('3. 401 response -> resolves { ok: false }, clearAuth() called, redirect carries reason=session-expired', async () => {
+    const useAuthStore = await seedLoggedIn()
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      status: 401, ok: false, json: async () => ({}),
+    } as Response)
+    const result = await useAuthStore.getState().refreshPermissions()
+    expect(result).toEqual({ ok: false })
+    expect(useAuthStore.getState().isAuthenticated()).toBe(false)
+    expect(window.location.href).toContain('reason=session-expired')
+  })
+
+  it('4. non-ok (e.g. 500) -> resolves { ok: false }, permissionsLoaded/permissions unchanged', async () => {
+    const useAuthStore = await seedLoggedIn()
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      status: 500, ok: false, json: async () => ({}),
+    } as Response)
+    const before = useAuthStore.getState()
+    const result = await useAuthStore.getState().refreshPermissions()
+    expect(result).toEqual({ ok: false })
+    expect(useAuthStore.getState().permissionsLoaded).toBe(before.permissionsLoaded)
+    expect(useAuthStore.getState().permissions).toEqual(before.permissions)
+  })
+
+  it('5. 200 with a well-formed body -> resolves { ok: true }, permissionsLoaded: true', async () => {
+    const useAuthStore = await seedLoggedIn()
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      status: 200, ok: true,
+      json: async () => ({ data: { permissions: ['a.view', 'b.view'], roleIds: [2], permSetVersion: 3 } }),
+    } as Response)
+    const result = await useAuthStore.getState().refreshPermissions()
+    expect(result).toEqual({ ok: true })
+    expect(useAuthStore.getState().permissionsLoaded).toBe(true)
+    expect(useAuthStore.getState().permissions).toEqual(['a.view', 'b.view'])
+  })
+
+  it('6. F-2: 200 with permissions missing/non-array -> resolves { ok: false }, permissionsLoaded/permissions unchanged (not flipped to [])', async () => {
+    const useAuthStore = await seedLoggedIn()
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      status: 200, ok: true,
+      json: async () => ({ data: { permissions: 'not-an-array' } }),
+    } as Response)
+    const before = useAuthStore.getState()
+    const result = await useAuthStore.getState().refreshPermissions()
+    expect(result).toEqual({ ok: false })
+    expect(useAuthStore.getState().permissionsLoaded).toBe(before.permissionsLoaded)
+    expect(useAuthStore.getState().permissions).toEqual(before.permissions)
+  })
+
+  // AUTH-INV-PERM-01: a failed refresh must never fabricate "authoritatively
+  // none" out of "could not tell" — re-run across the failing exits above.
+  it('AUTH-INV-PERM-01: a 401 leaves permissionsLoaded/permissions untouched before clearAuth resets them, not fabricated to []/true', async () => {
+    const useAuthStore = await seedLoggedIn()
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      status: 401, ok: false, json: async () => ({}),
+    } as Response)
+    await useAuthStore.getState().refreshPermissions()
+    // clearAuth() resets permissionsLoaded to false (logged-out state) — it
+    // must NOT be true with a manufactured empty permissions array.
+    expect(useAuthStore.getState().permissionsLoaded).toBe(false)
+  })
+})

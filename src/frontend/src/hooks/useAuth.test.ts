@@ -4,7 +4,7 @@
  * UX. See docs/superpowers/specs/2026-07-10-remember-me-username-design.md §3
  * and docs/adr/0010-remember-me-username-recall-not-session-persistence.md.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -34,7 +34,7 @@ vi.mock('../utils/rememberedUsernames', () => ({
 const authState = {
   setAuth:            vi.fn(),
   clearAuth:          vi.fn(),
-  refreshPermissions: vi.fn().mockResolvedValue(undefined),
+  refreshPermissions: vi.fn().mockResolvedValue({ ok: true }),
   plane: 'clinic' as const, userId: 0, tenantId: 0, roleIds: [] as number[],
   role: '', permissions: [] as string[], permSetVersion: 0,
   name: '', companyName: '', branchName: '',
@@ -190,6 +190,10 @@ describe('useLogin — atomic identity resolution (ADR-0024)', () => {
     ['401 response',         () => Promise.resolve({ ok: false, status: 401, json: async () => ({}) }), true],
     ['404 response',         () => Promise.resolve({ ok: false, status: 404, json: async () => ({}) }), true],
     ['500 response',         () => Promise.resolve({ ok: false, status: 500, json: async () => ({}) }), true],
+    // N-1: a 200 whose body isn't valid JSON must surface as IdentityLoadError
+    // with the SyntaxError attached via `cause` (useAuth.ts:69-74's
+    // try/catch around res.json()), not an unhandled rejection.
+    ['200 with malformed JSON body', () => Promise.resolve({ ok: true, status: 200, json: () => Promise.reject(new SyntaxError('bad json')) }), true],
   ])('branch-select — /auth/me %s after select-branch succeeds: no setAuth/navigate, picker survives', async (_label, fetchImpl, expectIdentityError) => {
     postMock.mockResolvedValueOnce({ data: { data: step1Response } })
     const { result } = renderHook(() => useLogin(), { wrapper })
@@ -205,7 +209,11 @@ describe('useLogin — atomic identity resolution (ADR-0024)', () => {
     await waitFor(() => expect(result.current.selectBranchMutation.isError).toBe(true))
 
     expect(authState.setAuth).not.toHaveBeenCalled()
-    expect(sessionStorage.getItem('vc_auth')).toBeNull()
+    // F-5: NOT asserting sessionStorage.getItem('vc_auth') here — setAuth is
+    // a vi.fn() mock in this describe block (line 35), so it can never write
+    // to sessionStorage regardless of production behavior. That made the
+    // assertion vacuous (see the real-store proof below, which is what
+    // AC-12 actually needs). Delete-only per Task 6.1 — no behavior lost.
     expect(navigateMock).not.toHaveBeenCalled()
     expect(result.current.branchSelection).not.toBeNull()
     expect(globalThis.fetch).toHaveBeenCalledTimes(1)
@@ -331,6 +339,40 @@ describe('useSwitchBranch — permissionsLoaded regression guard (AC-11, R-1)', 
     expect(authState.setAuth).toHaveBeenCalledWith(
       expect.objectContaining({ permissionsLoaded: true }),
     )
+  })
+})
+
+// ── AC-12 real-store proof (F-5) ─────────────────────────────────────────────
+// The file-level mock of '../store/authStore' (line 46) makes `setAuth` a
+// vi.fn(), so no test above can observe a real sessionStorage write — that's
+// exactly what made the assertion deleted from the T6 test (line ~208)
+// vacuous. This block unmocks the real authStore module for one test so
+// AC-12 ("failed login leaves no persisted blob") is proven against actual
+// write behavior, not a mock that could never have written regardless.
+describe('useLogin — AC-12 real-store proof (no mocked authStore)', () => {
+  afterEach(() => {
+    // Restore the file-level mock for every other test in this file.
+    vi.doMock('../store/authStore', () => ({ useAuthStore: useAuthStoreMock }))
+  })
+
+  it('a failed /auth/me leaves no persisted auth blob in sessionStorage (real authStore module)', async () => {
+    vi.doUnmock('../store/authStore')
+    vi.resetModules()
+    sessionStorage.removeItem('vc_auth')
+    postMock.mockResolvedValueOnce({ data: { data: step2Response } })
+    globalThis.fetch = vi.fn().mockRejectedValueOnce(new Error('network down'))
+
+    const { useLogin: useLoginReal } = await import('./useAuth')
+    const { result } = renderHook(() => useLoginReal(), { wrapper })
+
+    act(() => {
+      result.current.loginMutation.mutate({
+        subdomain: 'dev-clinic', username: 'alice', password: 'pw', remember: false,
+      })
+    })
+    await waitFor(() => expect(result.current.loginMutation.isError).toBe(true))
+
+    expect(sessionStorage.getItem('vc_auth')).toBeNull()
   })
 })
 

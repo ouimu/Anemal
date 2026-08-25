@@ -46,13 +46,13 @@ const h = vi.hoisted(() => {
 interface MockAuth {
   permissions: string[]
   roleIds: string[]
-  refreshPermissions: () => Promise<void>
+  refreshPermissions: () => Promise<{ ok: boolean }>
 }
 const auth = vi.hoisted<() => MockAuth>(() => {
   const state: MockAuth = {
     permissions: [],
     roleIds: [],
-    refreshPermissions: vi.fn(async () => {}),
+    refreshPermissions: vi.fn(async () => ({ ok: true })),
   }
   return () => state
 })
@@ -100,7 +100,7 @@ function setAuth(over: Partial<MockAuth>): void {
   const s = auth()
   s.permissions = ['appointments.view', 'appointments.create', 'appointments.edit', 'crm.view', 'crm.create', 'roles.manage']
   s.roleIds = []
-  s.refreshPermissions = vi.fn(async () => {})
+  s.refreshPermissions = vi.fn(async () => ({ ok: true }))
   Object.assign(s, over)
 }
 
@@ -254,7 +254,7 @@ describe('AC-7 permission not held → toggle disabled', () => {
 // ── AC-8 ────────────────────────────────────────────────────────────────────
 describe('AC-8 saving own role refreshes permissions', () => {
   it('calls refreshPermissions when the edited role is one of the user roles', async () => {
-    const refresh = vi.fn(async () => {})
+    const refresh = vi.fn(async () => ({ ok: true }))
     setAuth({ roleIds: ['custom-1'], refreshPermissions: refresh })
 
     // Save mutation invokes its onSuccess callback.
@@ -274,7 +274,7 @@ describe('AC-8 saving own role refreshes permissions', () => {
   })
 
   it('does NOT refresh permissions when the edited role is not a user role', async () => {
-    const refresh = vi.fn(async () => {})
+    const refresh = vi.fn(async () => ({ ok: true }))
     setAuth({ roleIds: ['some-other-role'], refreshPermissions: refresh })
     h.updateMutate.mockImplementation((_p: unknown, opts: { onSuccess: () => Promise<void> | void }) => opts.onSuccess())
 
