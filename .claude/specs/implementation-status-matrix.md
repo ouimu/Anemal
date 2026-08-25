@@ -7,14 +7,14 @@
 
 | Area | Change | Notes |
 |------|--------|-------|
-| Backend test suite | 28 failures (ADR-0019 multi-role mock drift + PR #53 `touchLastLogin` mock gap) repaired: 7 tests deleted, 8 rewritten to single-role semantics, 12 fixture fixes | `main` now 1292 passing / 0 failing / 91 suites |
+| Backend test suite | 28 failures (ADR-0019 multi-role mock drift + PR #53 `touchLastLogin` mock gap) repaired: 7 tests deleted, 8 rewritten to single-role semantics, 12 fixture fixes | `main` now 1295 passing / 0 failing / 91 suites (incl. PR #58's named guard tests) |
 | Invoice payment claim (`claimInvoicePaid`) | Real production defect found during repair: returned `409 INVOICE_ALREADY_PAID` for cross-tenant/wrong-branch/nonexistent invoices, not just in-scope ones | Now ADR-0025: `409` only for an invoice in the caller's own tenant+branch scope, everything else `404`; isolation itself was never at risk |
 | Integration test fixtures | 32 hardcoded IDs across 26 `tests/integration/` files given a `Date.now()` suffix | Prevents an interrupted run from stranding rows and cascading failures into the next run |
 | Jest config | `.claude/worktrees/` excluded via `testPathIgnorePatterns` | A stray git worktree was making every suite run twice (187 suites/2598 tests vs the real 91/1289) |
-| Invoice payment route authorization | `bill-20/21/22`: RBAC deny tests added for `PUT /api/invoices/:id/payment`, which had no authorization test at all before this | Mutation-verified |
+| Invoice payment route authorization | `bill-20/21/22`: RBAC deny tests added for `PUT /api/invoices/:id/payment`, which was already covered by the `roleRouteMatrix` enumeration sweep but had no test named for it before this | Mutation-verified |
 | Frontend test mocks | 8 files spreading `importOriginal()` into their `@tanstack/react-query` mock (Dashboard, Pets, Appointments, Branches, ClinicSettings, PetDetail, + 2 more) | These were failing at collection, contributing 0 tests each; recovers 21 real tests, frontend now 351 passing / 55 files |
 
-Known gap, pre-existing and untouched by this repair: backend `npm run lint` cannot run (eslint 9 flat-config migration incomplete — declared script, no flat config present). Deleted-coverage rationale for the 7 removed backend tests: `docs/superpowers/plans/2026-08-20-backend-tests-post-adr-0019-deleted-coverage.md`.
+Known gap, pre-existing and untouched by this repair: backend `npm run lint` cannot run — eslint is not installed at all (no eslint dependency declared, no binary, no config file of any kind; the frontend by contrast has eslint ^8.57.1 + .eslintrc.cjs and works). Deleted-coverage rationale for the 7 removed backend tests: `docs/superpowers/plans/2026-08-20-backend-tests-post-adr-0019-deleted-coverage.md`.
 
 ## Login identity resolution (2026-08-20, ADR-0024)
 
