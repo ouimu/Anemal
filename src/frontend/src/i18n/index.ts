@@ -352,6 +352,10 @@ const en: Dict = {
 
   // Login page — 401 explains itself (ADR-0026 decision 7)
   'login.sessionExpiredMessage': 'Your session has ended — please sign in again.',
+
+  // 403 view (ADR-0026) — nested body content, not a full error page
+  'forbidden.title': "This page isn't part of your access",
+  'forbidden.body': "Your role doesn't include this area. Use the menu to head back, or ask your admin if you think this is wrong.",
 }
 
 const th: Dict = {
@@ -688,6 +692,10 @@ const th: Dict = {
 
   // Login page — 401 explains itself (ADR-0026 decision 7)
   'login.sessionExpiredMessage': 'เซสชันของคุณสิ้นสุดลง กรุณาเข้าสู่ระบบอีกครั้ง',
+
+  // 403 view (ADR-0026) — nested body content, not a full error page
+  'forbidden.title': 'หน้านี้ไม่ได้อยู่ในสิทธิ์การใช้งานของคุณ',
+  'forbidden.body': 'บทบาทของคุณไม่มีสิทธิ์เข้าถึงส่วนนี้ ลองกลับไปที่เมนู หรือติดต่อผู้ดูแลระบบหากคิดว่านี่คือความผิดพลาด',
 }
 
 const DICTS: Record<Language, Dict> = { en, th }

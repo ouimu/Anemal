@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useUiStore } from './store/uiStore'
 import { usePreferenceHydration } from './hooks/usePersonalPreferences'
+import { useT } from './i18n'
 import { RequireAuth, RequirePlane, RequirePermission } from './guards'
 import LoginView from './views/LoginView'
 import AdminLayout from './layouts/AdminLayout'
@@ -70,15 +71,18 @@ const Loader = () => (
  * ClinicLayout.tsx:31's admin redirect and produce an unbounded
  * /403 -> dashboard -> denied -> /403 loop.
  */
-const ForbiddenView = () => (
-  <div className="flex flex-col items-center justify-center h-screen gap-4 text-center">
-    <span className="material-symbols-outlined text-6xl text-error">lock</span>
-    <h1 className="font-headline text-2xl text-primary">Access Denied</h1>
-    <p className="font-sans text-sm text-secondary">
-      You do not have permission to view this page.
-    </p>
-  </div>
-)
+const ForbiddenView = () => {
+  const t = useT()
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-md">
+      <span className="material-symbols-outlined text-6xl text-error">lock</span>
+      <h1 className="font-headline text-2xl text-primary">{t('forbidden.title')}</h1>
+      <p className="font-sans text-sm text-secondary max-w-sm">
+        {t('forbidden.body')}
+      </p>
+    </div>
+  )
+}
 
 export default function App() {
   const theme    = useUiStore(s => s.theme)
