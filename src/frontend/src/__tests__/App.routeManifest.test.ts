@@ -106,3 +106,68 @@ describe('App.tsx route manifest — every guard is declared and unchanged', () 
     expect(source.match(/path="403"/g) ?? []).toHaveLength(3)
   })
 })
+
+/**
+ * F-9 (@qa-agent Step 7 re-review): EXPECTED_GUARDS is an allow-list of routes
+ * that ARE guarded, so it locks the removal direction only. Adding a NEW
+ * protected route and simply omitting its guard produces nothing to extract and
+ * leaves the suite green.
+ *
+ * Weaker than the original blocker — it takes authoring a route and forgetting
+ * the guard, rather than deleting one because the nav now hides it — but it is
+ * the same class of hole, so close it in the same file.
+ *
+ * This walks every route inside the three clinic trees and requires each to be
+ * one of four things. Anything else is a new, unguarded, permission-relevant
+ * route and fails here.
+ */
+describe('App.tsx clinic trees — no route escapes classification (F-9)', () => {
+  const CLINIC_TREES = ['/clinic-admin', '/clinic', '/settings'] as const
+
+  type Kind = 'guarded' | 'redirect' | 'forbidden' | 'tree-root' | 'UNCLASSIFIED'
+
+  function classifyTree(source: string, tree: string): { path: string; kind: Kind }[] {
+    const start = source.indexOf(`<Route path="${tree}"`)
+    const end = source.indexOf('</Route>', start)
+    const block = source.slice(start, end)
+    const re = /<Route\s+(path="([^"]+)"|index)([\s\S]*?)\/>/g
+    const rows: { path: string; kind: Kind }[] = []
+    let m: RegExpExecArray | null
+    while ((m = re.exec(block)) !== null) {
+      const path = m[2] ?? '(index)'
+      const element = m[3]
+      const kind: Kind =
+        path === tree                       ? 'tree-root'
+        : /RequirePermission/.test(element) ? 'guarded'
+        : /<Navigate/.test(element)         ? 'redirect'
+        : /ForbiddenView/.test(element)     ? 'forbidden'
+        : 'UNCLASSIFIED'
+      rows.push({ path, kind })
+    }
+    return rows
+  }
+
+  it.each(CLINIC_TREES)('%s — every route is guarded, a redirect, the 403, or the tree root', (tree) => {
+    const unclassified = classifyTree(appSource, tree).filter((r) => r.kind === 'UNCLASSIFIED')
+    expect(unclassified).toEqual([])
+  })
+
+  it('the classifier is falsifiable — an unguarded new route is detected', () => {
+    // Guards the guard: proves a green result above means "all classified",
+    // not "the block scan silently matched nothing".
+    const withNewRoute = appSource.replace(
+      '          {/* ADR-0026: denial renders in-shell, inside ClinicLayout\'s <Outlet/>. */}',
+      '          <Route path="brand-new-thing" element={<ClinicPets/>}/>\n' +
+      '          {/* ADR-0026: denial renders in-shell, inside ClinicLayout\'s <Outlet/>. */}',
+    )
+    expect(withNewRoute).not.toBe(appSource) // anchor still present
+    const unclassified = classifyTree(withNewRoute, '/clinic').filter((r) => r.kind === 'UNCLASSIFIED')
+    expect(unclassified.map((r) => r.path)).toEqual(['brand-new-thing'])
+  })
+
+  it('finds a non-trivial number of routes per tree (the scan is not silently empty)', () => {
+    for (const tree of CLINIC_TREES) {
+      expect(classifyTree(appSource, tree).length).toBeGreaterThan(5)
+    }
+  })
+})

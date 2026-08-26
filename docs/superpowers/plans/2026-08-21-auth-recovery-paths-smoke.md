@@ -112,6 +112,42 @@ non-compositing browser pane.
 
 ---
 
+## S-6 — `clinic_admin` pass (added after @qa-agent's re-review flagged the gap)
+
+QA noted the first pass walked only `doctor_a`, leaving `AdminLayout` — which
+gained a permission filter it **previously lacked entirely**, the branch's largest
+nav change — with no live coverage. Closed here.
+
+Logged in as `admin_a` (48 permissions). Because an admin holds every permission,
+nothing filters, so that alone would not exercise the new code. Simulated a custom
+admin role by removing two permissions from the live session and reloading:
+
+```
+removed: ['audit.view', 'roles.view']   permissions 48 -> 46
+
+navLinks: dashboard, clinic-profile, users, usage, settings, subscription, blood-bank
+{ auditHidden: true, rolesHidden: true, usersStillShown: true }
+```
+
+**PASS.** Exactly the two corresponding entries disappeared (9 → 7); everything
+else stayed. Before this branch `AdminLayout` rendered `NAV.map(...)` with no
+filter of any kind, so both would have been shown and both would have led into
+the dead end.
+
+Then the security half — **ADR-0026 decision 4: nav hiding is cosmetic, never
+enforcement.** Navigated directly to `/clinic-admin/audit`, now hidden from the
+menu:
+
+```
+{ path: "/clinic-admin/403", deniedInShell: true, auditContentLeaked: false,
+  hasSidebar: true, navLinkCount: 7, signOutReachable: true, scrollOverflow: 0 }
+```
+
+**PASS.** The hidden entry is still enforced by its route guard: the URL is denied
+in-shell, no audit content renders, and the user can navigate away. This is the
+invariant the route-manifest test protects mechanically; here it is confirmed
+against the running app.
+
 ## Coverage against the AC set
 
 | Case | AC / finding | Result |
@@ -123,6 +159,12 @@ non-compositing browser pane.
 | S-3 third tree exercised | @qa-agent gap in `App.routing.test.tsx` | PASS |
 | S-4 stale absolute `/403` bookmark | @ponytail-agent C-2 reversal | PASS |
 | S-5 no cycle on any path | ADR-0026 central hazard | PASS |
+| S-6 AdminLayout filter hides unheld entries | R-1, F-3 (admin tree) | PASS |
+| S-6 hidden entry still denied by its route guard | ADR-0026 decision 4 | PASS |
+
+Write-path cases (skill step 5) were not exercised: this branch changes no
+write path — it touches denial rendering, nav filtering and the permission-refresh
+result contract only.
 
 Not exercised live: the zero-permission session (no seeded role has zero
 permissions; covered by two cases in `App.realRouting.test.tsx`), and the
