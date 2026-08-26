@@ -40,9 +40,10 @@ interface AuthState extends AuthData {
    */
   hasPermission:      (code: string) => boolean
   /**
-   * Re-fetches /auth/me (clinic plane) or /platform/auth/me (platform plane)
-   * using the stored token, then writes updated permissions and roleIds back to
-   * the store AND to persisted storage.  The caller decides when to invoke this.
+   * Re-fetches /auth/me using the stored token, then writes updated permissions
+   * and roleIds back to the store AND to persisted storage. The caller decides
+   * when to invoke this. Clinic plane only — the platform plane has its own
+   * store and its own /platform/auth/me handling (see F-5 note below).
    *
    * ADR-0026 decision 5: total contract over every exit — no token, a
    * network throw, a 401, a non-ok response, a malformed body, and success
@@ -147,13 +148,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   hasPermission: (code) => get().permissions.includes(code),
 
   refreshPermissions: async () => {
-    const { token, plane } = get()
+    const { token } = get()
     if (!token) return { ok: false }
 
-    const endpoint = plane === 'platform' ? '/platform/auth/me' : '/auth/me'
+    // F-5: this store is clinic-plane only. Nothing in production ever writes
+    // plane: 'platform' here — the platform plane has its own store
+    // (platformAuthStore) and its own 401 handler in platformApi.ts, which
+    // correctly targets /platform/login. The previous code selected a
+    // plane-correct ENDPOINT but a clinic-only REDIRECT below, so the file
+    // simultaneously claimed and violated ADR-0026 decision 7. The dead branch
+    // is removed rather than "fixed": a guard for an unreachable state gives
+    // false confidence, and the same reasoning retired the AUTH-401-03 ternary.
     let res: Response
     try {
-      res = await fetch(endpoint, {
+      res = await fetch('/auth/me', {
         headers: { Authorization: `Bearer ${token}` },
       })
     } catch {

@@ -144,6 +144,27 @@ describe('refreshPermissions total contract (ADR-0026, C-7/C-8, F-2)', () => {
     await expect(useAuthStore.getState().refreshPermissions()).resolves.toEqual({ ok: false })
   })
 
+  // F-4 (@qa-agent Step 7): exit 2 asserted only the return value. The 500 and
+  // malformed-body exits both assert INV-PERM-1; this one did not, so injecting
+  // `set({ permissions: [], permissionsLoaded: true })` into the network-throw
+  // catch left the suite green — the store could fabricate "authoritatively no
+  // permissions" out of "the network was down" and nothing would notice.
+  it('AUTH-INV-PERM-01: a network throw leaves permissions/permissionsLoaded untouched — "could not tell" is never "none"', async () => {
+    const useAuthStore = await seedLoggedIn()
+    const before = useAuthStore.getState()
+    const permsBefore = [...before.permissions]
+    const loadedBefore = before.permissionsLoaded
+
+    vi.mocked(globalThis.fetch).mockRejectedValueOnce(new Error('network down'))
+    await useAuthStore.getState().refreshPermissions()
+
+    const after = useAuthStore.getState()
+    expect(after.permissions).toEqual(permsBefore)
+    expect(after.permissionsLoaded).toBe(loadedBefore)
+    // The specific fabrication this guards against.
+    expect(after.permissions.length === 0 && after.permissionsLoaded === true).toBe(false)
+  })
+
   it('3. 401 response -> resolves { ok: false }, clearAuth() called, redirect carries reason=session-expired', async () => {
     const useAuthStore = await seedLoggedIn()
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({

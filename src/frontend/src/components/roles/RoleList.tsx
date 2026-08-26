@@ -183,8 +183,20 @@ export default function RoleList({
           // refresh actually succeeded — a success toast the server hasn't
           // confirmed is the "false success" this ADR removes.
           if (userRoleIds.map(String).includes(role.id)) {
-            const result = await refreshPerms()
-            if (!result.ok) {
+            // F-3: refreshPermissions() is written as a total contract that
+            // resolves { ok } rather than throwing, but this call site must not
+            // depend on that holding. An unguarded await aborts onSuccess before
+            // any showToast, so a rejection would leave the user with NO toast at
+            // all — neither success nor warning — which is the exact
+            // silent-failure class ADR-0026 exists to remove. Treat a throw as
+            // "could not refresh", identical to { ok: false }.
+            let refreshed = false
+            try {
+              refreshed = (await refreshPerms()).ok
+            } catch {
+              refreshed = false
+            }
+            if (!refreshed) {
               showToast({ type: 'warning', message: t('roles.refreshFailedWarning') })
               return
             }
@@ -395,8 +407,12 @@ export default function RoleList({
           <p className="text-body-sm font-bold">{toast.message}</p>
           {toast.type === 'warning' ? (
             /* ADR-0026 decision 6: reload is the primary action, not an
-               afterthought next to dismiss — a warning about known-divergent
-               authorization state must not be dismissible without it. */
+               afterthought next to dismiss. The warning never AUTO-dismisses
+               (see showToast) — that would erase evidence of a failure the user
+               may not have read. It stays manually dismissable via the ✕ below:
+               that is a deliberate user choice, not the silent erasure the ADR
+               forbids, and trapping someone mid-task with no exit would be
+               hostile. */
             <button
               type="button"
               onClick={() => window.location.reload()}
