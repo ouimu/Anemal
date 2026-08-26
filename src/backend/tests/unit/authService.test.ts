@@ -34,7 +34,7 @@ async function makeUser(role = 'admin') {
   return {
     id: 10, tenantId: 1, name: 'Admin A', username: 'admin_a',
     email: 'admin@dev-clinic.com',
-    passwordHash: await bcrypt.hash('AdminPass1!', 10),
+    passwordHash: await bcrypt.hash('AdminPass1!', 4),
     roleId: 1, roleRef: roleRefFor(role),
     isActive: true, branchId: null, allowedStartTime: null, allowedEndTime: null,
   }

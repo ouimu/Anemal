@@ -48,7 +48,7 @@ beforeAll(async () => {
     prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor', tenantId: null } }),
   ])
 
-  const passwordHash = await bcrypt.hash(PASSWORD, 10)
+  const passwordHash = await bcrypt.hash(PASSWORD, 4)
 
   const staffUser = await prisma.user.create({
     data: { tenantId: tid, username: 'staff_own', name: 'Staff Own', passwordHash, roleId: staffRole.id, branchId, isActive: true },

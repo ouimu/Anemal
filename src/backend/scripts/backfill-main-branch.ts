@@ -17,11 +17,29 @@ import prisma from '../config/db'
 /**
  * Insert a "Main Branch" row for every tenant that has zero branches.
  *
+ * @param opts.tenantIds - Optional allow-list. When omitted the sweep is
+ *   global, which is the intended production behaviour. When supplied, only
+ *   those tenants are considered.
+ *
+ *   This exists for the test suite (TEST-BL-1). An unscoped sweep is a
+ *   whole-database WRITE, and under parallel jest workers it lands in the
+ *   window another suite leaves open between `tenant.create()` and its
+ *   `branch.create()`. That suite's tenant then ends up with two branches
+ *   instead of one, which flips its login into requiring branch selection and
+ *   makes a user with no branch assignment fail with 403 — a failure with no
+ *   visible connection to the backfill. Passing the ids under test keeps the
+ *   suite hermetic; production still calls this with no argument.
+ *
  * @returns The number of tenants that received a new branch row.
  */
-export async function backfillMainBranch(): Promise<{ inserted: number }> {
+export async function backfillMainBranch(
+  opts: { tenantIds?: number[] } = {},
+): Promise<{ inserted: number }> {
   const tenantsWithoutBranches = await prisma.tenant.findMany({
-    where: { branches: { none: {} } },
+    where: {
+      branches: { none: {} },
+      ...(opts.tenantIds ? { id: { in: opts.tenantIds } } : {}),
+    },
     select: { id: true, name: true },
   })
 

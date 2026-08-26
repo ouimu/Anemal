@@ -56,6 +56,7 @@ async function login(subdomain: string, username: string, branchIdx = 0): Promis
 
 async function pendingTokenFor(subdomain: string, username: string): Promise<string> {
   const step1 = await request(server).post('/auth/login').send({ subdomain, username, password: PASSWORD })
+  expect(step1.status).toBe(200)
   expect(step1.body.data.requiresBranchSelection).toBe(true)
   return step1.body.data.pendingToken as string
 }
@@ -69,7 +70,7 @@ beforeAll(async () => {
     prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } }),
     prisma.clinicRole.findFirstOrThrow({ where: { key: 'doctor',       tenantId: null } }),
   ])
-  const passwordHash = await bcrypt.hash(PASSWORD, 10)
+  const passwordHash = await bcrypt.hash(PASSWORD, 4)
 
   // ── Tenant A: two branches ────────────────────────────────────────────────
   tidA = (await prisma.tenant.create({ data: { name: 'Codex Reg A', subdomain: SUB_A } })).id

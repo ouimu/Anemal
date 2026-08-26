@@ -16,7 +16,11 @@ export const config = {
   jwtSecret:   required('JWT_SECRET'),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '8h',
   nodeEnv:     process.env.NODE_ENV || 'development',
-  bcryptRounds: Number(process.env.BCRYPT_ROUNDS) || 12,
+  // TEST-BL-1: forced to 4 under NODE_ENV=test so runtime-hashed users created
+  // through the service layer are cheap to log in against. .env.test is gitignored,
+  // so honouring BCRYPT_ROUNDS there would leave existing machines on cost 10.
+  // Production and development are unchanged: BCRYPT_ROUNDS or 12.
+  bcryptRounds: process.env.NODE_ENV === 'test' ? 4 : (Number(process.env.BCRYPT_ROUNDS) || 12),
   // AES-256-GCM key for settings secrets — 32-byte hex (openssl rand -hex 32)
   settingsEncryptionKey: required('SETTINGS_ENCRYPTION_KEY'),
   // Shared secret Vercel Cron sends as `Authorization: Bearer ${cronSecret}`.

@@ -38,14 +38,17 @@ async function getPlatformToken(): Promise<string> {
   const res = await request(server)
     .post('/platform/auth/login')
     .send({ email: PLATFORM_EMAIL, password: PLATFORM_PASSWORD })
+  expect(res.status).toBe(200)
   return res.body.data?.token
 }
 
 async function getClinicToken(): Promise<string> {
   const step1 = await request(server).post('/auth/login').send({ subdomain: 'dev-clinic', username: 'admin_a', password: 'AdminPass1!' })
+  expect(step1.status).toBe(200)
   if (step1.body.data.requiresBranchSelection === false) return step1.body.data.token as string
   const { pendingToken, branches } = step1.body.data
   const step2 = await request(server).post('/auth/select-branch').send({ pendingToken, branchId: branches[0].id })
+  expect(step2.status).toBe(200)
   return step2.body.data?.token
 }
 
@@ -66,7 +69,7 @@ beforeAll(async () => {
   clinicToken   = await getClinicToken()
 
   // platform_support fixture: has platform.customers.view but not .manage.
-  const supportPasswordHash = await bcrypt.hash('SupportPass1!', 10)
+  const supportPasswordHash = await bcrypt.hash('SupportPass1!', 4)
   const support = await prisma.platformUser.create({
     data: {
       name: 'CO Test Support', email: `support-${SFX}@anemal.app`,
@@ -205,7 +208,7 @@ describe('CO-1: createCustomer() auto-creates first clinic_admin', () => {
     const tenant = await createTenantViaService('prov1c')
     const branch = await prisma.branch.findFirstOrThrow({ where: { tenantId: tenant.id } })
 
-    const staffPasswordHash = await bcrypt.hash('StaffPass1!', 10)
+    const staffPasswordHash = await bcrypt.hash('StaffPass1!', 4)
     const staffRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } })
     const staff = await prisma.user.create({
       data: { tenantId: tenant.id, username: 'prov1staff', name: 'Prov Staff', passwordHash: staffPasswordHash, roleId: staffRole.id, isActive: true },
@@ -375,7 +378,7 @@ describe('CO-4: PATCH /platform/customers/:id/admin-users/:userId/deactivate', (
 
   it('❌ 404 when the target user is not a clinic_admin of this tenant (Q-8 role-scope guard)', async () => {
     const tenant = await createTenantViaService('co4c')
-    const passwordHash = await bcrypt.hash('StaffPass1!', 10)
+    const passwordHash = await bcrypt.hash('StaffPass1!', 4)
     const staffRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } })
     const staff = await prisma.user.create({
       data: { tenantId: tenant.id, username: 'staffer', name: 'Staffer', passwordHash, roleId: staffRole.id, isActive: true },
@@ -517,7 +520,7 @@ describe('CO-5: PATCH /platform/customers/:id/admin-users/:userId/password', () 
 
     // The auto-created admin has a server-generated password we don't know,
     // so log in via a fresh password we set directly for this test only.
-    const knownHash = await bcrypt.hash('KnownPass1!', 10)
+    const knownHash = await bcrypt.hash('KnownPass1!', 4)
     await prisma.user.update({ where: { id: admin.id }, data: { passwordHash: knownHash } })
     const loginRes = await request(server).post('/auth/login').send({ subdomain: tenant.subdomain, username: 'admin', password: 'KnownPass1!' })
     const adminRefreshToken = loginRes.body.data.refreshToken
@@ -539,7 +542,7 @@ describe('CO-5: PATCH /platform/customers/:id/admin-users/:userId/password', () 
 describe('CO-6: GET /platform/customers/:id/admin-users', () => {
   it('✅ returns only clinic_admin-role users; never passwordHash; a mixed-role tenant filters correctly', async () => {
     const tenant = await createTenantViaService('co6a')
-    const passwordHash = await bcrypt.hash('StaffPass1!', 10)
+    const passwordHash = await bcrypt.hash('StaffPass1!', 4)
     const staffRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } })
     const staff = await prisma.user.create({
       data: { tenantId: tenant.id, username: 'staffer6', name: 'Staffer', passwordHash, roleId: staffRole.id, isActive: true },

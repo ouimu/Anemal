@@ -57,7 +57,7 @@ beforeAll(async () => {
   doctorSystemRoleId = doctorSystemRole.id
   staffSystemRoleId = staffSystemRole.id
 
-  const passwordHash = await bcrypt.hash(PASSWORD, 10)
+  const passwordHash = await bcrypt.hash(PASSWORD, 4)
 
   // Doctor assigned to Branch A only, via direct system role.
   const doctorUser = await prisma.user.create({
@@ -116,7 +116,7 @@ describe('findDoctorsForBranch (repository)', () => {
 
   it('never returns a doctor from another tenant', async () => {
     const otherBranch = await prisma.branch.create({ data: { tenantId: otherTid, name: 'Other Branch' } })
-    const passwordHash = await bcrypt.hash(PASSWORD, 10)
+    const passwordHash = await bcrypt.hash(PASSWORD, 4)
     const otherDoctor = await prisma.user.create({
       data: { tenantId: otherTid, username: 'doctor_other', name: 'Dr. Other Tenant', passwordHash, roleId: doctorSystemRoleId, isActive: true },
     })
@@ -129,7 +129,7 @@ describe('findDoctorsForBranch (repository)', () => {
   })
 
   it('excludes deactivated doctors', async () => {
-    const passwordHash = await bcrypt.hash(PASSWORD, 10)
+    const passwordHash = await bcrypt.hash(PASSWORD, 4)
     const inactiveDoctor = await prisma.user.create({
       data: { tenantId: tid, username: 'doctor_inactive', name: 'Dr. Inactive', passwordHash, roleId: doctorSystemRoleId, branchId: branchAId, isActive: false },
     })
@@ -144,7 +144,7 @@ describe('findDoctorsForBranch (repository)', () => {
     const cloned = await prisma.clinicRole.create({
       data: { tenantId: tid, key: `tenant_${tid}_custom_vet`, name: 'Custom Vet', isSystem: false, permVersion: 1, sourceRoleId: doctorSystemRoleId },
     })
-    const passwordHash = await bcrypt.hash(PASSWORD, 10)
+    const passwordHash = await bcrypt.hash(PASSWORD, 4)
     const clonedUser = await prisma.user.create({
       data: { tenantId: tid, username: 'vet_custom', name: 'Custom Vet User', passwordHash, roleId: staffSystemRoleId, branchId: branchAId, isActive: true },
     })
@@ -172,7 +172,7 @@ describe('findDoctorById (repository)', () => {
 
   it('returns null for a doctor belonging to another tenant', async () => {
     const otherBranch = await prisma.branch.create({ data: { tenantId: otherTid, name: 'Cross-Tenant Branch' } })
-    const passwordHash = await bcrypt.hash(PASSWORD, 10)
+    const passwordHash = await bcrypt.hash(PASSWORD, 4)
     const otherDoctor = await prisma.user.create({
       data: { tenantId: otherTid, username: 'doctor_crosscheck', name: 'Dr. Cross Tenant', passwordHash, roleId: doctorSystemRoleId, isActive: true },
     })
@@ -190,7 +190,7 @@ describe('findDoctorById (repository)', () => {
   })
 
   it('returns null for a deactivated doctor', async () => {
-    const passwordHash = await bcrypt.hash(PASSWORD, 10)
+    const passwordHash = await bcrypt.hash(PASSWORD, 4)
     const inactiveDoctor = await prisma.user.create({
       data: { tenantId: tid, username: 'doctor_inactive_byid', name: 'Dr. Inactive ById', passwordHash, roleId: doctorSystemRoleId, branchId: branchAId, isActive: false },
     })

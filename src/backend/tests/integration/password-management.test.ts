@@ -27,7 +27,7 @@ async function makeTenantWithAdmin(subdomainSuffix: string, adminPassword: strin
   // user to a branch for two-step login) has nothing to assign to.
   await prisma.branch.create({ data: { tenantId: tenant.id, name: 'Main Branch' } })
   const clinicAdminRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
-  const passwordHash = await bcrypt.hash(adminPassword, 10)
+  const passwordHash = await bcrypt.hash(adminPassword, 4)
   const admin = await prisma.user.create({
     data: { tenantId: tenant.id, username: 'pwadmin', name: 'PW Admin', passwordHash, roleId: clinicAdminRole.id, isActive: true },
   })
@@ -37,6 +37,7 @@ async function makeTenantWithAdmin(subdomainSuffix: string, adminPassword: strin
 
 async function loginAdmin(subdomain: string, password: string) {
   const res = await request(server).post('/auth/login').send({ subdomain, username: 'pwadmin', password })
+  expect(res.status).toBe(200)
   return { token: res.body.data.token as string, refreshToken: res.body.data.refreshToken as string }
 }
 
@@ -146,7 +147,7 @@ describe('PWD-1: POST /auth/change-password', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe('PWD-2: PATCH /users/:id/password', () => {
   async function makeStaffUser(tenantId: number, username: string, password: string) {
-    const passwordHash = await bcrypt.hash(password, 10)
+    const passwordHash = await bcrypt.hash(password, 4)
     const staffRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_staff', tenantId: null } })
     const staff = await prisma.user.create({ data: { tenantId, username, name: 'Staffer', passwordHash, roleId: staffRole.id, isActive: true } })
     await prisma.userRole.create({ data: { tenantId, userId: staff.id, roleId: staffRole.id } })
@@ -184,7 +185,7 @@ describe('PWD-2: PATCH /users/:id/password', () => {
     const { token: adminAToken } = await loginAdmin(tenant.subdomain, 'AdminAPass1!')
 
     const clinicAdminRole = await prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } })
-    const passwordHash = await bcrypt.hash('AdminBPass1!', 10)
+    const passwordHash = await bcrypt.hash('AdminBPass1!', 4)
     const adminB = await prisma.user.create({ data: { tenantId: tenant.id, username: 'peeradmin', name: 'Peer Admin', passwordHash, roleId: clinicAdminRole.id, isActive: true } })
     await prisma.userRole.create({ data: { tenantId: tenant.id, userId: adminB.id, roleId: clinicAdminRole.id } })
 
