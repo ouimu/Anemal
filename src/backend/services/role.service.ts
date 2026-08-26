@@ -11,6 +11,7 @@
  * @module role.service
  */
 
+import { Prisma } from '@prisma/client'
 import * as roleRepo from '../models/role.repository'
 import { invalidatePermCache } from './permission.service'
 import {
@@ -181,10 +182,17 @@ export async function deleteRole(tenantId: number, roleId: number): Promise<void
     throw new ForbiddenError('Role does not belong to your tenant')
   }
 
-  const usageCount = await roleRepo.countRoleUsage(roleId)
+  const usageCount = await roleRepo.countRoleUsage(roleId, tenantId)
   if (usageCount > 0) {
     throw new ConflictError('Cannot delete a role that is currently assigned to users')
   }
 
-  await roleRepo.deleteRole(tenantId, roleId)
+  try {
+    await roleRepo.deleteRole(tenantId, roleId)
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2003') {
+      throw new ConflictError('Cannot delete a role that is currently assigned to users')
+    }
+    throw err
+  }
 }
