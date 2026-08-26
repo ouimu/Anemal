@@ -23,8 +23,8 @@
  * machine.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import { MemoryRouter, useLocation } from 'react-router-dom'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { MemoryRouter, useLocation, Link } from 'react-router-dom'
 import { useRef } from 'react'
 
 interface MockAuth {
@@ -103,7 +103,16 @@ vi.mock('../hooks/usePersonalPreferences', () => ({
   usePreferenceHydration: () => undefined,
 }))
 vi.mock('../utils/queryClient', () => ({ clearServerState: () => Promise.resolve() }))
-vi.mock('../components/TopNav', () => ({ default: () => <div data-testid="topnav" /> }))
+vi.mock('../components/TopNav', () => ({
+  // Ported from the deleted App.routing.test.tsx: TopNav renders outside
+  // <Outlet/>, so a link here is reachable FROM a 403 render. Keeps
+  // ProfileMenu's react-query dependency out (covered by its own tests).
+  default: () => (
+    <div data-testid="topnav">
+      <Link to="/preferences" data-testid="preferences-link">preferences</Link>
+    </div>
+  ),
+}))
 vi.mock('../components/IdleLogoutModal', () => ({ default: () => null }))
 
 import App from '../App'
@@ -309,6 +318,52 @@ describe('REAL App.tsx — QA edge probes', () => {
     const navLinks = document.querySelector('nav')?.querySelectorAll('a').length ?? -1
     // Documents current behaviour; nav is cosmetic, never enforcement.
     expect(navLinks).toBe(0)
+    expect(document.querySelector('.animate-spin')).not.toBeNull()
+  })
+})
+
+// ── Ported from App.routing.test.tsx before its deletion (@qa-agent ruling) ──
+// That file was a hand-written mirror of App.tsx and had already drifted: its
+// inline ForbiddenView still carried `h-screen` (the styling Group 7 replaced
+// with min-h-[60vh]) and it declared no /settings tree at all. These two cases
+// were its only coverage not already here, and both are AC-load-bearing — so
+// they move rather than die with it. Both now run against the REAL App.
+describe('REAL App.tsx — escaping the denial (ported: AUTH-403-01/03/07)', () => {
+  it('AUTH-403-01: a denied doctor still sees a nav item they DO hold, rendered in the real sidebar', () => {
+    setAuth({ role: 'doctor', hasPermission: (c) => c === 'crm.view' })
+    at('/clinic/billing')
+    expect(screen.getByText(FORBIDDEN)).toBeInTheDocument()
+    const petsLink = screen
+      .getAllByRole('link')
+      .find((el) => el.getAttribute('href') === '/clinic/pets')
+    expect(petsLink).toBeTruthy()
+  })
+
+  it('AUTH-403-01: clicking that held nav item escapes the 403 to a rendering route', () => {
+    setAuth({ role: 'doctor', hasPermission: (c) => c === 'crm.view' })
+    at('/clinic/billing')
+    const petsLink = screen
+      .getAllByRole('link')
+      .find((el) => el.getAttribute('href') === '/clinic/pets')!
+    fireEvent.click(petsLink)
+    // ClinicPets is lazy(), and this is a transition rather than a fresh mount,
+    // so React <Suspense> HIDES the old subtree (display:none !important) instead
+    // of unmounting it — queryByText would still find the 403 node. Assert on
+    // visibility, which is the honest claim anyway: the denial is no longer shown.
+    expect(screen.getByText(FORBIDDEN)).not.toBeVisible()
+    expect(document.querySelector('.animate-spin')).not.toBeNull()
+  })
+
+  it('AUTH-403-03/07: a non-logout affordance is present ON the 403 render and reaches a rendering route', () => {
+    setAuth({ role: 'doctor', hasPermission: () => false })
+    at('/clinic/dashboard')
+    expect(screen.getByText(FORBIDDEN)).toBeInTheDocument()
+    const link = screen.getByTestId('preferences-link')
+    fireEvent.click(link)
+    // /preferences carries no RequirePermission, so a zero-permission session
+    // reaches it — the guaranteed escape hatch. PreferencesPage is lazy(), so
+    // as above the denial is hidden by Suspense rather than unmounted.
+    expect(screen.getByText(FORBIDDEN)).not.toBeVisible()
     expect(document.querySelector('.animate-spin')).not.toBeNull()
   })
 })
