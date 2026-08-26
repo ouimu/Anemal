@@ -8,7 +8,7 @@ import MaterialIcon from '../components/MaterialIcon'
 import TopNav from '../components/TopNav'
 
 const NAV = [
-  { to: '/clinic/dashboard',    icon: 'dashboard',        label: 'nav.dashboard',  perm: undefined },
+  { to: '/clinic/dashboard',    icon: 'dashboard',        label: 'nav.dashboard',  perm: 'dashboard.view' },
   { to: '/clinic/pets',         icon: 'pets',             label: 'nav.pets',       perm: 'crm.view' },
   { to: '/clinic/appointments', icon: 'calendar_today',   label: 'nav.schedule',   perm: 'appointments.view' },
   { to: '/clinic/emr',          icon: 'medical_services', label: 'nav.emr',        perm: 'emr.view' },

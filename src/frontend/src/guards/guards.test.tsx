@@ -29,10 +29,21 @@ const mockStoreState: MockStoreState = vi.hoisted(() => ({
 }))
 
 // ── Mock react-router-dom ──────────────────────────────────────────────────
+// mockPathname is mutable per-test (see setLocation) so RequirePermission's
+// derived-tree redirect (`pathname.split('/')[1]`) can be exercised against
+// different route depths without a real router.
+let mockPathname = '/clinic/billing'
+
 vi.mock('react-router-dom', () => ({
   Navigate: ({ to }: { to: string }) => <div data-testid="navigate" data-to={to} />,
   Outlet:   () => <div data-testid="outlet" />,
+  useLocation: () => ({ pathname: mockPathname }),
 }))
+
+/** Sets the pathname RequirePermission's useLocation() mock returns. */
+function setLocation(pathname: string): void {
+  mockPathname = pathname
+}
 
 // ── Mock authStore ─────────────────────────────────────────────────────────
 vi.mock('../store/authStore', () => ({
@@ -67,6 +78,7 @@ function setStore(overrides: Partial<MockStoreState>): void {
 
 beforeEach(() => {
   setStore({})
+  setLocation('/clinic/billing')
 })
 
 // ── RequireAuth ───────────────────────────────────────────────────────────
@@ -152,13 +164,44 @@ describe('RequirePermission', () => {
     expect(document.querySelector('.material-symbols-outlined')).not.toBeNull()
   })
 
-  it('redirects to /403 when authenticated but permission missing', () => {
+  it('redirects to the tree-scoped /clinic/403 when authenticated but permission missing', () => {
     setStore({
       isAuthenticated: (): boolean => true,
       hasPermission: (_code: string): boolean => false,
     })
+    setLocation('/clinic/billing')
     render(<RequirePermission perm="billing.view" />)
-    expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/403')
+    expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/clinic/403')
+  })
+
+  it('derives the tree from the first URL segment, not a hand-maintained map — proven on the two-segment-deep /settings/storage/connecting route', () => {
+    setStore({
+      isAuthenticated: (): boolean => true,
+      hasPermission: (_code: string): boolean => false,
+    })
+    setLocation('/settings/storage/connecting')
+    render(<RequirePermission perm="clinic.integrations.edit" />)
+    expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/settings/403')
+  })
+
+  it('derives the tree from the first URL segment on the other two-segment-deep route, /clinic/vaccinations-due/record', () => {
+    setStore({
+      isAuthenticated: (): boolean => true,
+      hasPermission: (_code: string): boolean => false,
+    })
+    setLocation('/clinic/vaccinations-due/record')
+    render(<RequirePermission perm="vaccination.create" />)
+    expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/clinic/403')
+  })
+
+  it('derives /clinic-admin/403 for a denial inside the clinic-admin tree', () => {
+    setStore({
+      isAuthenticated: (): boolean => true,
+      hasPermission: (_code: string): boolean => false,
+    })
+    setLocation('/clinic-admin/users')
+    render(<RequirePermission perm="staff.view" />)
+    expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/clinic-admin/403')
   })
 
   it('renders Outlet when permission is held', () => {
@@ -184,18 +227,19 @@ describe('RequirePermission', () => {
     expect(screen.getByTestId('outlet')).toBeDefined()
   })
 
-  it('OR-list: redirects /403 when none of the codes in `any` array are held', () => {
+  it('OR-list: redirects to the tree-scoped /clinic/403 when none of the codes in `any` array are held', () => {
     setStore({
       isAuthenticated: (): boolean => true,
       hasPermission: (_code: string): boolean => false,
     })
+    setLocation('/clinic/billing')
     render(
       <RequirePermission
         perm="billing.view"
         any={['billing.view', 'billing.create']}
       />,
     )
-    expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/403')
+    expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/clinic/403')
   })
 
   it('renders children when permission is held and children provided', () => {

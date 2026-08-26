@@ -22,12 +22,12 @@ beforeEach(() => {
 })
 
 describe('api response interceptor — 401 handling', () => {
-  it('clears auth and redirects on a plain 401 (no skipAuthRedirect)', async () => {
+  it('clears auth and redirects on a plain 401 (no skipAuthRedirect), carrying reason=session-expired', async () => {
     const rejected = getRejectedHandler()
     const err = { response: { status: 401 }, config: {} }
     await expect(rejected(err)).rejects.toBe(err)
     expect(clearAuth).toHaveBeenCalledTimes(1)
-    expect(window.location.href).toBe('/login')
+    expect(window.location.href).toBe('/login?reason=session-expired')
   })
 
   it('does NOT clear auth or redirect on a 401 when the request set skipAuthRedirect', async () => {
