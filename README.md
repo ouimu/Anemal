@@ -133,4 +133,4 @@ Full phase changelog (test counts, PR/ADR mapping) and current status: [`.claude
 
 ---
 
-*Last updated: 2026-08-21 — backend 1295 passing / 0 failing / 91 suites, frontend 351 passing / 55 files. `main` is fully green for the first time in ~2 weeks (PRs #57, #59, #56, #58 repaired the stranded ADR-0019 backend failures, hardened integration fixtures, and fixed 8 zero-collecting frontend mocks). See `.claude/roadmap/phase-history.md`. Next: Phase 10/11 (credential-gated).*
+*Last updated: 2026-08-26 — backend 1295 passing / 0 failing / 91 suites, frontend 410 passing / 60 files. PR #62 (ADR-0026) made authorization UI recoverable and honest: a denied page now renders in-shell with working nav and sign-out instead of trapping the user, inaccessible nav entries are hidden (cosmetically — every route keeps its own guard), and a permission refresh that could not resolve is no longer reported as "no permissions". See `.claude/roadmap/phase-history.md`. Next: Phase 10/11 (credential-gated).*
