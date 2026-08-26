@@ -22,24 +22,28 @@ Shipped-phase changelog (test counts + PR/ADR mapping) and status of in-flight w
 
 ## Backlog
 
-Deferred items raised during shipped work, not yet scheduled to a phase.
+Two lists: **Actionable** items that still need work (unscheduled — each must enter the CLAUDE.md pipeline before implementation), and **Closed — by design / won't-fix / no action**, recorded so they are not re-raised. Triaged 2026-08-26 (maintainer call): `main` is green (backend 1295/1295, verified by a full `npm test` run), and none of the closed items are open defects.
+
+### Actionable (unscheduled)
 
 | ID | Item | Raised in | Notes |
 |----|------|-----------|-------|
-| — | `services/role.service.ts:184` `countRoleUsage` is not tenant-scoped in its own query | Surfaced during PR #57 backend test repair | Guarded upstream by caller's tenant check; flagged for defence-in-depth, not an active isolation gap |
-| — | `prisma/schema.prisma:225` comment still describes the retired `userRoles` union from before ADR-0019 | Surfaced during PR #57 backend test repair | Doc-only drift; schema itself is correct single-role |
+| — | backend `npm run lint` cannot run — eslint is not installed at all (no eslint dependency declared, no binary, no config file of any kind; the frontend by contrast has eslint ^8.57.1 + .eslintrc.cjs and works) | Pre-existing, reconfirmed 2026-08-21 during PR #57/#59/#56 close-out | Declared script `eslint . --ext .ts`, no flat config present; needs an eslint 9 flat-config setup for the backend |
+| `TEST-BL-2` | Per-worker DB isolation — give each Jest worker its own schema via `JEST_WORKER_ID` in `DATABASE_URL` so the integration suites can run in parallel instead of `--runInBand` | Extracted 2026-08-26 from the now-closed `TEST-BL-1` | The real fix behind the designed-serial decision; a separate, larger task |
 | — | Audit logging for repeated payment-route authorization probes | Surfaced during PR #59 (`bill-20/21/22` deny tests) | Deny tests confirm 403s are returned; no logging/alerting on repeated probe attempts yet |
-| `TEST-BL-1` | **Parallel `npx jest` is unsupported by design** — the 91 integration suites share one Postgres database with no per-worker isolation, so `--runInBand` in the `test` script is load-bearing. Real parallel safety needs a schema per `JEST_WORKER_ID` in `DATABASE_URL` (a separate, larger task, not yet scheduled) | Found 2026-08-26 during PR #62 close-out; partly addressed by PR #64 | **Serial-safe traps fixed in PR #64** (bcrypt cost forced to 4 under `NODE_ENV=test`, 14 login helpers now assert `res.status`, `backfillMainBranch()` made scopeable so its test no longer writes to the whole DB). Those made a parallel run's failures *legible* and removed one corruption source, but did not make parallel green: with the CPU no longer bottlenecked on bcrypt, suites run closer together and a deeper shared-DB race surfaces (system-role lookups and logins intermittently fail under load). Left as designed-serial rather than chased further, per the maintainer's Option-A call |
-| `AUTH-BL-4` | Clinic dashboard calls `/api/reports/snapshot` unconditionally, without checking whether the caller holds `reports.revenue.view` | Surfaced in PR #62 Protocol 5 smoke run | Server correctly returns 403 — the guard works. Cosmetic console noise, not a leak |
-| `F-6` | Layouts render an unknown-permission state (`permissionsLoaded === false`) as an empty nav rather than a loading state | QA, PR #62 | Cosmetic — declined by QA and agreed |
-| `F-8` | `RequirePermission.tsx:4` and `:33` docblocks still say "Redirects to /403"; the absolute route was deleted | QA, PR #62 | Doc-only drift. The `authStore` docblock *was* corrected |
-| — | backend `npm run lint` cannot run — eslint is not installed at all (no eslint dependency declared, no binary, no config file of any kind; the frontend by contrast has eslint ^8.57.1 + .eslintrc.cjs and works) | Pre-existing, reconfirmed 2026-08-21 during PR #57/#59/#56 close-out | Declared script, no flat config present; untouched by these PRs |
+| — | `services/role.service.ts:184` `countRoleUsage` is not tenant-scoped in its own query, and `prisma/schema.prisma:225` comment still describes the retired `userRoles` union from before ADR-0019 | Surfaced during PR #57 backend test repair | Both need @db-agent review. `countRoleUsage` is guarded upstream by the caller's tenant check (defence-in-depth, not an active isolation gap); the schema comment is doc-only drift, the schema itself is correct single-role |
+
+### Closed — by design / won't-fix / no action (triaged 2026-08-26)
+
+- `TEST-BL-1` — **parallel `npx jest` unsupported by design.** Left as designed-serial (`--runInBand` in the `test` script is load-bearing) per the maintainer's Option-A call. PR #64 fixed the serial-safe traps (bcrypt cost forced to 4 under `NODE_ENV=test`, 14 login helpers now assert `res.status`, `backfillMainBranch()` made scopeable) but did not make a parallel run green — a deeper shared-DB race surfaces once bcrypt no longer bottlenecks the CPU. The parallel-safety follow-up is tracked as actionable `TEST-BL-2` above; the "make parallel work now" framing is closed.
+- `AUTH-BL-4` — clinic dashboard calls `/api/reports/snapshot` without a client-side `reports.revenue.view` pre-check. Won't-fix: the server correctly returns 403, so this is cosmetic console noise, not a leak.
+- `F-6` — layouts render the unknown-permission state (`permissionsLoaded === false`) as an empty nav rather than a loading state. Cosmetic; declined by QA and agreed.
+- `F-8` — `RequirePermission.tsx:4`/`:33` docblocks still say "Redirects to /403". Accepted doc drift: the guard now redirects per-tree to `/{tree}/403` and behaviour is correct; the `authStore` docblock was already corrected.
+- `N-2` — untested malformed-body path (PR #54 sign-off carry-forward). Won't-fix as assessed.
 
 **Resolved 2026-08-26 (PR #62, ADR-0026):** `AUTH-BL-1` (401 on `refreshPermissions()` now clears auth and hard-redirects, plane-correct), `AUTH-BL-2` (non-ok/non-401 no longer strands `permissionsLoaded` — total `{ ok: boolean }` contract), `AUTH-BL-3` (`/403` dead end replaced by an in-shell, navigable denial in all three clinic trees), and QA carry-forwards `F-5` (vacuous `sessionStorage` assertion) and `N-1` (untested malformed-body path in `fetchMe`).
 
 **Resolved 2026-08-21 (PRs #57/#59/#56):** the 28 backend test failures from ADR-0019/PR #53 drift; the 8 zero-collecting frontend test files (broken `@tanstack/react-query` mock); crash-unsafe integration-test fixtures (no unique suffixing, could strand rows); the missing authorization test on `PUT /api/invoices/:id/payment`.
-
-QA carry-forwards from the PR #54 sign-off: **F-5** and **N-1** were closed by PR #62 (see above). **N-2** remains open and is still assessed as likely won't-fix.
 
 ---
 
