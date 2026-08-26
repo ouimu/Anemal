@@ -266,7 +266,9 @@ export async function seedPlatformAdmin(): Promise<void> {
   const email    = process.env.PLATFORM_ADMIN_EMAIL    || 'admin@anemal.app'
   const name     = process.env.PLATFORM_ADMIN_NAME     || 'Platform Super Admin'
   const password = process.env.PLATFORM_ADMIN_PASSWORD || 'PlatformAdmin1!'
-  const hash     = await bcrypt.hash(password, 10)
+  // TEST-BL-1: forced to 4 under test, same rule as prisma/seed.ts and config/env.ts.
+  const rounds   = process.env.NODE_ENV === 'test' ? 4 : (Number(process.env.BCRYPT_ROUNDS) || 12)
+  const hash     = await bcrypt.hash(password, rounds)
 
   await prisma.platformUser.upsert({
     where:  { email },

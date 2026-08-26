@@ -10,7 +10,24 @@ import * as platformAuthRepo from '../models/platform-auth.repository'
 import { seedPlans, seedRbac } from './seed-rbac'
 
 const prisma = new PrismaClient()
-const SALT_ROUNDS = 10
+// TEST-BL-1: under NODE_ENV=test the cost is FORCED to 4 and BCRYPT_ROUNDS is
+// ignored. bcrypt verify cost is read from the cost embedded in the stored hash,
+// so one expensive fixture makes every later login against that user expensive;
+// across 11 jest workers that saturates the CPU until logins exceed the 5s test
+// timeout. Forcing rather than defaulting is deliberate: .env.test is gitignored,
+// so existing machines still carry BCRYPT_ROUNDS=10 and honouring it would leave
+// them flaky. Production is untouched -- it never runs with NODE_ENV=test, and the
+// non-test path keeps the BCRYPT_ROUNDS-or-12 behaviour exactly as before.
+// Not imported from config/env because that module calls required() on vars this
+// standalone script does not need, and loads a different .env path.
+const SALT_ROUNDS = process.env.NODE_ENV === 'test' ? 4 : (Number(process.env.BCRYPT_ROUNDS) || 12)
+
+// The upserts below normally leave an existing passwordHash alone. Under NODE_ENV=test
+// they refresh it, because the test database persists between runs: without this a
+// user seeded once at cost 10 keeps that hash forever and lowering SALT_ROUNDS would
+// silently do nothing. Gated to test on purpose — refreshing unconditionally would let
+// a production seed reset a changed password back to the env/default value.
+const REFRESH_SEEDED_HASHES = process.env.NODE_ENV === 'test'
 
 async function seedCompanyTypes() {
   const companyTypes = [
@@ -102,7 +119,7 @@ async function main() {
     // Session D-1: unique finder is now tenantId_username (email unique index removed)
     const seededUser = await prisma.user.upsert({
       where: { tenantId_username: { tenantId: u.tenantId, username: u.username } },
-      update: { branchId, email: u.email, roleId: u.roleId },
+      update: { branchId, email: u.email, roleId: u.roleId, ...(REFRESH_SEEDED_HASHES ? { passwordHash } : {}) },
       create: { tenantId: u.tenantId, branchId, name: u.name, username: u.username, email: u.email, passwordHash, roleId: u.roleId },
     })
     console.log(`  ✓ ${u.roleKey} — ${u.email}`)
@@ -300,6 +317,12 @@ async function main() {
   const platformName     = process.env.PLATFORM_ADMIN_NAME     || 'Platform Super Admin'
   const platformHash     = await bcrypt.hash(platformPassword, SALT_ROUNDS)
   await platformAuthRepo.upsertPlatformSuperAdmin(platformEmail, platformName, platformHash)
+  // upsertPlatformSuperAdmin() deliberately keeps an existing hash (update: {}), so under
+  // test refresh it here rather than widening that repository function — a production seed
+  // must never reset the operator password back to the default.
+  if (REFRESH_SEEDED_HASHES) {
+    await prisma.platformUser.update({ where: { email: platformEmail }, data: { passwordHash: platformHash } })
+  }
   console.log(`  ✓ platform_super_admin — ${platformEmail}`)
 
   await seedPlans()

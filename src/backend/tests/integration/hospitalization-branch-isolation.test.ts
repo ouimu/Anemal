@@ -81,7 +81,7 @@ beforeAll(async () => {
     prisma.clinicRole.findFirstOrThrow({ where: { key: 'clinic_admin', tenantId: null } }),
   ])
 
-  const passwordHash = await bcrypt.hash(PASSWORD, 10)
+  const passwordHash = await bcrypt.hash(PASSWORD, 4)
 
   // Branch-scoped staffer pinned to Branch A, holds inpatient.view + inpatient.manage.
   const staffA = await prisma.user.create({

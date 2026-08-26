@@ -22,9 +22,12 @@ describe('backfillMainBranch', () => {
     const tenant = await prisma.tenant.create({ data: { name: 'Backfill Target', subdomain: `bf-target-${Date.now()}` } })
     createdTenantIds.push(tenant.id)
 
-    const result = await backfillMainBranch()
+    // Scoped: an unscoped sweep is a whole-database write and corrupts other
+    // suites' tenants mid-construction under parallel workers (see the JSDoc on
+    // backfillMainBranch). Scoping also lets this assert an exact count.
+    const result = await backfillMainBranch({ tenantIds: [tenant.id] })
 
-    expect(result.inserted).toBeGreaterThanOrEqual(1)
+    expect(result.inserted).toBe(1)
     const branches = await prisma.branch.findMany({ where: { tenantId: tenant.id } })
     expect(branches).toHaveLength(1)
     expect(branches[0].name).toBe('Main Branch')
@@ -35,7 +38,8 @@ describe('backfillMainBranch', () => {
     createdTenantIds.push(tenant.id)
     await prisma.branch.create({ data: { tenantId: tenant.id, name: 'Existing Branch', isActive: false } })
 
-    await backfillMainBranch()
+    const result = await backfillMainBranch({ tenantIds: [tenant.id] })
+    expect(result.inserted).toBe(0)
 
     const branches = await prisma.branch.findMany({ where: { tenantId: tenant.id } })
     expect(branches).toHaveLength(1)
@@ -46,12 +50,21 @@ describe('backfillMainBranch', () => {
     const tenant = await prisma.tenant.create({ data: { name: 'Backfill Idempotent', subdomain: `bf-idem-${Date.now()}` } })
     createdTenantIds.push(tenant.id)
 
-    await backfillMainBranch()
-    const second = await backfillMainBranch()
+    const first = await backfillMainBranch({ tenantIds: [tenant.id] })
+    expect(first.inserted).toBe(1)
+    const afterFirst = await prisma.branch.findMany({ where: { tenantId: tenant.id } })
+    expect(afterFirst).toHaveLength(1)
 
-    // second run must not touch the tenant created above nor re-insert anywhere
-    const branches = await prisma.branch.findMany({ where: { tenantId: tenant.id } })
-    expect(branches).toHaveLength(1)
+    const second = await backfillMainBranch({ tenantIds: [tenant.id] })
     expect(second.inserted).toBe(0)
+    const afterSecond = await prisma.branch.findMany({ where: { tenantId: tenant.id } })
+
+    // `inserted` is only meaningful now because the sweep is scoped above. Left
+    // unscoped it counts every branchless tenant in the database, so another
+    // worker creating one between the two runs would legitimately bump it.
+    // Asserting the surviving row is the SAME row is also strictly stronger than
+    // a bare count of 0.
+    expect(afterSecond).toHaveLength(1)
+    expect(afterSecond[0].id).toBe(afterFirst[0].id)
   })
 })
