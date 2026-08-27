@@ -23,7 +23,7 @@ describe('checkDuplicateAccount', () => {
   beforeEach(() => jest.clearAllMocks())
 
   test('predicate is provider + hash + tenantId != excludeTenantId — explicit, not hash-alone (round-2 grill finding 5)', async () => {
-    ;(prisma.tenantStorageConfig.findFirst as jest.Mock).mockResolvedValue(null)
+    (prisma.tenantStorageConfig.findFirst as jest.Mock).mockResolvedValue(null)
     await checkDuplicateAccount(prisma, 'onedrive', 'hash-abc', 7)
     expect(prisma.tenantStorageConfig.findFirst).toHaveBeenCalledWith({
       where: { provider: 'onedrive', oneDriveAccountIdHash: 'hash-abc', tenantId: { not: 7 } },
@@ -31,19 +31,19 @@ describe('checkDuplicateAccount', () => {
   })
 
   test('returns duplicate:true when a match exists', async () => {
-    ;(prisma.tenantStorageConfig.findFirst as jest.Mock).mockResolvedValue({ tenantId: 99 })
+    (prisma.tenantStorageConfig.findFirst as jest.Mock).mockResolvedValue({ tenantId: 99 })
     const result = await checkDuplicateAccount(prisma, 'onedrive', 'hash-abc', 7)
     expect(result).toEqual({ duplicate: true })
   })
 
   test('returns duplicate:false when no match', async () => {
-    ;(prisma.tenantStorageConfig.findFirst as jest.Mock).mockResolvedValue(null)
+    (prisma.tenantStorageConfig.findFirst as jest.Mock).mockResolvedValue(null)
     const result = await checkDuplicateAccount(prisma, 'google_drive', 'hash-xyz', 7)
     expect(result).toEqual({ duplicate: false })
   })
 
   test('never returns the matched tenant id or any identifying detail (existence-only signal)', async () => {
-    ;(prisma.tenantStorageConfig.findFirst as jest.Mock).mockResolvedValue({ tenantId: 99 })
+    (prisma.tenantStorageConfig.findFirst as jest.Mock).mockResolvedValue({ tenantId: 99 })
     const result = await checkDuplicateAccount(prisma, 'onedrive', 'hash-abc', 7)
     expect(result).not.toHaveProperty('tenantId')
     expect(Object.keys(result)).toEqual(['duplicate'])

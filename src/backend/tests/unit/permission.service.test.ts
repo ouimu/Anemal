@@ -43,7 +43,7 @@ beforeEach(() => {
 
 describe('resolvePermissions', () => {
   it('returns the assigned role\'s permission codes as a Set', async () => {
-    ;(mockPrisma.userRole.findUnique as jest.Mock).mockResolvedValue(MOCK_USER_ROLE)
+    (mockPrisma.userRole.findUnique as jest.Mock).mockResolvedValue(MOCK_USER_ROLE)
     const perms = await resolvePermissions(42, 1)
     expect(perms.has('billing.view')).toBe(true)
     expect(perms.has('billing.create')).toBe(true)
@@ -52,7 +52,7 @@ describe('resolvePermissions', () => {
   })
 
   it('queries with correct tenantId and userId', async () => {
-    ;(mockPrisma.userRole.findUnique as jest.Mock).mockResolvedValue(null)
+    (mockPrisma.userRole.findUnique as jest.Mock).mockResolvedValue(null)
     await resolvePermissions(7, 99)
     expect(mockPrisma.userRole.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({ where: { tenantId_userId: { tenantId: 99, userId: 7 } } })
@@ -60,14 +60,14 @@ describe('resolvePermissions', () => {
   })
 
   it('returns cached result on second call without querying DB', async () => {
-    ;(mockPrisma.userRole.findUnique as jest.Mock).mockResolvedValue(MOCK_USER_ROLE)
+    (mockPrisma.userRole.findUnique as jest.Mock).mockResolvedValue(MOCK_USER_ROLE)
     await resolvePermissions(1, 1)
     await resolvePermissions(1, 1)
     expect(mockPrisma.userRole.findUnique).toHaveBeenCalledTimes(1)
   })
 
   it('re-queries DB after invalidatePermCache', async () => {
-    ;(mockPrisma.userRole.findUnique as jest.Mock).mockResolvedValue(MOCK_USER_ROLE)
+    (mockPrisma.userRole.findUnique as jest.Mock).mockResolvedValue(MOCK_USER_ROLE)
     await resolvePermissions(1, 1)
     invalidatePermCache(1, 1)
     await resolvePermissions(1, 1)
@@ -75,13 +75,13 @@ describe('resolvePermissions', () => {
   })
 
   it('returns empty Set when user has no roles', async () => {
-    ;(mockPrisma.userRole.findUnique as jest.Mock).mockResolvedValue(null)
+    (mockPrisma.userRole.findUnique as jest.Mock).mockResolvedValue(null)
     const perms = await resolvePermissions(99, 1)
     expect(perms.size).toBe(0)
   })
 
   it('caches per tenantId:userId — two users get separate caches', async () => {
-    ;(mockPrisma.userRole.findUnique as jest.Mock).mockResolvedValue(MOCK_USER_ROLE)
+    (mockPrisma.userRole.findUnique as jest.Mock).mockResolvedValue(MOCK_USER_ROLE)
     await resolvePermissions(1, 1)
     await resolvePermissions(2, 1)
     expect(mockPrisma.userRole.findUnique).toHaveBeenCalledTimes(2)
@@ -90,13 +90,13 @@ describe('resolvePermissions', () => {
 
 describe('computePermSetVersion', () => {
   it('returns the assigned role\'s permVersion', async () => {
-    ;(mockPrisma.userRole.findUnique as jest.Mock).mockResolvedValue(MOCK_USER_ROLE)
+    (mockPrisma.userRole.findUnique as jest.Mock).mockResolvedValue(MOCK_USER_ROLE)
     const version = await computePermSetVersion(1, 1)
     expect(version).toBe(3)
   })
 
   it('returns 1 when user has no roles', async () => {
-    ;(mockPrisma.userRole.findUnique as jest.Mock).mockResolvedValue(null)
+    (mockPrisma.userRole.findUnique as jest.Mock).mockResolvedValue(null)
     const version = await computePermSetVersion(99, 1)
     expect(version).toBe(1)
   })
