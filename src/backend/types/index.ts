@@ -21,6 +21,7 @@ export interface JwtPayload {
 
 // Augment Express Request with authenticated context
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace -- global module augmentation requires `namespace`, no ES2015 equivalent exists
   namespace Express {
     interface Request {
       context?: JwtPayload

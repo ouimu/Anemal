@@ -120,7 +120,7 @@ export async function updateSettings(tenantId: number, data: TenantSettingsInput
   for (const field of SECRET_FIELDS) {
     const stored = (updated as Record<string, unknown>)[field]
     if (typeof stored === 'string' && stored) {
-      ;(updated as Record<string, unknown>)[field] = maskSecret(safeDecrypt(stored, field, tenantId))
+      (updated as Record<string, unknown>)[field] = maskSecret(safeDecrypt(stored, field, tenantId))
     }
   }
   return updated

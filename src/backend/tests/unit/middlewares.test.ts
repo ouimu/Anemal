@@ -27,7 +27,7 @@ describe('authMiddleware', () => {
   })
 
   it('returns 401 when token is invalid', () => {
-    ;(jwtConfig.verifyToken as jest.Mock).mockImplementation(() => { throw new Error('invalid') })
+    (jwtConfig.verifyToken as jest.Mock).mockImplementation(() => { throw new Error('invalid') })
     const req = { headers: { authorization: 'Bearer bad.token' } } as Request
     const res = mockRes(); const next = mockNext()
     authMiddleware(req, res, next)
