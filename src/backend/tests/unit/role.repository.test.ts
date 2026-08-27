@@ -50,6 +50,7 @@
 
 import prisma from '../../config/db'
 import * as roleRepo from '../../models/role.repository'
+import { createTenantPair, findSystemStaffRoleId, teardownRoleTenantFixtures } from './helpers/role-tenant-fixtures'
 
 const STAMP = Date.now()
 
@@ -71,17 +72,10 @@ let userB2Id = 0  // tenant B — drifted holder of orphanRoleId
 let userB3Id = 0  // tenant B — holder of the system staff role (T3)
 
 beforeAll(async () => {
-  const [tenantA, tenantB] = await Promise.all([
-    prisma.tenant.create({ data: { name: 'RoleRepo Unit A', subdomain: `role-repo-unit-a-${STAMP}` } }),
-    prisma.tenant.create({ data: { name: 'RoleRepo Unit B', subdomain: `role-repo-unit-b-${STAMP}` } }),
-  ])
-  tenantAId = tenantA.id
-  tenantBId = tenantB.id
-
-  const staffRole = await prisma.clinicRole.findFirstOrThrow({
-    where: { key: 'clinic_staff', tenantId: null, isSystem: true },
-  })
-  systemStaffRoleId = staffRole.id
+  const tenantPair = await createTenantPair('RoleRepo Unit', 'role-repo-unit', STAMP)
+  tenantAId = tenantPair.tenantAId
+  tenantBId = tenantPair.tenantBId
+  systemStaffRoleId = await findSystemStaffRoleId()
 
   const [sharedRole, orphanRole] = await Promise.all([
     prisma.clinicRole.create({
@@ -152,14 +146,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  // Child-before-parent. UserRole.role is onDelete: Restrict, so the join rows must
-  // go before the roles or the teardown itself fails with P2003.
-  await prisma.userRole.deleteMany({ where: { tenantId: tenantAId } })
-  await prisma.userRole.deleteMany({ where: { tenantId: tenantBId } })
-  await prisma.user.deleteMany({ where: { tenantId: { in: [tenantAId, tenantBId] } } })
-  await prisma.clinicRole.deleteMany({ where: { tenantId: { in: [tenantAId, tenantBId] } } })
-  await prisma.tenant.deleteMany({ where: { id: { in: [tenantAId, tenantBId] } } })
-  await prisma.$disconnect()
+  await teardownRoleTenantFixtures([tenantAId, tenantBId])
 })
 
 // ---------------------------------------------------------------------------

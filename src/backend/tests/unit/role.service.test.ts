@@ -18,6 +18,7 @@ import prisma from '../../config/db'
 import * as roleRepo from '../../models/role.repository'
 import * as roleService from '../../services/role.service'
 import { ConflictError, ForbiddenError, NotFoundError, AppError } from '../../utils/errors'
+import { createTenantPair, findSystemStaffRoleId, teardownRoleTenantFixtures } from './helpers/role-tenant-fixtures'
 
 const STAMP = Date.now()
 
@@ -47,17 +48,10 @@ async function makeDisposableRole(label: string): Promise<number> {
 }
 
 beforeAll(async () => {
-  const [tenantA, tenantB] = await Promise.all([
-    prisma.tenant.create({ data: { name: 'RoleSvc Unit A', subdomain: `role-svc-unit-a-${STAMP}` } }),
-    prisma.tenant.create({ data: { name: 'RoleSvc Unit B', subdomain: `role-svc-unit-b-${STAMP}` } }),
-  ])
-  tenantAId = tenantA.id
-  tenantBId = tenantB.id
-
-  const staffRole = await prisma.clinicRole.findFirstOrThrow({
-    where: { key: 'clinic_staff', tenantId: null, isSystem: true },
-  })
-  systemStaffRoleId = staffRole.id
+  const tenantPair = await createTenantPair('RoleSvc Unit', 'role-svc-unit', STAMP)
+  tenantAId = tenantPair.tenantAId
+  tenantBId = tenantPair.tenantBId
+  systemStaffRoleId = await findSystemStaffRoleId()
 
   driftRoleId = await makeDisposableRole('drift')
   inUseRoleId = await makeDisposableRole('inuse')
@@ -90,12 +84,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  // Child-before-parent — UserRole.role is onDelete: Restrict.
-  await prisma.userRole.deleteMany({ where: { tenantId: { in: [tenantAId, tenantBId] } } })
-  await prisma.user.deleteMany({ where: { tenantId: { in: [tenantAId, tenantBId] } } })
-  await prisma.clinicRole.deleteMany({ where: { tenantId: { in: [tenantAId, tenantBId] } } })
-  await prisma.tenant.deleteMany({ where: { id: { in: [tenantAId, tenantBId] } } })
-  await prisma.$disconnect()
+  await teardownRoleTenantFixtures([tenantAId, tenantBId])
 })
 
 afterEach(() => {
@@ -155,6 +144,13 @@ describe('deleteRole — FK violation is a 409, not a 500 (RST-6)', () => {
 
 describe('deleteRole — pre-existing guards must not regress', () => {
   it('tenant B cannot delete tenant A\'s custom role (tenant isolation)', async () => {
+    // Pins EXISTING behavior, not a claim it's correct: role.service.ts:182 returns
+    // 403 for a cross-tenant role, which confirms the role exists elsewhere (a BOLA
+    // existence-leak per ADR-0014's 404-not-403 pattern, already applied for the
+    // analogous case in user.service.ts:158-160). This deviation is out of scope for
+    // this branch (RST-1..RST-7 don't touch it) and is tracked as BA sign-off backlog
+    // B-1 (docs/superpowers/plans/2026-08-27-role-service-tenant-scope-ba-signoff.md).
+    // Do not "fix" this assertion without also fixing role.service.ts and updating B-1.
     const roleId = await makeDisposableRole('isolation')
 
     const err: unknown = await roleService.deleteRole(tenantBId, roleId).then(() => null, e => e)
