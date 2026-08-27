@@ -1,10 +1,69 @@
 # QA Sign-off — Role Service Tenant Scope (RST-1…RST-7)
 
 **Branch:** `fix/role-service-tenant-scope`
-**Merge-base:** `b1cc638`  ·  **HEAD:** `77a7746`
+**Merge-base:** `b1cc638`  ·  **HEAD (round 2):** `d4ad882`
 **Date:** 2026-08-27
 **Reviewer:** @qa-agent (Standard Pipeline Step 7)
 **Implements:** ADR-0025 D-1 · RST-1…RST-7 · BA sign-off C-1…C-8
+
+# QA-Agent Approval: ✅ APPROVED (round 2)
+
+Round 1 (below, preserved) found the implementation correct but blocked sign-off
+on tree state: a concurrent process was rewriting the same test files while the
+suite was being measured, and out-of-scope work (ESLint stand-up, unrelated
+source edits) had ridden onto the branch. §2's implementation verification does
+not need re-litigating — only the tree-state blockers.
+
+## Round 2 — re-verification of the 3 mechanical items
+
+1. **In-flight work resolved.** `git log` shows the fixture-dedup landed as its
+   own commit, `e2f2fb7` ("test(role): dedupe tenant fixture setup, pin
+   cross-tenant-delete's existing 403"), authored after this sign-off's round 1.
+2. **B-2 resolved.** `src/backend/tests/unit/helpers/role-tenant-fixtures.ts` is
+   tracked (part of `e2f2fb7`); both `role.repository.test.ts` and
+   `role.service.test.ts` import it and the tree compiles (`tsc --noEmit`, clean,
+   exit 0).
+3. **Clean-tree suite run, attributable to a specific commit.** `git status
+   --short` returns empty at `HEAD = d4ad882`. Full backend suite run
+   immediately after, no concurrent writers this time:
+   **93 suites / 1309 tests passed, 0 failed, exit 0**, `git status --short`
+   still empty afterward (proves nothing wrote to the tree mid-run). This
+   reproduces round 1's number but is now attributable — first attributable
+   green measurement of this branch.
+4. **B-3 (out-of-scope work) is gone.** `git status --short` and `git ls-files
+   --others --exclude-standard` are both empty — no untracked `.eslintrc.cjs`,
+   no modified `package.json`/`package-lock.json`, no stray edits to
+   `tenant-settings.service.ts` / `types/index.ts`. Whoever owned that work took
+   it off this branch, as round 1 §6 item 1 asked. Not this branch's problem to
+   verify further; confirmed absent from the diff.
+5. **F-1 fixed.** `e2f2fb7`'s message confirms the "tenant B cannot delete
+   tenant A's role" test now carries a comment marking the 403 as pinning
+   existing (arguably-wrong per ADR-0014) behavior, tracked under BA backlog
+   B-1 — not a silent endorsement. Read in `role.service.test.ts` lines 146-153.
+
+All 4 required items from round 1 §6 are closed. §2's AC coverage map (7/7 PASS)
+and §5 findings (F-1 now fixed, F-2 remains open LOW/backlog, unchanged by this
+branch) stand as originally verified.
+
+---
+
+## 7. Approval (round 2)
+
+- [x] ✅ Approved for Staging
+- [x] ✅ Approved for Production
+
+**QA-Agent Approval: ✅ APPROVED**
+
+Step 8 (`/anemal-finish-branch`) may proceed against `d4ad882`.
+
+---
+
+---
+---
+
+# Round 1 record (preserved verbatim, superseded by round 2 above)
+
+**HEAD (round 1):** `77a7746`
 
 # QA-Agent Approval: ❌ REQUEST CHANGES
 
@@ -101,7 +160,7 @@ these suites are the regression guard, and they hold.
 
 ---
 
-## 3. Blockers
+## 3. Blockers (round 1 — all resolved in round 2, see top of file)
 
 ### 🔴 B-1 — The tree changed under the test run; 1309/1309 is unattributable
 
@@ -167,7 +226,7 @@ destroying it is not my call.
 
 ## 4. Findings (non-blocking)
 
-### 🟡 F-1 — MEDIUM · A new test pins 403 where this repo's own convention says 404
+### 🟡 F-1 — MEDIUM · A new test pins 403 where this repo's own convention says 404 — FIXED in `e2f2fb7`
 
 `role.service.test.ts` — *"tenant B cannot delete tenant A's custom role (tenant
 isolation)"* — asserts `ForbiddenError` / **403**. Against that:
@@ -189,7 +248,7 @@ defect this branch already shipped twice (RST-4, RST-7). Mark the 403 as
 known-deviant, tracked under BA backlog B-1 / ADR-0014, to be flipped to 404 when
 B-1 lands.
 
-### 🟢 F-2 — LOW, backlog · `User.roleRef` has no explicit `onDelete`
+### 🟢 F-2 — LOW, backlog · `User.roleRef` has no explicit `onDelete` — still open, unchanged by this branch
 
 `schema.prisma:229` omits `onDelete`, so Prisma's optional-relation default
 `SetNull` applies: deleting a role nulls `User.roleId` for any user pointing at it
@@ -219,7 +278,7 @@ it leaves this path untested. Worth an explicit `onDelete` and a backlog item.
 
 ---
 
-## 6. Required to clear this sign-off
+## 6. Required to clear this sign-off (round 1 — all closed, see round 2 at top)
 
 1. **Resolve the in-flight work.** Land the ESLint + fixture-dedup changes on
    their own branch, or take them off this one. Coordinate with whoever owns
@@ -233,14 +292,3 @@ it leaves this path untested. Worth an explicit `onDelete` and a backlog item.
 
 Items 1–3 are mechanical; none requires re-doing implementation work. Re-submit
 and I will re-sign — §2 does not need re-litigating, only a clean measurement.
-
----
-
-## 7. Approval
-
-- [ ] ❌ Approved for Staging — **blocked on B-1, B-2, B-3**
-- [ ] ❌ Approved for Production — **blocked**
-
-**QA-Agent Approval: ❌ REQUEST CHANGES**
-
-Step 8 (`/anemal-finish-branch`) must not run against the tree as it stands.
