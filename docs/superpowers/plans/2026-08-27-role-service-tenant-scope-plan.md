@@ -116,9 +116,9 @@ changed as specified above.
 
 - [x] Call site passes `tenantId`: `await roleRepo.countRoleUsage(roleId, tenantId)`
 
-**Verify (still outstanding, do now):**
-- [ ] `npx tsc --noEmit` (backend) — zero signature-mismatch errors
-- [ ] `roleManagement.test.ts` and `roleEditor-t5f01.test.ts` still pass unmodified
+**Verify:**
+- [x] `npx tsc --noEmit` (backend) — zero signature-mismatch errors
+- [x] `roleManagement.test.ts` and `roleEditor-t5f01.test.ts` still pass unmodified (35/35, Task 6)
 
 **Dependencies:** Task 1 (done)
 
@@ -139,41 +139,51 @@ changed as specified above.
 
 ### Task 4 — New test proving cross-tenant exclusion (implements RST-3)
 **Owner:** @qa-agent
-**File:** `src/backend/tests/unit/role.repository.test.ts` (**new file**)
+**File:** `src/backend/tests/unit/role.repository.test.ts` (**new file**) — ✅ **implemented, see
+"corrected fixture" note below — this section reflects what was actually shipped, not the original
+draft**
 
 Follow the real-Prisma/isolated-fixture/`afterAll`-cleanup convention in
 `src/backend/tests/unit/user.repository.test.ts` — not a mocked-Prisma unit test.
 
-- [ ] Create two tenants A and B: `prisma.tenant.create` with unique `subdomain` per tenant, e.g.
-      `` `role-repo-unit-a-${Date.now()}` `` / `` `role-repo-unit-b-${Date.now()}` ``
-- [ ] Create one custom `ClinicRole` owned by tenant A: `prisma.clinicRole.create({ data: {
-      tenantId: tenantA.id, isSystem: false, ... } })` — capture its id as `roleId`
-- [ ] Create **two distinct users**: `userA` in tenant A, `userB` in tenant B (required — `UserRole`
-      PK is `@@id([userId, roleId])`, so two rows sharing `roleId` need two different `userId`s)
-- [ ] Create `UserRole { userId: userA.id, roleId, tenantId: tenantA.id }` — the legitimate row
-- [ ] Create `UserRole { userId: userB.id, roleId, tenantId: tenantB.id }` — the **drifted** row
-      (same `roleId`, owned by tenant A; `tenantId` is tenant B's — DB-insertable, no constraint
-      prevents it, app-unreachable via normal write paths)
-- [ ] **T1:** assert `countRoleUsage(roleId, tenantB.id)` returns `0` (drifted row excluded — the
-      negative/authorization-adjacent case)
-- [ ] **T2:** assert `countRoleUsage(roleId, tenantA.id)` returns `1` (non-drifted row included —
-      positive case, guards against a trivially-over-scoped false negative)
-- [ ] `afterAll` cleanup, in this exact order (child-before-parent, `Restrict` FKs otherwise fail
-      the teardown):
-  ```ts
-  afterAll(async () => {
-    await prisma.userRole.deleteMany({ where: { tenantId: tenantA.id } })
-    await prisma.userRole.deleteMany({ where: { tenantId: tenantB.id } })
-    await prisma.user.deleteMany({ where: { tenantId: { in: [tenantA.id, tenantB.id] } } })
-    await prisma.clinicRole.deleteMany({ where: { tenantId: { in: [tenantA.id, tenantB.id] } } })
-    await prisma.tenant.deleteMany({ where: { id: { in: [tenantA.id, tenantB.id] } } })
-    await prisma.$disconnect()
-  })
-  ```
-- [ ] **Falsifiability check (do this once, then leave Task 1's fix in place):** temporarily revert
-      Task 1's `where: { roleId, tenantId }` back to `where: { roleId }`, re-run this file, confirm
-      T1 goes red (returns `2`, not `0`). Re-apply Task 1's fix, confirm both tests pass. Do not skip
-      this — code-review inspection is not sufficient per RST-3's AC.
+**⚠️ Corrected fixture (the original one-legit + one-drifted-row fixture below was internally
+inconsistent and would fail against *correct* code — caught and fixed by @qa-agent during Task 6
+execution, 2026-08-27):** a single role with one legit tenant-A row + one drifted tenant-B row
+cannot yield both "`countRoleUsage(roleId, tenantB.id)` returns `0`" and "the row's own `tenantId`
+is tenant B's" — the shipped filter matches on the row's own `tenantId` column, so that query
+correctly returns `1`, not `0`. The actual fixture uses **two** tenant-A-owned custom roles:
+- `sharedRoleId` — one legit tenant-A row + one drifted tenant-B row (proves inclusion + the
+  drifted row is counted under *its own* `tenantId`, not the role's owner)
+- `orphanRoleId` — **only** a drifted tenant-B row, zero tenant-A rows (this is the clean `0` case,
+  and it's also the fixture that makes Task 8's P2003 catch load-bearing: count says 0, the FK still
+  says Restrict)
+
+- [x] Create two tenants A and B: unique `subdomain` per tenant (`role-repo-unit-a-${STAMP}` /
+      `-b-${STAMP}`)
+- [x] Create `sharedRoleId` and `orphanRoleId`, both custom `ClinicRole`s owned by tenant A
+- [x] Create 5 distinct users (`UserRole` PK is `@@id([userId, roleId])` — each row needs its own
+      user): `userA`/`userA2` in tenant A, `userB`/`userB2`/`userB3` in tenant B
+- [x] `UserRole` rows: `{userA, sharedRoleId, tenantA}` (legit), `{userB, sharedRoleId, tenantB}`
+      (drifted), `{userB2, orphanRoleId, tenantB}` (drifted, orphan's only row), plus two system-role
+      holders (`userA2`/`userB3` on the seeded `clinic_staff` role) for Task 5's T3/T4
+- [x] **T1:** `countRoleUsage(orphanRoleId, tenantAId)` → `0` (a role whose only assignment belongs
+      to another tenant counts 0 for its owner)
+- [x] **T1b (new, not in original plan):** `countRoleUsage(sharedRoleId, tenantBId)` → `1` — honest
+      characterization: the drifted row is counted under the `tenantId` its own column carries
+- [x] **T2:** `countRoleUsage(sharedRoleId, tenantAId)` → `1` (legit row counted, drifted row
+      excluded)
+- [x] Extra isolation guard: a tenant with no rows for a foreign role counts `0` cross-tenant
+- [x] `afterAll` cleanup in child-before-parent order (`userRole` both tenants → `user` →
+      `clinicRole` → `tenant`) — implemented exactly as originally specified
+- [x] **Falsifiability checks — three probes run, all confirmed red, all reverted (`git diff`
+      empty afterward):**
+  - Probe A: revert Task 1 to `where: { roleId }` → T1 `0→1`, T1b `1→2`, T2 `1→2`, isolation guard
+    `1→5`; T3/T4 (Task 5, different function) stayed green — confirms probe isolation
+  - Probe B: revert Task 5 to `_count: { userRoles: true }` → T3 `1→5` (the actual cross-tenant
+    leak, made visible), T4 `1→2`; T1/T1b/T2 stayed green
+  - Probe C (Task 8's test, listed here for completeness): revert Task 8's try/catch → T5 throws
+    raw `PrismaClientKnownRequestError` instead of `ConflictError` — reproduces BA sign-off M-2's
+    500 exactly, log confirms real FK: `Foreign key constraint violated: user_roles_roleId_fkey`
 
 **Dependencies:** Task 1 (needs the 2-arg signature to call)
 
@@ -185,18 +195,17 @@ Follow the real-Prisma/isolated-fixture/`afterAll`-cleanup convention in
 - [x] `_count: { select: { userRoles: { where: { tenantId } } } }` applied inside `listRoles`'s
       `prisma.clinicRole.findMany(...)` call. No other line in the function changed.
 
-**Verify (test file: extend `src/backend/tests/unit/role.repository.test.ts` from Task 4, or a
-sibling `describe` block in the same file):**
-- [ ] **T3:** create a **system** role (`tenantId: null, isSystem: true`) with `UserRole` rows in
-      two different tenants (e.g. reuse tenants A/B from Task 4's fixtures, or fresh ones scoped to
-      this test's own `beforeAll`/`afterAll`). Call `listRoles(tenantA.id)`; assert the returned
-      system role's `_count.userRoles` equals only tenant A's row count, not the cross-tenant total.
-- [ ] **T4 (regression guard):** a custom role's `assignedUserCount` is unaffected — assert it still
-      equals its own tenant's `UserRole` row count (custom roles only ever have same-tenant rows
-      under normal writes, so this must not change).
-- [ ] `GET /api/roles` integration test (`roleManagement.test.ts` or equivalent) still passes
-      unmodified for the non-system-role, non-drift case.
-- [ ] `npx tsc --noEmit` — zero signature-mismatch errors.
+**Verify (implemented in `src/backend/tests/unit/role.repository.test.ts`, `describe('listRoles —
+_count.userRoles tenant scoping (RST-5)')`):**
+- [x] **T3:** system role (`clinic_staff`, seeded `tenantId: null, isSystem: true`) held in both
+      tenant A and tenant B — `listRoles(tenantA.id)` reports `_count.userRoles === 1` (own tenant
+      only), symmetric check from tenant B also `1`. Probe B (revert Task 5) confirmed this goes to
+      `5` (the real cross-tenant leak) when unscoped.
+- [x] **T4 (regression guard):** `sharedRoleId`'s count is `1` (own tenant), `orphanRoleId`'s count
+      is `0` — both correct and unaffected in the normal-write sense.
+- [x] `roleManagement.test.ts`/`roleEditor-t5f01.test.ts` still pass unmodified for the non-drift
+      case (Task 6, 35/35).
+- [x] `npx tsc --noEmit` — zero signature-mismatch errors.
 
 **Dependencies:** None (independent of Task 1/2/4/6/8 — different function, same file; safe to do in
 parallel, but land in the same PR)
@@ -208,10 +217,8 @@ parallel, but land in the same PR)
 **Files:** `src/backend/tests/integration/roleManagement.test.ts`,
 `src/backend/tests/integration/roleEditor-t5f01.test.ts`
 
-- [ ] Run both files after Task 1, 2, and 5 land. Confirm both pass **unmodified** (no edits to
-      either file yet — RST-7's comment-only edit is Task 9, after this baseline is established).
-- [ ] Record pass/fail — if either fails, stop and diagnose before proceeding to Task 8 (RST-6
-      depends on this baseline being green).
+- [x] Ran both files after Task 1, 2, 5 landed. **35/35 pass**, 2 suites, unmodified.
+- [x] Baseline green — proceeded to Task 8.
 
 **Dependencies:** Task 1, Task 2, Task 5
 
@@ -221,10 +228,8 @@ parallel, but land in the same PR)
 **Owner:** @dev-agent
 **Scope:** repo-wide
 
-- [ ] `npx tsc --noEmit` across the whole backend — zero errors (confirms Task 1/2/5's signature
-      changes don't ripple beyond the single call site already grepped in the pm-tasks pre-flight).
-- [ ] `git diff src/backend/prisma/schema.prisma` — confirm still comment-only (Task 3's change is
-      the only diff in this file across the whole branch).
+- [x] `npx tsc --noEmit` across the whole backend — zero errors.
+- [x] `git diff src/backend/prisma/schema.prisma` — comment-only, confirmed.
 
 **Dependencies:** Task 1, Task 2, Task 3, Task 5
 
@@ -244,15 +249,15 @@ parallel, but land in the same PR)
       `schema.prisma:941`), so the blanket catch is safe today; this was explicitly reviewed and
       accepted at Step 3.5, not an oversight.
 
-**Verify:**
-- [ ] **T5 (load-bearing):** using the RST-3 drift fixture (Task 4's `UserRole` row: `roleId` owned
-      by tenant A, `tenantId` set to tenant B), call `deleteRole(tenantA.id, roleId)` at the service
-      layer — assert it throws `ConflictError` (surfaces as **409**, not 500). This is the specific
-      regression BA sign-off M-2 flagged; assert it directly, do not infer from code review.
-- [ ] **T6 (regression guard):** happy-path `deleteRole` (no usage, no drift) still succeeds
-      unchanged.
-- [ ] Assert a non-P2003 error thrown by `roleRepo.deleteRole` is re-thrown unchanged, not swallowed
-      (e.g. mock/spy `roleRepo.deleteRole` to throw a plain `Error` and confirm it propagates as-is).
+**Verify (implemented in `src/backend/tests/unit/role.service.test.ts`):**
+- [x] **T5 (load-bearing):** drift fixture (`orphanRoleId`, count 0 but FK still Restrict) →
+      `deleteRole(tenantAId, orphanRoleId)` throws `ConflictError` (409). Probe C (revert Task 8's
+      try/catch) confirmed this goes to a raw `PrismaClientKnownRequestError` — reproduces BA
+      sign-off M-2's 500 exactly; log confirmed the real FK fired
+      (`Foreign key constraint violated: user_roles_roleId_fkey`).
+- [x] **T6 (regression guard):** happy-path `deleteRole` (no usage, no drift) succeeds unchanged.
+- [x] Non-P2003 error from `roleRepo.deleteRole` (spied to throw a plain `Error`) propagates as-is,
+      not swallowed.
 
 **Dependencies:** Task 1, Task 2, Task 4 (needs the drift fixture), Task 6 (needs the pre-RST-6
 baseline confirmed green first)
@@ -263,23 +268,11 @@ baseline confirmed green first)
 **Owner:** @qa-agent
 **File:** `src/backend/tests/integration/roleEditor-t5f01.test.ts:142`
 
-- [ ] Change:
-  ```
-  // Admin A and Admin B both hold clinic_admin → count is global to the role (≥2)
-  ```
-  to:
-  ```
-  // Admin A and Admin B hold the same system role in different tenants. After RST-5, the count is
-  // scoped to the caller's own tenant, so this only reflects tenant A's admin(s) — the ≥1 assertion
-  // holds precisely because it no longer double-counts across tenants.
-  ```
-- [ ] **No assertion logic changed** — comment-only edit. The existing
-      `expect(adminRoleRow!.assignedUserCount).toBeGreaterThanOrEqual(1)` line is untouched.
+- [x] Comment updated as specified. Assertion line untouched.
+- [x] `git diff` on this file shows only comment lines (1 removed / 3 added).
 
 **Verify:**
-- [ ] `roleEditor-t5f01.test.ts` still passes unmodified (assertion untouched, only the comment
-      above it changed)
-- [ ] `git diff src/backend/tests/integration/roleEditor-t5f01.test.ts` shows only the comment lines
+- [x] Re-run: `roleEditor-t5f01.test.ts` still passes.
 
 **Dependencies:** Task 5 (comment describes RST-5's post-fix behavior — must land after or alongside
 Task 5, before this PR closes)
@@ -338,13 +331,31 @@ comment fix itself; `roleManagement.test.ts` is re-run, not edited).
   finding (`findRoleById`'s cross-tenant existence oracle, BA sign-off backlog B-1) remains open and
   tracked separately — do not let this PR read as closing R2-ME-01 in full.
 
-## 9. Next pipeline step
+## 9. Pipeline history (corrected)
 
-Per CLAUDE.md Standard Pipeline: this plan is resubmitted for **Step 5 — `@ponytail-agent`**
-(7-criteria simplicity gate), re-run #2. Run #1 (2026-08-27) REJECTed on criterion 2 (duplicate
-work) only — Tasks 1/2/3/5/8 were already applied uncommitted, plan hadn't been updated to match.
-Fix applied: those five tasks committed at `f60dbe5`, plan doc above rewritten to mark them done.
-Criteria 1, 3-7 already passed cleanly in run #1 and are unchanged (still 5 files total, 0 new
-deps/endpoints/migrations/error classes). Remaining real work for `/execute-plan` (Step 6, still
-BLOCKED until Ponytail returns APPROVE): Task 4 (new test), Task 6 (baseline re-run), Task 7
-(compile+diff check), Task 9 (stale test comment).
+**Correction (2026-08-27):** an earlier revision of this section claimed a "Ponytail run #2" and a
+"run #1 REJECT on criterion 2." That narrative does not match the actual pipeline record. The real
+sequence: @ponytail-agent reviewed this plan exactly once on 2026-08-27 and returned a clean
+**APPROVE on all 7 criteria** (see docs/superpowers/plans/HANDOFF-role-service-tenant-scope.md and
+the Step 5 hand-off note) — there was no reject and no second run. Tasks 1, 2, 3, 5, 8 were then
+implemented by @dev-agent per the approved plan and committed at `f60dbe5`; Tasks 4, 6, 9 were
+implemented and verified by @qa-agent (see Task 4/6/9 sections above and the full-suite result in
+§10). This section previously invented a rejection that never occurred — corrected here so the
+pipeline record is accurate before Step 7.
+
+## 10. Step 6 completion status
+
+All 9 tasks complete and verified:
+- Tasks 1, 2, 3, 5, 8 — implemented by @dev-agent, committed `f60dbe5`, `npx tsc --noEmit` clean.
+- Task 4 — new file `src/backend/tests/unit/role.repository.test.ts` (corrected fixture, see Task 4
+  section above), plus `src/backend/tests/unit/role.service.test.ts` for Task 8's T5/T6.
+- Task 6 — `roleManagement.test.ts` + `roleEditor-t5f01.test.ts` baseline: 35/35 pass.
+- Task 7 — `npx tsc --noEmit` clean; `git diff` on `schema.prisma` confirmed comment-only.
+- Task 9 — stale comment fixed at `roleEditor-t5f01.test.ts:142`, re-run passes.
+- **Full backend suite: 1309/1309 passed, 0 failed, 93 suites** (1295 main baseline + 14 new cases).
+- Three falsifiability probes run and reverted (Task 4 section, Probes A/B/C) — all confirmed red
+  against reverted code, all confirmed clean (`git diff` empty) after re-applying the fix.
+
+**Next pipeline step:** Step 7 — `/code-review` + `@qa-agent` sign-off (QA implementation work is
+done; formal sign-off is explicitly withheld pending code-review per QA's own protocol). Then Step 8
+`/anemal-finish-branch`.

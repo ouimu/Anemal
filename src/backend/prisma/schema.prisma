@@ -222,8 +222,10 @@ model User {
 
   tenant                Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   branch                Branch?            @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  // Phase 8 (5-A): the user's single role (ADR-0019). Effective perms come from this roleRef alone;
-  // userRoles is the assignment join table only, not a permission-union source.
+  // Phase 8 (5-A): the user's single role (ADR-0019). This is a legacy display/fallback
+  // pointer (kept in sync by user.repository.ts's replaceUserRole) — effective perms are
+  // resolved from the single UserRole join row (permission.service.ts resolvePermissions),
+  // not from roleRef, and never as a union across multiple rows.
   roleRef               ClinicRole?        @relation("UserPrimaryRole", fields: [roleId], references: [id])
   userRoles             UserRole[]
   appointments          Appointment[]
