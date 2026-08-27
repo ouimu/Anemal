@@ -29,7 +29,7 @@ export function listRoles(tenantId: number) {
     },
     include: {
       permissions: { select: { permissionCode: true } },
-      _count: { select: { userRoles: true } },
+      _count: { select: { userRoles: { where: { tenantId } } } },
     },
     orderBy: [{ isSystem: 'desc' }, { name: 'asc' }],
   })
@@ -158,10 +158,11 @@ export function deleteRole(tenantId: number, roleId: number) {
  * Count how many UserRole rows reference a given role.
  * Used to guard against deleting a role that is still in use.
  *
- * @param roleId - Role to check.
+ * @param roleId   - Role to check.
+ * @param tenantId - Owning tenant scope; prevents cross-tenant deletes.
  */
-export function countRoleUsage(roleId: number) {
-  return prisma.userRole.count({ where: { roleId } })
+export function countRoleUsage(roleId: number, tenantId: number) {
+  return prisma.userRole.count({ where: { roleId, tenantId } })
 }
 
 // ---------------------------------------------------------------------------

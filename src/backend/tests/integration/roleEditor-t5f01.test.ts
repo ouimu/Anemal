@@ -139,7 +139,9 @@ describe('AC-1 GET /clinic/roles — assignedUserCount', () => {
     const adminRoleRow = (res.body.data as Array<{ id: number; assignedUserCount: number }>)
       .find(r => r.id === adminRoleId)
     expect(adminRoleRow).toBeDefined()
-    // Admin A and Admin B both hold clinic_admin → count is global to the role (≥2)
+    // Admin A and Admin B hold the same system role in different tenants. After RST-5, the count is
+    // scoped to the caller's own tenant, so this only reflects tenant A's admin(s) — the ≥1 assertion
+    // holds precisely because it no longer double-counts across tenants.
     expect(adminRoleRow!.assignedUserCount).toBeGreaterThanOrEqual(1)
   })
 })
