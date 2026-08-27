@@ -30,7 +30,11 @@ export async function findSystemStaffRoleId(): Promise<number> {
 
 /**
  * Child-before-parent teardown for role-tenant fixtures: UserRole -> User -> ClinicRole -> Tenant.
- * Required because UserRole.role is onDelete: Restrict.
+ * Two Restrict FKs force this exact order, not one: `UserRole.role` (deleting UserRole
+ * first) AND `users_roleId_fkey` / `User.roleRef` (deleting User before ClinicRole —
+ * that FK's scalar `User.roleId` is required, so Prisma emits RESTRICT despite the
+ * relation field reading `ClinicRole?`). Deleting ClinicRole before User would fail on
+ * the second FK even with every UserRole row already gone.
  */
 export async function teardownRoleTenantFixtures(tenantIds: number[]): Promise<void> {
   await prisma.userRole.deleteMany({ where: { tenantId: { in: tenantIds } } })

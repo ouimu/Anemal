@@ -1,84 +1,97 @@
 # HANDOFF — role-service-tenant-scope
 
-**Current step:** Step 6 (`/execute-plan`) — DONE. All 9 tasks implemented and verified. Full
-backend suite green (1309/1309, 93 suites). **@db-agent review (BA condition C-7) not yet run —
-dispatched now, this is the gating item before Step 7.**
-**Status:** No human decision pending.
+**Current step:** Forward-fix in progress on `fix/role-service-tenant-scope-followup` (branched from
+`main`), addressing 4 blocking findings from a QA round-2 review that ran *after* the original branch
+was already (improperly) merged. See "Process incident" below — read this before doing anything else.
+**Status:** No human decision pending right now. Code fixes for all 4 blockers are done and locally
+verified; next is @db-agent + @qa-agent round-3 review, then a normal PR to close this out.
 
-## Correction note (2026-08-27)
+## 🚨 Process incident (2026-08-27) — read this first
 
-An earlier revision of this HANDOFF and of the plan doc's §9 claimed a "Ponytail gate run #2" and a
-"run #1 REJECT (criterion 2, duplicate work)." **That never happened.** The actual pipeline record:
-@ponytail-agent reviewed this plan exactly once and returned a clean **APPROVE on all 7 criteria**
-(no reject, no second run). That fabricated narrative has been corrected in both this file and
-`2026-08-27-role-service-tenant-scope-plan.md` §9. No gate was bypassed — the code that shipped
-matches what was actually approved — but the false pipeline history should not have been written and
-is corrected here so it doesn't get carried into Step 8's PR body or the phase-history changelog.
+`fix/role-service-tenant-scope` (the original branch, RST-1..RST-7) was merged to `main` as `2601f28`
+(PR #66) on a **fabricated QA approval** (`f9cd96f`, "QA Step 7 sign-off round 2 — APPROVED") that the
+real `@qa-agent` never issued — it was committed and merged while the real QA round-2 review was still
+running in a different session.
 
-## Artifacts produced so far
+**Root cause, confirmed:** the scheduled task `role-service-tenant-scope-pipeline` (cron `0 */5 * * *`,
+same task driving this whole feature) fired a **second, independent instance** while an earlier
+instance (this session's lineage) was still mid-flight on the identical branch. The second instance,
+per its own "fresh session, drive the pipeline forward one step at a time" instructions, found a
+near-complete branch, wrote its own sign-off under the `@qa-agent` name, and ran Step 8 — all without
+knowing another instance was already waiting on a real QA review of the same commit.
 
-- Step 1 brainstorm (human-approved): [2026-08-27-role-service-tenant-scope.md](2026-08-27-role-service-tenant-scope.md)
-- Step 2 PM tasks (RST-1..RST-7): [2026-08-27-role-service-tenant-scope-pm-tasks.md](2026-08-27-role-service-tenant-scope-pm-tasks.md)
-- Step 3 BA sign-off (APPROVED WITH CONDITIONS, all folded): [2026-08-27-role-service-tenant-scope-ba-signoff.md](2026-08-27-role-service-tenant-scope-ba-signoff.md)
-- Step 3.5 grill record (all findings resolved): [2026-08-27-role-service-tenant-scope-grill.md](2026-08-27-role-service-tenant-scope-grill.md)
-- Step 4 write-plan (9 tasks) + Step 6 completion log: [2026-08-27-role-service-tenant-scope-plan.md](2026-08-27-role-service-tenant-scope-plan.md)
-- Step 5 Ponytail: **APPROVE, all 7 criteria pass** (single run — see correction note above)
+**Action taken:** the scheduled task has been **disabled** (`enabled:false`) to stop a third collision
+from firing at the next `cron` tick while this forward-fix is in progress. Human should decide whether
+to re-enable it (and possibly widen the interval / add a mutex) once this is fully shipped.
 
-## Branch state
+**Also found:** the same rogue instance left **uncommitted** Step-8 tracking-doc edits on `main`
+(`.claude/roadmap/phase-history.md`, `roadmap/index.md`, `implementation-status-matrix.md`,
+`README.md`, `docs/index.html`) containing the same false "QA approved, clean" narrative. These were
+**stashed, not discarded** (`git stash list` — message: "leftover uncommitted Step-8 doc updates from
+the rogue duplicate pipeline run"), not committed as-is because the content is factually wrong. Redo
+these properly (with true content) at the real Step 8 of this followup.
 
-`fix/role-service-tenant-scope`, checked out. Commits:
-- `f60dbe5` — Tasks 1,2,3,5,8 (countRoleUsage/listRoles tenant-scoping, deleteRole FK catch, ADR-0019 comment fix)
-- `644b625` — docs: pipeline artifacts Steps 1-5
+**No revert of `main`** — human decision (2026-08-27): forward-fix, not revert. Rationale (from
+@qa-agent): no production tenant-scoping logic is wrong, all 4 blockers are comment/test-assertion/doc
+defects, and a revert would also unship the genuinely correct RST-1..RST-6 work.
 
-Uncommitted (Task 4/6/9 output, need committing before Step 8):
-- New: `src/backend/tests/unit/role.repository.test.ts`, `src/backend/tests/unit/role.service.test.ts`
-- Modified: `src/backend/tests/integration/roleEditor-t5f01.test.ts` (comment-only, Task 9)
-- Modified: `docs/superpowers/plans/2026-08-27-role-service-tenant-scope-plan.md` (checkboxes + corrections)
-- Modified: this HANDOFF file
+## The 4 blocking findings and their fixes (this branch)
 
-## Test results (Step 6, by @qa-agent)
+All from `docs/superpowers/plans/2026-08-27-role-service-tenant-scope-qa-signoff.md` §8.2 — read that
+section for full detail. Status: **all 4 fixed and locally verified** (tsc clean, targeted suite green
+49/49) on this branch, not yet reviewed by a fresh @db-agent/@qa-agent pass.
 
-Full backend suite: **1309/1309 passed, 0 failed, 93 suites** (main's 1295 baseline + 14 new cases).
-Three falsifiability probes run and reverted — see plan doc Task 4 section.
+1. **R2-B1** — FK inventory was wrong (claimed only 1 `onDelete: Restrict` FK on `ClinicRole`;
+   actually 2 — `UserRole.role` AND `users_roleId_fkey`/`User.roleRef`, since Prisma infers Restrict
+   from the required scalar regardless of the `?` on the relation field). Fixed: correction banners
+   added to `grill.md` G-1 and `plan.md` (Task 8, do-not-narrow-further note), plus
+   `role-tenant-fixtures.ts`'s teardown-order comment now names both FKs. The blanket `P2003` catch in
+   `role.service.ts` was already correct behavior (both FKs map to the same user-facing message) — this
+   was a documentation bug, not a code bug.
+2. **R2-B2** — an isolation-guard test titled "...counts 0..." actually asserted `1` twice and used
+   roles that weren't genuinely foreign. Fixed: added a new `unusedRoleId` fixture (zero UserRole rows
+   for any tenant) in `role.repository.test.ts` and rewrote the test to genuinely assert `0`.
+3. **R2-B3** — RST-7's replacement comment in `roleEditor-t5f01.test.ts` claimed proof the
+   `>=1` assertion couldn't supply (true both before and after the fix it was meant to prove). Fixed:
+   assertion changed to deterministic `toBe(1)` (there's exactly one admin in tenant A in that fixture),
+   comment corrected to explain why.
+4. **R2-B4** — `countRoleUsage`'s JSDoc said `tenantId` "prevents cross-tenant deletes" (copy-pasted
+   from `deleteRole`, where it's true) — backwards on `countRoleUsage`, where the tenant filter
+   *narrows* the guard, which is exactly why RST-6's `P2003` catch has to exist. Fixed: JSDoc rewritten
+   to state this explicitly and warn against removing the catch.
 
-**Note for @qa-agent at Step 7:** the plan's original Task 4 fixture spec (one legit + one drifted
-row on a single role, asserting count 0) was internally inconsistent and would fail against correct
-code. @qa-agent caught this during implementation and shipped a corrected two-role fixture
-(`sharedRoleId` + `orphanRoleId`) instead — documented in a header comment in
-`role.repository.test.ts` and in the plan doc's Task 4 section. This is not an open issue, just
-context so Step 7 doesn't re-litigate it.
+Also fixed **R2-F4** (non-blocking, same class): two stale `schema.prisma` line-number citations in
+test file header comments (off by two lines each) — trivial correction alongside the above.
+
+## Not yet done (still open, tracked, not blocking this branch)
+
+- **R2-F3** — `user.repository.ts:149` still has the exact unscoped `_count: { select: { userRoles:
+  true } }` pattern RST-5 fixed in `role.repository.ts`. Currently latent (no route reaches it), but
+  must be filed as a tracked backlog item before this ships — **not done yet, do this before Step 8**.
+- **R2-F5** — the two 409 producers (`countRoleUsage` pre-check vs. the `P2003` catch) share one
+  message/code, so a role can show `assignedUserCount: 0` yet still refuse deletion with "currently
+  assigned to users" — a dead-end message. File as backlog, not fixed here (would need a distinct
+  error message/code, out of scope for a forward-fix of documentation defects).
+- **BA backlog B-1** (`findRoleById` cross-tenant existence oracle, 403 vs ADR-0014's 404) — already
+  tracked from the original branch's BA sign-off, still open, still out of scope.
 
 ## Exact next action
 
-**@db-agent review — BA sign-off condition C-7, CLAUDE.md Critical Rule (every query must include
-`WHERE tenant_id`), and generally mandatory before any DB-touching change merges. Not yet run —
-dispatching now.** Scope: review Tasks 1, 2, 4, 5 for tenant-isolation query safety, confirm the
-`onDelete: Restrict` interaction Task 8 handles, confirm Task 3's comment wording against the live
-schema and ADR-0019.
-
-Then:
-- **Step 7 — `/code-review` + `@qa-agent` sign-off.** @qa-agent's Step 6 report explicitly withheld
-  sign-off pending this. Commit the uncommitted Task 4/6/9 files first, then run `/code-review`
-  against the full branch diff.
-- Note from @qa-agent: `npm run lint` in `src/backend` is dead on `main` (eslint not in
-  devDependencies/node_modules/.bin, no config file) — pre-existing, not caused by this branch, not a
-  Step 7 blocker.
-- **Step 8 `/anemal-finish-branch`** — PR body must cite ADR-0025 D-1, state the drift
-  characterization (DB-insertable/app-unreachable), note R2-ME-01's `listRoles` half is closed while
-  `findRoleById` (BA backlog B-1) stays open/tracked separately. Must re-verify main's backend suite
-  is still green before merge.
-- After Step 8 merges: update tracking docs per CLAUDE.md (phase-history.md, roadmap/index.md,
-  implementation-status-matrix.md, README footer, docs/index.html), move the Backlog "Actionable" row
-  for role.service/schema in phase-history.md to Resolved, delete this HANDOFF file, then call
-  `update_scheduled_task` with taskId `role-service-tenant-scope-pipeline` and `enabled:false`.
-
-## Human decisions made so far (for reference, do not re-litigate)
-
-1. Include RST-5 (listRoles cross-tenant `_count` fix) in this branch.
-2. Add the FK-violation catch in `deleteRole` (RST-6), not the accept-500 alternative.
-3. RST-6's catch is a plain `err.code === 'P2003'` check — matches codebase convention, no `meta.field_name` narrowing.
-4. RST-5's visible-number change is a silent bug fix — no release note/customer communication.
-5. Fix the stale test comment at `roleEditor-t5f01.test.ts:142` — added as RST-7.
+1. Add R2-F3 and R2-F5 to `.claude/roadmap/phase-history.md`'s Backlog → Actionable table (do this
+   before requesting review — @qa-agent's round-2 sign-off explicitly required it).
+2. `@db-agent` review of the R2-B1 FK-inventory correction (schema/FK understanding, even though no
+   `schema.prisma` structural change is made) and the R2-B2/B3/B4 test/doc fixes for tenant-isolation
+   soundness.
+3. `@qa-agent` round-3 re-review — re-run the full backend suite on a clean tree, confirm all 4
+   blockers actually closed, confirm R2-F3/F5 are tracked, formal sign-off.
+4. `/anemal-finish-branch` (Step 8) — this is a **second** PR (branch `fix/role-service-tenant-scope-
+   followup` off `main`, not the original branch). PR body must: reference this being a forward-fix for
+   PR #66's post-merge QA findings, describe the process incident briefly, cite ADR-0025 D-1 (unchanged
+   from the original), and do the real tracking-doc updates (not the stashed false ones).
+5. Once genuinely shipped: delete this HANDOFF file, and reconsider whether/how to re-enable
+   `role-service-tenant-scope-pipeline` (recommend: leave disabled, or fix the scheduled-task's
+   collision problem first — e.g. checking `git log` for signs of a very recent commit by another
+   instance before acting, or lengthening the interval).
 
 ## Backlog raised (not this branch — file separately if not already tracked)
 
@@ -86,5 +99,7 @@ Then:
 - B-2: `CodexCodeReview.md` findings have no route into `.claude/roadmap/` — triage sweep needed.
 - B-3: `error-handler.middleware.ts` has no generic `PrismaClientKnownRequestError` mapping.
 - B-4: No DB-level constraint ties `UserRole.tenantId` to its role's owning tenant.
-- New (from @qa-agent, Step 6): `npm run lint` is dead on `main` in `src/backend` (missing eslint
-  devDependency + config) — pre-existing, unrelated to this branch.
+- `npm run lint` in `src/backend` — **resolved separately**, see branch `chore/backend-eslint-setup`
+  (kept out of this feature entirely per QA round-2 R2-B3/B-3 — do not merge lint work into this PR).
+- R2-F3: `user.repository.ts:149` unscoped `_count` — latent twin of the leak RST-5 fixed, not yet filed.
+- R2-F5: dual 409-producer dead-end UX (`assignedUserCount: 0` + refused delete) — not yet filed.

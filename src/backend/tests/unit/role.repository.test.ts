@@ -12,7 +12,7 @@
  * ---------------------------------------------------------------------------
  * The "drift" fixture this file builds
  * ---------------------------------------------------------------------------
- * `UserRole.tenantId` is denormalized (schema.prisma:939) and NO composite FK ties
+ * `UserRole.tenantId` is denormalized (schema.prisma:941) and NO composite FK ties
  * it to the owning tenant of `UserRole.roleId`. So the DB happily accepts a row
  * whose `roleId` belongs to tenant A while its `tenantId` says tenant B. The app
  * cannot produce such a row today (`user.service.ts`'s
@@ -64,6 +64,8 @@ let systemStaffRoleId = 0
 let sharedRoleId = 0
 /** Custom role owned by tenant A. Holds ONLY a drifted tenant-B row — zero tenant-A rows. */
 let orphanRoleId = 0
+/** Custom role owned by tenant A. Holds NO UserRole rows at all — genuinely foreign to tenant B. */
+let unusedRoleId = 0
 
 let userAId = 0   // tenant A — legitimate holder of sharedRoleId
 let userA2Id = 0  // tenant A — holder of the system staff role (T3)
@@ -77,16 +79,20 @@ beforeAll(async () => {
   tenantBId = tenantPair.tenantBId
   systemStaffRoleId = await findSystemStaffRoleId()
 
-  const [sharedRole, orphanRole] = await Promise.all([
+  const [sharedRole, orphanRole, unusedRole] = await Promise.all([
     prisma.clinicRole.create({
       data: { tenantId: tenantAId, isSystem: false, name: `RR Shared ${STAMP}`, key: `rr_shared_${STAMP}` },
     }),
     prisma.clinicRole.create({
       data: { tenantId: tenantAId, isSystem: false, name: `RR Orphan ${STAMP}`, key: `rr_orphan_${STAMP}` },
     }),
+    prisma.clinicRole.create({
+      data: { tenantId: tenantAId, isSystem: false, name: `RR Unused ${STAMP}`, key: `rr_unused_${STAMP}` },
+    }),
   ])
   sharedRoleId = sharedRole.id
   orphanRoleId = orphanRole.id
+  unusedRoleId = unusedRole.id
 
   // Drift holders keep their PRIMARY roleId on the system staff role so that the
   // only FK referencing the tenant-A custom roles is UserRole.role (onDelete: Restrict).
@@ -177,10 +183,15 @@ describe('countRoleUsage — tenant scoping (RST-1)', () => {
   })
 
   it('a tenant with no rows at all for a foreign role counts 0 (no cross-tenant read)', async () => {
-    const count = await roleRepo.countRoleUsage(orphanRoleId, tenantBId)
-    expect(count).toBe(1) // tenant B's own drifted row
-    const foreign = await roleRepo.countRoleUsage(systemStaffRoleId, tenantAId)
-    expect(foreign).toBe(1) // only tenant A's own staff assignment, never tenant B's
+    // Fixed 2026-08-27 (QA round 2, R2-B2): the original version of this test used
+    // orphanRoleId/systemStaffRoleId, both of which DO have a UserRole row for the
+    // tenant being queried — it asserted 1 twice under a title that says 0, and
+    // exercised neither "no rows at all" nor a truly foreign role. unusedRoleId has
+    // zero UserRole rows for ANY tenant, so this now genuinely tests the stated case.
+    const count = await roleRepo.countRoleUsage(unusedRoleId, tenantBId)
+    expect(count).toBe(0)
+    const sameTenant = await roleRepo.countRoleUsage(unusedRoleId, tenantAId)
+    expect(sameTenant).toBe(0) // also unused for its own owning tenant — sanity check
   })
 })
 

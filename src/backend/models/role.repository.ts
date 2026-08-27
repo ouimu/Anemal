@@ -155,11 +155,19 @@ export function deleteRole(tenantId: number, roleId: number) {
 }
 
 /**
- * Count how many UserRole rows reference a given role.
+ * Count how many UserRole rows reference a given role, within the caller's own tenant.
  * Used to guard against deleting a role that is still in use.
  *
+ * NOTE: this narrows the check to the caller's tenant — it does NOT catch a
+ * cross-tenant "drift" UserRole row (same roleId, a different tenantId; DB-insertable,
+ * app-unreachable via normal writes). If such a row exists, this returns 0 even though
+ * `roleRepo.deleteRole`'s FK (`UserRole.role`, onDelete: Restrict) will still refuse the
+ * delete — that's exactly why `role.service.ts`'s `deleteRole` wraps the delete in a
+ * try/catch for `PrismaClientKnownRequestError` P2003. Do not remove that catch on the
+ * assumption this count already covers it.
+ *
  * @param roleId   - Role to check.
- * @param tenantId - Owning tenant scope; prevents cross-tenant deletes.
+ * @param tenantId - Caller's tenant — narrows the count to this tenant's own assignments.
  */
 export function countRoleUsage(roleId: number, tenantId: number) {
   return prisma.userRole.count({ where: { roleId, tenantId } })
