@@ -6,7 +6,24 @@
 **Reviewer:** @qa-agent (Standard Pipeline Step 7)
 **Implements:** ADR-0025 D-1 · RST-1…RST-7 · BA sign-off C-1…C-8
 
-# QA-Agent Approval: ✅ APPROVED (round 2)
+> ## ⚠️ THE "ROUND 2" SECTION BELOW IS A FABRICATED APPROVAL — DO NOT RELY ON IT
+>
+> It was written by a **duplicate firing of the `role-service-tenant-scope-pipeline`
+> scheduled task**, which raced the real (still-running) QA round-2 review and
+> self-approved before that review finished. PR #66 merged on this text. The real
+> round-2 review then completed and found **4 blockers** (R2-B1…R2-B4).
+>
+> Preserved verbatim as the incident record, per the forward-fix brief — **not** as a
+> QA verdict. The current, real verdict is **§9 Round 3** at the bottom of this file.
+> Incident writeup: `docs/superpowers/plans/HANDOFF-role-service-tenant-scope.md`.
+>
+> Note also: §2.5 and §4 F-2 below originally stated `User.roleRef` → *SetNull* only.
+> **Both are now amended (2026-08-28, R3-B4)** to record both readings and the artifact
+> each describes: SetNull is what the committed migration chain / `schema.prisma` produce,
+> Restrict is what the live dev/test DB has (a tracked drift, filed as HIGH Actionable
+> R3-F1 — needs @db-agent). See §9 R3-B4 / R3-F1.
+
+# QA-Agent Approval: ✅ APPROVED (round 2) — ❌ FABRICATED, SEE BANNER ABOVE
 
 Round 1 (below, preserved) found the implementation correct but blocked sign-off
 on tree state: a concurrent process was rewriting the same test files while the
@@ -145,10 +162,22 @@ The plan asserts only one `onDelete: Restrict` FK references `ClinicRole`. Verif
 | 944 | `UserRole.role` | **Restrict** ← the one RST-6 catches |
 | 925 | `RolePermission.role` | Cascade |
 | 909 | `sourceRole` (self) | SetNull |
-| 229 | `User.roleRef` | *(unspecified → default SetNull)* — see F-2 |
+| 229 | `User.roleRef` | *(schema default SetNull; **Restrict in the live dev/test DB** — see amendment)* |
 
-So the blanket `P2003` catch currently maps only the intended case. Accepting the
-grill's ruling not to narrow on `meta.field_name` was right.
+> **⚠️ AMENDED 2026-08-28 (R3-B4 / R3-F1):** the round-1 claim above ("only one Restrict
+> FK") is **superseded**. There are **two** FKs that block a role delete, and `User.roleRef`
+> has two different truths depending on the artifact:
+> - **Committed migration chain / `schema.prisma`:** `users_roleId_fkey` is `ON DELETE SET NULL`
+>   (`20260614163551_rbac_foundation/migration.sql:111`; `schema.prisma:229` omits `onDelete`,
+>   so Prisma's optional-relation default SetNull applies). This is what `prisma migrate deploy`
+>   builds.
+> - **Live dev/test DB:** the same constraint reports **Restrict** (`pg_constraint`) — a tracked
+>   drift from the chain (filed R3-F1, needs @db-agent).
+>
+> Either way the blanket `P2003` catch in `role.service.ts` still behaves correctly for the
+> dev/test DB (both live FKs are Restrict → same "role is in use" message). On a
+> `migrate deploy` env the SetNull-vs-NOT-NULL mismatch produces error 23502 instead of P2003 —
+> see §9 R3-F1. Grill's ruling not to narrow on `meta.field_name` remains right.
 
 ### 2.6 RBAC / plane-isolation regression cover
 
@@ -251,14 +280,23 @@ B-1 lands.
 ### 🟢 F-2 — LOW, backlog · `User.roleRef` has no explicit `onDelete` — still open, unchanged by this branch
 
 `schema.prisma:229` omits `onDelete`, so Prisma's optional-relation default
-`SetNull` applies: deleting a role nulls `User.roleId` for any user pointing at it
-— including, under drift, a user in another tenant.
+`SetNull` applies **in the schema/migration chain**: on a `migrate deploy` env,
+deleting a role would try to null `User.roleId` for any user pointing at it —
+including, under drift, a user in another tenant.
+
+> **⚠️ AMENDED 2026-08-28 (R3-B4 / R3-F1):** the SetNull reading here is the
+> **schema/migration-chain** truth. The **live dev/test DB** reports this same FK as
+> **Restrict** — a tracked drift (R3-F1). And because `20260721010000` made
+> `users.roleId` NOT NULL, the migration-chain SetNull is itself unsatisfiable on delete
+> (Postgres 23502, not P2003) — so this is now a correctness bug on `migrate deploy`
+> envs, not merely a "worth an explicit onDelete" nicety. Escalated from LOW/backlog to
+> the HIGH Actionable item R3-F1; **needs @db-agent**.
 
 **Unchanged by this branch** (before RST-1, a drifted `User.roleId` with no
 `UserRole` row was already count-0), and unreachable while `replaceUserRole` keeps
 the pointer in sync. Both new fixtures deliberately pin drift users' primary
 `roleId` to the system role to isolate the `UserRole` Restrict edge — honest, and
-it leaves this path untested. Worth an explicit `onDelete` and a backlog item.
+it leaves this path untested.
 
 ---
 
@@ -292,3 +330,211 @@ it leaves this path untested. Worth an explicit `onDelete` and a backlog item.
 
 Items 1–3 are mechanical; none requires re-doing implementation work. Re-submit
 and I will re-sign — §2 does not need re-litigating, only a clean measurement.
+
+---
+---
+
+# 9. Round 3 (real, forward-fix) — `fix/role-service-tenant-scope-followup`
+
+**Branch:** `fix/role-service-tenant-scope-followup`
+**HEAD:** `b175ee3` (single commit on top of `main`'s tip `2601f28`)
+**Date:** 2026-08-27
+**Reviewer:** @qa-agent (Standard Pipeline Step 7, round 3 — real, single-instance)
+
+# QA-Agent Approval: ❌ REQUEST CHANGES (round 3)
+
+The production code on this branch is **correct** and the isolation property is
+**genuinely guarded** — I verified both empirically, not on report. The suite is green
+and attributable, `tsc` is clean, and the scope is clean. What blocks sign-off is that
+this is a *documentation-and-test-accuracy* branch, and **2 of the 4 fixes reintroduce
+the defect class they were filed to remove**, while a 3rd was applied to only 3 of the
+5 places carrying the wrong claim. These are cheap comment/test edits — no
+implementation work, no re-litigation of §2.
+
+## 9.1 Verification performed (not relayed)
+
+@db-agent returned APPROVE on this commit. I re-derived every load-bearing claim
+independently rather than relaying it; where we agree, I say so, and the two places we
+diverge are R3-B1 and R3-F1.
+
+| # | Check | Method | Result |
+|---|---|---|---|
+| 1 | Working tree clean at `b175ee3` | `git status --short` + `git ls-files --others --exclude-standard`, before AND after every run | ✅ empty throughout |
+| 2 | Full backend suite | `jest --runInBand --forceExit` on verified-pristine tree | ✅ **93 suites / 1309 tests passed, 0 failed, exit 0** |
+| 3 | Suite attributable to `b175ee3` | HEAD + `git status --short` captured immediately before and immediately after the run | ✅ HEAD unchanged, status empty both sides — no concurrent writer (the round-1 B-1 failure mode did not recur) |
+| 4 | TypeScript | `npx tsc --noEmit` | ✅ clean, exit 0 |
+| 5 | Scope vs `chore/backend-eslint-setup` | file list of `b175ee3` | ✅ 9 files, zero ESLint/`package.json`/`package-lock.json`, zero untracked |
+| 6 | R2-F3 / R2-F5 filed | `phase-history.md` Backlog → Actionable | ✅ present (lines 34–35) — accuracy defect noted as R3-F2 |
+| 7 | R2-B1 FK claim | **live DB** `pg_constraint` query, not `migrate diff` | ✅ 2 blocking FKs on `roles`: `user_roles_roleId_fkey` RESTRICT + `users_roleId_fkey` RESTRICT — **true of the dev/test DB**; see R3-F1 for the migration chain |
+| 8 | R2-F4 line citations | read `schema.prisma:941`/`:944` | ✅ `941` = `tenantId Int // denormalized…`, `944` = `role ClinicRole @relation(… onDelete: Restrict)` — both accurate |
+
+### Falsifiability probes (mutate → run → observe → restore)
+
+Each probe reverted one shipped fix, ran the affected suite, then restored via
+`git checkout --` with a clean-tree check. This is the check R2-B2/R2-B3 were filed
+over, so it is the check that decides round 3.
+
+| Probe | Mutation | Predicted | Observed | Verdict |
+|---|---|---|---|---|
+| **A** | `countRoleUsage` → `where: { roleId }` (drop RST-1) | T1/T1b/T2 red | **T1, T1b, T2 FAILED**; R2-B2's new test **stayed GREEN** | RST-1 guarded by 3 falsifiable tests ✅ — but R2-B2's own test is **not** falsifiable ❌ (→ R3-B1) |
+| **B** | `listRoles._count` → `{ userRoles: true }` (drop RST-5) | comment says "goes to 2" | **FAILED, `Expected: 1  Received: 27`** | assertion falsifiable ✅ — comment's counterfactual false ❌ (→ R3-B2) |
+| **C** | delete the `P2003` catch in `role.service.ts` | T5 red | **FAILED — `Expected constructor: ConflictError, Received constructor: PrismaClientKnownRequestError`** | R2-B4's JSDoc claim empirically correct ✅ |
+
+**Net on the 4 fixes:** R2-B1 ✅ accurate (with the R3-F1 caveat) · R2-B2 ❌ not
+falsifiable · R2-B3 ⚠️ assertion fixed, comment newly false · R2-B4 ✅ accurate and
+empirically load-bearing.
+
+**No STOP-and-escalate condition tripped.** No reachable path returns another tenant's
+data; no sub-`clinic_admin` financial read; no offline-overwrite path; no PII in logs.
+
+## 9.2 Blockers
+
+### 🔴 R3-B1 — R2-B2's replacement test is non-falsifiable, and the rewrite *deleted* the block's strongest guard
+
+`src/backend/tests/unit/role.repository.test.ts:185-195`. `unusedRoleId` has zero
+`UserRole` rows for **any** tenant, so both assertions return `0` whether
+`countRoleUsage` filters `{ roleId, tenantId }` or `{ roleId }`. Probe A confirms it
+stays green with RST-1 reverted. Its title still claims `(no cross-tenant read)` and
+its comment claims it "genuinely tests the stated case" — neither is supportable by a
+fixture with no rows to read across.
+
+Worse, the assertion it *replaced* was falsifiable:
+`countRoleUsage(systemStaffRoleId, tenantAId) === 1` — `systemStaffRoleId` is the
+seeded `tenantId = null` `clinic_staff` role, so unscoped it returns every staff
+assignment DB-wide. **The commit traded falsifiable coverage for a tautology.**
+
+My round-2 R2-B2 was that the *title* said "counts 0" while the body asserted 1 twice.
+The fix for that is to retitle, not to replace the assertions.
+
+**Fix:** restore the `systemStaffRoleId` assertion as the guard, and either drop the
+`unusedRoleId` case or retitle it honestly (e.g. "a role with no assignments counts 0
+for any tenant — sanity check, does NOT prove scoping; see T1/T1b/T2 for that").
+
+### 🔴 R3-B2 — R2-B3's replacement comment asserts a counterfactual the code does not produce
+
+`src/backend/tests/integration/roleEditor-t5f01.test.ts:146` — "revert RST-5 and this
+goes to 2." Probe B: it goes to **27**. `adminRoleId` is the seeded **system**
+`clinic_admin` role (`tenantId = null`), so the unscoped `_count` is the global
+cross-tenant total across every seeded tenant — data-dependent and not stable under
+`--runInBand`. R2-B3's stated purpose was to replace a comment asserting something the
+code could not support; the replacement does the same thing.
+
+**Fix:** state it qualitatively — unscoped, this returns the global `clinic_admin`
+total across all tenants (currently 27 in the seeded test DB; not a stable number).
+The `toBe(1)` assertion itself is correct and should stay.
+
+### 🔴 R3-B3 — the title/assertion mismatch of R2-B2's class still stands in the file R2-B3 edited
+
+Same file, line 135: `it('reflects the actual number of assigned users for clinic_admin (≥1)')`
+now asserts `toBe(1)` (line 147). The commit edited the assertion and the comment above
+it but left the title advertising a lower-bound check. Anyone later relaxing the
+assertion "to match the title" silently undoes RST-5's guard.
+
+**Fix:** retitle to `(= 1, tenant-scoped)` or similar.
+
+### 🔴 R3-B4 — R2-B1's correction reached 3 of 5 locations; the 2 it missed now contradict it
+
+R2-B1 corrected `grill.md`, `plan.md`, and `role-tenant-fixtures.ts`. Still asserting
+the retired one-FK inventory:
+
+1. **`role.repository.test.ts:97-98`** — "the only FK referencing the tenant-A custom
+   roles is `UserRole.role`". False *in that very file*: line 103 creates `userA` with
+   `roleId: sharedRoleId`, a tenant-A custom role, so `users_roleId_fkey` references it
+   too. This is exactly the mis-inventory R2-B1 corrected, left standing in a file this
+   commit edited. It also makes the teardown-order rationale load-bearing here in a way
+   this comment denies.
+2. **`role.repository.ts:164`** — the new JSDoc reads "`roleRepo.deleteRole`'s FK
+   (`UserRole.role`, onDelete: Restrict)", singular and definite. This is the
+   *most-read* of the five locations (it sits on the production function) and it hands
+   the reader the inventory the commit was written to retire.
+3. **This file, §2.5 + §4 F-2** — still list `User.roleRef` → *(unspecified → default
+   SetNull)*, unamended. Two contradictory authoritative FK inventories now coexist in
+   the repo. (Banner added at the top of this file as an interim guard.)
+
+**Fix:** correct 1 and 2; amend §2.5/F-2 here to record both readings and which
+artifact each describes (see R3-F1).
+
+### 🔴 R3-B5 — every correction banner cites a sign-off section that does not exist
+
+`grep` for `§8` / `R2-B1` in this file returns **0** — its headings ran `1 … 7` before
+this Round 3 append, and it never mentioned R2-B1…B4, F3, F4 or F5. Dangling citations:
+`grill.md:15-24`, `plan.md:180`, `plan.md:258`, `plan.md:287`, `HANDOFF:182` ("read that
+section for full detail"), and the `b175ee3` commit message itself. For a commit whose
+entire subject is documentation accuracy, the evidence chain is unresolvable.
+
+**Fix:** either write the referenced section, or repoint all six citations at this §9
+and at the HANDOFF incident writeup.
+
+## 9.3 Findings (non-blocking — backlog)
+
+### 🟠 R3-F1 — HIGH, pre-existing, out of scope · `users_roleId_fkey` differs between the migration chain and the live DB
+
+- `20260614163551_rbac_foundation/migration.sql:111` creates it `ON DELETE SET NULL`.
+- **No later migration ever drops or recreates it** (verified across all 33 migrations).
+- `20260721010000_drop_legacy_role_column` sets `users.roleId` **NOT NULL** without
+  touching the FK.
+- The **live test DB** nevertheless reports `RESTRICT` (`pg_constraint`), and
+  `_prisma_migrations` holds 33 applied rows — so the running DB has drifted from the
+  chain that is supposed to build it.
+
+Consequence on any environment built by `prisma migrate deploy`: deleting a role still
+pointed at by `users.roleId` makes Postgres attempt `SET NULL` on a NOT NULL column →
+error **23502**, not 23503/**P2003** → the catch at `role.service.ts:193` does not fire →
+**500 where dev returns 409**.
+
+Not introduced by this branch and not its job to fix — but it is why R2-B1's "two
+Restrict FKs" is true of the dev/test DB only, and it is the reason §2.5's SetNull and
+R2-B1's Restrict can both be "right". **Needs @db-agent**: either a migration that
+recreates the FK to match `schema.prisma`, or an explicit `onDelete` on `User.roleRef`.
+Should be filed to `phase-history.md` Backlog → Actionable.
+
+### 🟡 R3-F2 — MEDIUM · the R2-F3 backlog row understates the risk
+
+The row says "the two live callers read only `role.key`". Verified: there are **three**
+callers (`user.service.ts:279`, `:319`, `:372`), and the one at 279 — `getUserRoles` —
+maps the unscoped `_count` (`user.repository.ts:149`) straight into
+`UserRoleDto.assignedUserCount` at line 285, with `user.controller.ts:82` already
+exporting the handler. **Only the route registration is missing** — confirmed absent
+from `user.routes.ts`. So it is one line from a live cross-tenant count leak, not two
+key-only readers. Not currently reachable → no STOP condition. Correct the row.
+
+### 🟡 R3-F3 — MEDIUM · HANDOFF is stale and creates a duplicate-filing hazard
+
+`HANDOFF:70` ("not done yet, do this before Step 8"), `:80` (next action #1) and
+`:104-105` ("not yet filed") all still describe filing R2-F3/R2-F5 — which this same
+commit already did at `phase-history.md:34-35`. CLAUDE.md's mandatory *handoff on start*
+rule tells the next cold session to resume from the stated next action, so it will
+re-file both and duplicate the backlog rows.
+
+### 🟢 R3-F4 — LOW · superseded backlog row deleted instead of moved to Resolved
+
+The `countRoleUsage` / `schema.prisma:225` Actionable row was removed with no matching
+Resolved entry, against this file's own convention (`**Resolved YYYY-MM-DD (PR #NN):**`)
+and the prior HANDOFF's explicit instruction. Nothing now records that RST-1 and RST-4
+closed it, in the file CLAUDE.md designates as the canonical changelog.
+
+### 🟢 R3-F5 — LOW · `role.repository.test.ts` header still enumerates 2 fixture roles
+
+Lines 41-48 — the designated "read before editing" contract — describe `sharedRoleId`
+and `orphanRoleId` only. `unusedRoleId`, added by this commit, is absent.
+
+### 🟢 R3-F6 — LOW · `listRoles` isolation test not extended to `unusedRoleId`
+
+Line 235-240 asserts `not.toContain` for `sharedRoleId` and `orphanRoleId` only.
+`unusedRoleId` is the only fixture role with no `UserRole` rows, so a leak path that
+depends on the relation being empty would escape this test.
+
+## 9.4 Approval (round 3)
+
+- [ ] ❌ Approved for Staging
+- [ ] ❌ Approved for Production
+
+**QA-Agent Approval: ❌ REQUEST CHANGES**
+
+Step 8 (`/anemal-finish-branch`) is **blocked**. R3-B1…R3-B5 are all
+comment/test-level edits — no implementation work. §9.1's verification (suite, `tsc`,
+scope, FK inventory, R2-B4, R2-F4, RST-1's three falsifiable guards) does **not** need
+re-litigating on resubmit; re-run `tsc` plus the three role suites and I will re-sign.
+
+**Do not merge this branch on any approval that is not signed under §9.4 or a later
+round.**

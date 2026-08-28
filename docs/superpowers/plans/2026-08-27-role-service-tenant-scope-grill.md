@@ -21,7 +21,10 @@ and [2026-08-27-role-service-tenant-scope-ba-signoff.md](2026-08-27-role-service
 > to the same user-facing "role is in use" message, so the blanket `P2003` catch still
 > behaves correctly — but the reasoning that produced it was based on an incomplete
 > inventory. Do not cite "only one Restrict FK" from this section again; see the QA
-> sign-off doc §8.2 R2-B1 for the corrected inventory.
+> sign-off doc **§9 (R3-B4 / R3-F1)** and the HANDOFF incident writeup for the corrected
+> inventory. Caveat (R3-F1): `users_roleId_fkey` is RESTRICT in the live dev/test DB but
+> SET NULL in the committed migration chain — a tracked drift; either reading still
+> refuses the delete, so "safe today" holds.
 
 **Raised:** RST-6 (as drafted by @pm-agent) caught `PrismaClientKnownRequestError` code `P2003`
 unconditionally, with no check on *which* FK/relation triggered it. Confirmed via schema read

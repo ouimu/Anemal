@@ -46,6 +46,10 @@
  *      asked for, and it is also the fixture that makes RST-6's P2003 catch
  *      load-bearing (count says 0, the FK still says Restrict — see
  *      tests/unit/role.service.test.ts T5).
+ *   - `unusedRoleId` — owned by tenant A, NO UserRole rows for any tenant. This is an
+ *      empty-relation base case only; it is NOT a scoping guard (0 either way). The
+ *      falsifiable scoping guards are T1/T1b/T2 and T2b (the last uses the shared
+ *      system staff role, whose unscoped count is the DB-wide staff total).
  */
 
 import prisma from '../../config/db'
@@ -94,8 +98,12 @@ beforeAll(async () => {
   orphanRoleId = orphanRole.id
   unusedRoleId = unusedRole.id
 
-  // Drift holders keep their PRIMARY roleId on the system staff role so that the
-  // only FK referencing the tenant-A custom roles is UserRole.role (onDelete: Restrict).
+  // Drift holders keep their PRIMARY roleId on the system staff role. Note this does
+  // NOT leave UserRole.role as the sole FK onto the tenant-A custom roles: userA below
+  // is created with roleId = sharedRoleId, so users_roleId_fkey (User.roleRef) also
+  // references it. Both FKs are onDelete: Restrict in the live dev/test DB (see the
+  // qa-signoff §9 R3-B4/R3-F1 note on the migration-chain vs live-DB drift), so the
+  // teardown order in role-tenant-fixtures.ts is load-bearing for both.
   const [userA, userA2, userB, userB2, userB3] = await Promise.all([
     prisma.user.create({
       data: {
@@ -182,16 +190,27 @@ describe('countRoleUsage — tenant scoping (RST-1)', () => {
     expect(count).toBe(1)
   })
 
-  it('a tenant with no rows at all for a foreign role counts 0 (no cross-tenant read)', async () => {
-    // Fixed 2026-08-27 (QA round 2, R2-B2): the original version of this test used
-    // orphanRoleId/systemStaffRoleId, both of which DO have a UserRole row for the
-    // tenant being queried — it asserted 1 twice under a title that says 0, and
-    // exercised neither "no rows at all" nor a truly foreign role. unusedRoleId has
-    // zero UserRole rows for ANY tenant, so this now genuinely tests the stated case.
+  it('T2b: a system role held across many tenants counts only the caller tenant\'s holders', async () => {
+    // Restored as the block's falsifiable guard (QA round 3, R3-B1). systemStaffRoleId is
+    // the seeded clinic_staff role (tenantId = null), held by userA2 in tenant A, userB3
+    // in tenant B, AND every seeded staff user in every other tenant. Scoped to tenant A
+    // the count is exactly its own holder (1). Unscoped (`where: { roleId }`) it is the
+    // DB-wide staff-assignment total — far more than 1 — so this goes RED the instant
+    // RST-1 is reverted. THIS is the real cross-tenant-read guard for countRoleUsage.
+    const count = await roleRepo.countRoleUsage(systemStaffRoleId, tenantAId)
+    expect(count).toBe(1)
+  })
+
+  it('a role with no assignments counts 0 for any tenant — sanity check, does NOT prove scoping (see T1/T1b/T2)', async () => {
+    // R3-B1 (QA round 3): the R2-B2 rewrite that lived here was non-falsifiable — it
+    // stayed green with RST-1 reverted (see Probe A) because unusedRoleId has zero
+    // UserRole rows for ANY tenant, so both counts are 0 whether or not the query filters
+    // by tenantId. Kept only as the empty-relation base case; it does NOT prove tenant
+    // scoping. The falsifiable scoping guards are T1/T1b/T2 and T2b above.
     const count = await roleRepo.countRoleUsage(unusedRoleId, tenantBId)
     expect(count).toBe(0)
     const sameTenant = await roleRepo.countRoleUsage(unusedRoleId, tenantAId)
-    expect(sameTenant).toBe(0) // also unused for its own owning tenant — sanity check
+    expect(sameTenant).toBe(0)
   })
 })
 
@@ -237,5 +256,8 @@ describe('listRoles — _count.userRoles tenant scoping (RST-5)', () => {
     const ids = rolesForB.map(r => r.id)
     expect(ids).not.toContain(sharedRoleId)
     expect(ids).not.toContain(orphanRoleId)
+    // unusedRoleId is the only tenant-A custom role with no UserRole rows — a leak path
+    // that depends on the relation being empty would escape the two checks above (R3-F6).
+    expect(ids).not.toContain(unusedRoleId)
   })
 })

@@ -161,10 +161,13 @@ export function deleteRole(tenantId: number, roleId: number) {
  * NOTE: this narrows the check to the caller's tenant — it does NOT catch a
  * cross-tenant "drift" UserRole row (same roleId, a different tenantId; DB-insertable,
  * app-unreachable via normal writes). If such a row exists, this returns 0 even though
- * `roleRepo.deleteRole`'s FK (`UserRole.role`, onDelete: Restrict) will still refuse the
- * delete — that's exactly why `role.service.ts`'s `deleteRole` wraps the delete in a
- * try/catch for `PrismaClientKnownRequestError` P2003. Do not remove that catch on the
- * assumption this count already covers it.
+ * the FKs onto `roles` will still refuse `roleRepo.deleteRole`. Two FKs reference a
+ * role, BOTH onDelete: Restrict in the live dev/test DB: `user_roles_roleId_fkey`
+ * (UserRole.role) and `users_roleId_fkey` (User.roleRef). (The migration chain declares
+ * the latter SET NULL and it has drifted to Restrict in the running DB — see qa-signoff
+ * §9 R3-F1; either way the delete is refused.) That is exactly why `role.service.ts`'s
+ * `deleteRole` wraps the delete in a try/catch for `PrismaClientKnownRequestError` P2003.
+ * Do not remove that catch on the assumption this count already covers it.
  *
  * @param roleId   - Role to check.
  * @param tenantId - Caller's tenant — narrows the count to this tenant's own assignments.

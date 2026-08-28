@@ -132,18 +132,21 @@ describe('AC-1 GET /clinic/roles — assignedUserCount', () => {
     }
   })
 
-  it('reflects the actual number of assigned users for clinic_admin (≥1)', async () => {
+  it('reflects the actual number of assigned users for clinic_admin (= 1, tenant-scoped)', async () => {
     const res = await request(server)
       .get('/clinic/roles')
       .set('Authorization', `Bearer ${adminToken}`)
     const adminRoleRow = (res.body.data as Array<{ id: number; assignedUserCount: number }>)
       .find(r => r.id === adminRoleId)
     expect(adminRoleRow).toBeDefined()
-    // Admin A and Admin B hold the same system role in different tenants (only Admin A
-    // in tenant A). After RST-5, listRoles's _count is scoped to the caller's own
-    // tenant, so this is a deterministic 1, not merely ">=1" — the old ">=1" form
-    // passed both before and after RST-5's fix (2 or 1, either satisfies >=1) and so
-    // proved nothing. toBe(1) is falsifiable: revert RST-5 and this goes to 2.
+    // adminRoleId is the seeded SYSTEM clinic_admin role (tenantId = null), held by an
+    // admin in every seeded tenant. After RST-5, listRoles's _count is scoped to the
+    // caller's own tenant, so tenant A sees exactly its own holder: a deterministic 1,
+    // not merely ">=1" (the old ">=1" form passed before AND after the fix and so proved
+    // nothing). toBe(1) is falsifiable: revert RST-5 and the unscoped `_count` returns
+    // the GLOBAL clinic_admin total across all tenants — currently ~27 in the seeded
+    // test DB, not a stable number, but always > 1. Do NOT relax this to match a "≥1"
+    // title (see the retitle) — that would silently undo RST-5's tenant scoping.
     expect(adminRoleRow!.assignedUserCount).toBe(1)
   })
 })

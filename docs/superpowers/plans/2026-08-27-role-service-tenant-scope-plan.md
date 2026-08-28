@@ -176,8 +176,11 @@ correctly returns `1`, not `0`. The actual fixture uses **two** tenant-A-owned c
       ⚠️ **Corrected 2026-08-27 (QA round 2, R2-B2):** the original version of this test used
       `orphanRoleId`/`systemStaffRoleId`, both of which have a UserRole row for the tenant being
       queried — it asserted `1` twice under a title that says `0`, certifying coverage that did not
-      exist. Fixed to use a new `unusedRoleId` (zero UserRole rows for any tenant), now genuinely
-      asserting `0`. See QA sign-off §8.2 R2-B2.
+      exist. Fixed to use a new `unusedRoleId` (zero UserRole rows for any tenant). **Superseded by
+      R3-B1:** `unusedRoleId` counts `0` whether or not the query is tenant-scoped, so that test is
+      only an empty-relation base case, not a scoping guard; the falsifiable countRoleUsage guard is
+      now `T2b` (shared system staff role, DB-wide unscoped count). See QA sign-off **§9 (R3-B1)** and
+      the HANDOFF incident writeup.
 - [x] `afterAll` cleanup in child-before-parent order (`userRole` both tenants → `user` →
       `clinicRole` → `tenant`) — implemented exactly as originally specified
 - [x] **Falsifiability checks — three probes run, all confirmed red, all reverted (`git diff`
@@ -255,7 +258,9 @@ parallel, but land in the same PR)
       (the FK scalar `User.roleId` is required, so Prisma emits Restrict regardless of the `?` on the
       relation field). Two Restrict FKs reference `ClinicRole`, both map to the same user-facing
       "role is in use" message, so the blanket catch is still correct — but on the actual inventory,
-      not the wrong one. See the grill doc's G-1 correction and the QA sign-off §8.2 R2-B1.
+      not the wrong one. See the grill doc's G-1 correction and the QA sign-off **§9 (R3-B4 / R3-F1)**.
+      Caveat (R3-F1): the two-Restrict-FK inventory is true of the live dev/test DB; the committed
+      migration chain declares `users_roleId_fkey` SET NULL — a tracked drift.
 
 **Verify (implemented in `src/backend/tests/unit/role.service.test.ts`):**
 - [x] **T5 (load-bearing):** drift fixture (`orphanRoleId`, count 0 but FK still Restrict) →
@@ -284,7 +289,9 @@ baseline confirmed green first)
 since `>=1` passes both before RST-5 (value 2) and after (value 1). RST-7's entire purpose was
 comment accuracy and it did not pass. Fixed: assertion changed to the deterministic `toBe(1)`
 (falsifiable — reverting RST-5 now flips this test red), comment corrected to explain why `toBe(1)`
-rather than `>=1`. See QA sign-off §8.2 R2-B3.
+rather than `>=1`. **Refined by R3-B2/R3-B3:** the title was still worded `(≥1)` and the comment
+claimed the unscoped value "goes to 2" (it goes to ~27 — the global clinic_admin total); both fixed.
+See QA sign-off **§9 (R3-B2 / R3-B3)** and the HANDOFF incident writeup.
 
 **Verify:**
 - [x] Re-run: `roleEditor-t5f01.test.ts` still passes (with the corrected `toBe(1)` assertion).
