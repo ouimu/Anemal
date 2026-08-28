@@ -1,10 +1,13 @@
 # HANDOFF — role-service-tenant-scope
 
 **Current step:** Step 7 (QA re-review) on `fix/role-service-tenant-scope-followup` (branched from
-`main`). The QA **round-3** review ran and issued **REQUEST CHANGES** with 5 blockers (R3-B1…R3-B5,
-all comment/test/doc edits — zero implementation work). Those 5 blockers are **now fixed on the branch**
-and about to be committed together with the round-3 sign-off (§9) and the backlog filings.
-**Status:** No human decision pending. Next is a QA round-3 **re-sign** on the amended tree, then Step 8.
+`main`). The QA **round-3** review issued **REQUEST CHANGES** with 5 blockers (R3-B1…R3-B5, all
+comment/test/doc edits — zero implementation work). Those 5 blockers are **fixed and committed** on the
+branch as **`bf1360d`** (on top of `b175ee3`), together with the round-3 sign-off (§9) and the R3-F1…F6
+backlog filings. `tsc` clean; three role suites 31/31 green `--runInBand`; Probe A this run confirmed the
+new falsifiable guard **T2b** goes RED when RST-1 is reverted.
+**Status:** No human decision pending. **Next: QA round-3 re-sign** (@qa-agent, bounded per §9.4) on the
+committed tree, then Step 8. The branch is still LOCAL-ONLY — not pushed, not merged.
 
 ## 🚨 Process incident (2026-08-27) — read this first
 
@@ -70,9 +73,8 @@ tenant-isolation property genuinely guarded (empirically, via falsifiability pro
 
 ## Exact next action
 
-1. **Commit** the round-3 fixes + §9 sign-off + backlog edits onto `fix/role-service-tenant-scope-followup`
-   (this run does this).
-2. **`@qa-agent` round-3 re-sign** (Step 7): on a VERIFIED-CLEAN tree (`git status --short` empty before
+1. ~~**Commit** the round-3 fixes + §9 sign-off + backlog edits~~ — **DONE** as `bf1360d`.
+2. **`@qa-agent` round-3 re-sign** (Step 7) — **THIS IS THE NEXT ACTION**: on a VERIFIED-CLEAN tree (`git status --short` empty before
    AND after), run `npx tsc --noEmit` + the three role suites (`role.repository.test.ts`,
    `role.service.test.ts`, `roleEditor-t5f01.test.ts`) via `jest --runInBand`, and confirm R3-B1…R3-B5
    closed — re-run Probe A (revert RST-1 → the restored **T2b** `systemStaffRoleId` assertion must go
