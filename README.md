@@ -133,4 +133,4 @@ Full phase changelog (test counts, PR/ADR mapping) and current status: [`.claude
 
 ---
 
-*Last updated: 2026-08-27 — backend 1309 passing / 0 failing / 93 suites, frontend 410 passing / 60 files. PR #67 installed eslint for the backend (`npm run lint` now 0 errors / 1 warning); PR #66 tenant-scoped `countRoleUsage`/`listRoles`. See `.claude/roadmap/phase-history.md`. Next: Phase 10/11 (credential-gated).*
+*Last updated: 2026-08-29 — backend 1310 passing / 0 failing / 93 suites, frontend 410 passing / 60 files. PR #69 closed out the PR #66 tenant-scope follow-up (QA round-2/3 blockers, all doc/test defects, restored a falsifiable isolation guard) and its fabricated-approval incident record. See `.claude/roadmap/phase-history.md`. Next: Phase 10/11 (credential-gated).*
