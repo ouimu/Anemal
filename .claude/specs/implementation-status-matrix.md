@@ -1,7 +1,15 @@
 # Anemal — Implementation Status Matrix
 
-**Updated:** 2026-08-26
-**Status:** All modules shipped through Phase 9 + storage (ADR-0023) + Codex security remediation + login identity resolution (ADR-0024) remain implemented and unchanged. The latest pass (PR #62, ADR-0026) is frontend-only authorization-UI work and moved no module's status: a permission denial is now recoverable in-shell, nav hides what the user cannot open (cosmetically, never as enforcement), and a permission refresh that could not resolve is no longer reported as "no permissions". The 2026-08-21 pass before it was test-suite repair only (PRs #57, #59, #56), with one real production fix (ADR-0025).
+**Updated:** 2026-08-27
+**Status:** All modules shipped through Phase 9 + storage (ADR-0023) + Codex security remediation + login identity resolution (ADR-0024) remain implemented and unchanged. PR #67 (2026-08-27) is a backend tooling-only change — installs eslint (was declared but never installed), no module status moved. PR #66 (2026-08-27) tenant-scopes `countRoleUsage`/`listRoles` in `role.repository.ts`/`role.service.ts`, a defence-in-depth fix (callers already enforced tenant checks upstream). The pass before that (PR #62, ADR-0026) is frontend-only authorization-UI work and moved no module's status: a permission denial is now recoverable in-shell, nav hides what the user cannot open (cosmetically, never as enforcement), and a permission refresh that could not resolve is no longer reported as "no permissions". The 2026-08-21 pass before it was test-suite repair only (PRs #57, #59, #56), with one real production fix (ADR-0025).
+
+## Backend eslint setup (2026-08-27, PR #67)
+
+Tooling-only. `src/backend/package.json` declared `"lint": "eslint . --ext .ts"` since inception with no eslint dependency, no config, no binary — a dead command. Adds eslint@8.57.1 + `@typescript-eslint`, `src/backend/.eslintrc.cjs` (legacy config, matching the frontend's existing style rather than a v9 flat-config migration). Fixed 21 mechanical `no-extra-semi` violations across 5 test files, one documented inline `eslint-disable` for `declare global { namespace Express }`, one style-only line in `tenant-settings.service.ts`. `npm run lint`: 0 errors, 1 warning. Ponytail APPROVE (7/7), QA APPROVED — `docs/superpowers/plans/2026-08-27-backend-eslint-setup-qa-signoff.md`.
+
+## Role-service tenant scope (2026-08-27, PR #66)
+
+`countRoleUsage(roleId, tenantId)` and `listRoles` now filter by `tenantId` in `role.repository.ts`; `schema.prisma:225`'s stale pre-ADR-0019 comment corrected. Records: `docs/superpowers/plans/2026-08-27-role-service-tenant-scope*.md`.
 
 ## Authorization UI recovery + honest refresh (2026-08-26, PR #62, ADR-0026)
 
@@ -31,7 +39,7 @@ QA sign-off: **18/18 AC, 0 unproven**, after one BLOCKED round on proof. Fronten
 | Invoice payment route authorization | `bill-20/21/22`: RBAC deny tests added for `PUT /api/invoices/:id/payment`, which was already covered by the `roleRouteMatrix` enumeration sweep but had no test named for it before this | Mutation-verified |
 | Frontend test mocks | 8 files spreading `importOriginal()` into their `@tanstack/react-query` mock (Dashboard, Pets, Appointments, Branches, ClinicSettings, PetDetail, + 2 more) | These were failing at collection, contributing 0 tests each; recovers 21 real tests, frontend now 351 passing / 55 files |
 
-Known gap, pre-existing and untouched by this repair: backend `npm run lint` cannot run — eslint is not installed at all (no eslint dependency declared, no binary, no config file of any kind; the frontend by contrast has eslint ^8.57.1 + .eslintrc.cjs and works). Deleted-coverage rationale for the 7 removed backend tests: `docs/superpowers/plans/2026-08-20-backend-tests-post-adr-0019-deleted-coverage.md`.
+Known gap at the time, untouched by this repair: backend `npm run lint` could not run — eslint was not installed at all (no eslint dependency declared, no binary, no config file of any kind; the frontend by contrast has eslint ^8.57.1 + .eslintrc.cjs and works). **Resolved 2026-08-27, PR #67** — see above. Deleted-coverage rationale for the 7 removed backend tests: `docs/superpowers/plans/2026-08-20-backend-tests-post-adr-0019-deleted-coverage.md`.
 
 ## Login identity resolution (2026-08-20, ADR-0024)
 
