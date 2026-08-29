@@ -538,3 +538,101 @@ re-litigating on resubmit; re-run `tsc` plus the three role suites and I will re
 
 **Do not merge this branch on any approval that is not signed under §9.4 or a later
 round.**
+
+---
+
+# 10. Round 3 re-sign (bounded per §9.4) — `fix/role-service-tenant-scope-followup`
+
+**Branch:** `fix/role-service-tenant-scope-followup`
+**HEAD:** `0e5341a` (docs) atop `bf1360d` (the R3-B1…R3-B5 fix commit) atop `b175ee3` atop `main`'s `2601f28`
+**Date:** 2026-08-29
+**Reviewer:** @qa-agent (Standard Pipeline Step 7 — round 3 re-sign, single-instance)
+
+# QA-Agent Approval: ✅ APPROVE
+
+This discharges the §9.4 gate. **This section — §10 — is the "later round" §9.4 requires;
+it is the only valid approval in this file.** §1–8 remain the fabricated-approval incident
+record and are not a verdict.
+
+Scope was bounded by §9.4's own terms ("re-run `tsc` plus the three role suites and I will
+re-sign"). §2 and §9.1 were **not** re-litigated. All five blockers were re-checked by
+reading the current file content at the cited locations, not by trusting the HANDOFF.
+
+## 10.1 Verification performed (run by me, this session)
+
+| # | Check | Method | Result |
+|---|---|---|---|
+| 1 | Tree clean **before** | `git status --short` + `git ls-files --others --exclude-standard` | ✅ both empty; HEAD `0e5341a` |
+| 2 | TypeScript | `npx tsc --noEmit` in `src/backend` | ✅ clean, **exit 0** |
+| 3 | Three role suites | `jest --runInBand --forceExit` on `role.repository.test.ts`, `role.service.test.ts`, `roleEditor-t5f01.test.ts` | ✅ **3 suites / 31 tests passed, 0 failed, exit 0** — matches HANDOFF's 31/31 |
+| 4 | Probe A (falsifiability) | revert RST-1, run, restore | ✅ **T2b went RED** — see §10.2 |
+| 5 | Tree clean **after** Probe A | `git checkout --` then `git status --short` + `ls-files --others` | ✅ both empty; HEAD unchanged `0e5341a`; `role.repository.ts:176` back to `where: { roleId, tenantId }` |
+| 6 | Suites green again post-restore | re-ran the three suites | ✅ **31/31, exit 0** — restore is functionally verified, not just textually |
+| 7 | Isolation / RBAC regression | `tenantIsolation`, `rbac-regression`, `roleRouteMatrix`, `platformAuth`, `permission.middleware` | ✅ **5 suites / 326 tests passed, exit 0** |
+| 8 | Production-logic delta, whole branch | non-comment `git diff 2601f28..HEAD` on `role.repository.ts`, `role-tenant-fixtures.ts`, `role.service.test.ts` | ✅ **empty** — every changed line in the only production file is comment/JSDoc |
+| 9 | Protocol 5 (browser smoke) trigger | branch file list vs `main` | ✅ **does not trigger** — 10 files, zero frontend, zero auth/routes/middleware |
+
+### Probe A — mutate → run → observe → restore
+
+Mutation: `role.repository.ts:176` `countRoleUsage` → `where: { roleId }` (drops RST-1).
+
+| Test | Expected | Received | Verdict |
+|---|---|---|---|
+| **T2b** — system role held across many tenants | 1 | **5** | 🔴 **RED — the restored guard is falsifiable** ✅ |
+| T1 — orphan role counts 0 for its owner | 0 | 1 | 🔴 RED ✅ |
+| T1b — drifted row counted under its own tenantId | 1 | 2 | 🔴 RED ✅ |
+| T2 — same-tenant row counted, cross-tenant excluded | 1 | 2 | 🔴 RED ✅ |
+| `unusedRoleId` sanity case | 0 | 0 | 🟢 stayed GREEN — **correct**, it is now titled as a base case, not a scoping guard |
+
+`Test Suites: 1 failed`, `Tests: 4 failed, 4 passed`, exit 1 — then restored to 31/31 green.
+
+**This is the exact defect R3-B1 was filed over, now closed.** In round 3 the replacement
+test stayed GREEN under this same probe; the restored T2b goes RED. Note the unscoped value
+was **5** in my run, not the 27 seen in round 3 — which is precisely why T2b's comment says
+"the DB-wide staff-assignment total — far more than 1" and pins no number. R3-B2's lesson
+about data-dependent counterfactuals was correctly applied to R3-B1's new test.
+
+**No STOP-and-escalate condition tripped.** No query returned another tenant's data; no
+sub-`clinic_admin` financial read; no offline-overwrite path; no PII in logs. The
+tenant-scoping logic is byte-identical to the code §9.1 verified empirically (check 8).
+
+## 10.2 Blocker closure — verified by reading current file content
+
+| Blocker | Location checked | Current content | Verdict |
+|---|---|---|---|
+| **R3-B1** | `role.repository.test.ts:193-202` + `:204-214` | T2b restored: `countRoleUsage(systemStaffRoleId, tenantAId)` → `toBe(1)`, labelled "THIS is the real cross-tenant-read guard". `unusedRoleId` retitled *"…counts 0 for any tenant — sanity check, does NOT prove scoping (see T1/T1b/T2)"* | ✅ **CLOSED** — both halves of the fix instruction met; falsifiability proven by Probe A |
+| **R3-B2** | `roleEditor-t5f01.test.ts:146-149` | Now qualitative: *"the GLOBAL clinic_admin total across all tenants — currently ~27 in the seeded test DB, not a stable number, but always > 1"*; `toBe(1)` kept | ✅ **CLOSED** — the false "goes to 2" counterfactual is gone |
+| **R3-B3** | `roleEditor-t5f01.test.ts:135` | Title now `(= 1, tenant-scoped)`; comment adds *"Do NOT relax this to match a '≥1' title"* | ✅ **CLOSED** |
+| **R3-B4** | 3 outstanding locations | (1) `role.repository.test.ts:101-106` now states the comment does **NOT** leave `UserRole.role` as the sole FK, names `users_roleId_fkey`, and restores the teardown-order rationale. (2) `role.repository.ts:164-169` JSDoc now reads *"Two FKs reference a role, BOTH onDelete: Restrict in the live dev/test DB"* + the migration-chain SetNull caveat. (3) §2.5 and §4 F-2 both carry `⚠️ AMENDED 2026-08-28 (R3-B4 / R3-F1)` blocks recording **both** readings and which artifact each describes | ✅ **CLOSED** — all 5 of 5 locations now agree |
+| **R3-B5** | `grep '§8'` across `grill.md`, `plan.md`, this file | **0 hits.** All four correction banners (`grill.md:15`, `plan.md:176`, `:256`, `:287`) now cite **§9** — a section that exists — plus the HANDOFF | ✅ **CLOSED** (see caveat below) |
+
+**R3-B5 residual, accepted:** the `b175ee3` **commit message** still says `§8`. It is a
+non-tip commit on an unpushed branch, so amending it would rewrite history for a comment
+reference. HANDOFF:55-58 discloses this and requires it be noted in the PR body. Accepted as
+disclosed — **the PR body must carry that note** (Step 8 obligation, not a blocker).
+
+Non-blocking items claimed fixed, spot-checked and confirmed: **R3-F5** (header contract
+`:49-52` now enumerates `unusedRoleId` *and* states it is not a scoping guard), **R3-F6**
+(`:261` `expect(ids).not.toContain(unusedRoleId)`).
+
+## 10.3 On `/code-review`
+
+The full review ran at round 3 against the production code. For this round the entire branch
+delta is 10 files and was read line-by-line at every changed code location; the non-comment
+production delta vs `main` is **provably empty** (check 8). There is no new code surface for
+a review pass to act on, and no round-3 finding remains open against this branch. R3-F1
+(HIGH) stays open as **pre-existing and out of scope**, correctly filed to
+`phase-history.md` Actionable for @db-agent.
+
+## 10.4 Approval (round 3 re-sign)
+
+- [x] ✅ Approved for Staging
+- [x] ✅ Approved for Production
+
+**QA-Agent Approval: ✅**
+
+Step 8 (`/anemal-finish-branch`, @pm-agent) is **UNBLOCKED**. Conditions carried forward:
+
+1. PR body must record the incident history, the R3-B1…R3-B5 fixes, R3-F1 as filed-but-out-of-scope, and the stale `§8` in the `b175ee3` commit message.
+2. Red-suite ship gate still applies — `main` was green (1309/93) at round 3; re-confirm before merge.
+3. Do **not** reuse the stashed Step-8 tracking-doc text (`git stash@{0}`) — it carries the fabricated narrative.
