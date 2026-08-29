@@ -1,13 +1,15 @@
 # HANDOFF — role-service-tenant-scope
 
-**Current step:** Step 7 (QA re-review) on `fix/role-service-tenant-scope-followup` (branched from
-`main`). The QA **round-3** review issued **REQUEST CHANGES** with 5 blockers (R3-B1…R3-B5, all
-comment/test/doc edits — zero implementation work). Those 5 blockers are **fixed and committed** on the
-branch as **`bf1360d`** (on top of `b175ee3`), together with the round-3 sign-off (§9) and the R3-F1…F6
-backlog filings. `tsc` clean; three role suites 31/31 green `--runInBand`; Probe A this run confirmed the
-new falsifiable guard **T2b** goes RED when RST-1 is reverted.
-**Status:** No human decision pending. **Next: QA round-3 re-sign** (@qa-agent, bounded per §9.4) on the
-committed tree, then Step 8. The branch is still LOCAL-ONLY — not pushed, not merged.
+**Current step:** Step 7 is CLOSED. QA round-3 re-sign is a real, bounded, §9.4-signed **APPROVE**,
+committed as **§10** in `docs/superpowers/plans/2026-08-27-role-service-tenant-scope-qa-signoff.md`
+(commit `998f63a`, on top of `0e5341a`/`bf1360d`/`b175ee3`). Re-verification on the actual committed tree:
+tree clean before+after, `tsc --noEmit` clean, 3 role suites 31/31 `--runInBand` green, Probe A (revert
+RST-1) drove the restored T2b assertion RED then suites passed again post-restore, 5-suite/326-test
+isolation+RBAC regression green, and all R3-B1…R3-B5 closures verified by reading current file content
+(not just trusting this HANDOFF). Non-comment diff on `role.repository.ts` vs `main` is empty — proves
+this branch changed docs/tests only, no new production logic since §9.1's verified-correct review.
+**Status:** No human decision pending. **Next: Step 8 `/anemal-finish-branch`** (@pm-agent). The branch is
+still LOCAL-ONLY — not pushed, not merged.
 
 ## 🚨 Process incident (2026-08-27) — read this first
 
@@ -74,16 +76,13 @@ tenant-isolation property genuinely guarded (empirically, via falsifiability pro
 ## Exact next action
 
 1. ~~**Commit** the round-3 fixes + §9 sign-off + backlog edits~~ — **DONE** as `bf1360d`.
-2. **`@qa-agent` round-3 re-sign** (Step 7) — **THIS IS THE NEXT ACTION**: on a VERIFIED-CLEAN tree (`git status --short` empty before
-   AND after), run `npx tsc --noEmit` + the three role suites (`role.repository.test.ts`,
-   `role.service.test.ts`, `roleEditor-t5f01.test.ts`) via `jest --runInBand`, and confirm R3-B1…R3-B5
-   closed — re-run Probe A (revert RST-1 → the restored **T2b** `systemStaffRoleId` assertion must go
-   RED). Needs a real §9.4-signed APPROVE. New blockers → fix and re-loop; **never self-approve**.
-3. **`/anemal-finish-branch`** (Step 8, @pm-agent): preflight `gh auth` → run full backend suite → push
-   branch → PR to `main` (body: ADR-0025 D-1, the incident/fabricated-approval history, the R3-B1…R3-B5
-   fixes, R3-F1 filed-but-out-of-scope, and the note that the `b175ee3` commit message's `§8` reference
-   is stale). RED-SUITE GATE: `main`'s backend suite is currently GREEN (1309 tests / 93 suites) — halt
-   before merge if that changes. It invokes `/anemal-HTML-updater` internally — never call that directly.
+2. ~~**`@qa-agent` round-3 re-sign** (Step 7)~~ — **DONE**: real §9.4-signed APPROVE, §10, commit `998f63a`.
+3. **`/anemal-finish-branch`** (Step 8, @pm-agent) — **THIS IS THE NEXT ACTION**: preflight `gh auth` →
+   run full backend suite → push branch → PR to `main` (body: ADR-0025 D-1, the incident/fabricated-approval
+   history, the R3-B1…R3-B5 fixes, R3-F1 filed-but-out-of-scope, and the note that the `b175ee3` commit
+   message's `§8` reference is stale). RED-SUITE GATE: `main`'s backend suite is currently GREEN (1309
+   tests / 93 suites) — halt before merge if that changes. It invokes `/anemal-HTML-updater` internally —
+   never call that directly.
 4. On real ship: update tracking docs per CLAUDE.md (phase-history.md, roadmap/index.md,
    implementation-status-matrix.md, README footer, docs/index.html — with TRUE content, not the stashed
    false text), disable the `role-service-tenant-scope-pipeline` schedule (`enabled:false`), delete this
