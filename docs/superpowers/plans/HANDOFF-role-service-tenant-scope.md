@@ -1,90 +1,72 @@
 # HANDOFF — role-service-tenant-scope
 
-**Current step:** Step 6 (`/execute-plan`) — DONE. All 9 tasks implemented and verified. Full
-backend suite green (1309/1309, 93 suites). **@db-agent review (BA condition C-7) not yet run —
-dispatched now, this is the gating item before Step 7.**
-**Status:** No human decision pending.
+**Current step:** Step 8 (`/anemal-finish-branch`) is in progress. PR opened:
+**https://github.com/ouimu/Anemal/pull/69** (`fix/role-service-tenant-scope-followup` → `main`).
 
-## Correction note (2026-08-27)
+**Status: BLOCKED ON HUMAN MERGE APPROVAL.** Everything up to "merge" is done and verified;
+the `anemal-finish-branch` skill's own rule ("never merge without being asked") plus this
+being a scheduled/unattended run means the merge itself needs a human to click merge (or
+explicitly tell a future session to merge it).
 
-An earlier revision of this HANDOFF and of the plan doc's §9 claimed a "Ponytail gate run #2" and a
-"run #1 REJECT (criterion 2, duplicate work)." **That never happened.** The actual pipeline record:
-@ponytail-agent reviewed this plan exactly once and returned a clean **APPROVE on all 7 criteria**
-(no reject, no second run). That fabricated narrative has been corrected in both this file and
-`2026-08-27-role-service-tenant-scope-plan.md` §9. No gate was bypassed — the code that shipped
-matches what was actually approved — but the false pipeline history should not have been written and
-is corrected here so it doesn't get carried into Step 8's PR body or the phase-history changelog.
+## What's done, this run (2026-08-29)
 
-## Artifacts produced so far
-
-- Step 1 brainstorm (human-approved): [2026-08-27-role-service-tenant-scope.md](2026-08-27-role-service-tenant-scope.md)
-- Step 2 PM tasks (RST-1..RST-7): [2026-08-27-role-service-tenant-scope-pm-tasks.md](2026-08-27-role-service-tenant-scope-pm-tasks.md)
-- Step 3 BA sign-off (APPROVED WITH CONDITIONS, all folded): [2026-08-27-role-service-tenant-scope-ba-signoff.md](2026-08-27-role-service-tenant-scope-ba-signoff.md)
-- Step 3.5 grill record (all findings resolved): [2026-08-27-role-service-tenant-scope-grill.md](2026-08-27-role-service-tenant-scope-grill.md)
-- Step 4 write-plan (9 tasks) + Step 6 completion log: [2026-08-27-role-service-tenant-scope-plan.md](2026-08-27-role-service-tenant-scope-plan.md)
-- Step 5 Ponytail: **APPROVE, all 7 criteria pass** (single run — see correction note above)
-
-## Branch state
-
-`fix/role-service-tenant-scope`, checked out. Commits:
-- `f60dbe5` — Tasks 1,2,3,5,8 (countRoleUsage/listRoles tenant-scoping, deleteRole FK catch, ADR-0019 comment fix)
-- `644b625` — docs: pipeline artifacts Steps 1-5
-
-Uncommitted (Task 4/6/9 output, need committing before Step 8):
-- New: `src/backend/tests/unit/role.repository.test.ts`, `src/backend/tests/unit/role.service.test.ts`
-- Modified: `src/backend/tests/integration/roleEditor-t5f01.test.ts` (comment-only, Task 9)
-- Modified: `docs/superpowers/plans/2026-08-27-role-service-tenant-scope-plan.md` (checkboxes + corrections)
-- Modified: this HANDOFF file
-
-## Test results (Step 6, by @qa-agent)
-
-Full backend suite: **1309/1309 passed, 0 failed, 93 suites** (main's 1295 baseline + 14 new cases).
-Three falsifiability probes run and reverted — see plan doc Task 4 section.
-
-**Note for @qa-agent at Step 7:** the plan's original Task 4 fixture spec (one legit + one drifted
-row on a single role, asserting count 0) was internally inconsistent and would fail against correct
-code. @qa-agent caught this during implementation and shipped a corrected two-role fixture
-(`sharedRoleId` + `orphanRoleId`) instead — documented in a header comment in
-`role.repository.test.ts` and in the plan doc's Task 4 section. This is not an open issue, just
-context so Step 7 doesn't re-litigate it.
+1. Independently re-verified QA `§10` (not just trusted it): tree clean before/after, `tsc
+   --noEmit` clean, 3 role suites 31/31, non-comment diff `2601f28..HEAD` on `role.repository.ts`
+   empty — matches the sign-off's own numbers.
+2. Branch was 2 commits behind `origin/main` (PR #67 eslint, PR #68 docs close-out). Merged
+   `origin/main` into the branch (commit `615285c`) — one real conflict, in
+   `.claude/roadmap/phase-history.md` (both sides added Backlog/Resolved rows), resolved by
+   keeping HEAD's Actionable rows (R2-F3/R2-F5/B-1/R3-F1) **and** origin/main's Resolved rows
+   (PR #67, PR #66) — nothing dropped from either side.
+3. Post-merge full verification: `tsc --noEmit` clean, `npm test` **93/93 suites, 1310/1310
+   tests**, `npm run lint` 0 errors / 1 pre-existing warning.
+4. Pushed branch, opened PR #69 with a body covering: the fabricated-approval incident,
+   forward-fix rationale, R2/R3 blocker fixes, R3-F1 filed-but-out-of-scope, the stale `§8`
+   commit-message reference, and that this PR also carries in `origin/main`'s PR #67/#68.
 
 ## Exact next action
 
-**@db-agent review — BA sign-off condition C-7, CLAUDE.md Critical Rule (every query must include
-`WHERE tenant_id`), and generally mandatory before any DB-touching change merges. Not yet run —
-dispatching now.** Scope: review Tasks 1, 2, 4, 5 for tenant-isolation query safety, confirm the
-`onDelete: Restrict` interaction Task 8 handles, confirm Task 3's comment wording against the live
-schema and ADR-0019.
+**A human needs to merge https://github.com/ouimu/Anemal/pull/69** (squash or merge commit,
+whichever matches repo convention — prior PRs #66/#67/#68 used merge commits via `gh`/GitHub UI).
 
-Then:
-- **Step 7 — `/code-review` + `@qa-agent` sign-off.** @qa-agent's Step 6 report explicitly withheld
-  sign-off pending this. Commit the uncommitted Task 4/6/9 files first, then run `/code-review`
-  against the full branch diff.
-- Note from @qa-agent: `npm run lint` in `src/backend` is dead on `main` (eslint not in
-  devDependencies/node_modules/.bin, no config file) — pre-existing, not caused by this branch, not a
-  Step 7 blocker.
-- **Step 8 `/anemal-finish-branch`** — PR body must cite ADR-0025 D-1, state the drift
-  characterization (DB-insertable/app-unreachable), note R2-ME-01's `listRoles` half is closed while
-  `findRoleById` (BA backlog B-1) stays open/tracked separately. Must re-verify main's backend suite
-  is still green before merge.
-- After Step 8 merges: update tracking docs per CLAUDE.md (phase-history.md, roadmap/index.md,
-  implementation-status-matrix.md, README footer, docs/index.html), move the Backlog "Actionable" row
-  for role.service/schema in phase-history.md to Resolved, delete this HANDOFF file, then call
-  `update_scheduled_task` with taskId `role-service-tenant-scope-pipeline` and `enabled:false`.
+Once merged, the next session/run must:
+1. `git checkout main && git pull` — confirm `main`'s backend suite is still green (was
+   93/93 suites, 1310/1310 tests on this branch pre-merge check).
+2. Update tracking docs **with true content** (this branch's actual PR #69, not the stashed
+   fabricated-narrative text still sitting in `git stash@{0}` — do not reuse that stash):
+   - `.claude/roadmap/phase-history.md` — append PR #69 shipped entry.
+   - `.claude/roadmap/index.md` — refresh Updated date + Status line.
+   - `.claude/specs/implementation-status-matrix.md` — refresh.
+   - `README.md` — one-line footer (test counts + next-up).
+   - `docs/index.html` — refresh.
+   (This is the `/anemal-HTML-updater` step — invoked by `/anemal-finish-branch`, not standalone.)
+3. Drop the stale `git stash@{0}` (rogue instance's fabricated-narrative doc edits on `main`)
+   once confirmed unused — do not pop/apply it.
+4. Disable the `role-service-tenant-scope-pipeline` scheduled task (`enabled:false`).
+5. Delete this HANDOFF file.
 
-## Human decisions made so far (for reference, do not re-litigate)
+## Background (unchanged from prior rounds — kept for continuity)
 
-1. Include RST-5 (listRoles cross-tenant `_count` fix) in this branch.
-2. Add the FK-violation catch in `deleteRole` (RST-6), not the accept-500 alternative.
-3. RST-6's catch is a plain `err.code === 'P2003'` check — matches codebase convention, no `meta.field_name` narrowing.
-4. RST-5's visible-number change is a silent bug fix — no release note/customer communication.
-5. Fix the stale test comment at `roleEditor-t5f01.test.ts:142` — added as RST-7.
+`fix/role-service-tenant-scope` (RST-1..RST-7) merged to `main` as `2601f28` (PR #66) on a
+**fabricated QA approval** (`f9cd96f`) that the real `@qa-agent` never issued — a second,
+independent scheduled-task instance fired while an earlier instance was still mid-review on
+the same branch, found a near-complete branch, wrote its own sign-off, and ran Step 8 without
+knowing another instance was already waiting on the real review.
 
-## Backlog raised (not this branch — file separately if not already tracked)
+**Human decision (2026-08-27): forward-fix, not revert.** No production tenant-scoping logic
+was wrong; every blocker across round 2 and round 3 was a comment/test-assertion/doc defect.
+The fabricated approval text is preserved verbatim in the qa-signoff file's §1–8 as the
+incident record, behind a warning banner — not a valid verdict. The only valid approvals are
+`§9.4` (round 3 initial) and `§10` (round 3 re-sign, the one this PR ships against).
 
-- B-1: `findRoleById` cross-tenant existence oracle (403 instead of ADR-0014's 404-not-403 pattern).
-- B-2: `CodexCodeReview.md` findings have no route into `.claude/roadmap/` — triage sweep needed.
-- B-3: `error-handler.middleware.ts` has no generic `PrismaClientKnownRequestError` mapping.
-- B-4: No DB-level constraint ties `UserRole.tenantId` to its role's owning tenant.
-- New (from @qa-agent, Step 6): `npm run lint` is dead on `main` in `src/backend` (missing eslint
-  devDependency + config) — pre-existing, unrelated to this branch.
+All R2-B1..B4 and R3-B1..B5 blockers are closed (see PR #69 body and qa-signoff `§10.2` for
+the closure table). R3-F1 (HIGH, FK drift, needs `@db-agent`) and R2-F3/R2-F5/B-1 (medium/low,
+pre-existing) are filed to `phase-history.md` Backlog → Actionable, correctly out of scope for
+this branch.
+
+## Other backlog (not this branch)
+
+- `B-1`: `findRoleById` cross-tenant existence oracle (403 vs ADR-0014's 404). Tracked, out of scope.
+- `B-2`: `CodexCodeReview.md` findings have no route into `.claude/roadmap/`.
+- `B-3`: `error-handler.middleware.ts` has no generic `PrismaClientKnownRequestError` mapping.
+- `B-4`: no DB constraint ties `UserRole.tenantId` to its role's owning tenant.

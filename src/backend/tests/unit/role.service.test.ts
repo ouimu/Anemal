@@ -4,7 +4,7 @@
  * The load-bearing case (T5): RST-1 narrowed `countRoleUsage` to the caller's own
  * tenant, which means the pre-check can now legitimately return 0 while a
  * cross-tenant `UserRole` row still holds an `onDelete: Restrict` FK against the
- * role (schema.prisma:942). Before RST-6 that combination escaped as an unhandled
+ * role (schema.prisma:944). Before RST-6 that combination escaped as an unhandled
  * `PrismaClientKnownRequestError` (P2003) → 500. It must surface as ConflictError → 409.
  *
  * Real Prisma against the test DB with isolated tenant fixtures, same convention as

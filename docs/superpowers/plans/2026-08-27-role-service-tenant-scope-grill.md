@@ -12,6 +12,20 @@ and [2026-08-27-role-service-tenant-scope-ba-signoff.md](2026-08-27-role-service
 
 ### G-1 — RST-6's FK-violation catch was over-specified
 
+> ⚠️ **CORRECTION (2026-08-27, QA round 2, finding R2-B1):** the "only Restrict FK"
+> claim below is **wrong**. `prisma migrate diff` shows `users_roleId_fkey`
+> (`User.roleId` → `ClinicRole.id`) is **also** `ON DELETE RESTRICT` — Prisma picks
+> Restrict because the FK scalar `User.roleId` is required, even though the relation
+> field reads `ClinicRole?`. There are **two** Restrict FKs on `ClinicRole`, not one.
+> The conclusion below ("safe today") is still correct by coincidence — both FKs map
+> to the same user-facing "role is in use" message, so the blanket `P2003` catch still
+> behaves correctly — but the reasoning that produced it was based on an incomplete
+> inventory. Do not cite "only one Restrict FK" from this section again; see the QA
+> sign-off doc **§9 (R3-B4 / R3-F1)** and the HANDOFF incident writeup for the corrected
+> inventory. Caveat (R3-F1): `users_roleId_fkey` is RESTRICT in the live dev/test DB but
+> SET NULL in the committed migration chain — a tracked drift; either reading still
+> refuses the delete, so "safe today" holds.
+
 **Raised:** RST-6 (as drafted by @pm-agent) caught `PrismaClientKnownRequestError` code `P2003`
 unconditionally, with no check on *which* FK/relation triggered it. Confirmed via schema read
 (`src/backend/prisma/schema.prisma`, grep for `onDelete:` on `ClinicRole` relations) that
