@@ -133,4 +133,4 @@ Full phase changelog (test counts, PR/ADR mapping) and current status: [`.claude
 
 ---
 
-*Last updated: 2026-08-29 — backend 1310 passing / 0 failing / 93 suites, frontend 410 passing / 60 files. PR #69 closed out the PR #66 tenant-scope follow-up (QA round-2/3 blockers, all doc/test defects, restored a falsifiable isolation guard) and its fabricated-approval incident record. See `.claude/roadmap/phase-history.md`. Next: Phase 10/11 (credential-gated).*
+*Last updated: 2026-09-09 — backend 1310 passing / 0 failing / 93 suites, frontend 410 passing / 60 files (unchanged; PR #71 touched no source). PR #71 restructured the agent team: adds `@arch-agent` (Step 3.4) and `@scribe-agent` (owns Step 8), four parallel workers in Step 6 under a work-partition manifest, a 9-criteria Ponytail gate, and Lanes B/C/D for bugs, hotfixes and refactors — plus a repair of the documentation estate (a spec cited on 9 live lines but missing, a drifted duplicate schema, a prototype directory that never existed, 42 MB of unignored worktrees). See `.claude/roadmap/phase-history.md`. Next: Phase 10/11 (credential-gated).*
