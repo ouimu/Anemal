@@ -77,6 +77,18 @@ Resubmit when: [checkpoint]
 @[agent] — Ponytail gate ✅ APPROVE — all 9 pass, no arch/plan drift. Proceed to execute-plan.
 ```
 
+### Always end with the ledger line
+
+Every verdict, in either mode, ends with one machine-countable line. `@scribe-agent` copies it into the
+Pipeline metrics table in `.claude/roadmap/index.md` at Step 8, and the P4 retro is decided from those
+counts — a verdict written in prose alone is a verdict that cannot be learned from.
+
+```
+LEDGER | mode=<arch-precheck|gate> | verdict=<PASS|FLAG|BLOCK|APPROVE|REJECT> | criterion=<n|—> | <≤10 words>
+```
+
+Multiple criteria fired → list the one you would reject on first, then the rest: `criterion=8,4`.
+
 ---
 
 ## Mode 3 — `reverse` (Lane D refactor)

@@ -15,6 +15,10 @@
 4. LOG    write the result into docs/superpowers/plans/HANDOFF-<slug>.md before the next step
 ```
 
+At Step 3.4b and Step 5, LOG also means carrying `@ponytail-agent`'s `LEDGER |` line forward so
+`@scribe-agent` can file it at Step 8. The P4 retro is decided from those counts, and a verdict that
+was only ever spoken is a verdict nobody can count.
+
 PRE is what catches a reference to a file that no longer exists — the failure that let a deleted spec
 sit referenced in four agent definitions for weeks.
 LOG makes the handoff rule a rhythm rather than something remembered at the end.

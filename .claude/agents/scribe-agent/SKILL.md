@@ -91,7 +91,15 @@ Run the `anemal-finish-branch` skill in full. It is the mechanic; the additions 
    4. `.claude/specs/implementation-status-matrix.md` — module-level status
    5. `docs/index.html`
    `HistoryLog.md` / `CHANGELOG.md` are FROZEN — never append.
-10. **Trigger `/anemal-HTML-updater`** as the last act. Never call it standalone.
+10. **Record the metrics row** in the Pipeline metrics table in `.claude/roadmap/index.md` — one row per
+    shipped branch. Take `verdict` and `criterion` from `@ponytail-agent`'s `LEDGER |` line, the arch
+    tier from the arch doc header (or `skipped (below threshold)` from the plan), and answer **"Arch
+    changed the plan?"** yourself: compare the plan against what the arch doc specified and say `yes —
+    <what the plan would otherwise have done>` or `no`. **`no` is a legitimate and common answer —
+    record it.** A ledger that only ever says `yes` is a ledger nobody can learn from, and this column
+    is what decides whether `@arch-agent` survives the P4 retro.
+    A Lane C merge also adds its row to **Open hotfix debt** in the same file (step 5 above).
+11. **Trigger `/anemal-HTML-updater`** as the last act. Never call it standalone.
 
 ---
 

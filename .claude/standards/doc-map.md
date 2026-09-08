@@ -49,7 +49,7 @@
 | `.claude/standards/acceptance-criteria.md` | `@pm-agent` | pm, qa | AC format |
 | `.claude/standards/tech-stack.md` | human | dev, db, arch | stack versions and choices |
 | `.claude/roadmap/qa-protocols.md` | `@qa-agent` | qa | what runs at the end of every task |
-| `.claude/roadmap/index.md` | `@scribe-agent` | anyone checking status | current status header · Open hotfix debt |
+| `.claude/roadmap/index.md` | `@scribe-agent` | anyone checking status | current status header · **Open hotfix debt** (Lane C gate) · **Pipeline metrics** (the P4 retro ledger and its pre-agreed decision rules) |
 | `.claude/roadmap/phase-history.md` | `@scribe-agent` | anyone checking history | shipped-phase changelog + ADR index |
 | `.claude/specs/implementation-status-matrix.md` | `@scribe-agent` | pm, ba | module-level implementation status |
 | `.claude/skills/anemal-*/SKILL.md` | human | the agents named in each | that domain (see below) |

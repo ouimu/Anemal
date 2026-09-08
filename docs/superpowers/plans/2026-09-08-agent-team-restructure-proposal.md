@@ -337,7 +337,7 @@ timebox · branch ทิ้ง · output = ADR อย่างเดียว ·
 | **P1 — arch-agent** ✅ **ทำแล้ว 2026-09-09** | `arch-agent.md` + `SKILL.md` + `standards/architecture-rules.md` + โหมด `arch-precheck`/`gate` 9 ข้อ/`reverse` ใน ponytail | Step 3.4/3.4b ใช้ได้ · shadow run กับ feature ถัดไป | เสร็จ |
 | **P2 — เปิดเป็น gate** ✅ **ทำแล้ว 2026-09-09** | ผ่าตัด `CLAUDE.md` ตาม §15.C · แก้ agent 7 ไฟล์ตาม §8 · เปิด 9-point · สร้าง `doc-maintenance.md` + `doc-map.md` + `orchestration-protocol.md` · ปรับ model/effort ตาม §18.2 (`@scribe-agent` ทำไปแล้วใน P1.5) | pipeline ใหม่ใช้จริง · CLAUDE.md 192 → ~100 บรรทัด | P1 ผ่าน |
 | **P3 — Lane B/C/D** ✅ **ทำแล้ว 2026-09-09** | skill `anemal-dev-lanes` (SKILL + 3 references) + 3 command + section สั้นใน CLAUDE.md | bug/hotfix/refactor มีทางเดินของตัวเอง | P2 |
-| **P4 — Retro** | หลัง 3 feature + 3 bug: วัด (ก) % arch doc เปลี่ยน plan (ข) ponytail reject กระจุกที่ #8/#9 หรือ #1–7 (ค) cycle time Lane B (ง) hotfix debt ค้าง | ตัดสินเก็บ/ตัด/แยก arch reviewer | P3 |
+| **P4 — Retro** ⏳ **เครื่องวัดติดตั้งแล้ว 2026-09-09 · รอข้อมูล** | ตัวเลขที่ P4 ต้องใช้ยังไม่มีอยู่จริง (ยังไม่มี feature ไหนวิ่งผ่าน pipeline ใหม่) — สิ่งที่ทำได้และทำไปแล้วคือ **ติดเครื่องวัด**: ledger ใน `.claude/roadmap/index.md` · ponytail ปิดท้ายทุก verdict ด้วยบรรทัด `LEDGER |` ที่นับได้ · scribe บันทึกทุก Step 8 · **เกณฑ์ตัดสินเขียนล่วงหน้าไว้แล้ว** จะได้ไม่มาเถียงกันทีหลัง | ledger เต็ม 3 feature + 3 bug → รัน retro ตามเกณฑ์ที่ตกลงไว้ | P3 + การใช้งานจริง |
 
 **ทางถอย:** ถ้า P4 พบว่า arch doc ไม่เคยเปลี่ยน plan → ยุบ `@arch-agent` กลับเข้า `@ba-agent`
 เสียแค่ 2 ไฟล์ ไม่มีผลกับโค้ด · Lane B/C/D ถอยได้อิสระจาก arch (คนละชุดไฟล์)
