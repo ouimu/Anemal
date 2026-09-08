@@ -23,6 +23,13 @@ Run `/code-review` on the branch/diff BEFORE writing the QA sign-off. Findings f
 `/code-review` get triaged same as any other bug: fix, re-test, then sign off. QA
 sign-off (below) cannot be given while `/code-review` findings are open.
 
+**Architecture conformance (added Step 7 check):** compare the code against the frozen contract in the
+feature's arch doc (`docs/superpowers/plans/*-arch.md`) — repository signatures with `tenantId` first,
+request/response shapes, permission codes, and the layer rules in `.claude/standards/architecture-rules.md`
+(no business logic in controllers or repositories; no external call inside a transaction). A mismatch is
+drift: either the code is wrong or the arch doc is stale — say which, and do not sign off until it is
+resolved. The arch doc's test-strategy section tells you what must be unit-testable without a DB.
+
 ## Must-test
 - Tenant isolation: tenant B accessing tenant A resource → 404 (every protected endpoint).
 - RBAC: every matrix row — allow AND deny (doctor→billing=403, staff→emr.edit=403),
