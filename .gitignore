@@ -10,3 +10,7 @@ attachments/
 backups/
 .vercel
 .env*
+
+# Claude Code worktrees — untracked working copies; never search or commit these
+.claude/worktrees/
+**/.claude/worktrees/

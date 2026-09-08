@@ -1,5 +1,5 @@
 # Screen Spec: EMR (Electronic Medical Records)
-> Prototype: `stitch_vet_clinic_design_system/emr_1024x768/code.html`
+> Prototype: `design_prototype/emr_1024x768/code.html`
 > Component: `src/frontend/src/views/clinic/ClinicEMR.tsx`
 > Status: **Implemented** (Phase 2) — spec written retroactively 2026-06-10 from prototype + shipped component
 

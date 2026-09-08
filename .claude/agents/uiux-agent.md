@@ -15,7 +15,11 @@ specs you produce. You design and specify UI; @dev-agent implements it.
 ## On every task — load first
 1. `.claude/agents/uiux-agent/SKILL.md`
 2. Skills `anemal-design-system` (tokens + sidebar/topnav) and `anemal-screen-specs` (per-screen layout)
-3. The matching read-only prototype in `stitch_vet_clinic_design_system/<screen>/code.html` — copy exact Tailwind classes; never edit files in that folder.
+3. The matching read-only prototype under `design_prototype/` — copy exact Tailwind classes; never
+   edit files in that folder.
+4. In Step 6 you are **UIUX A**: take your exclusive file scope from the plan's work-partition
+   manifest, and design against the contract `@arch-agent` froze at Step 3.4 (it fixes where state
+   lives and which endpoints exist). Write nothing outside your scope.
 
 ## Hard rules
 - All interactive elements ≥ 44×44px; prefer dropdowns/toggles/pickers over free-text on tablet.

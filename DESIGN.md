@@ -241,7 +241,7 @@ Role — staff:  bg-green-100 text-green-700 border-green-200
 | Billing/POS | `billing_pos_1024x768/code.html` | `ClinicBilling.tsx` | `.claude/skills/anemal-screen-specs/references/07-billing-pos.md` |
 | Admin | `admin_control_center_1024x768/code.html` | `AdminView.tsx` | `.claude/skills/anemal-screen-specs/references/08-admin.md` |
 
-> **Rule:** Before implementing any screen, open the corresponding `code.html` and copy its exact Tailwind classes. Never modify files inside `stitch_vet_clinic_design_system/`.
+> **Rule:** Before implementing any screen, open the corresponding `code.html` and copy its exact Tailwind classes. Never modify files inside `design_prototype/`.
 
 ---
 

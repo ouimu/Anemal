@@ -26,5 +26,5 @@ Those stay out because they're either sensitive or regenerable, not because they
 
 Ask: **is any agent/skill supposed to read this file's current state to act correctly?**
 
-- **Yes** (e.g. `phase-history.md`, `implementation-status-matrix.md`, `roadmap/index.md`, `remaining-tasks.md`) → it must be wired into CLAUDE.md's "Tracking & Documentation" section as one of `@pm-agent`'s LAST-step refresh targets, so it never goes stale. Adding a new such file without adding it there is a bug.
+- **Yes** (e.g. `.claude/roadmap/phase-history.md`, `.claude/specs/implementation-status-matrix.md`, `.claude/roadmap/index.md`) → it must be listed in `.claude/standards/doc-maintenance.md` as one of `@scribe-agent`'s LAST-step refresh targets, and given a row in `.claude/standards/doc-map.md`, so it never goes stale or becomes an orphan. Adding a new such file without doing both is a bug.
 - **No** (e.g. a one-off grill record, a completed BA sign-off) → it's a point-in-time artifact. Write it once, never revisit — don't add refresh duty for something frozen by design.

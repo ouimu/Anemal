@@ -1,5 +1,5 @@
 # Screen Spec: Billing & POS
-> Prototype: `stitch_vet_clinic_design_system/billing_pos_1024x768/code.html`
+> Prototype: `design_prototype/billing_pos_1024x768/code.html`
 > Component: `src/frontend/src/views/clinic/ClinicBilling.tsx`
 > Hooks: `src/frontend/src/hooks/useInvoices.ts` (+ inline search / medical-record queries)
 > API: `/api/invoices` (create, get, list, `/:id/payment`)

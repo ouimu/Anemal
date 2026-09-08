@@ -1,5 +1,5 @@
 # Screen Spec: Admin Control Center
-> Prototype: `stitch_vet_clinic_design_system/admin_control_center_1024x768/code.html`  
+> Prototype: `design_prototype/admin_control_center_1024x768/code.html`  
 > Layout: `src/frontend/src/layouts/AdminLayout.tsx`  
 > Pages: `src/frontend/src/views/admin/Admin*.tsx` + re-exported Tab components
 

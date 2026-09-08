@@ -1,5 +1,5 @@
 # Screen Spec: Appointments (Clinic Schedule)
-> Prototype: `stitch_vet_clinic_design_system/appointment_scheduling_1024x768/code.html`
+> Prototype: `design_prototype/appointment_scheduling_1024x768/code.html`
 > Component: `src/frontend/src/views/clinic/ClinicAppointments.tsx`
 > Status: **Implemented** (Phase 2) — spec written retroactively 2026-06-10 from prototype + shipped component
 

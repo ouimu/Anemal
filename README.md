@@ -33,9 +33,9 @@ Anemal/
 ├── .claude/                  # AI Agent context & project specs
 │   ├── agents/               # System prompts (<name>.md) + skill bodies (<name>/SKILL.md)
 │   ├── skills/                # Project domain skills (anemal-coding-rules, anemal-design-system, etc.)
-│   ├── specs/                 # Functional requirements, DB schema, implementation-status-matrix.md
-│   │   ├── System_Specification.md # System specification (functional reqs live in the anemal-functional-reqs skill)
-│   │   ├── database-schema.sql # PostgreSQL schema & RLS policies
+│   ├── specs/                 # DB schema, status matrix (functional reqs live in the anemal-functional-reqs skill)
+│   │   ├── database-schema.sql # PostgreSQL schema — canonical DDL, single copy
+│   │   ├── RBAC_Platform_Restructure_Spec.md # Historical Phase 5 TO-BE design (permissions: see anemal-rbac-matrix)
 │   │   └── implementation-status-matrix.md # Canonical module-level status source
 │   └── roadmap/               # Phase task lists & QA protocols
 │       └── qa-protocols.md    # Quality assurance & verification protocols

@@ -6,187 +6,177 @@
 
 ## Agent Router
 
-| Task | Agent | Model | Superpowers Skills | Sequence |
-|------|-------|-------|--------------------|----------|
-| Requirements, authorization design, gap analysis | `@ba-agent` | opus | `/brainstorm` | Step 3 |
-| Scope, task breakdown, coordination, docs owner | `@pm-agent` | sonnet | `/brainstorm`, `/write-plan`, `/grill-with-docs`, `/execute-plan`, `/anemal-finish-branch` | Step 1, 2, 4, 8 |
-| Screen/component design | `@uiux-agent` | sonnet | `/brainstorm` | Step 6∥ |
-| Schema, migration, query safety, tenant isolation | `@db-agent` | sonnet | `/migrate` | Step 6∥ |
-| Backend/frontend implementation | `@dev-agent` | sonnet | `/tdd`, `/debug`, `/optimize` | Step 6∥ |
-| Stress-test design before plan (MANDATORY) | (human-driven) | opus | `/grill-with-docs` (invokes `grilling` + `domain-modeling` skills) | Step 3.5 gate |
-| Simplicity gate | `@ponytail-agent` | opus | — (project gate, not Superpowers) | Step 5 gate |
-| Tests, edge cases, isolation/RBAC verification | `@qa-agent` | opus | `/tdd`, `/code-review`, `/audit` | Step 7 |
+| Task | Agent | Model / Effort | Step |
+|------|-------|----------------|------|
+| Requirements, authorization design, gap analysis — **WHAT + WHO** | `@ba-agent` | opus / max | 3 |
+| Architecture: logical model, class/interface contract, patterns, transactions, test strategy — **HOW** | `@arch-agent` | opus / max | 3.4 |
+| Scope, task breakdown, AC, work-partition manifest | `@pm-agent` | sonnet / high | 1, 2, 4 |
+| Screen/component design (**UIUX A**) | `@uiux-agent` | sonnet / low | 6 |
+| Physical schema, migration, query safety, tenant isolation **(veto)** (**DBA**) | `@db-agent` | opus / high | 6 |
+| Backend/frontend implementation (**Dev A** / **Dev B**) | `@dev-agent` | sonnet / high | 6 |
+| Design stress-test (MANDATORY) — `/grill-with-docs` | human-driven + `@ba-agent` | opus | 3.5 |
+| Simplicity gate — modes `arch-precheck` · `gate` · `reverse` | `@ponytail-agent` | opus / max | 3.4b, 5 |
+| Tests, edge cases, isolation/RBAC, arch conformance | `@qa-agent` | opus / max | 7 |
+| Git hygiene, PR compliance, reference integrity, docs, ship | `@scribe-agent` | sonnet / high | 4b, 8 |
 
-**Rules:** Delegate first (except trivial one-liners). Each delegation must include: agent name, task, specs/skills cited, output path. Context > 70% → Auto-Compact.
+**Orchestrator = this session**, not an agent. Every step: PRE (inputs exist?) → BRIEF (agent, task,
+skills, output path, file scope) → POST (output + gate verdict) → LOG (write the HANDOFF file).
+Full contract: `.claude/standards/orchestration-protocol.md`.
+
+**Rules:** Delegate first (except trivial one-liners). Every delegation names: agent, task, skills
+cited, output path — and in Step 6, its exclusive file scope. Context > 70% → Auto-Compact.
 
 ---
 
-## Standard Pipeline
+## Lane selector — pick before doing anything
+
+| The request | Lane | Entry |
+|-------------|------|-------|
+| new or changed behaviour, a feature, a new screen | **A** | `/superpowers:brainstorm` — full pipeline below |
+| something is broken and should not be | **B** | `/anemal-fix-bug` |
+| prod down · data corrupting · security hole · `main` red | **C** | `/anemal-hotfix` — **human declares it, never an agent** |
+| behaviour identical, structure improves | **D** | `/anemal-refactor` |
+| "review the code", no change requested | none | `/code-review` |
+
+Mechanics for B/C/D: skill `anemal-dev-lanes`. **Ambiguous → ask, do not guess.**
+**Scope guard:** *all · entire · whole repo · ทั้งหมด* → produce a backlog first, then one item per branch.
+
+---
+
+## Standard Pipeline (Lane A)
 
 ```
-STEP 1 — /superpowers:brainstorm          [@pm-agent + @ba-agent]
-          Clarify scope, confirm requirements, design sign-off.
-          ⛔ NO code, NO plan until human approves brainstorm output.
-          ↓
-STEP 2 — @pm-agent (tasks + AC)
-          Translate brainstorm output into acceptance criteria & task list.
-          ↓
-STEP 3 — @ba-agent (validate + design)
-          Validate requirements, authorization design, gap analysis.
-          ⛔ NO write-plan until BA sign-off.
-          ↓
-STEP 3.5 — /grill-with-docs   [human-driven + @ba-agent, MANDATORY]
-          Stress-test the validated design. Interview until
-          assumptions, edge cases, failure modes exposed & resolved.
-          ⛔ MANDATORY — CANNOT be skipped. /write-plan is BLOCKED
-             until grilling runs AND all findings are resolved.
-             No grill = pipeline violation, restart from Step 3.5.
-          ↓
-STEP 4 — /superpowers:write-plan          [@pm-agent owns]
-          Break into 2–5 min tasks with exact file paths, interfaces, tests.
-          Save to: docs/superpowers/plans/YYYY-MM-DD-<feature>.md
-          ⛔ Must run AFTER @ba-agent sign-off AND /grill-with-docs. NEVER before brainstorm.
-          ↓
-STEP 5 — @ponytail-agent (ANY flag → REJECT, all clear → APPROVE)
-          Reviews write-plan output against 7 criteria before any execution.
-          ⛔ /execute-plan is BLOCKED until Ponytail approves.
-          ↓
-STEP 6 — /superpowers:execute-plan        [@dev-agent ∥ @db-agent ∥ @uiux-agent]
-          Subagents implement task-by-task with /tdd or /migrate per agent.
-          Two-stage review after each task (spec compliance → code quality).
-          ⛔ NO skipping tasks. NO merging steps. Checkboxes must be tracked.
-          ↓
-STEP 7 — /code-review 					[@qa-agent (Code Review + sign-off)]   [/audit if RBAC-related]
-          ↓
-STEP 8 — /anemal-finish-branch           [@pm-agent ships the branch]
-		  Preflight gh auth → run tests → create PR → verify main stays green
-		  after merge → triggers /anemal-HTML-updater as its last act (update
-		  all markdown files, clearing finished/unused, update HTML document).
-		  ⛔ Must run everytime after STEP 7. Never call /anemal-HTML-updater
-		  directly — it is invoked by /anemal-finish-branch, not a standalone step.
-		  
+STEP 1   /superpowers:brainstorm        @pm + @ba     ⛔ human approves before any plan or code
+STEP 2   tasks + AC                     @pm
+STEP 3   validate + authz design        @ba           ⛔ GATE: BA sign-off
+STEP 3.4 architecture design            @arch         (skip if below threshold — then write
+                                                       "arch: skipped (below threshold)" in the plan)
+STEP 3.4b arch pre-check                @ponytail     mode arch-precheck — BLOCK returns to 3.4
+STEP 3.5 /grill-with-docs               human + @ba   ⛔ GATE: MANDATORY, covers requirement + architecture
+STEP 4   /superpowers:write-plan        @pm           plan + work-partition manifest →
+                                                       docs/superpowers/plans/YYYY-MM-DD-<feature>.md
+STEP 4b  reference pre-check            @scribe       a dangling path blocks Step 5
+STEP 5   simplicity gate                @ponytail     ⛔ GATE: 9 criteria on {arch doc + plan}, no drift
+STEP 6   /superpowers:execute-plan      W0 DBA → W1 Dev A ∥ UIUX A ∥ Dev B → W2 Dev B
+                                                       🔗 integration checkpoint after every wave
+STEP 7   /code-review + sign-off        @qa           ⛔ GATE: findings closed + arch conformance
+STEP 8   /anemal-finish-branch          @scribe       ⛔ GATE: red-suite ship gate, then PR → merge →
+                                                       main green → 5 tracking docs → HTML-updater
 ```
 
-Each agent: performs only assigned scope → produces report → returns to coordinator → terminates.
+Each agent: assigned scope only → report → return to the orchestrator → terminate.
 
 > **Hard rules — no exceptions:**
-> - `/grill-with-docs` is MANDATORY after `@ba-agent` sign-off (Step 3) and CANNOT be skipped under any circumstance
-> - `/write-plan` requires `/brainstorm` output + `/grill-with-docs` + `@ba-agent` sign-off + run with all findings resolved
-> - `/execute-plan` requires `@ponytail-agent` APPROVE as gate
-> - `/code-review` requires `@qa-agent` APPROVE and Sign-off
+> - `/grill-with-docs` is MANDATORY after BA sign-off and cannot be skipped under any circumstance
+> - `/write-plan` requires brainstorm output + BA sign-off + `/grill-with-docs` with all findings resolved
+> - `/execute-plan` requires `@ponytail-agent` APPROVE — Superpowers plan approval never substitutes
+> - `/code-review` requires `@qa-agent` APPROVE and sign-off
+> - Step 8 is owned by `@scribe-agent`; never call `/anemal-HTML-updater` directly
+> - Step 6 parallelism is legal **only** when `@arch-agent` froze the contract at 3.4; otherwise sequence
 > - Skipping any step is a pipeline violation — restart from the violated step
-> - `/anemal-finish-branch` requires `@pm-agent` APPROVE updating all documents (it invokes `/anemal-HTML-updater` internally as its last step — do not call `/anemal-HTML-updater` directly)
-> - Do not finish the workflow, if STEP 8 are not finished.
- 
----
-
-## Tech Stack
-
-**Backend:** Node.js + Express + PostgreSQL 15+ + Prisma + JWT (`{ userId, tenantId, branchId, plane, permSetVersion, roleIds[] }`, 8h TTL)  
-**Frontend:** React 18 + Tailwind + Zustand + React Query + Vite  
-**Multi-tenancy:** Shared DB/schema, `tenant_id` on every table, enforced in middleware + repository layer
-
-**Shell dialect (Windows dev machine):** the Bash tool runs Git Bash (POSIX sh) — forward slashes, `$VAR`, `&&`; the PowerShell tool runs Windows PowerShell 5.1 — backslash or forward-slash paths, `$env:VAR`, no `&&`/`||`. Never mix dialects in one command (no `head`/`&&`/heredocs in PowerShell; no PowerShell cmdlets like `Get-Content` in Bash). This was the single largest tool-error class in the project's session history — pick the right tool for the syntax you're writing, don't guess.
-
----
-
-## Ponytail Gate — 7 Criteria
-
-ANY yes = REJECT. All no = APPROVE. See `.claude/agents/ponytail-agent/SKILL.md` for templates.
-
-> **Superpowers override:** Ponytail Gate has HIGHEST authority. Any plan approved by Superpowers `/execute-plan` must still pass all 7 criteria before implementation proceeds. Superpowers plan approval does NOT equal Ponytail approval.
-
-> **Scope note:** The global `ponytail` persona ("build less, question every step, skip what YAGNI allows") governs *implementation and code-size decisions only* — it never authorizes skipping a pipeline gate (brainstorm, grill-with-docs, ba-agent sign-off, ponytail-agent review, QA sign-off, finish-branch). If ponytail's lazy-first instinct and a pipeline gate conflict, the gate wins; `@ponytail-agent` (the 7-point plan reviewer above) and the `ponytail` persona are different things and both stay mandatory.
-
-1. Over-engineering? (simpler solution exists)
-2. Duplicate work? (reimplements existing code)
-3. Existing solution? (lib/framework covers it)
-4. Scope too large? (>3 subsystems / >10 files / >500 LOC)
-5. Too many dependencies? (>5 new transitive deps)
-6. Too many files? (>15 new files)
-7. Too many APIs? (>3 new endpoints/hooks/mutations)
+> - The workflow is not finished until STEP 8 is finished
 
 ---
 
 ## Critical Rules
 
-**Multi-tenancy (ABSOLUTE):** Every query must include `WHERE tenant_id = :tenantId`. JWT middleware extracts `tenant_id` → explicit param on every repo function. `@db-agent` reviews all DB changes.
+**Multi-tenancy (ABSOLUTE):** every query includes `WHERE tenant_id = :tenantId`. JWT middleware
+extracts `tenant_id` → explicit param on every repository function. Cross-tenant access returns **404**,
+never confirms existence. `@db-agent` reviews every DB change and its veto is not overrulable.
 
 **Two planes:**
 - Clinic (`/clinic/*`, `/clinic-admin/*`, `/settings/*`): `{ userId, tenantId, branchId, plane:'clinic', permSetVersion, role }`; effective `roleIds[]`/`permissions[]` come from `/auth/me` via `user_roles`
 - Platform (`/platform/*`): `{ platformUserId, plane:'platform', role }` — no `tenant_id`, never touches PII
 - Every protected route: `requirePlane(...)` → clinic `requirePermission('module.action')` or platform `requirePlatformPermission('platform.*')`. Deny-by-default.
 
-See `anemal-rbac-matrix` skill and `.claude/specs/RBAC_Platform_Restructure_Spec.md`.
+Authority: `anemal-rbac-matrix` skill (canonical permission catalogue and route→permission map).
+`.claude/specs/RBAC_Platform_Restructure_Spec.md` is **historical** Phase 5 rationale — not current.
+
+**Structure rules** (layers, abstraction choice, pattern whitelist, error taxonomy, transaction
+boundary, state modelling, and whether a value belongs in code or a table):
+`.claude/standards/architecture-rules.md`.
+
+---
+
+## Tech Stack
+
+Versions and choices: `.claude/standards/tech-stack.md` (backend, frontend, multi-tenancy, deployment).
+Live DDL: `.claude/specs/database-schema.sql` — single canonical copy.
+
+**Shell dialect (Windows dev machine):** the Bash tool runs Git Bash (POSIX sh) — forward slashes, `$VAR`, `&&`; the PowerShell tool runs Windows PowerShell 5.1 — backslash or forward-slash paths, `$env:VAR`, no `&&`/`||`. Never mix dialects in one command (no `head`/`&&`/heredocs in PowerShell; no PowerShell cmdlets like `Get-Content` in Bash). This was the single largest tool-error class in the project's session history — pick the right tool for the syntax you're writing, don't guess.
+
+---
+
+## Ponytail Gate
+
+ANY criterion yes = REJECT. All no = APPROVE. The 9 criteria, the three modes, and the templates live
+in `.claude/agents/ponytail-agent/SKILL.md` — canonical there, not duplicated here.
+
+> **Highest authority:** a plan approved by Superpowers `/execute-plan` must still pass the gate.
+> **Scope note:** the global `ponytail` persona ("build less, skip what YAGNI allows") governs
+> implementation size only — it never authorizes skipping a pipeline gate. When the persona's
+> lazy-first instinct conflicts with a gate, the gate wins. `@ponytail-agent` and the persona are
+> different things; both stay mandatory.
 
 ---
 
 ## Project Structure
 
 ```
-design_prototype/        # Compassionate Care UI (read-only)
-.claude/
-  agents/<name>.md + <name>/SKILL.md   # ba, pm, uiux, db, dev, ponytail, qa
-  skills/anemal-{coding-rules,design-system,screen-specs,functional-reqs,
-                 db-context,rbac-matrix,platform-console,ba-toolkit}/
-  specs/RBAC_Platform_Restructure_Spec.md, database-schema.sql
-  roadmap/index.md, phase-history.md, qa-protocols.md, archive/  # completed phase task lists live in archive/
-                                                                 # (ACTIVE/remaining-tasks.md was retired — see Tracking note)
-src/
-  backend/{config,controllers,middlewares,models,services,routes}/
-  frontend/src/{components,views,hooks,utils,store}/
+design_prototype/   # Compassionate Care UI (read-only)
+.claude/agents/     # <name>.md (trigger) + <name>/SKILL.md (method) — 9 agents
+.claude/skills/     # anemal-* domain skills   .claude/standards/  # rules & policies
+.claude/specs/      # database-schema.sql · implementation-status-matrix.md · historical RBAC spec
+.claude/roadmap/    # index.md · phase-history.md · qa-protocols.md · archive/
+src/backend/{config,controllers,middlewares,models,services,routes}/
+src/frontend/src/{components,views,hooks,utils,store}/
 ```
 
-**Skill priority (highest → lowest):**
-1. `.claude/agents/<name>/SKILL.md` — project-specific agent skills
-2. `.claude/skills/anemal-*/` — project domain skills
-3. `~/.claude/plugins/cache/Superpowers/skills/` — Superpowers methodology skills
-4. Default Claude behavior
+Which document is canonical for what, and who loads it: `.claude/standards/doc-map.md`.
+
+**Searches must exclude** `.claude/worktrees/` and `*/archive/*` — both are stale copies and pollute
+every Glob/Grep result. (`.gitignore` covers the first for git only, not for search.)
+
+**Skill priority (highest → lowest):** `.claude/agents/<name>/SKILL.md` → `.claude/skills/anemal-*/`
+→ Superpowers skills → default behaviour.
 
 ---
 
-## Phases & Shipped-Work History
+## Phases & Status
 
-Phase changelog (test counts + PR mapping) and the full ADR/design-doc index live in `.claude/roadmap/phase-history.md`, not here — keep CLAUDE.md generic across sessions. **To get current project status:** read the newest `docs/superpowers/plans/HANDOFF-*.md` first, then `.claude/roadmap/index.md` and `.claude/specs/implementation-status-matrix.md`. `@pm-agent` appends each shipped phase to `phase-history.md` (LAST, per Tracking rules below).
+Phase changelog (test counts + PR mapping) and the ADR index: `.claude/roadmap/phase-history.md`.
+**To get current status:** read the newest `docs/superpowers/plans/HANDOFF-*.md` first, then
+`.claude/roadmap/index.md` and `.claude/specs/implementation-status-matrix.md`.
 
 ---
 
 ## Tracking & Documentation
 
-- `@pm-agent` documents LAST on every shipped task — refresh ALL of the following, not a subset:
-  1. Append the shipped phase (status + test count) to `.claude/roadmap/phase-history.md` (canonical changelog).
-  2. Refresh `.claude/roadmap/index.md` header (Updated date + Status line — test counts, latest shipped phase, what's blocked).
-  3. (Retired 2026-08-20.) `.claude/roadmap/ACTIVE/remaining-tasks.md` no longer exists — untracked in `13a39e3` and never restored when `13e74ed` reversed that policy. `index.md` now carries the Updated date + current test totals; do not recreate the ACTIVE/ file.
-  4. Refresh README.md's one-line "Last updated" footer (test counts + next-up note) — do NOT re-add a phase table there, it's a pointer to `phase-history.md`.
-  5. Update the HTML in `docs/index.html`. (`docs/functional_spec_detailed.html` was deleted in `d2390ff` and is NOT to be recreated.)
-  `HistoryLog.md` and `CHANGELOG.md` are FROZEN (historical only) — never append to them. Touch CLAUDE.md itself only when an orchestration rule changes — not for per-phase status.
-  **Git note:** items 1–3 above (and `docs/adr/`, `docs/superpowers/plans/`, `docs/superpowers/specs/`) are tracked in Git per `.claude/standards/doc-git-policy.md` (updated 2026-08-19 — no more local-only doc category, needed for cross-machine dev continuity) — `git add`/commit them like any other file.
-- `.claude/specs/implementation-status-matrix.md` is the canonical module-level implementation-status source; `@pm-agent` updates it LAST on every task, alongside the phase status/test count/HTML docs it already updates last.
-- `@ba-agent` updates all specification documents in `.claude/specs/`; `@pm-agent` commits. (The old `docs/functional_spec_detailed.html` target is gone — see item 5 above.)
-- Run QA protocol at end of every task: `.claude/roadmap/qa-protocols.md`
-- **Handoff on stop (mandatory, every stop, no exceptions):** whenever work on a multi-step feature pauses for ANY reason — end of session, waiting on a human decision, a pipeline gate not yet run, context about to compact, or anything else — write/overwrite `docs/superpowers/plans/HANDOFF-<feature-slug>.md` before stopping. Required contents: exact current pipeline step + status, exact next action and exact next agent/skill to invoke (not "continue the feature" — the literal next command), links to every doc produced so far (design, BA sign-off, grill record(s), plan, PRs), and if blocked on a human decision, a pointer to the relevant `PENDING-DECISION-*.md` instead of duplicating it. Overwrite in place each stop (git log already has history); delete once the feature ships.
-- **Handoff on start (mandatory, every new session and every scheduled-task run):** before doing anything else on a feature already in flight, check for `docs/superpowers/plans/HANDOFF-<feature-slug>.md`. If present, read it first and resume from its stated next action — do not re-derive status from git log/docs archaeology, and do not restart or duplicate work it says is already done. This applies equally to a human-started session and a routine/cron-triggered scheduled task waking up cold.
-- Interrupted work: save resume state to the HANDOFF file above, show prompt to continue, delete when complete
-- **Red-suite ship gate (added 2026-08-20):** a red backend suite on `main` blocks the next
-  merge. `/anemal-finish-branch` (Step 8) must refuse to open a PR — or must halt before
-  merge — if `main`'s current backend suite is red, independent of the feature branch's own
-  test gate. This closes the gap that let 28 backend tests sit red on `main` for ~2 weeks
-  unnoticed after PR #53 (2026-08-06 to 2026-08-20). **Exemption:** a branch whose own suite
-  is green and specifically resolves the tests currently failing on `main` — turning them
-  green, or deleting them with a recorded deleted-coverage justification — may still merge while
-  `main` is red — it is how `main` gets back to green — and must say so in its PR body. See
-  `anemal-finish-branch` SKILL.md §1.5 for the mechanic.
+`@scribe-agent` owns documentation and ships every branch; `@pm-agent` decides *what* shipped.
+The five documents to refresh, who authors what, and the estate rules:
+`.claude/standards/doc-maintenance.md`. Git tracking policy: `.claude/standards/doc-git-policy.md`.
+Run the QA protocol at the end of every task: `.claude/roadmap/qa-protocols.md`.
+
+- **Handoff on stop (mandatory, every stop):** whenever work on a multi-step feature pauses for ANY
+  reason — end of session, waiting on a human decision, a gate not yet run, context about to compact —
+  write/overwrite `docs/superpowers/plans/HANDOFF-<feature-slug>.md` first. Required: exact current
+  step + status, the literal next command and agent to invoke, links to every doc produced so far, and
+  a pointer to any `PENDING-DECISION-*.md` rather than duplicating it. Overwrite in place; delete once
+  the feature ships.
+- **Handoff on start (mandatory, every session and every scheduled run):** before touching a feature
+  already in flight, read its HANDOFF file and resume from its stated next action. Do not re-derive
+  status from git archaeology, and do not redo work it says is done.
+- **Red-suite ship gate:** a red backend suite on `main` blocks the next merge — Step 8 refuses the PR,
+  or halts before merge, independent of the branch's own test gate. **Exemption:** a branch whose own
+  suite is green and which turns those failing tests green (or deletes them with a recorded
+  deleted-coverage justification) may merge while `main` is red, and its PR body must say so.
+  Mechanic: `anemal-finish-branch` SKILL.md §1.5.
 
 ---
 
 ## Superpowers Integration
 
-Superpowers (brainstorming, TDD, debug, migrate, audit, optimize) works **alongside** the Agent Router — it does NOT replace it. The mandatory gate sequence is the Standard Pipeline above; those gates are non-skippable per the Hard rules — Superpowers plan approval never substitutes for a pipeline gate.
-
-**Coexistence rules (beyond the pipeline gates):**
-
-1. **Brainstorming feeds Step 1:** Superpowers `/brainstorm` output is pre-input to `@pm-agent`, not a replacement for the pipeline.
-2. **Skill precedence:** Project skills (`.claude/agents/*/SKILL.md`, `.claude/skills/anemal-*/`) always win over Superpowers skills on the same topic.
-3. **TDD scope:** `/tdd` applies to `@dev-agent` tasks inside `/execute-plan` only.
-4. **Code review gate:** `/code-review` runs at the Step 6→7 handoff, owned by `@qa-agent`; open findings block QA sign-off. `@qa-agent` owns RBAC, isolation, and edge-case verification per `.claude/roadmap/qa-protocols.md`.
-5. **No routing override:** Superpowers routing suggestions are advisory; final delegation follows the Agent Router table above.
+Works **alongside** the Agent Router, never replacing it; its plan approval never substitutes for a
+pipeline gate. `/brainstorm` feeds Step 1 · project skills outrank Superpowers skills on the same
+topic · `/tdd` applies inside `/execute-plan` and at Lane B step 1 · `/code-review` runs at the 6→7
+handoff owned by `@qa-agent` · Superpowers routing suggestions are advisory.

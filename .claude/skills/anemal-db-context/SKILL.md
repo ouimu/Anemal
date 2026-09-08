@@ -73,7 +73,9 @@ it('returns 404 when tenant B accesses tenant A resource', async () => {
 
 ## Reference file
 
-Full DDL — all tables, columns, constraints, indexes: `references/database-schema.sql`
+Full DDL — all tables, columns, constraints, indexes: `.claude/specs/database-schema.sql`
+(canonical, single copy — the former references/database-schema.sql duplicate was removed 2026-09-09
+after the two copies had drifted; `.claude/specs/` now holds the complete superset)
 
 Read the schema before designing any new table or writing any migration.
 

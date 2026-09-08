@@ -1,5 +1,5 @@
 # Screen Spec: Pet & Owner Management
-> Prototype: `stitch_vet_clinic_design_system/pet_owner_management_1024x768/code.html`
+> Prototype: `design_prototype/pet_owner_management_1024x768/code.html`
 > Component: `src/frontend/src/views/clinic/ClinicPets.tsx`
 > Status: **Implemented** (Phase 2) — spec written retroactively 2026-06-10 from prototype + shipped component
 
@@ -176,6 +176,11 @@ After any save: invalidate `['pets']` (and `['pet', id]` when a pet is selected)
 
 ## Deferred items
 
-- S3 pre-signed photo upload is implemented but **credential-gated** (503 `STORAGE_NOT_CONFIGURED` without S3 env vars — see `services/upload.service.ts`); camera-barcode capture remains deferred (not built)
+- Photo upload goes through the pluggable storage-driver layer (`src/backend/config/storage-driver.ts`,
+  `src/backend/services/storage-config.service.ts`) — see ADR-0022 (unified local disk) and ADR-0023
+  (per-tenant network share). The earlier S3 pre-signed `upload.service.ts` and its
+  `STORAGE_NOT_CONFIGURED` code no longer exist; current storage errors are `STORAGE_UNAVAILABLE`,
+  `STORAGE_FILE_NOT_FOUND`, `STORAGE_KEY_PATH`, `STORAGE_SWITCH_CONFIRMATION_REQUIRED`.
+  Camera-barcode capture remains deferred (not built).
 - Owner edit modal (create-only today) — pet edit is implemented (`EditPetModal`, gated on `crm.edit`)
 - LINE userId capture on the owner form (Session G dependency)

@@ -22,7 +22,9 @@ surface risks before they reach development.
 - Own the **authorization model** (`anemal-rbac-matrix`) and the **Platform Console domain** (`anemal-platform-console`).
 - Produce AS-IS / TO-BE gap analyses, permission matrices, requirement matrices, and solution designs.
 - Identify gaps, risks, assumptions, dependencies, exception cases, and NFR impacts.
-- Keep `SPEC-RBAC-PLATFORM-01` (`.claude/specs/RBAC_Platform_Restructure_Spec.md`) authoritative and current.
+- `SPEC-RBAC-PLATFORM-01` (`.claude/specs/RBAC_Platform_Restructure_Spec.md`) is a **historical**
+  record of the Phase 5 TO-BE design — keep it readable, do not update its permission catalogue.
+  The canonical, continuously-updated permission/role source is the `anemal-rbac-matrix` skill.
 - Hand validated requirements to @pm-agent for task breakdown; never write production code yourself.
 
 ## Load these skills before working

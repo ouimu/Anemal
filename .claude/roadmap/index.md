@@ -5,4 +5,46 @@
 **Latest tests:** Backend 1310 passing / 0 failing / 93 suites (up 1 from PR #69's restored falsifiable tenant-isolation guard test). Frontend 410 passing / 60 files. `tsc --noEmit` clean on both; backend eslint 0 errors / 1 warning; frontend eslint 0 errors (2 pre-existing warnings). Known gap, pre-existing and not a ship blocker: bare parallel `npx jest` is unsupported by design — the integration suites share one test database with no per-worker isolation, so the canonical `npm test` (`--runInBand`) is the supported command (`TEST-BL-1`; PR #64 fixed the serial-safe traps but parallel safety needs per-worker DB isolation, tracked as `TEST-BL-2`).
 **Blocked:** Phase 10 (payment gateway + SaaS billing) and Phase 11 (LINE/SMS dispatch) both paused, pending external credentials.
 
-See `.claude/roadmap/phase-history.md` for the full shipped-phase changelog and ADR index. See the Backlog section of `phase-history.md` for the current task backlog (the old `ACTIVE/remaining-tasks.md` was retired — do not recreate it). See `.claude/specs/implementation-status-matrix.md` for module-level implementation status.
+See `.claude/roadmap/phase-history.md` for the full shipped-phase changelog and ADR index. See the Backlog section of `phase-history.md` for the current task backlog (the old ACTIVE/remaining-tasks.md was retired — do not recreate it). See `.claude/specs/implementation-status-matrix.md` for module-level implementation status.
+
+---
+
+## Open hotfix debt
+
+Every Lane C merge adds a row here, and `@scribe-agent` blocks the merge if it is missing. A row is
+removed only when its follow-up ships. Debt older than one phase is raised to the human by `@pm-agent`.
+
+| Date | Branch | Symptom | Exemptions used | Follow-up |
+|------|--------|---------|-----------------|-----------|
+| _(none)_ | | | | |
+
+---
+
+## Pipeline metrics — the P4 retro ledger
+
+One row per shipped branch, written by `@scribe-agent` at Step 8. The retro cannot be run on
+recollection, so the data is recorded as it happens rather than reconstructed later.
+
+| Date | Branch | Lane | Arch tier | Arch changed the plan? | Ponytail verdict | Criterion | Waves | Cycle |
+|------|--------|------|-----------|------------------------|------------------|-----------|-------|-------|
+| 2026-09-09 | `chore/doc-estate-repair` | — | n/a | n/a | n/a | — | — | — |
+
+**Column meanings.** *Arch tier*: `brief` · `full` · `skipped (below threshold)` · `n/a` (lane B/C/D).
+*Arch changed the plan?*: `yes — <what the plan would have done otherwise>` or `no`. This is the single
+most important column and the honest answer is often "no" — record it anyway. *Ponytail verdict*:
+`PASS` · `FLAG` · `BLOCK` (mode `arch-precheck`) or `APPROVE` · `REJECT` (mode `gate`). *Criterion*: the
+number that fired, or `—`. *Waves*: how many of W0/W1/W2 actually ran in parallel; `1` means the work
+was sequenced. *Cycle*: first commit to merge.
+
+**The retro runs when the ledger holds 3 Lane A features and 3 Lane B bugs.** Its decisions are fixed
+in advance so the result is not argued after the fact:
+
+| Signal in the ledger | Decision |
+|----------------------|----------|
+| "Arch changed the plan" is `no` in ≥ 2 of 3 features | fold `@arch-agent` back into `@ba-agent` — 2 files deleted, no code affected |
+| ≥ 60% of Ponytail rejections cite **#8 or #9** | architecture review is a different job from size review — split it out of `@ponytail-agent` |
+| ≥ 60% cite **#1–#7** | keep the modes in one agent; the current shape is right |
+| ≥ 1 of 3 bugs escalated from Lane B to Lane A | the escalation rule is working; leave it |
+| 0 bugs escalated **and** any bug touched schema or a contract | Lane B is being used as a bypass — tighten the gate |
+| Waves = `1` in ≥ 2 of 3 features | contracts are not being frozen usefully; parallelism is theatre — drop it or fix Step 3.4 |
+| Hotfix debt older than one phase | the follow-up gate is not being honoured — escalate to the human |

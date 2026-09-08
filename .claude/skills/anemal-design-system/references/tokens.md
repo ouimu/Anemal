@@ -1,6 +1,6 @@
 # Design System Tokens — Compassionate Care System
 > Developer cheat-sheet: every token → Tailwind class → hex value  
-> Source: `stitch_vet_clinic_design_system/compassionate_care_system/DESIGN.md`  
+> Source: `design_prototype/compassionate_care_system/DESIGN.md`  
 > Config: `src/frontend/tailwind.config.js`
 
 ---

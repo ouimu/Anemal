@@ -1,5 +1,5 @@
 # Screen Spec: Inventory Management
-> Prototype: `stitch_vet_clinic_design_system/inventory_management_1024x768/code.html`
+> Prototype: `design_prototype/inventory_management_1024x768/code.html`
 > Component: `src/frontend/src/views/clinic/ClinicInventory.tsx`
 > Hooks: `src/frontend/src/hooks/useInventory.ts`
 > API: `/api/products` (CRUD, `/alerts`, `/:id/stock-in`, `/:id/movements`)
