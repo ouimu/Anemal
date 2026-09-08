@@ -1,6 +1,10 @@
 # Functional Requirements — Anemal SaaS
 
-**Version:** 1.1 (source) | See `docs/functional_spec_detailed.html` (v2.0) and `docs/vetcare_functional_spec.tex` for full detail  
+**Version:** 1.1 — this file is the canonical functional-requirements reference. The former
+docs/functional_spec_detailed.html (v2.0) and docs/vetcare_functional_spec.tex were deleted in
+`d2390ff` and are not to be recreated — written without code formatting deliberately, so the
+reference-integrity scan does not treat a tombstone as a live path. Current status lives in
+`.claude/specs/implementation-status-matrix.md`.  
 **Project:** Anemal Clinic Management SaaS  
 **Target:** Multi-tenant SaaS for Veterinary Clinics (Tablet + Web + Multi-Branch)  
 **Last Updated:** 2026-06-05

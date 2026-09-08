@@ -1,5 +1,5 @@
 # Screen Spec: Clinic Dashboard
-> Prototype: `stitch_vet_clinic_design_system/dashboard_overview_1024x768/code.html`  
+> Prototype: `design_prototype/dashboard_overview_1024x768/code.html`  
 > Component: `src/frontend/src/views/clinic/ClinicDashboard.tsx`  
 > Status: **Implemented** (2026-06-04) — bento grid layout, stub data where Phase 2 API pending
 

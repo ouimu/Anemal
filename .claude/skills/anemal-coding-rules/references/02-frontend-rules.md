@@ -19,13 +19,16 @@ src/frontend/src/
   types/            # shared TypeScript interfaces
 ```
 
+Naming conventions — paths relative to `src/frontend/src/`. The Example column shows the shape, not
+a guaranteed existing file; where a real file is named, it is marked.
+
 | Layer | Pattern | Example |
 |-------|---------|---------|
-| View | `views/<domain>/<Name>View.tsx` | `views/clinic/ClinicPetsView.tsx` |
-| Component | `components/<Name>.tsx` | `components/PetCard.tsx` |
-| Hook | `hooks/use<Name>.ts` | `hooks/useAppointments.ts` |
-| Store | `store/<name>Store.ts` | `store/authStore.ts` |
-| Util | `utils/<name>.util.ts` | `utils/date.util.ts` |
+| View | `views/<domain>/<Name>.tsx` | `views/clinic/ClinicPets.tsx` (real) |
+| Component | `components/<Name>.tsx` | `components/PetCard.tsx` (shape) |
+| Hook | `hooks/use<Name>.ts` | `hooks/useAppointments.ts` (shape) |
+| Store | `store/<name>Store.ts` | `store/authStore.ts` (real) |
+| Util | `utils/<name>.util.ts` | `utils/date.util.ts` (shape) |
 
 ---
 

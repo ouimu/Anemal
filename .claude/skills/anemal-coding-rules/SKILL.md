@@ -19,7 +19,7 @@ This skill makes the full Anemal coding standards available during implementatio
 - Layered architecture pattern: Route → Controller → Service → Repository
 - TypeScript strict-mode rules (no `any`, explicit return types, DTOs)
 - Security (JWT + multi-tenant isolation, injection prevention, file validation, secrets)
-- Input validation (Zod schemas, shared `src/shared/schemas/`)
+- Input validation (Zod schemas, colocated with the route/controller that uses them)
 - Error handling (typed `AppError`, global middleware, structured logging)
 - Database rules (tenant scoping, migration safety, query performance)
 - Frontend component rules (Tailwind tokens only, touch targets, React Query)
@@ -29,7 +29,7 @@ This skill makes the full Anemal coding standards available during implementatio
 
 ## How to use
 
-Read `references/coding-rules.md` in full before starting any implementation task. For code
+Read `references/00-index.md` first, then the numbered rule files it lists, before starting any implementation task. For code
 review, use the checklists in **Section 12** (GitHub Workflow → Code Review Checklist) and
 **Section 13** (Pre-Production Checklist) as the acceptance gate.
 
@@ -44,4 +44,4 @@ review, use the checklists in **Section 12** (GitHub Workflow → Code Review Ch
 
 ## Reference file
 
-Full rules with code examples: `references/coding-rules.md`
+Full rules with code examples: `references/00-index.md` and the numbered files beside it (01-backend, 02-frontend, 03-testing, 04-database, 05-security, 06-github-workflow)

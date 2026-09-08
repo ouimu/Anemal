@@ -1,5 +1,5 @@
 # Screen Spec: Login
-> Prototype: `stitch_vet_clinic_design_system/login_page/code.html`  
+> Prototype: `design_prototype/login_page/code.html`  
 > Component: `src/frontend/src/views/LoginView.tsx`  
 > Status: **Implemented** (2026-06-04)
 

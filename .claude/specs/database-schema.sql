@@ -468,6 +468,44 @@ CREATE TABLE pet_reminders (
 );
 
 
+-- MODULE: Settings & Configuration (Phase 1.5)
+-- NOTE: actual DB columns are camelCase (Prisma) — quoted below as deployed.
+-- tenant_settings was EXTENDED (no separate clinic_settings table; tenant.name
+-- stays the source of truth for clinic name). Migration: 20260610081405_phase1_5a_settings.
+-- New tenant_settings columns:
+--   "operatingHours" JSONB                      -- {"mon":{"open":"08:00","close":"18:00"},"sun":null}
+--   "lineOaToken" TEXT                          -- AES-256-GCM encrypted (enc:v1:<iv>:<tag>:<ct>)
+--   "smsProvider" VARCHAR(50), "smsApiKey" TEXT (encrypted), "smsSenderName" VARCHAR(100)
+--   "promptpayId" VARCHAR(50), "paymentQrUrl" TEXT
+--   "gbprimepayPublic" VARCHAR(255), "gbprimepaySecret" TEXT (encrypted)
+--   "labApiUrl" VARCHAR(500), "labApiKey" TEXT (encrypted)
+--   "updatedBy" INTEGER REFERENCES users(id) ON DELETE SET NULL
+
+-- Platform-global key/value settings — NOT tenant-scoped; super-admin only.
+CREATE TABLE system_settings (
+    "key"         VARCHAR(100) PRIMARY KEY,
+    "value"       TEXT NOT NULL,                -- AES-encrypted when "isSecret"
+    "description" VARCHAR(500),
+    "category"    VARCHAR(50) NOT NULL DEFAULT 'platform',  -- 'smtp' | 'platform' | 'feature_flags'
+    "isSecret"    BOOLEAN NOT NULL DEFAULT FALSE,
+    "updatedBy"   INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    "updatedAt"   TIMESTAMP(3) NOT NULL
+);
+
+-- Field-level settings change trail. "tenantId" NULL = system_settings change.
+-- Deliberately NO tenant FK — audit rows survive tenant deletion.
+CREATE TABLE settings_audit_log (
+    id          SERIAL PRIMARY KEY,
+    "tenantId"  INTEGER,
+    "changedBy" INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    "tableName" VARCHAR(100) NOT NULL,          -- 'tenant_settings' | 'system_settings'
+    "fieldName" VARCHAR(100) NOT NULL,
+    "oldValue"  TEXT,                           -- masked if secret
+    "newValue"  TEXT,                           -- masked if secret
+    "changedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+
 -- ============================================================
 -- SECTION 9: INDEXES (Performance Optimization)
 -- ============================================================
@@ -500,6 +538,11 @@ CREATE INDEX idx_grooming_bookings_date     ON grooming_bookings(tenant_id, bran
 CREATE INDEX idx_blood_donors_type          ON blood_donors(tenant_id, blood_type);
 CREATE INDEX idx_loyalty_transactions_owner ON loyalty_transactions(tenant_id, owner_id);
 CREATE INDEX idx_audit_logs_tenant_time     ON audit_logs(tenant_id, created_at DESC);
+
+-- Settings (Phase 1.5)
+CREATE INDEX "system_settings_category_idx"                      ON system_settings("category");
+CREATE INDEX "settings_audit_log_tenantId_changedAt_idx"         ON settings_audit_log("tenantId", "changedAt");
+CREATE INDEX "settings_audit_log_tableName_fieldName_changedAt_idx" ON settings_audit_log("tableName", "fieldName", "changedAt");
 
 -- Remediation Optimization Indexes (High-Performance POS, Inpatients, and Reminders)
 CREATE INDEX idx_products_tenant_barcode    ON products(tenant_id, barcode) WHERE is_active = TRUE;

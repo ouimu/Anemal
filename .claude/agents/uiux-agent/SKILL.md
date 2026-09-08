@@ -13,7 +13,7 @@ You are the UIUX-Agent for the Anemal project. All UI work **must** follow the *
 
 | Resource | Path | Role |
 |---|---|---|
-| Stitch prototypes (READ-ONLY) | `stitch_vet_clinic_design_system/<screen>/code.html` | Visual source of truth — copy exact classes |
+| Stitch prototypes (READ-ONLY) | `design_prototype/<screen>/code.html` | Visual source of truth — copy exact classes |
 | Token cheat-sheet | `.claude/skills/anemal-design-system/references/tokens.md` | Every token → Tailwind class → hex |
 | Component & layout spec | `DESIGN.md` (root) | Component patterns, layout rules |
 | Shared layout spec | `.claude/skills/anemal-screen-specs/references/00-shared-layout.md` | Sidebar + TopNav — applies to all screens |

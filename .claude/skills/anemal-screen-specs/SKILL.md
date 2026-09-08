@@ -13,6 +13,8 @@ description: >
 
 ## Screen index
 
+> Component paths are relative to `src/frontend/src/`; reference files are relative to this skill.
+
 | Screen | Status | Reference file | React component |
 |---|---|---|---|
 | Shared Layout (Sidebar + TopNav) | Implemented | `references/00-shared-layout.md` | ClinicLayout / AdminLayout |
@@ -62,7 +64,7 @@ modified — do not batch-write specs for screens no one is touching (ADR-0006 D
 2. Read the corresponding reference file in full before writing code.
 3. Copy Tailwind classes exactly from the spec — do not invent alternatives.
 4. Check the **Behaviour** table in each spec for correct API calls and state transitions.
-5. The Stitch prototype at `stitch_vet_clinic_design_system/<screen>/code.html` remains the visual source of truth — consult it when a spec is ambiguous.
+5. The Stitch prototype at `design_prototype/<screen>/code.html` remains the visual source of truth — consult it when a spec is ambiguous.
 
 ## Layout rules common to all screens
 

@@ -1,5 +1,5 @@
 # Shared Layout Spec — Sidebar + TopNav
-> Source: `design-alignment-plan.md` § 5, `stitch_vet_clinic_design_system/`  
+> Source: `design-alignment-plan.md` § 5, `design_prototype/`  
 > Applies to: all clinic and admin screens
 
 ---
@@ -148,4 +148,4 @@ Transition: transition-all duration-200 (matches sidebar animation)
 | `src/frontend/src/layouts/AdminLayout.tsx` | Sidebar + TopNav + main for admin routes |
 | `src/frontend/src/components/TopNav.tsx` | Reusable top nav bar |
 | `src/frontend/src/components/MaterialIcon.tsx` | Icon wrapper |
-| `src/frontend/store/uiStore.ts` | `sidebarOpen`, `toggleSidebar` state |
+| `src/frontend/src/store/uiStore.ts` | `sidebarOpen`, `toggleSidebar` state |
