@@ -1,6 +1,7 @@
 // Inventory transfer repository (Phase 4, FR-06-05) — atomic source→dest stock move.
 import prisma from '../config/db'
 import { ConflictError } from '../utils/errors'
+import { deductBranchStock } from './product.repository'
 import type { CreateTransferInput } from '../services/transfer.service'
 
 export function createTransfer(tenantId: number, data: CreateTransferInput, performedBy?: number) {
@@ -14,13 +15,8 @@ export function createTransfer(tenantId: number, data: CreateTransferInput, perf
     })
 
     // 1. Deduct from source branch (conditional — prevents over-transfer).
-    const affected = await tx.$executeRaw`
-      UPDATE branch_inventory
-      SET "stockQty" = "stockQty" - ${data.qty}
-      WHERE "tenantId" = ${tenantId} AND "branchId" = ${data.fromBranchId}
-        AND "productId" = ${data.productId} AND "stockQty" >= ${data.qty}
-    `
-    if (affected === 0) throw new ConflictError('Insufficient stock at source branch', 'INSUFFICIENT_STOCK')
+    const ok = await deductBranchStock(tx, tenantId, data.fromBranchId, data.productId, data.qty)
+    if (!ok) throw new ConflictError('Insufficient stock at source branch', 'INSUFFICIENT_STOCK')
 
     // 2. Increment destination branch (create row if absent), carrying the
     // source lotNo/expiryDate only on create — an existing destination row

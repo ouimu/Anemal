@@ -1,5 +1,6 @@
 // Product / inventory repository — catalog (inventory_items) + per-branch stock (branch_inventory).
 // Phase 4: stock is branch-scoped (branchId required). Raw SQL double-quotes camelCase columns.
+import { Prisma } from '@prisma/client'
 import prisma from '../config/db'
 import type { CreateProductInput, UpdateProductInput, StockInInput } from '../services/product.service'
 
@@ -221,6 +222,31 @@ export function stockIn(tenantId: number, branchId: number, productId: number, d
     })
     return bi
   })
+}
+
+/**
+ * Atomically deduct `qty` from a branch's stock inside an open transaction,
+ * failing silently (returns false, does not throw) if stock is insufficient
+ * — the conditional-UPDATE pattern shared by invoice creation, prescription
+ * dispensing, and inter-branch transfer to prevent overselling under
+ * concurrent writes. The caller decides how to react to a false return
+ * (throw a ConflictError with its own message, return null, etc.) — this
+ * function has no opinion on failure handling, only on the atomic check.
+ */
+export async function deductBranchStock(
+  tx: Prisma.TransactionClient,
+  tenantId: number,
+  branchId: number | null | undefined,
+  productId: number,
+  qty: number,
+): Promise<boolean> {
+  const affected = await tx.$executeRaw`
+    UPDATE branch_inventory
+    SET "stockQty" = "stockQty" - ${qty}
+    WHERE "tenantId" = ${tenantId} AND "branchId" = ${branchId}
+      AND "productId" = ${productId} AND "stockQty" >= ${qty}
+  `
+  return affected > 0
 }
 
 export function findMovements(tenantId: number, branchId: number, itemId: number) {
