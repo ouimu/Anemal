@@ -111,11 +111,40 @@ those just add a step before step 1, they don't skip the QA step.
   - **Updated baseline after F-1/F-3 fixes:** 95/95 suites (+2), 1325/1325
     tests (+15), tsc clean. Additions only, no existing test touched
     (Gate 4 test-set equality unaffected).
-- [ ] **Phase 2 — Duplication:** OAuth Google/OneDrive controllers still share
+- [x] **Phase 2 — Duplication:** OAuth Google/OneDrive controllers shared
   ~50 near-identical lines beyond the N-9 block already deduped in Phase 1
-  (state/nonce verify, error-redirect construction). Extract a shared
-  `oauth-callback.helper.ts`. Covered by `tests/integration/oauth-google-callback.test.ts`
-  and `oauth-onedrive-callback.test.ts` — no new characterization tests needed.
+  (state verify, nonce consume, code-presence check, error-redirect
+  construction). Extracted `services/oauth-callback-guard.service.ts`'s
+  `runOAuthCallbackGuard()` (shipped there, not `oauth-callback.helper.ts` as
+  originally named in this backlog line — the service location is more
+  layer-conformant, per QA's own note below). Committed `8197aa4`.
+  Reverse-ponytail: APPROVE (abstraction count down — 2 duplicated ~25-line
+  blocks collapsed to 1 shared function, per the definition codified after
+  Phase 1's F-2; LOC down code-only; deps flat; contract unchanged). First
+  gate run wrongly REJECTed on a tooling error (ran a name-filtered 5-suite
+  subset, mistook it for the full suite) — corrected to APPROVE against the
+  actual full-suite logs on disk.
+  QA formal review (`@qa-agent`): **APPROVE**. Independently re-ran the full
+  suite (95/95, 1325/1325, exit 0), confirmed test-set equality structurally
+  (commit touches 0 test files), `tsc --noEmit` clean, and compared origin
+  selection + error-suffix string at all 5 failure points × 2 providers
+  against the original inline code (git diff `-` lines) — exact match on
+  all 10, including that `consumeNonce` still runs before the `!code` check
+  so a code-less callback still burns its nonce, same order as before.
+  Verified `guard.code` (not `query.code`) is what reaches
+  `exchangeCodeForTokens` in both controllers. Findings, none blocking:
+  - **F-5 (low):** `freshState()` in both OAuth callback test files signs
+    `origin: 'http://localhost:5173'`, identical to `DEFAULT_ERROR_ORIGIN` —
+    the suite cannot currently distinguish "used the default origin" from
+    "used verified.origin" on any branch, which is exactly this refactor's
+    highest-risk axis. Pre-existing test gap, not introduced by Phase 2.
+    Fix: sign one state per test file with a distinct origin.
+  - **F-6 (low):** the `!query.state` guard branch is untested for both
+    providers; `!query.code` is untested for Google specifically (OneDrive
+    has OD-CB-14 already).
+  - **F-7 (info) — fixed by this commit:** this backlog line originally
+    named the target file `oauth-callback.helper.ts`; shipped code uses
+    `services/oauth-callback-guard.service.ts` instead.
 - [ ] **Phase 3 — Duplication:** stock-deduction raw SQL repeated in
   `invoice.repository.ts:68`, `prescription.repository.ts:48`,
   `transfer.repository.ts:17`. Extract one `deductBranchStock(tx, tenantId,
@@ -158,11 +187,16 @@ those just add a step before step 1, they don't skip the QA step.
 
 ## Next action
 
-Phase 1 is fully closed: implementation, ponytail gate, QA review, and all 4
-QA findings (F-1 through F-4) resolved. Resume with Phase 2 (OAuth helper
-dedup) — same files already touched in Phase 1, same test coverage, low
-risk. Follow the **Phase loop** above in full, QA step included. Compare
-against the **95/95, 1325/1325** current baseline, not the original count.
+Phase 1 and Phase 2 are fully closed (implementation, ponytail gate, QA
+review). Baseline is still **95/95 suites, 1325/1325 tests** — Phase 2 added
+no test files, only refactored existing controllers, so the count didn't
+move. F-5/F-6 (low-priority test-coverage gaps on the new shared guard) are
+open, not blocking — fold into whichever phase next touches the OAuth test
+files, or do as a standalone small task if asked.
+
+Resume with Phase 3 (stock-deduction SQL dedup across invoice/prescription/
+transfer repositories) — financial/inventory paths, treat cautiously per
+the backlog note. Follow the **Phase loop** above in full, QA step included.
 
 Do not merge to `main` until the user has reviewed the full backlog and
 decided how many phases they want landed in this pass.
