@@ -102,27 +102,24 @@ describe('transfer.repository.createTransfer', () => {
     expect(await stockAt(toBranchId)).toBe(12)
   })
 
-  // @qa-agent flagged (2026-09-09 re-review of Phase 3): the test above only
-  // proves "one of two racing calls succeeds," which depends on the JS event
-  // loop happening to interleave the two calls — it doesn't force a real
-  // overlap at the database level, so it's non-deterministic proof at best.
-  // This test forces a genuine, deterministic overlap instead: it holds
-  // transaction A open (its UPDATE executed, row lock taken, not yet
-  // committed) and only starts B once A's lock is provably held, so B's own
-  // UPDATE must block on that row lock until A commits — then it
-  // re-evaluates its WHERE clause against the POST-commit balance, not a
-  // stale one. This reliably exercises the real Postgres row-locking
-  // mechanism deductBranchStock depends on, every run, not by timing luck.
+  // @qa-agent flagged (2026-09-09 re-review of Phase 3, twice): the test
+  // above only proves "one of two racing calls succeeds," which depends on
+  // JS event-loop timing, not a forced database-level overlap. A first
+  // attempt at a deterministic version (hold A's lock, signal, start B,
+  // release A) LOOKED right but QA measured it directly and found the
+  // release fires before B's UPDATE even reaches Postgres in most runs
+  // (B's own UPDATE took 1-5ms — uncontended — instead of ~400ms+ blocked)
+  // — A's commit round-trip from a resolved promise is faster than B's
+  // BEGIN round-trip, so B usually never actually contends for the lock.
+  // The assertions still passed either way (A commits first regardless,
+  // so B correctly sees the post-commit balance whether or not real
+  // contention occurred) — false confidence, not a false failure.
   //
-  // Caveat verified by deliberately mutating deductBranchStock to a naive
-  // SELECT-then-UPDATE during review: this test does NOT reliably fail
-  // against every possible non-atomic implementation, because a plain SELECT
-  // doesn't itself contend for the row lock the way a write does — only an
-  // implementation whose deduction step is a single write-and-check UPDATE
-  // (the real one) is what this test deterministically exercises. It is a
-  // correctness proof for the actual code, not a general mutation-catching
-  // adversarial test.
-  test('a transaction holding the row lock blocks a second deduction until commit, which then correctly re-evaluates against the post-commit balance', async () => {
+  // Fix (QA's own suggestion): don't release A until B is OBSERVED blocked
+  // on the lock via pg_stat_activity, queried from a third connection. This
+  // makes the overlap a measured fact, not an assumption from promise
+  // ordering.
+  test('a transaction holding the row lock blocks a second deduction until commit — proven by polling pg_stat_activity for B genuinely waiting on the lock, not assumed from promise timing', async () => {
     let releaseA: () => void
     const releaseAGate = new Promise<void>((resolve) => { releaseA = resolve })
     let notifyALocked: () => void
@@ -137,10 +134,28 @@ describe('transfer.repository.createTransfer', () => {
 
     await aLocked // B must not start until A provably holds the lock
 
-    // B's own UPDATE contends for the same row lock A holds, so it blocks
-    // until A commits, then evaluates WHERE "stockQty" >= 8 against the true
-    // post-commit balance of 5 and correctly fails.
-    const txB = prisma.$transaction(async (tx) => deductBranchStock(tx, tenantId, fromBranchId, productId, 8))
+    let bPid = 0
+    const txB = prisma.$transaction(async (tx) => {
+      const [{ pid }] = await tx.$queryRaw<{ pid: number }[]>`SELECT pg_backend_pid() AS pid`
+      bPid = pid // captured before the blocking UPDATE below, on the same connection
+      return deductBranchStock(tx, tenantId, fromBranchId, productId, 8)
+    })
+
+    // Poll a THIRD connection (the module-level `prisma` pool, untouched by
+    // either transaction) until B's own backend is observed genuinely
+    // waiting on a lock — proof of real contention, not an assumption.
+    const deadline = Date.now() + 5000
+    let observedBlocked = false
+    while (Date.now() < deadline && !observedBlocked) {
+      if (bPid) {
+        const rows = await prisma.$queryRaw<{ wait_event_type: string | null }[]>`
+          SELECT wait_event_type FROM pg_stat_activity WHERE pid = ${bPid}
+        `
+        if (rows[0]?.wait_event_type === 'Lock') observedBlocked = true
+      }
+      if (!observedBlocked) await new Promise((r) => setTimeout(r, 5))
+    }
+    expect(observedBlocked).toBe(true) // B is genuinely contending for A's row lock
 
     releaseA()
     const [, bOk] = await Promise.all([txA, txB])
