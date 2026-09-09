@@ -200,11 +200,30 @@ those just add a step before step 1, they don't skip the QA step.
     candidate for a future phase if this backlog grows one.
   - **Updated baseline after Phase 3 (all 4 commits):** 97/97 suites,
     1335/1335 tests, tsc clean.
-- [ ] **Phase 4 — God-file:** `services/platform-customers.service.ts` (563
-  lines) mixes tenant/customer lifecycle with tenant-admin-user lifecycle.
-  Split in two — `platform-customer-admin-users.test.ts` already treats the
-  admin-user half as a separate concern, so a characterization baseline
-  partially exists; verify full coverage before splitting.
+- [x] **Phase 4 — God-file:** `services/platform-customers.service.ts` (563
+  lines) mixed tenant/customer lifecycle with tenant-admin-user lifecycle.
+  Split verbatim into `services/platform-customer-admin-users.service.ts`
+  (4 functions, 5 error classes, 3 types — largest file now 354 lines).
+  Committed `faa93c7`.
+  Reverse-ponytail: APPROVE, and this phase added a 5th dimension to the
+  gate — **"largest-file LOC"** — since the original 4 dimensions were
+  written for collapsing duplicates and can't express a legitimate split
+  (file count necessarily rises by definition). Codified in
+  `.claude/agents/ponytail-agent/SKILL.md` Mode 3, same pattern as Phase 1's
+  abstraction-count resolution: when file count rises but the file `gate`
+  mode's own >500-LOC criterion flagged actually shrinks (562→354), and the
+  move is verbatim with zero new abstractions, that counts as down.
+  QA formal review (`@qa-agent`): **APPROVE**, zero findings. Verified the
+  move byte-for-byte (140/140 code lines identical in order between the
+  deleted and added diff hunks), all 4 controller call sites correctly
+  repointed, no import cycle, `CustomerNotFoundError`'s cross-file export
+  still resolves for `platform-plans.service.ts`, no route/contract change,
+  and confirmed no code anywhere does `instanceof` on any of the 5 relocated
+  error classes (global `AppError` handler only) so the move carries zero
+  identity risk.
+  **Baseline unchanged:** 97/97 suites, 1335/1335 tests (pure structural
+  move, no test file touched — the existing admin-user test already reached
+  this code over HTTP regardless of which file it lived in).
 - [ ] **Phase 5 — Multi-tenancy consistency:** `vaccination.repository.ts:66`
   (`findDueSoonWorklist`) joins `pets`/`owners` without an explicit tenant
   guard on the joined tables (FK integrity covers it today; inconsistent with
@@ -237,17 +256,18 @@ those just add a step before step 1, they don't skip the QA step.
 
 ## Next action
 
-Phases 1, 2, and 3 are fully closed (implementation, ponytail gate, QA
-review — Phase 3 took 3 QA rounds, appropriate scrutiny for a money path).
-Baseline is now **97/97 suites, 1335/1335 tests**. Open non-blocking items
-carried forward: F-5/F-6 (OAuth guard test-coverage gaps, low priority) and
-Phase 3's transaction-layering note (repo-owned `$transaction`, pre-existing).
+Phases 1-4 are fully closed (implementation, ponytail gate, QA review).
+Baseline is still **97/97 suites, 1335/1335 tests** (Phase 4 was a pure file
+split, no test count change). Open non-blocking items carried forward:
+F-5/F-6 (OAuth guard test-coverage gaps, low priority) and Phase 3's
+transaction-layering note (repo-owned `$transaction`, pre-existing).
 
-Resume with Phase 4 (split `platform-customers.service.ts`, 563 lines,
-tenant/customer lifecycle mixed with tenant-admin-user lifecycle — partial
-characterization coverage already exists via
-`platform-customer-admin-users.test.ts`, verify it's complete before
-splitting). Follow the **Phase loop** above in full, QA step included.
+Resume with Phase 5 (`vaccination.repository.ts:66` tenant-guard
+consistency — **hand to `@db-agent` first**, this is the multi-tenancy veto
+surface, not a plain Lane D mechanical fix per the backlog note below).
+6 phases remain after Phase 4: 5 (db-agent review), 6-7 (frontend, largest/
+riskiest), 8-10 (frontend, smaller). Follow the **Phase loop** above in
+full, QA step included.
 
 Do not merge to `main` until the user has reviewed the full backlog and
 decided how many phases they want landed in this pass.
