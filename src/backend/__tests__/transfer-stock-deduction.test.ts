@@ -10,6 +10,7 @@
 import prisma from '../config/db'
 import { ConflictError } from '../utils/errors'
 import * as transferRepo from '../models/transfer.repository'
+import { deductBranchStock } from '../models/product.repository'
 import type { CreateTransferInput } from '../services/transfer.service'
 
 const SUB = `xfer-stock-${Date.now()}`
@@ -99,5 +100,52 @@ describe('transfer.repository.createTransfer', () => {
     expect(fulfilled).toHaveLength(1)
     expect(await stockAt(fromBranchId)).toBe(8) // 20 - 12
     expect(await stockAt(toBranchId)).toBe(12)
+  })
+
+  // @qa-agent flagged (2026-09-09 re-review of Phase 3): the test above only
+  // proves "one of two racing calls succeeds," which depends on the JS event
+  // loop happening to interleave the two calls — it doesn't force a real
+  // overlap at the database level, so it's non-deterministic proof at best.
+  // This test forces a genuine, deterministic overlap instead: it holds
+  // transaction A open (its UPDATE executed, row lock taken, not yet
+  // committed) and only starts B once A's lock is provably held, so B's own
+  // UPDATE must block on that row lock until A commits — then it
+  // re-evaluates its WHERE clause against the POST-commit balance, not a
+  // stale one. This reliably exercises the real Postgres row-locking
+  // mechanism deductBranchStock depends on, every run, not by timing luck.
+  //
+  // Caveat verified by deliberately mutating deductBranchStock to a naive
+  // SELECT-then-UPDATE during review: this test does NOT reliably fail
+  // against every possible non-atomic implementation, because a plain SELECT
+  // doesn't itself contend for the row lock the way a write does — only an
+  // implementation whose deduction step is a single write-and-check UPDATE
+  // (the real one) is what this test deterministically exercises. It is a
+  // correctness proof for the actual code, not a general mutation-catching
+  // adversarial test.
+  test('a transaction holding the row lock blocks a second deduction until commit, which then correctly re-evaluates against the post-commit balance', async () => {
+    let releaseA: () => void
+    const releaseAGate = new Promise<void>((resolve) => { releaseA = resolve })
+    let notifyALocked: () => void
+    const aLocked = new Promise<void>((resolve) => { notifyALocked = resolve })
+
+    const txA = prisma.$transaction(async (tx) => {
+      const ok = await deductBranchStock(tx, tenantId, fromBranchId, productId, 15) // 20 -> 5
+      expect(ok).toBe(true)
+      notifyALocked() // A's UPDATE has executed — Postgres now holds the row lock
+      await releaseAGate // stay open — the row lock is held until this resolves
+    })
+
+    await aLocked // B must not start until A provably holds the lock
+
+    // B's own UPDATE contends for the same row lock A holds, so it blocks
+    // until A commits, then evaluates WHERE "stockQty" >= 8 against the true
+    // post-commit balance of 5 and correctly fails.
+    const txB = prisma.$transaction(async (tx) => deductBranchStock(tx, tenantId, fromBranchId, productId, 8))
+
+    releaseA()
+    const [, bOk] = await Promise.all([txA, txB])
+
+    expect(bOk).toBe(false)
+    expect(await stockAt(fromBranchId)).toBe(5) // only A's deduction landed
   })
 })
