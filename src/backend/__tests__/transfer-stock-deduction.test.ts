@@ -1,0 +1,103 @@
+/**
+ * Characterization tests for transfer.repository.ts's createTransfer —
+ * added as a Lane D Gate 0 prerequisite for the Phase 3 refactor (2026-09-09
+ * code-quality backlog) that extracted its raw-SQL source-branch deduction
+ * into product.repository.ts's shared deductBranchStock(). Before this file,
+ * no test exercised this money/inventory path at all — QA flagged it as a
+ * blocking gap (95/95 green carried no evidential weight for this function).
+ * @qa-agent
+ */
+import prisma from '../config/db'
+import { ConflictError } from '../utils/errors'
+import * as transferRepo from '../models/transfer.repository'
+import type { CreateTransferInput } from '../services/transfer.service'
+
+const SUB = `xfer-stock-${Date.now()}`
+let tenantId = 0
+let fromBranchId = 0
+let toBranchId = 0
+let productId = 0
+
+const stockAt = async (branchId: number) =>
+  Number((await prisma.branchInventory.findFirst({ where: { tenantId, branchId, productId } }))?.stockQty ?? 0)
+
+beforeAll(async () => {
+  const tenant = await prisma.tenant.create({ data: { name: 'Xfer Stock', subdomain: SUB } })
+  tenantId = tenant.id
+  const from = await prisma.branch.create({ data: { tenantId, name: 'Source' } })
+  const to = await prisma.branch.create({ data: { tenantId, name: 'Dest' } })
+  fromBranchId = from.id
+  toBranchId = to.id
+  const product = await prisma.inventoryItem.create({ data: { tenantId, name: 'Dog Shampoo', unit: 'bottle', unitPrice: 200 } })
+  productId = product.id
+})
+
+afterAll(async () => {
+  await prisma.stockMovement.deleteMany({ where: { tenantId } })
+  await prisma.branchInventory.deleteMany({ where: { tenantId } })
+  await prisma.inventoryItem.deleteMany({ where: { tenantId } })
+  await prisma.branch.deleteMany({ where: { tenantId } })
+  await prisma.tenant.deleteMany({ where: { id: tenantId } })
+  await prisma.$disconnect()
+})
+
+beforeEach(async () => {
+  await prisma.branchInventory.upsert({
+    where: { tenantId_branchId_productId: { tenantId, branchId: fromBranchId, productId } },
+    update: { stockQty: 20, lotNo: null, expiryDate: null },
+    create: { tenantId, branchId: fromBranchId, productId, stockQty: 20, minStockQty: 0 },
+  })
+  await prisma.branchInventory.deleteMany({ where: { tenantId, branchId: toBranchId, productId } })
+})
+
+afterEach(async () => {
+  await prisma.stockMovement.deleteMany({ where: { tenantId } })
+})
+
+function input(qty: number): CreateTransferInput {
+  return { productId, fromBranchId, toBranchId, qty, notes: null }
+}
+
+describe('transfer.repository.createTransfer', () => {
+  test('sufficient stock: deducts source, creates/increments destination, logs paired transfer_out/transfer_in movements', async () => {
+    await transferRepo.createTransfer(tenantId, input(5))
+
+    expect(await stockAt(fromBranchId)).toBe(15) // 20 - 5
+    expect(await stockAt(toBranchId)).toBe(5)
+
+    const out = await prisma.stockMovement.findFirst({ where: { tenantId, branchId: fromBranchId, movementType: 'transfer_out', itemId: productId } })
+    const inMove = await prisma.stockMovement.findFirst({ where: { tenantId, branchId: toBranchId, movementType: 'transfer_in', itemId: productId } })
+    expect(out).not.toBeNull()
+    expect(inMove).not.toBeNull()
+    expect(out!.qty.toString()).toBe('5')
+    expect(inMove!.qty.toString()).toBe('5')
+  })
+
+  test('exact stock (qty === source stockQty): boundary passes, source lands at zero', async () => {
+    await transferRepo.createTransfer(tenantId, input(20))
+    expect(await stockAt(fromBranchId)).toBe(0)
+    expect(await stockAt(toBranchId)).toBe(20)
+  })
+
+  test('insufficient stock at source: throws ConflictError, source and destination both unchanged, no movements logged', async () => {
+    await expect(transferRepo.createTransfer(tenantId, input(21))).rejects.toThrow(ConflictError)
+    await expect(transferRepo.createTransfer(tenantId, input(21))).rejects.toThrow('Insufficient stock at source branch')
+
+    expect(await stockAt(fromBranchId)).toBe(20) // unchanged
+    expect(await stockAt(toBranchId)).toBe(0) // destination row never created
+
+    const movementCount = await prisma.stockMovement.count({ where: { tenantId, itemId: productId } })
+    expect(movementCount).toBe(0)
+  })
+
+  test('two concurrent transfers against the same 20-unit source, only one requesting more than available: exactly one succeeds', async () => {
+    const results = await Promise.allSettled([
+      transferRepo.createTransfer(tenantId, input(12)),
+      transferRepo.createTransfer(tenantId, input(12)),
+    ])
+    const fulfilled = results.filter((r) => r.status === 'fulfilled')
+    expect(fulfilled).toHaveLength(1)
+    expect(await stockAt(fromBranchId)).toBe(8) // 20 - 12
+    expect(await stockAt(toBranchId)).toBe(12)
+  })
+})
