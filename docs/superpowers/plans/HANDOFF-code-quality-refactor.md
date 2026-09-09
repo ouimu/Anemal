@@ -85,19 +85,16 @@ those just add a step before step 1, they don't skip the QA step.
     not introduced by this phase) — the two `getTenantSubdomain` call sites
     are verified by inspection only. Adding tests now would break Gate 4
     (test-set equality) mid-phase; tracked as a follow-up, not a blocker.
-  - **F-2 (medium) — metric disagreement, not re-litigated here:** QA
-    independently computed reverse-ponytail metrics and got abstractions
-    **+7** (counts every new exported function), where `@ponytail-agent`'s
-    own two runs this same session counted abstractions **down** (4 inline
-    call sites collapsed to 0, one duplicated 8-line block collapsed to one
-    function — a call-site/duplication count, not a raw new-export count).
-    Both are legitimate readings of "abstractions" under different
-    definitions. `@ponytail-agent`'s verdict (APPROVE, documented exception)
-    stands as the authoritative gate result since it *is* the gate: QA's
-    count is a second opinion surfaced for the human, not a re-run of the
-    gate itself. Flagging the definitional gap for whoever owns
-    `.claude/agents/ponytail-agent/SKILL.md` — the "abstractions" metric
-    needs one settled definition.
+  - **F-2 (medium) — RESOLVED 2026-09-09:** QA and `@ponytail-agent` counted
+    "abstractions" differently (QA: +7 raw new exports; ponytail: down, by
+    duplicated-call-site count). Escalated to the human, decided: count
+    duplication/call-site reduction, not raw new exports — collapsing N
+    repeated blocks into 1 shared function counts as **down** even though it
+    adds an export, because the point of the metric is "how many places need
+    a fix repeated," not "how many named things exist." `@ponytail-agent`'s
+    original Phase 1 verdict (APPROVE) was already using this definition and
+    stands unchanged. Codified in
+    `.claude/agents/ponytail-agent/SKILL.md` under Mode 3 (`reverse`).
   - **F-3 (low):** only `isStillEntitled`'s inactive-user branch is
     test-covered; tenant-inactive / permission-revoked / cross-tenant-userId
     branches aren't (pre-existing gap, now cheaply unit-testable).

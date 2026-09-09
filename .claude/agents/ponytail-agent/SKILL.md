@@ -104,6 +104,26 @@ A refactor must make the codebase **smaller or flatter**. Same criteria, inverte
 
 Files/LOC/abstractions all increasing = a feature wearing a refactor's clothes. **REJECT**, and say so.
 
+**"Abstraction count" — definition (decided 2026-09-09, after a Phase-1 disagreement
+with `@qa-agent` counting it the other way):** count **duplicated call sites / repeated
+logic**, not raw new exported symbols. A layering-conformance fix (moving an inline
+`prisma.*` call, or any other repeated block, into a named repository/service function)
+*always* adds new exports — that is not the signal to watch. The signal is whether a
+place that used to need the same fix applied N times now needs it applied once. Count it
+as:
+- **down** — N ≥ 2 duplicated inline blocks collapsed into 1 shared function (this is
+  the common case for a layering fix, and it counts as down even though the export
+  count went up)
+- **flat** — a single inline call moved to a named function 1:1, no duplication removed
+- **up** — a new abstraction introduced where none of the callers needed one (a genuine
+  premature abstraction — the case criterion #8 already targets in `gate` mode)
+
+Rationale: the reason duplication counts as complexity is that a future fix has to be
+repeated at every call site. Collapsing duplicates removes that cost even when it adds a
+function signature and an import line to read. A raw new-export count does not
+distinguish "real DRY-up" from "premature abstraction" — this refactor's own definition
+does, and is the one `@ponytail-agent` uses.
+
 ---
 
 ## Scope
