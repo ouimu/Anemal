@@ -9,12 +9,11 @@
 // would fall back to the fixed default origin on these branches instead of
 // the correct tenant origin, which this controller explicitly avoids.
 import { Request, Response } from 'express'
-import prisma from '../config/db'
 import { verifyOAuthState } from '../utils/oauth-state'
 import { consumeNonce } from '../models/oauth-connect-nonce.repository'
+import { isStillEntitled } from '../services/auth.service'
 import * as tenantStorageConfigRepo from '../models/tenant-storage-config.repository'
 import * as auditRepo from '../models/settings-audit.repository'
-import { resolvePermissions } from '../services/permission.service'
 import { encryptField } from '../utils/encryption'
 import { hashAccountId } from '../utils/account-id-hash'
 import { exchangeCodeForTokens, createOneDriveClient } from '../config/onedrive-client'
@@ -74,14 +73,7 @@ export async function handleOneDriveOAuthCallback(req: Request, res: Response): 
   }
 
   // N-9/I-12: re-verify user/tenant active + permission still held, right before persisting.
-  const [user, tenant] = await Promise.all([
-    prisma.user.findFirst({ where: { id: verified.userId, tenantId: verified.tenantId }, select: { isActive: true } }),
-    prisma.tenant.findUnique({ where: { id: verified.tenantId }, select: { isActive: true } }),
-  ])
-  const perms = user?.isActive !== false && tenant?.isActive !== false
-    ? await resolvePermissions(verified.userId, verified.tenantId)
-    : new Set<string>()
-  const stillEntitled = !!user && user.isActive !== false && !!tenant && tenant.isActive !== false && perms.has('clinic.integrations.edit')
+  const stillEntitled = await isStillEntitled(verified.tenantId, verified.userId, 'clinic.integrations.edit')
   if (!stillEntitled) {
     res.redirect(`${verified.origin}/settings/storage?error=onedrive_not_authorized`)
     return

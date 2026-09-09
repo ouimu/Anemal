@@ -392,3 +392,21 @@ export async function changePassword(
   await refreshTokenRepo.revokeAllForUser(userId)
 }
 
+/**
+ * Grill N-9: re-verify a user + tenant are still active and the caller still
+ * holds a specific permission, immediately before a storage-provider OAuth
+ * connect callback persists tokens. These callbacks never pass through
+ * authMiddleware's normal checks (they carry no JWT), so this is their only
+ * entitlement check.
+ */
+export async function isStillEntitled(tenantId: number, userId: number, permissionCode: string): Promise<boolean> {
+  const [user, tenant] = await Promise.all([
+    authRepo.findUserActiveStatus(tenantId, userId),
+    authRepo.findTenantActiveStatus(tenantId),
+  ])
+  const perms = user?.isActive !== false && tenant?.isActive !== false
+    ? await resolvePermissions(userId, tenantId)
+    : new Set<string>()
+  return !!user && user.isActive !== false && !!tenant && tenant.isActive !== false && perms.has(permissionCode)
+}
+

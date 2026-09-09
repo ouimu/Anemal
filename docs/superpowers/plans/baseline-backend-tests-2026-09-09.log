@@ -1,0 +1,591 @@
+[jest-global-setup] Starting full seed (tenants, RBAC, users, branches)...
+ts-jest[ts-jest-transformer] (WARN) Define `ts-jest` config under `globals` is deprecated. Please do
+transform: {
+    <transform_regex>: ['ts-jest', { /* ts-jest config goes here in Jest */ }],
+},
+See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/presets#advanced
+ts-jest[config] (WARN) 
+    The "ts-jest" config option "isolatedModules" is deprecated and will be removed in v30.0.0. Please use "isolatedModules: true" in D:/Development/Anemal/.claude/worktrees/refactor+code-quality-phase1/src/backend/tsconfig.json instead, see https://www.typescriptlang.org/tsconfig/#isolatedModules
+  
+🌱 Seeding database...
+  ✓ company_types — 5 types seeded
+[seed-rbac] Starting RBAC seed...
+[seed-rbac] Seeding 52 permissions...
+[seed-rbac] Permissions seeded.
+[seed-rbac] Seeding system role: clinic_admin
+[seed-rbac]   Found existing role id=1
+[seed-rbac]   Assigned 48 permissions to clinic_admin
+[seed-rbac] Seeding system role: doctor
+[seed-rbac]   Found existing role id=2
+[seed-rbac]   Assigned 20 permissions to doctor
+[seed-rbac] Seeding system role: clinic_staff
+[seed-rbac]   Found existing role id=3
+[seed-rbac]   Assigned 31 permissions to clinic_staff
+[seed-rbac] RBAC seed complete.
+  ✓ clinic_admin — admin@dev-clinic.com
+  ✓ doctor — doctor@dev-clinic.com
+  ✓ clinic_staff — staff@dev-clinic.com
+  ✓ clinic_admin — admin@test-clinic.com
+  ✓ doctor — doctor@test-clinic.com
+  ✓ clinic_staff — staff@test-clinic.com
+  ✓ platform_super_admin — admin@anemal.app
+[seed-plans] upserted: starter
+[seed-plans] upserted: professional
+[seed-plans] upserted: clinic_plus
+  ✓ branches: Main Branch, Downtown Branch (dev-clinic), Main Branch (test-clinic)
+✅ Seed complete.
+   Tenant A: dev-clinic (id: 94)
+   Tenant B: test-clinic (id: 95)
+[jest-global-setup] Seed complete.
+PASS __tests__/platformAudit.test.ts (5.303 s)
+PASS __tests__/clinicUsage.test.ts
+PASS __tests__/env.storageGuard.test.ts
+{"level":"warn","time":"2026-09-09T01:12:17.128Z","msg":"Google Drive OAuth callback failed","tenantId":33752,"err":"Error: invalid_grant"}
+PASS tests/integration/oauth-google-callback.test.ts
+PASS tests/integration/stock-lot-expiry.test.ts
+PASS tests/unit/promptpay-qr.test.ts
+PASS tests/unit/user.repository.test.ts
+PASS tests/unit/role.service.test.ts
+  ● Console
+
+    console.log
+      prisma:error 
+      Invalid `prisma.clinicRole.deleteMany()` invocation in
+      D:\Development\Anemal\.claude\worktrees\refactor+code-quality-phase1\src\backend\models\role.repository.ts:154:28
+      
+        151  * @param roleId   - Role to remove.
+        152  */
+        153 export function deleteRole(tenantId: number, roleId: number) {
+      → 154   return prisma.clinicRole.deleteMany(
+      Foreign key constraint violated: `user_roles_roleId_fkey (index)`
+
+      at Object.mc (node_modules/@prisma/client/runtime/library.js:21:432)
+
+PASS tests/unit/role.repository.test.ts
+PASS __tests__/oauth-connect-nonce.repository.test.ts
+PASS tests/integration/backfill-main-branch.test.ts
+PASS tests/scripts/collapse-multi-role.test.ts
+PASS __tests__/pdf-font-coverage.test.ts
+PASS tests/unit/refresh-token.repository.test.ts
+PASS tests/integration/dashboard-migration.test.ts
+PASS tests/helpers/__tests__/expressRouteWalker.test.ts
+PASS tests/unit/password.test.ts
+PASS tests/unit/audit-sanitize-depth.test.ts
+PASS tests/unit/permission.middleware.test.ts
+PASS __tests__/smb-client.test.ts
+PASS tests/unit/permission.service.test.ts
+PASS __tests__/filename.test.ts
+PASS tests/unit/middlewares.test.ts
+PASS tests/unit/encryption.test.ts
+PASS tests/unit/authService.test.ts
+{"level":"warn","time":"2026-09-09T01:12:23.324Z","msg":"Validation failed","tenantId":33766,"code":"VALIDATION_ERROR","path":"/api/invoices"}
+PASS tests/integration/vat-config.test.ts
+PASS tests/integration/vaccination-create-permission.test.ts
+{"level":"warn","time":"2026-09-09T01:12:25.377Z","msg":"Pet not found","tenantId":33768,"code":"VACCINATION_ERROR","path":"/api/vaccinations"}
+PASS tests/integration/vaccination-worklist.test.ts
+{"level":"warn","time":"2026-09-09T01:12:26.429Z","msg":"Cannot deactivate the primary clinic admin","tenantId":33769,"code":"USER_ERROR","path":"/users/55490"}
+{"level":"warn","time":"2026-09-09T01:12:26.460Z","msg":"Cannot deactivate the primary clinic admin","tenantId":33769,"code":"USER_ERROR","path":"/users/55490"}
+{"level":"warn","time":"2026-09-09T01:12:26.552Z","msg":"Cannot change the primary clinic admin's role","tenantId":33769,"code":"USER_ERROR","path":"/users/55490"}
+{"level":"warn","time":"2026-09-09T01:12:26.723Z","msg":"Quota exceeded for users: limit is 2, current is 2","tenantId":33769,"code":"QUOTA_EXCEEDED","path":"/users/55491"}
+{"level":"warn","time":"2026-09-09T01:12:26.845Z","msg":"Cannot change the primary clinic admin's role","tenantId":33769,"code":"USER_ERROR","path":"/users/55490"}
+PASS tests/integration/user-primary-admin-protection.test.ts
+PASS tests/integration/transactions.test.ts
+{"level":"warn","time":"2026-09-09T01:12:29.166Z","msg":"Username or email already in use within this clinic","tenantId":33772,"code":"USER_ERROR","path":"/users"}
+PASS tests/integration/user-create-t5.test.ts
+  ● Console
+
+    console.log
+      prisma:error 
+      Invalid `tx.user.create()` invocation in
+      D:\Development\Anemal\.claude\worktrees\refactor+code-quality-phase1\src\backend\models\user.repository.ts:55:30
+      
+        52   data: CreateUserData,
+        53   roleId: number,
+        54 ) {
+      → 55   const user = await tx.user.create(
+      Unique constraint failed on the fields: (`tenantId`,`username`)
+
+      at Object.mc (node_modules/@prisma/client/runtime/library.js:21:432)
+
+{"level":"warn","time":"2026-09-09T01:12:30.362Z","msg":"Staff and Doctor must be assigned to at least one branch","tenantId":33773,"code":"USER_ERROR","path":"/users/55501/branch"}
+{"level":"warn","time":"2026-09-09T01:12:30.389Z","msg":"One or more branches not found in this tenant","tenantId":33773,"code":"USER_ERROR","path":"/users/55501/branch"}
+{"level":"warn","time":"2026-09-09T01:12:30.418Z","msg":"Validation failed","tenantId":33773,"code":"VALIDATION_ERROR","path":"/users/55501/branch"}
+PASS tests/integration/user-branch-assign.test.ts
+{"level":"warn","time":"2026-09-09T01:12:31.471Z","msg":"User not found","tenantId":95,"code":"USER_ERROR","path":"/users/154"}
+{"level":"warn","time":"2026-09-09T01:12:31.580Z","msg":"Validation failed","tenantId":95,"code":"VALIDATION_ERROR","path":"/users"}
+PASS tests/integration/tenantIsolation.test.ts
+{"level":"warn","time":"2026-09-09T01:12:32.794Z","msg":"Changing the storage location requires confirmation — existing files will not move automatically","tenantId":33775,"code":"STORAGE_SWITCH_CONFIRMATION_REQUIRED","path":"/api/settings/clinic/storage-config"}
+{"level":"warn","time":"2026-09-09T01:12:32.808Z","msg":"Validation failed","tenantId":33775,"code":"VALIDATION_ERROR","path":"/api/settings/clinic/storage-config"}
+{"level":"warn","time":"2026-09-09T01:12:32.820Z","msg":"Cannot reach host: 10.255.255.1","tenantId":33775,"code":"SMB_HOST_UNREACHABLE","path":"/api/settings/clinic/storage-config"}
+PASS tests/integration/storage-config.test.ts
+PASS tests/integration/storage-config-onedrive-authorize.test.ts
+{"level":"warn","time":"2026-09-09T01:12:35.177Z","msg":"Validation failed","tenantId":33777,"code":"VALIDATION_ERROR","path":"/api/settings/clinic"}
+{"level":"warn","time":"2026-09-09T01:12:35.185Z","msg":"Validation failed","tenantId":33777,"code":"VALIDATION_ERROR","path":"/api/settings/clinic"}
+{"level":"warn","time":"2026-09-09T01:12:35.343Z","msg":"Validation failed","tenantId":33777,"code":"VALIDATION_ERROR","path":"/api/settings/clinic"}
+{"level":"warn","time":"2026-09-09T01:12:35.353Z","msg":"Validation failed","tenantId":33777,"code":"VALIDATION_ERROR","path":"/api/settings/clinic"}
+{"level":"warn","time":"2026-09-09T01:12:35.583Z","msg":"Validation failed","tenantId":33777,"code":"VALIDATION_ERROR","path":"/api/settings/clinic/hours"}
+{"level":"warn","time":"2026-09-09T01:12:35.638Z","msg":"Validation failed","tenantId":33777,"code":"VALIDATION_ERROR","path":"/api/settings/personal"}
+{"level":"warn","time":"2026-09-09T01:12:35.810Z","msg":"Validation failed","code":"VALIDATION_ERROR","path":"/platform/settings"}
+{"level":"warn","time":"2026-09-09T01:12:35.816Z","msg":"Validation failed","code":"VALIDATION_ERROR","path":"/platform/settings"}
+{"level":"warn","time":"2026-09-09T01:12:36.026Z","msg":"Validation failed","code":"VALIDATION_ERROR","path":"/platform/settings"}
+PASS tests/integration/settings-api.test.ts
+PASS tests/integration/storage-config-google-authorize.test.ts
+PASS tests/integration/settings.test.ts
+PASS tests/integration/seedCredentialSmoke.test.ts
+{"level":"warn","time":"2026-09-09T01:12:39.821Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/auth/switch-branch"}
+{"level":"warn","time":"2026-09-09T01:12:39.913Z","msg":"User not found","tenantId":33782,"code":"USER_ERROR","path":"/users/999999"}
+{"level":"warn","time":"2026-09-09T01:12:39.945Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/users/"}
+{"level":"warn","time":"2026-09-09T01:12:39.983Z","msg":"User not found","tenantId":33782,"code":"USER_ERROR","path":"/users/999999"}
+{"level":"warn","time":"2026-09-09T01:12:40.015Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/users/999999/password"}
+{"level":"warn","time":"2026-09-09T01:12:40.051Z","msg":"User not found","tenantId":33782,"code":"USER_ERROR","path":"/users/999999"}
+{"level":"warn","time":"2026-09-09T01:12:40.085Z","msg":"User not found","tenantId":33782,"code":"USER_ERROR","path":"/users/999999/branches"}
+{"level":"warn","time":"2026-09-09T01:12:40.119Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/users/999999/branch"}
+{"level":"warn","time":"2026-09-09T01:12:40.612Z","msg":"Owner not found","tenantId":33782,"code":"OWNER_ERROR","path":"/api/owners/999999"}
+{"level":"warn","time":"2026-09-09T01:12:40.625Z","msg":"Owner not found","tenantId":33782,"code":"OWNER_ERROR","path":"/api/owners/999999"}
+{"level":"warn","time":"2026-09-09T01:12:40.637Z","msg":"Owner not found","tenantId":33782,"code":"OWNER_ERROR","path":"/api/owners/999999"}
+{"level":"warn","time":"2026-09-09T01:12:40.653Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/owners/"}
+{"level":"warn","time":"2026-09-09T01:12:40.671Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/owners/"}
+{"level":"warn","time":"2026-09-09T01:12:40.689Z","msg":"Owner not found","tenantId":33782,"code":"OWNER_ERROR","path":"/api/owners/999999"}
+{"level":"warn","time":"2026-09-09T01:12:40.714Z","msg":"Owner not found","tenantId":33782,"code":"OWNER_ERROR","path":"/api/owners/999999"}
+{"level":"warn","time":"2026-09-09T01:12:40.734Z","msg":"Owner not found","tenantId":33782,"code":"OWNER_ERROR","path":"/api/owners/999999"}
+{"level":"warn","time":"2026-09-09T01:12:40.813Z","msg":"Pet not found","tenantId":33782,"code":"PET_ERROR","path":"/api/pets/999999"}
+{"level":"warn","time":"2026-09-09T01:12:40.826Z","msg":"Pet not found","tenantId":33782,"code":"PET_ERROR","path":"/api/pets/999999"}
+{"level":"warn","time":"2026-09-09T01:12:40.839Z","msg":"Pet not found","tenantId":33782,"code":"PET_ERROR","path":"/api/pets/999999"}
+{"level":"warn","time":"2026-09-09T01:12:40.854Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/pets/"}
+{"level":"warn","time":"2026-09-09T01:12:40.872Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/pets/"}
+{"level":"warn","time":"2026-09-09T01:12:40.889Z","msg":"Pet not found","tenantId":33782,"code":"PET_ERROR","path":"/api/pets/999999"}
+{"level":"warn","time":"2026-09-09T01:12:40.911Z","msg":"Pet not found","tenantId":33782,"code":"PET_ERROR","path":"/api/pets/999999"}
+{"level":"warn","time":"2026-09-09T01:12:40.927Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/pets/999999/photo"}
+{"level":"warn","time":"2026-09-09T01:12:40.943Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/pets/999999/photo"}
+{"level":"warn","time":"2026-09-09T01:12:40.961Z","msg":"Pet not found","tenantId":33782,"code":"PET_ERROR","path":"/api/pets/999999/photo"}
+{"level":"warn","time":"2026-09-09T01:12:40.974Z","msg":"Pet not found","tenantId":33782,"code":"PET_ERROR","path":"/api/pets/999999/photo"}
+{"level":"warn","time":"2026-09-09T01:12:40.987Z","msg":"Pet not found","tenantId":33782,"code":"PET_ERROR","path":"/api/pets/999999/photo"}
+{"level":"warn","time":"2026-09-09T01:12:41.140Z","msg":"Appointment not found","tenantId":33782,"code":"APPOINTMENT_ERROR","path":"/api/appointments/999999"}
+{"level":"warn","time":"2026-09-09T01:12:41.152Z","msg":"Appointment not found","tenantId":33782,"code":"APPOINTMENT_ERROR","path":"/api/appointments/999999"}
+{"level":"warn","time":"2026-09-09T01:12:41.163Z","msg":"Appointment not found","tenantId":33782,"code":"APPOINTMENT_ERROR","path":"/api/appointments/999999"}
+{"level":"warn","time":"2026-09-09T01:12:41.179Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/appointments/"}
+{"level":"warn","time":"2026-09-09T01:12:41.199Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/appointments/"}
+{"level":"warn","time":"2026-09-09T01:12:41.215Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/appointments/walk-in"}
+{"level":"warn","time":"2026-09-09T01:12:41.234Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/appointments/walk-in"}
+{"level":"warn","time":"2026-09-09T01:12:41.249Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/appointments/999999/status"}
+{"level":"warn","time":"2026-09-09T01:12:41.268Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/appointments/999999/status"}
+{"level":"warn","time":"2026-09-09T01:12:41.283Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/medical-records/"}
+{"level":"warn","time":"2026-09-09T01:12:41.292Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/medical-records/"}
+{"level":"warn","time":"2026-09-09T01:12:41.303Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/medical-records/"}
+{"level":"warn","time":"2026-09-09T01:12:41.324Z","msg":"Medical record not found","tenantId":33782,"code":"MEDICAL_RECORD_ERROR","path":"/api/medical-records/999999"}
+{"level":"warn","time":"2026-09-09T01:12:41.339Z","msg":"Medical record not found","tenantId":33782,"code":"MEDICAL_RECORD_ERROR","path":"/api/medical-records/999999"}
+{"level":"warn","time":"2026-09-09T01:12:41.351Z","msg":"Medical record not found","tenantId":33782,"code":"MEDICAL_RECORD_ERROR","path":"/api/medical-records/999999"}
+{"level":"warn","time":"2026-09-09T01:12:41.375Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/medical-records/"}
+{"level":"warn","time":"2026-09-09T01:12:41.412Z","msg":"Medical record not found","tenantId":33782,"code":"MEDICAL_RECORD_ERROR","path":"/api/medical-records/999999"}
+{"level":"warn","time":"2026-09-09T01:12:41.439Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/medical-records/999999/attachments"}
+{"level":"warn","time":"2026-09-09T01:12:41.448Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/medical-records/999999/attachments"}
+{"level":"warn","time":"2026-09-09T01:12:41.458Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/medical-records/999999/attachments"}
+{"level":"warn","time":"2026-09-09T01:12:41.477Z","msg":"Medical record not found","tenantId":33782,"code":"MEDICAL_RECORD_ERROR","path":"/api/medical-records/999999/attachments/999999/download"}
+{"level":"warn","time":"2026-09-09T01:12:41.488Z","msg":"Medical record not found","tenantId":33782,"code":"MEDICAL_RECORD_ERROR","path":"/api/medical-records/999999/attachments/999999/download"}
+{"level":"warn","time":"2026-09-09T01:12:41.502Z","msg":"Medical record not found","tenantId":33782,"code":"MEDICAL_RECORD_ERROR","path":"/api/medical-records/999999/attachments/999999/download"}
+{"level":"warn","time":"2026-09-09T01:12:41.521Z","msg":"Medical record not found","tenantId":33782,"code":"MEDICAL_RECORD_ERROR","path":"/api/medical-records/999999/attachments/999999"}
+{"level":"warn","time":"2026-09-09T01:12:41.534Z","msg":"Medical record not found","tenantId":33782,"code":"MEDICAL_RECORD_ERROR","path":"/api/medical-records/999999/attachments/999999"}
+{"level":"warn","time":"2026-09-09T01:12:41.546Z","msg":"Medical record not found","tenantId":33782,"code":"MEDICAL_RECORD_ERROR","path":"/api/medical-records/999999/attachments/999999"}
+{"level":"warn","time":"2026-09-09T01:12:41.565Z","msg":"Prescription not found","tenantId":33782,"code":"PDF_ERROR","path":"/api/prescriptions/999999/pdf"}
+{"level":"warn","time":"2026-09-09T01:12:41.578Z","msg":"Prescription not found","tenantId":33782,"code":"PDF_ERROR","path":"/api/prescriptions/999999/pdf"}
+{"level":"warn","time":"2026-09-09T01:12:41.589Z","msg":"Prescription not found","tenantId":33782,"code":"PDF_ERROR","path":"/api/prescriptions/999999/pdf"}
+{"level":"warn","time":"2026-09-09T01:12:41.613Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/prescriptions/"}
+{"level":"warn","time":"2026-09-09T01:12:41.653Z","msg":"Prescription not found","tenantId":33782,"code":"PRESCRIPTION_ERROR","path":"/api/prescriptions/999999"}
+{"level":"warn","time":"2026-09-09T01:12:41.771Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/vaccinations/"}
+{"level":"warn","time":"2026-09-09T01:12:41.781Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/vaccinations/"}
+{"level":"warn","time":"2026-09-09T01:12:41.791Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/vaccinations/"}
+{"level":"warn","time":"2026-09-09T01:12:41.814Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/vaccinations/"}
+{"level":"warn","time":"2026-09-09T01:12:41.823Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/vaccinations/"}
+{"level":"warn","time":"2026-09-09T01:12:41.839Z","msg":"No active branch selected","tenantId":33782,"code":"NO_BRANCH","path":"/api/products/alerts"}
+{"level":"warn","time":"2026-09-09T01:12:41.928Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/products/"}
+{"level":"warn","time":"2026-09-09T01:12:41.946Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/products/"}
+{"level":"warn","time":"2026-09-09T01:12:41.960Z","msg":"No active branch selected","tenantId":33782,"code":"NO_BRANCH","path":"/api/products/999999"}
+{"level":"warn","time":"2026-09-09T01:12:41.975Z","msg":"Product not found","tenantId":33782,"code":"PRODUCT_ERROR","path":"/api/products/999999"}
+{"level":"warn","time":"2026-09-09T01:12:41.987Z","msg":"Product not found","tenantId":33782,"code":"PRODUCT_ERROR","path":"/api/products/999999"}
+{"level":"warn","time":"2026-09-09T01:12:42.003Z","msg":"No active branch selected","tenantId":33782,"code":"NO_BRANCH","path":"/api/products/999999"}
+{"level":"warn","time":"2026-09-09T01:12:42.023Z","msg":"Product not found","tenantId":33782,"code":"PRODUCT_ERROR","path":"/api/products/999999"}
+{"level":"warn","time":"2026-09-09T01:12:42.039Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/products/999999/stock-in"}
+{"level":"warn","time":"2026-09-09T01:12:42.058Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/products/999999/stock-in"}
+{"level":"warn","time":"2026-09-09T01:12:42.074Z","msg":"No active branch selected","tenantId":33782,"code":"NO_BRANCH","path":"/api/products/999999/movements"}
+{"level":"warn","time":"2026-09-09T01:12:42.085Z","msg":"Product not found","tenantId":33782,"code":"PRODUCT_ERROR","path":"/api/products/999999/movements"}
+{"level":"warn","time":"2026-09-09T01:12:42.095Z","msg":"Product not found","tenantId":33782,"code":"PRODUCT_ERROR","path":"/api/products/999999/movements"}
+{"level":"warn","time":"2026-09-09T01:12:42.113Z","msg":"No active branch selected","tenantId":33782,"code":"NO_BRANCH","path":"/api/products/999999"}
+{"level":"warn","time":"2026-09-09T01:12:42.137Z","msg":"Product not found","tenantId":33782,"code":"PRODUCT_ERROR","path":"/api/products/999999"}
+{"level":"warn","time":"2026-09-09T01:12:42.261Z","msg":"No active branch selected","tenantId":33782,"code":"NO_BRANCH","path":"/api/invoices/"}
+{"level":"warn","time":"2026-09-09T01:12:42.285Z","msg":"Invoice must have at least one item","tenantId":33782,"code":"INVOICE_ERROR","path":"/api/invoices/"}
+{"level":"warn","time":"2026-09-09T01:12:42.305Z","msg":"Invoice not found","tenantId":33782,"code":"PDF_ERROR","path":"/api/invoices/999999/pdf"}
+{"level":"warn","time":"2026-09-09T01:12:42.320Z","msg":"Invoice not found","tenantId":33782,"code":"PDF_ERROR","path":"/api/invoices/999999/pdf"}
+{"level":"warn","time":"2026-09-09T01:12:42.333Z","msg":"Invoice not found","tenantId":33782,"code":"PDF_ERROR","path":"/api/invoices/999999/pdf"}
+{"level":"warn","time":"2026-09-09T01:12:42.354Z","msg":"Invoice not found","tenantId":33782,"code":"NOT_FOUND","path":"/api/invoices/999999/promptpay-qr"}
+{"level":"warn","time":"2026-09-09T01:12:42.367Z","msg":"Invoice not found","tenantId":33782,"code":"NOT_FOUND","path":"/api/invoices/999999/promptpay-qr"}
+{"level":"warn","time":"2026-09-09T01:12:42.378Z","msg":"Invoice not found","tenantId":33782,"code":"NOT_FOUND","path":"/api/invoices/999999/promptpay-qr"}
+{"level":"warn","time":"2026-09-09T01:12:42.396Z","msg":"Invoice not found","tenantId":33782,"code":"INVOICE_ERROR","path":"/api/invoices/999999"}
+{"level":"warn","time":"2026-09-09T01:12:42.408Z","msg":"Invoice not found","tenantId":33782,"code":"INVOICE_ERROR","path":"/api/invoices/999999"}
+{"level":"warn","time":"2026-09-09T01:12:42.420Z","msg":"Invoice not found","tenantId":33782,"code":"INVOICE_ERROR","path":"/api/invoices/999999"}
+{"level":"warn","time":"2026-09-09T01:12:42.435Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/invoices/999999/payment"}
+{"level":"warn","time":"2026-09-09T01:12:42.454Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/invoices/999999/payment"}
+{"level":"warn","time":"2026-09-09T01:12:42.783Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/branches/"}
+{"level":"warn","time":"2026-09-09T01:12:42.819Z","msg":"Branch not found","tenantId":33782,"code":"BRANCH_ERROR","path":"/api/branches/999999"}
+{"level":"warn","time":"2026-09-09T01:12:42.833Z","msg":"Branch not found","tenantId":33782,"code":"BRANCH_ERROR","path":"/api/branches/999999"}
+{"level":"warn","time":"2026-09-09T01:12:42.844Z","msg":"Branch not found","tenantId":33782,"code":"BRANCH_ERROR","path":"/api/branches/999999"}
+{"level":"warn","time":"2026-09-09T01:12:42.862Z","msg":"Branch not found","tenantId":33782,"code":"BRANCH_ERROR","path":"/api/branches/999999"}
+{"level":"warn","time":"2026-09-09T01:12:42.896Z","msg":"Branch not found","tenantId":33782,"code":"BRANCH_ERROR","path":"/api/branches/999999/shifts"}
+{"level":"warn","time":"2026-09-09T01:12:42.908Z","msg":"Branch not found","tenantId":33782,"code":"BRANCH_ERROR","path":"/api/branches/999999/shifts"}
+{"level":"warn","time":"2026-09-09T01:12:42.920Z","msg":"Branch not found","tenantId":33782,"code":"BRANCH_ERROR","path":"/api/branches/999999/shifts"}
+{"level":"warn","time":"2026-09-09T01:12:42.936Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/branches/999999/shifts"}
+{"level":"warn","time":"2026-09-09T01:12:42.970Z","msg":"Branch not found","tenantId":33782,"code":"BRANCH_ERROR","path":"/api/branches/999999/shifts/999999"}
+{"level":"warn","time":"2026-09-09T01:12:43.046Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/inventory/transfers/"}
+{"level":"warn","time":"2026-09-09T01:12:43.065Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/inventory/transfers/"}
+{"level":"warn","time":"2026-09-09T01:12:43.127Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/hospitalizations/"}
+{"level":"warn","time":"2026-09-09T01:12:43.137Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/hospitalizations/"}
+{"level":"warn","time":"2026-09-09T01:12:43.146Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/hospitalizations/"}
+{"level":"warn","time":"2026-09-09T01:12:43.163Z","msg":"Hospitalization not found","tenantId":33782,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/999999"}
+{"level":"warn","time":"2026-09-09T01:12:43.177Z","msg":"Hospitalization not found","tenantId":33782,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/999999"}
+{"level":"warn","time":"2026-09-09T01:12:43.189Z","msg":"Hospitalization not found","tenantId":33782,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/999999"}
+{"level":"warn","time":"2026-09-09T01:12:43.205Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/hospitalizations/999999"}
+{"level":"warn","time":"2026-09-09T01:12:43.214Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/hospitalizations/999999"}
+{"level":"warn","time":"2026-09-09T01:12:43.222Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/hospitalizations/999999"}
+{"level":"warn","time":"2026-09-09T01:12:43.242Z","msg":"Hospitalization not found","tenantId":33782,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/999999"}
+{"level":"warn","time":"2026-09-09T01:12:43.256Z","msg":"Hospitalization not found","tenantId":33782,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/999999"}
+{"level":"warn","time":"2026-09-09T01:12:43.268Z","msg":"Hospitalization not found","tenantId":33782,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/999999"}
+{"level":"warn","time":"2026-09-09T01:12:43.284Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/hospitalizations/999999/care"}
+{"level":"warn","time":"2026-09-09T01:12:43.293Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/hospitalizations/999999/care"}
+{"level":"warn","time":"2026-09-09T01:12:43.302Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/hospitalizations/999999/care"}
+{"level":"warn","time":"2026-09-09T01:12:43.317Z","msg":"No active branch selected","tenantId":33782,"code":"NO_BRANCH","path":"/api/hospitalizations/999999/discharge"}
+{"level":"warn","time":"2026-09-09T01:12:43.329Z","msg":"Hospitalization not found","tenantId":33782,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/999999/discharge"}
+{"level":"warn","time":"2026-09-09T01:12:43.342Z","msg":"Hospitalization not found","tenantId":33782,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/999999/discharge"}
+{"level":"warn","time":"2026-09-09T01:12:43.402Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/blood-bank/donors"}
+{"level":"warn","time":"2026-09-09T01:12:43.411Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/blood-bank/donors"}
+{"level":"warn","time":"2026-09-09T01:12:43.479Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/blood-bank/collections"}
+{"level":"warn","time":"2026-09-09T01:12:43.489Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/blood-bank/collections"}
+{"level":"warn","time":"2026-09-09T01:12:43.557Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/blood-bank/transfusions"}
+{"level":"warn","time":"2026-09-09T01:12:43.566Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/blood-bank/transfusions"}
+{"level":"warn","time":"2026-09-09T01:12:43.631Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/grooming/bookings"}
+{"level":"warn","time":"2026-09-09T01:12:43.649Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/grooming/bookings"}
+{"level":"warn","time":"2026-09-09T01:12:43.664Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/grooming/bookings/999999/status"}
+{"level":"warn","time":"2026-09-09T01:12:43.685Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/grooming/bookings/999999/status"}
+{"level":"warn","time":"2026-09-09T01:12:43.702Z","msg":"Owner not found","tenantId":33782,"code":"LOYALTY_ERROR","path":"/api/loyalty/owners/999999"}
+{"level":"warn","time":"2026-09-09T01:12:43.724Z","msg":"Owner not found","tenantId":33782,"code":"LOYALTY_ERROR","path":"/api/loyalty/owners/999999"}
+{"level":"warn","time":"2026-09-09T01:12:43.740Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/loyalty/redeem"}
+{"level":"warn","time":"2026-09-09T01:12:43.757Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/loyalty/redeem"}
+{"level":"warn","time":"2026-09-09T01:12:43.856Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/reminders/"}
+{"level":"warn","time":"2026-09-09T01:12:43.874Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/reminders/"}
+{"level":"warn","time":"2026-09-09T01:12:43.890Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/reminders/999999/status"}
+{"level":"warn","time":"2026-09-09T01:12:43.907Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/reminders/999999/status"}
+{"level":"warn","time":"2026-09-09T01:12:44.107Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/settings/clinic/notifications/test"}
+{"level":"warn","time":"2026-09-09T01:12:44.280Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/settings/clinic/hours"}
+{"level":"warn","time":"2026-09-09T01:12:44.356Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/settings/clinic/storage-config"}
+{"level":"warn","time":"2026-09-09T01:12:44.508Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/clinic/roles/clone"}
+{"level":"warn","time":"2026-09-09T01:12:44.555Z","msg":"Role not found","tenantId":33782,"code":"NOT_FOUND","path":"/clinic/roles/999999/permissions"}
+{"level":"warn","time":"2026-09-09T01:12:44.597Z","msg":"Role not found","tenantId":33782,"code":"NOT_FOUND","path":"/clinic/roles/999999"}
+{"level":"warn","time":"2026-09-09T01:12:45.659Z","msg":"Validation failed","tenantId":33782,"code":"VALIDATION_ERROR","path":"/api/invoices/999999/payment"}
+PASS tests/integration/roleRouteMatrix.test.ts (6.92 s)
+{"level":"warn","time":"2026-09-09T01:12:46.879Z","msg":"A role named 'Custom Staff Clone' already exists for this tenant","tenantId":33783,"code":"CONFLICT","path":"/clinic/roles/clone"}
+{"level":"warn","time":"2026-09-09T01:12:46.892Z","msg":"Validation failed","tenantId":33783,"code":"VALIDATION_ERROR","path":"/clinic/roles/clone"}
+{"level":"warn","time":"2026-09-09T01:12:46.952Z","msg":"The Admin role cannot be cloned. Assign the Admin role directly instead.","tenantId":33783,"code":"FORBIDDEN","path":"/clinic/roles/clone"}
+{"level":"warn","time":"2026-09-09T01:12:47.012Z","msg":"System roles are read-only","tenantId":33783,"code":"FORBIDDEN","path":"/clinic/roles/1/permissions"}
+{"level":"warn","time":"2026-09-09T01:12:47.092Z","msg":"Cannot grant permissions you do not hold: prescriptions.create","tenantId":33783,"code":"FORBIDDEN","path":"/clinic/roles/6001/permissions"}
+{"level":"warn","time":"2026-09-09T01:12:47.158Z","msg":"System roles cannot be deleted","tenantId":33783,"code":"FORBIDDEN","path":"/clinic/roles/1"}
+{"level":"warn","time":"2026-09-09T01:12:47.177Z","msg":"Cannot delete a role that is currently assigned to users","tenantId":33783,"code":"CONFLICT","path":"/clinic/roles/6002"}
+PASS tests/integration/roleManagement.test.ts
+PASS tests/integration/report-branch.test.ts
+{"level":"warn","time":"2026-09-09T01:12:49.613Z","msg":"System roles cannot be deleted","tenantId":33784,"code":"FORBIDDEN","path":"/clinic/roles/1"}
+{"level":"warn","time":"2026-09-09T01:12:49.679Z","msg":"Cannot delete a role that is currently assigned to users","tenantId":33784,"code":"CONFLICT","path":"/clinic/roles/6007"}
+{"level":"warn","time":"2026-09-09T01:12:49.833Z","msg":"Role does not belong to your tenant","tenantId":33785,"code":"FORBIDDEN","path":"/clinic/roles/6008/permissions"}
+{"level":"warn","time":"2026-09-09T01:12:49.849Z","msg":"Role does not belong to your tenant","tenantId":33785,"code":"FORBIDDEN","path":"/clinic/roles/6008"}
+PASS tests/integration/roleEditor-t5f01.test.ts
+{"level":"warn","time":"2026-09-09T01:12:50.986Z","msg":"Invalid or expired token","code":"AUTH_ERROR","path":"/auth/refresh"}
+{"level":"warn","time":"2026-09-09T01:12:51.060Z","msg":"Invalid or expired token","code":"AUTH_ERROR","path":"/auth/refresh"}
+{"level":"warn","time":"2026-09-09T01:12:51.069Z","msg":"Invalid or expired token","code":"AUTH_ERROR","path":"/auth/refresh"}
+{"level":"warn","time":"2026-09-09T01:12:51.110Z","msg":"Invalid or expired token","code":"AUTH_ERROR","path":"/auth/refresh"}
+{"level":"warn","time":"2026-09-09T01:12:51.145Z","msg":"Validation failed","code":"VALIDATION_ERROR","path":"/auth/refresh"}
+{"level":"warn","time":"2026-09-09T01:12:51.184Z","msg":"Invalid or expired token","code":"AUTH_ERROR","path":"/auth/refresh"}
+{"level":"warn","time":"2026-09-09T01:12:51.242Z","msg":"Invalid or expired token","code":"AUTH_ERROR","path":"/auth/refresh"}
+{"level":"warn","time":"2026-09-09T01:12:51.320Z","msg":"Validation failed","code":"VALIDATION_ERROR","path":"/auth/logout"}
+{"level":"warn","time":"2026-09-09T01:12:51.450Z","msg":"Invalid or expired token","code":"PLATFORM_AUTH_ERROR","path":"/platform/auth/refresh"}
+{"level":"warn","time":"2026-09-09T01:12:51.506Z","msg":"Invalid or expired token","code":"PLATFORM_AUTH_ERROR","path":"/platform/auth/refresh"}
+{"level":"warn","time":"2026-09-09T01:12:51.535Z","msg":"Invalid or expired token","code":"AUTH_ERROR","path":"/auth/refresh"}
+PASS tests/integration/refreshToken.test.ts
+PASS tests/integration/rbac-regression.test.ts
+PASS tests/integration/platformContract.test.ts
+{"level":"warn","time":"2026-09-09T01:12:55.797Z","msg":"At least one contact (email or phone) is required","code":"CONTACT_REQUIRED","path":"/platform/customers/33799/admin-users"}
+{"level":"warn","time":"2026-09-09T01:12:55.832Z","msg":"Password must be at least 8 characters","code":"WEAK_PASSWORD","path":"/platform/customers/33800/admin-users"}
+{"level":"warn","time":"2026-09-09T01:12:55.841Z","msg":"Customer not found","code":"CUSTOMER_NOT_FOUND","path":"/platform/customers/999999999/admin-users"}
+{"level":"warn","time":"2026-09-09T01:12:55.895Z","msg":"Quota exceeded for users: limit is 1, current is 1","code":"QUOTA_EXCEEDED","path":"/platform/customers/33801/admin-users"}
+{"level":"warn","time":"2026-09-09T01:12:55.962Z","msg":"Username already in use within this tenant","code":"USERNAME_CONFLICT","path":"/platform/customers/33802/admin-users"}
+{"level":"warn","time":"2026-09-09T01:12:56.184Z","msg":"Clinic admin user not found for this tenant","code":"ADMIN_USER_NOT_FOUND","path":"/platform/customers/33807/admin-users/55549/deactivate"}
+{"level":"warn","time":"2026-09-09T01:12:56.238Z","msg":"Clinic admin user not found for this tenant","code":"ADMIN_USER_NOT_FOUND","path":"/platform/customers/33809/admin-users/55551/deactivate"}
+{"level":"warn","time":"2026-09-09T01:12:56.300Z","msg":"User is already deactivated","code":"ALREADY_DEACTIVATED","path":"/platform/customers/33810/admin-users/55552/deactivate"}
+{"level":"warn","time":"2026-09-09T01:12:56.560Z","msg":"Password must be at least 8 characters","code":"WEAK_PASSWORD","path":"/platform/customers/33815/admin-users/55557/password"}
+{"level":"warn","time":"2026-09-09T01:12:56.624Z","msg":"Clinic admin user not found for this tenant","code":"ADMIN_USER_NOT_FOUND","path":"/platform/customers/33816/admin-users/55559/password"}
+{"level":"warn","time":"2026-09-09T01:12:56.768Z","msg":"Invalid or expired token","code":"AUTH_ERROR","path":"/auth/refresh"}
+{"level":"warn","time":"2026-09-09T01:12:56.917Z","msg":"Customer not found","code":"CUSTOMER_NOT_FOUND","path":"/platform/customers/999999999/admin-users"}
+PASS tests/integration/platform-customer-admin-users.test.ts
+  ● Console
+
+    console.log
+      prisma:error 
+      Invalid `tx.user.create()` invocation in
+      D:\Development\Anemal\.claude\worktrees\refactor+code-quality-phase1\src\backend\models\platform-customers.repository.ts:350:30
+      
+        347   data: { name: string; username: string; email: string | null; phone: string | null; passwordHash: string },
+        348   roleId: number,
+        349 ): Promise<TenantAdminUserRow> {
+      → 350   const user = await tx.user.create(
+      Unique constraint failed on the fields: (`tenantId`,`username`)
+
+      at Object.mc (node_modules/@prisma/client/runtime/library.js:21:432)
+
+{"level":"warn","time":"2026-09-09T01:12:58.058Z","msg":"Cannot retire plan: 1 tenant(s) are currently assigned to it","code":"PLAN_IN_USE","path":"/platform/plans/7667"}
+{"level":"warn","time":"2026-09-09T01:12:58.134Z","msg":"Subdomain already in use","code":"SUBDOMAIN_CONFLICT","path":"/platform/customers"}
+{"level":"warn","time":"2026-09-09T01:12:58.803Z","msg":"Validation failed","code":"VALIDATION_ERROR","path":"/platform/customers/33827/quota"}
+PASS tests/integration/platformConsole.test.ts
+{"level":"warn","time":"2026-09-09T01:13:00.066Z","msg":"Invalid credentials","code":"PLATFORM_AUTH_ERROR","path":"/platform/auth/login"}
+{"level":"warn","time":"2026-09-09T01:13:00.134Z","msg":"Invalid credentials","code":"PLATFORM_AUTH_ERROR","path":"/platform/auth/login"}
+{"level":"warn","time":"2026-09-09T01:13:00.141Z","msg":"Validation failed","code":"VALIDATION_ERROR","path":"/platform/auth/login"}
+{"level":"warn","time":"2026-09-09T01:13:00.310Z","msg":"Invalid credentials","code":"PLATFORM_AUTH_ERROR","path":"/platform/auth/login"}
+PASS tests/integration/platformAuth.test.ts
+PASS tests/integration/platformAuditUtcBounds.test.ts
+{"level":"warn","time":"2026-09-09T01:13:02.248Z","msg":"Validation failed","code":"VALIDATION_ERROR","path":"/platform/customers"}
+{"level":"warn","time":"2026-09-09T01:13:02.255Z","msg":"Validation failed","code":"VALIDATION_ERROR","path":"/platform/customers"}
+{"level":"warn","time":"2026-09-09T01:13:02.690Z","msg":"Customer not found","code":"CUSTOMER_NOT_FOUND","path":"/platform/customers/99999999/usage"}
+{"level":"warn","time":"2026-09-09T01:13:02.924Z","msg":"Invalid credentials","code":"AUTH_ERROR","path":"/auth/login"}
+PASS tests/integration/platform-console-t5f02.test.ts
+{"level":"warn","time":"2026-09-09T01:13:05.287Z","msg":"Branch not found","tenantId":95,"code":"BRANCH_ERROR","path":"/api/branches/94"}
+{"level":"warn","time":"2026-09-09T01:13:05.453Z","msg":"Points redeemed cannot exceed 20% of the invoice (max 2)","tenantId":94,"code":"LOYALTY_ERROR","path":"/api/loyalty/redeem"}
+{"level":"warn","time":"2026-09-09T01:13:05.468Z","msg":"Insufficient points","tenantId":94,"code":"LOYALTY_ERROR","path":"/api/loyalty/redeem"}
+{"level":"warn","time":"2026-09-09T01:13:05.479Z","msg":"Owner not found","tenantId":95,"code":"LOYALTY_ERROR","path":"/api/loyalty/owners/13855"}
+{"level":"warn","time":"2026-09-09T01:13:05.690Z","msg":"Cannot log care for a discharged patient","tenantId":94,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/9052/care"}
+{"level":"warn","time":"2026-09-09T01:13:05.702Z","msg":"Hospitalization not found","tenantId":95,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/9052"}
+{"level":"warn","time":"2026-09-09T01:13:05.739Z","msg":"Pet is already a registered donor","tenantId":94,"code":"BLOOD_BANK_ERROR","path":"/api/blood-bank/donors"}
+{"level":"warn","time":"2026-09-09T01:13:05.787Z","msg":"Blood type mismatch: bag is DEA1.1+, recipient is DEA1.1-. Set acknowledgeMismatch to override.","tenantId":94,"code":"INCOMPATIBLE_BLOOD","path":"/api/blood-bank/transfusions"}
+PASS tests/integration/phase4.test.ts
+PASS tests/integration/pet-medical-degradation.test.ts
+{"level":"warn","time":"2026-09-09T01:13:08.315Z","msg":"Invalid or expired token","code":"AUTH_ERROR","path":"/auth/refresh"}
+{"level":"warn","time":"2026-09-09T01:13:08.394Z","msg":"Current password is incorrect","tenantId":33839,"code":"AUTH_ERROR","path":"/auth/change-password"}
+{"level":"warn","time":"2026-09-09T01:13:08.496Z","msg":"Password must be at least 8 characters","tenantId":33840,"code":"AUTH_ERROR","path":"/auth/change-password"}
+{"level":"warn","time":"2026-09-09T01:13:08.571Z","msg":"Current password is incorrect","tenantId":33841,"code":"AUTH_ERROR","path":"/auth/change-password"}
+{"level":"warn","time":"2026-09-09T01:13:08.808Z","msg":"Invalid or expired token","code":"AUTH_ERROR","path":"/auth/refresh"}
+{"level":"warn","time":"2026-09-09T01:13:09.084Z","msg":"User not found","tenantId":33845,"code":"USER_ERROR","path":"/users/55594/password"}
+{"level":"warn","time":"2026-09-09T01:13:09.282Z","msg":"Password must be at least 8 characters","tenantId":33849,"code":"USER_ERROR","path":"/users/55598/password"}
+PASS tests/integration/password-management.test.ts
+{"level":"warn","time":"2026-09-09T01:13:10.936Z","msg":"Invoice not found","tenantId":94,"code":"PDF_ERROR","path":"/api/invoices/999999999/pdf"}
+{"level":"warn","time":"2026-09-09T01:13:10.953Z","msg":"Invoice not found","tenantId":95,"code":"PDF_ERROR","path":"/api/invoices/5274/pdf"}
+{"level":"warn","time":"2026-09-09T01:13:10.974Z","msg":"Prescription not found","tenantId":94,"code":"PDF_ERROR","path":"/api/prescriptions/999999999/pdf"}
+PASS tests/integration/pdf.test.ts
+  ● Console
+
+    console.warn
+      Skipping prescription PDF test — no drug seeded in dev-clinic
+
+    [0m [90m 131 |[39m   it([32m'✅ GET /api/prescriptions/:id/pdf → 200 + application/pdf'[39m[33m,[39m [36masync[39m () [33m=>[39m {
+     [90m 132 |[39m     [36mif[39m ([33m![39mprescriptionId) {
+    [31m[1m>[22m[39m[90m 133 |[39m       console[33m.[39mwarn([32m'Skipping prescription PDF test — no drug seeded in dev-clinic'[39m)
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 134 |[39m       [36mreturn[39m
+     [90m 135 |[39m     }
+     [90m 136 |[39m     [36mconst[39m res [33m=[39m [36mawait[39m request(server)[0m
+
+      at Object.<anonymous> (tests/integration/pdf.test.ts:133:15)
+
+    console.warn
+      Skipping — no drug seeded in dev-clinic
+
+    [0m [90m 206 |[39m   it([32m'✅ prescription PDF renders Thai+Latin+digit dosage instructions without throwing [Grill F1]'[39m[33m,[39m [36masync[39m () [33m=>[39m {
+     [90m 207 |[39m     [36mif[39m ([33m![39mprescriptionId) {
+    [31m[1m>[22m[39m[90m 208 |[39m       console[33m.[39mwarn([32m'Skipping — no drug seeded in dev-clinic'[39m)
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 209 |[39m       [36mreturn[39m
+     [90m 210 |[39m     }
+     [90m 211 |[39m     [90m// Patch the prescription seeded in the top-level beforeAll to mix Thai +[39m[0m
+
+      at Object.<anonymous> (tests/integration/pdf.test.ts:208:15)
+
+{"level":"warn","time":"2026-09-09T01:13:12.914Z","msg":"OneDrive OAuth callback failed","tenantId":33850,"err":"Error: invalid_grant"}
+PASS tests/integration/oauth-onedrive-callback.test.ts
+{"level":"warn","time":"2026-09-09T01:13:15.327Z","msg":"Cannot edit a billed medical record","tenantId":94,"code":"MEDICAL_RECORD_ERROR","path":"/api/medical-records/5590"}
+{"level":"warn","time":"2026-09-09T01:13:15.647Z","msg":"Doctor not found","tenantId":94,"code":"NOT_FOUND","path":"/api/medical-records"}
+{"level":"warn","time":"2026-09-09T01:13:16.021Z","msg":"Validation failed","tenantId":94,"code":"VALIDATION_ERROR","path":"/api/medical-records"}
+{"level":"warn","time":"2026-09-09T01:13:16.099Z","msg":"Validation failed","tenantId":94,"code":"VALIDATION_ERROR","path":"/api/medical-records"}
+{"level":"warn","time":"2026-09-09T01:13:16.107Z","msg":"Validation failed","tenantId":94,"code":"VALIDATION_ERROR","path":"/api/medical-records"}
+{"level":"warn","time":"2026-09-09T01:13:16.187Z","msg":"Validation failed","tenantId":94,"code":"VALIDATION_ERROR","path":"/api/medical-records"}
+{"level":"warn","time":"2026-09-09T01:13:16.276Z","msg":"Validation failed","tenantId":94,"code":"VALIDATION_ERROR","path":"/api/medical-records"}
+{"level":"warn","time":"2026-09-09T01:13:16.355Z","msg":"Validation failed","tenantId":94,"code":"VALIDATION_ERROR","path":"/api/pets/12235"}
+PASS tests/integration/medical-record-weight-sync.test.ts
+{"level":"warn","time":"2026-09-09T01:13:18.121Z","msg":"Invoice not found","tenantId":33852,"code":"NOT_FOUND","path":"/api/invoices/5277/promptpay-qr"}
+{"level":"warn","time":"2026-09-09T01:13:18.168Z","msg":"PromptPay ID not configured for this clinic","tenantId":33852,"code":"PROMPTPAY_ID_NOT_CONFIGURED","path":"/api/invoices/5279/promptpay-qr"}
+{"level":"warn","time":"2026-09-09T01:13:18.188Z","msg":"Invoice not found","tenantId":33851,"code":"NOT_FOUND","path":"/api/invoices/99999999/promptpay-qr"}
+PASS tests/integration/invoice.test.ts
+{"level":"warn","time":"2026-09-09T01:13:19.592Z","msg":"Validation failed","tenantId":94,"code":"VALIDATION_ERROR","path":"/api/hospitalizations/9053"}
+{"level":"warn","time":"2026-09-09T01:13:19.600Z","msg":"Validation failed","tenantId":94,"code":"VALIDATION_ERROR","path":"/api/hospitalizations/9053"}
+{"level":"warn","time":"2026-09-09T01:13:19.625Z","msg":"Hospitalization not found","tenantId":95,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/9053"}
+{"level":"warn","time":"2026-09-09T01:13:19.706Z","msg":"Cannot edit a discharged admission","tenantId":94,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/9053"}
+{"level":"warn","time":"2026-09-09T01:13:19.751Z","msg":"Hospitalization not found","tenantId":94,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/9054"}
+{"level":"warn","time":"2026-09-09T01:13:19.803Z","msg":"Cannot delete an admission with care history — discharge it instead","tenantId":94,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/9055"}
+{"level":"warn","time":"2026-09-09T01:13:19.862Z","msg":"Cannot delete a discharged admission — it is part of the pet's medical history","tenantId":94,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/9056"}
+{"level":"warn","time":"2026-09-09T01:13:19.894Z","msg":"Hospitalization not found","tenantId":95,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/9057"}
+{"level":"warn","time":"2026-09-09T01:13:20.708Z","msg":"Hospitalization not found","tenantId":95,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/9059"}
+PASS tests/integration/hospitalization-crud.test.ts
+{"level":"warn","time":"2026-09-09T01:13:21.926Z","msg":"Hospitalization not found","tenantId":33853,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/9061"}
+{"level":"warn","time":"2026-09-09T01:13:21.946Z","msg":"Hospitalization not found","tenantId":33854,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/9062"}
+{"level":"warn","time":"2026-09-09T01:13:22.128Z","msg":"Hospitalization not found","tenantId":33853,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/9071"}
+{"level":"warn","time":"2026-09-09T01:13:22.166Z","msg":"Hospitalization not found","tenantId":33854,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/9072"}
+{"level":"warn","time":"2026-09-09T01:13:22.280Z","msg":"Hospitalization not found","tenantId":33853,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/9076"}
+{"level":"warn","time":"2026-09-09T01:13:22.315Z","msg":"Hospitalization not found","tenantId":33854,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/9077"}
+{"level":"warn","time":"2026-09-09T01:13:22.407Z","msg":"Hospitalization not found","tenantId":33853,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/9081/care"}
+{"level":"warn","time":"2026-09-09T01:13:22.439Z","msg":"Hospitalization not found","tenantId":33854,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/9082/care"}
+{"level":"warn","time":"2026-09-09T01:13:22.560Z","msg":"Hospitalization not found","tenantId":33853,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/9086/discharge"}
+{"level":"warn","time":"2026-09-09T01:13:22.601Z","msg":"Hospitalization not found","tenantId":33854,"code":"HOSPITALIZATION_ERROR","path":"/api/hospitalizations/9087/discharge"}
+{"level":"warn","time":"2026-09-09T01:13:22.615Z","msg":"No active branch selected","tenantId":33853,"code":"NO_BRANCH","path":"/api/hospitalizations/9088/discharge"}
+PASS tests/integration/hospitalization-branch-isolation.test.ts
+{"level":"warn","time":"2026-09-09T01:13:23.851Z","msg":"Pet not found","tenantId":33856,"code":"NOT_FOUND","path":"/api/hospitalizations"}
+{"level":"warn","time":"2026-09-09T01:13:23.874Z","msg":"Doctor not found","tenantId":33856,"code":"NOT_FOUND","path":"/api/hospitalizations"}
+{"level":"warn","time":"2026-09-09T01:13:23.888Z","msg":"Pet not found","tenantId":33856,"code":"NOT_FOUND","path":"/api/grooming/bookings"}
+{"level":"warn","time":"2026-09-09T01:13:23.914Z","msg":"Groomer not found","tenantId":33856,"code":"NOT_FOUND","path":"/api/grooming/bookings"}
+{"level":"warn","time":"2026-09-09T01:13:23.947Z","msg":"Pet not found","tenantId":33856,"code":"NOT_FOUND","path":"/api/invoices"}
+{"level":"warn","time":"2026-09-09T01:13:23.971Z","msg":"Pet not found","tenantId":33856,"code":"NOT_FOUND","path":"/api/medical-records"}
+{"level":"warn","time":"2026-09-09T01:13:23.993Z","msg":"Doctor not found","tenantId":33856,"code":"NOT_FOUND","path":"/api/medical-records"}
+{"level":"warn","time":"2026-09-09T01:13:24.020Z","msg":"Invoice not found","tenantId":33855,"code":"NOT_FOUND","path":"/api/invoices/5282/promptpay-qr"}
+{"level":"warn","time":"2026-09-09T01:13:24.047Z","msg":"PromptPay ID not configured for this clinic","tenantId":33855,"code":"PROMPTPAY_ID_NOT_CONFIGURED","path":"/api/invoices/5281/promptpay-qr"}
+{"level":"warn","time":"2026-09-09T01:13:24.322Z","msg":"Invalid or expired token","code":"AUTH_ERROR","path":"/auth/refresh"}
+{"level":"warn","time":"2026-09-09T01:13:24.420Z","msg":"Invalid or expired token","code":"AUTH_ERROR","path":"/auth/refresh"}
+{"level":"warn","time":"2026-09-09T01:13:24.424Z","msg":"Invalid or expired token","code":"AUTH_ERROR","path":"/auth/refresh"}
+{"level":"warn","time":"2026-09-09T01:13:24.439Z","msg":"Invalid or expired token","code":"AUTH_ERROR","path":"/auth/refresh"}
+{"level":"warn","time":"2026-09-09T01:13:24.442Z","msg":"Invalid or expired token","code":"AUTH_ERROR","path":"/auth/refresh"}
+PASS tests/integration/codex-review-regression.test.ts
+PASS tests/integration/clinic-summary-branch.test.ts
+{"level":"warn","time":"2026-09-09T01:13:26.321Z","msg":"Invalid credentials","code":"AUTH_ERROR","path":"/auth/login"}
+{"level":"warn","time":"2026-09-09T01:13:26.332Z","msg":"Invalid credentials","code":"AUTH_ERROR","path":"/auth/login"}
+{"level":"warn","time":"2026-09-09T01:13:26.339Z","msg":"Validation failed","code":"VALIDATION_ERROR","path":"/auth/login"}
+{"level":"warn","time":"2026-09-09T01:13:26.445Z","msg":"Invalid or expired session. Please log in again.","code":"AUTH_ERROR","path":"/auth/select-branch"}
+{"level":"warn","time":"2026-09-09T01:13:26.452Z","msg":"Validation failed","code":"VALIDATION_ERROR","path":"/auth/select-branch"}
+PASS tests/integration/auth.test.ts
+PASS tests/integration/auditRedaction.test.ts
+{"level":"warn","time":"2026-09-09T01:13:28.996Z","msg":"Doctor not found","tenantId":33859,"code":"APPOINTMENT_ERROR","path":"/api/appointments"}
+{"level":"warn","time":"2026-09-09T01:13:29.008Z","msg":"Pet not found","tenantId":33859,"code":"APPOINTMENT_ERROR","path":"/api/appointments"}
+{"level":"warn","time":"2026-09-09T01:13:29.028Z","msg":"Doctor not found","tenantId":33859,"code":"APPOINTMENT_ERROR","path":"/api/appointments/walk-in"}
+{"level":"warn","time":"2026-09-09T01:13:29.038Z","msg":"Pet not found","tenantId":33859,"code":"APPOINTMENT_ERROR","path":"/api/appointments/walk-in"}
+PASS tests/integration/appointmentTenantOwnership.test.ts
+PASS tests/integration/appointments-month.test.ts
+PASS tests/integration/appointmentDoctors.test.ts
+{"level":"warn","time":"2026-09-09T01:13:32.420Z","msg":"User not found","tenantId":33864,"code":"USER_ERROR","path":"/users/999999999"}
+{"level":"warn","time":"2026-09-09T01:13:32.586Z","msg":"Username or email already in use within this clinic","tenantId":33864,"code":"USER_ERROR","path":"/users"}
+{"level":"warn","time":"2026-09-09T01:13:32.595Z","msg":"Validation failed","tenantId":33864,"code":"VALIDATION_ERROR","path":"/users"}
+{"level":"warn","time":"2026-09-09T01:13:32.605Z","msg":"Validation failed","tenantId":33864,"code":"VALIDATION_ERROR","path":"/users"}
+{"level":"warn","time":"2026-09-09T01:13:32.615Z","msg":"Validation failed","tenantId":33864,"code":"VALIDATION_ERROR","path":"/users"}
+{"level":"warn","time":"2026-09-09T01:13:32.787Z","msg":"User not found","tenantId":33864,"code":"USER_ERROR","path":"/users/999999999"}
+{"level":"warn","time":"2026-09-09T01:13:32.796Z","msg":"Validation failed","tenantId":33864,"code":"VALIDATION_ERROR","path":"/users/55624"}
+{"level":"warn","time":"2026-09-09T01:13:32.897Z","msg":"User not found","tenantId":33864,"code":"USER_ERROR","path":"/users/999999999"}
+{"level":"warn","time":"2026-09-09T01:13:32.947Z","msg":"Username or email already in use within this clinic","tenantId":33864,"code":"USER_ERROR","path":"/users"}
+PASS __tests__/userManagement.test.ts
+  ● Console
+
+    console.log
+      prisma:error 
+      Invalid `tx.user.create()` invocation in
+      D:\Development\Anemal\.claude\worktrees\refactor+code-quality-phase1\src\backend\models\user.repository.ts:55:30
+      
+        52   data: CreateUserData,
+        53   roleId: number,
+        54 ) {
+      → 55   const user = await tx.user.create(
+      Unique constraint failed on the fields: (`tenantId`,`username`)
+
+      at Object.mc (node_modules/@prisma/client/runtime/library.js:21:432)
+
+    console.log
+      prisma:error 
+      Invalid `tx.user.create()` invocation in
+      D:\Development\Anemal\.claude\worktrees\refactor+code-quality-phase1\src\backend\models\user.repository.ts:55:30
+      
+        52   data: CreateUserData,
+        53   roleId: number,
+        54 ) {
+      → 55   const user = await tx.user.create(
+      Unique constraint failed on the fields: (`tenantId`,`username`)
+
+      at Object.mc (node_modules/@prisma/client/runtime/library.js:21:432)
+
+PASS __tests__/upload-route-removed.test.ts
+PASS __tests__/tenant-storage-config.repository.test.ts
+{"level":"warn","time":"2026-09-09T01:13:35.601Z","msg":"Quota exceeded for users: limit is 3, current is 3","tenantId":33866,"code":"QUOTA_EXCEEDED","path":"/users"}
+{"level":"warn","time":"2026-09-09T01:13:35.657Z","msg":"Quota exceeded for pets: limit is 2, current is 2","tenantId":33866,"code":"QUOTA_EXCEEDED","path":"/api/pets"}
+PASS __tests__/subscription.test.ts
+PASS __tests__/tenant-storage-config.repository.onedrive.test.ts
+PASS __tests__/storage-driver.test.ts
+PASS __tests__/storage-errors.test.ts
+{"level":"warn","time":"2026-09-09T01:13:37.741Z","msg":"storage-config test-write marker cleanup failed — harmless orphan, ignored","tenantId":1,"testKey":"tenants/1/.storage-config-test","deleteErr":"Error: share blip"}
+{"level":"warn","time":"2026-09-09T01:13:37.743Z","msg":"Google Drive disconnect: best-effort token revoke failed","tenantId":1,"revokeErr":"Error: Google revoke endpoint down"}
+{"level":"warn","time":"2026-09-09T01:13:37.746Z","msg":"Google Drive live status check failed transiently — connected stays true","err":"Error: ETIMEDOUT"}
+{"level":"warn","time":"2026-09-09T01:13:37.750Z","msg":"OneDrive live status check failed transiently — connected stays true","err":"Error: ETIMEDOUT"}
+PASS __tests__/storage-config.service.test.ts
+PASS __tests__/smb-share-driver.test.ts
+PASS __tests__/rbac.test.ts
+PASS __tests__/reports.test.ts
+{"level":"warn","time":"2026-09-09T01:13:42.005Z","msg":"Image type not allowed","tenantId":33870,"code":"PET_ERROR","path":"/api/pets/12247/photo"}
+{"level":"warn","time":"2026-09-09T01:13:42.466Z","msg":"Pet not found","tenantId":33870,"code":"PET_ERROR","path":"/api/pets/12249/photo"}
+{"level":"warn","time":"2026-09-09T01:13:42.617Z","msg":"Pet has no photo","tenantId":33870,"code":"PET_ERROR","path":"/api/pets/12251/photo"}
+{"level":"warn","time":"2026-09-09T01:13:42.650Z","msg":"Photo file is missing","tenantId":33870,"code":"PET_ERROR","path":"/api/pets/12252/photo"}
+{"level":"warn","time":"2026-09-09T01:13:42.708Z","msg":"Invalid photo reference","tenantId":33870,"code":"PET_ERROR","path":"/api/pets/12253/photo"}
+{"level":"warn","time":"2026-09-09T01:13:42.788Z","msg":"Pet not found","tenantId":33870,"code":"PET_ERROR","path":"/api/pets/12254/photo"}
+PASS __tests__/pet-photo.test.ts
+{"level":"warn","time":"2026-09-09T01:13:44.027Z","msg":"Cannot delete: owner has active pets","tenantId":33873,"code":"OWNER_ERROR","path":"/api/owners/13890"}
+{"level":"warn","time":"2026-09-09T01:13:44.098Z","msg":"Owner not found","tenantId":33874,"code":"OWNER_ERROR","path":"/api/owners/13892"}
+{"level":"warn","time":"2026-09-09T01:13:44.196Z","msg":"Changing owner active status requires the crm.delete permission","tenantId":33873,"code":"OWNER_ERROR","path":"/api/owners/13894"}
+PASS __tests__/owner-delete-reactivate.test.ts
+{"level":"warn","time":"2026-09-09T01:13:45.454Z","msg":"ID card number already registered in this clinic","tenantId":33875,"code":"OWNER_ERROR","path":"/api/owners"}
+{"level":"warn","time":"2026-09-09T01:13:45.564Z","msg":"ID card number already registered in this clinic","tenantId":33875,"code":"OWNER_ERROR","path":"/api/owners/13899"}
+PASS __tests__/owner-idcard.test.ts
+PASS __tests__/onedrive-driver.test.ts
+PASS __tests__/oauth-state.test.ts
+{"level":"warn","time":"2026-09-09T01:13:47.386Z","msg":"User not found","tenantId":33877,"code":"USER_ERROR","path":"/users/55659"}
+{"level":"warn","time":"2026-09-09T01:13:47.406Z","msg":"User not found","tenantId":33877,"code":"USER_ERROR","path":"/users/55659"}
+{"level":"warn","time":"2026-09-09T01:13:47.425Z","msg":"User not found","tenantId":33877,"code":"USER_ERROR","path":"/users/55659"}
+PASS __tests__/multitenancy-isolation.test.ts
+{"level":"warn","time":"2026-09-09T01:13:48.675Z","msg":"Product not found","tenantId":33880,"code":"PRODUCT_ERROR","path":"/api/products/2470"}
+{"level":"warn","time":"2026-09-09T01:13:48.685Z","msg":"Product not found","tenantId":33880,"code":"PRODUCT_ERROR","path":"/api/products/2470/stock-in"}
+{"level":"warn","time":"2026-09-09T01:13:48.697Z","msg":"Validation failed","tenantId":33879,"code":"VALIDATION_ERROR","path":"/api/products"}
+PASS __tests__/inventory.test.ts
+{"level":"warn","time":"2026-09-09T01:13:50.143Z","msg":"Insufficient stock for Dog Shampoo","tenantId":33881,"code":"INSUFFICIENT_STOCK","path":"/api/invoices"}
+{"level":"warn","time":"2026-09-09T01:13:50.213Z","msg":"Invoice is already paid","tenantId":33881,"code":"INVOICE_ALREADY_PAID","path":"/api/invoices/5284/payment"}
+{"level":"warn","time":"2026-09-09T01:13:50.226Z","msg":"Invoice must have at least one item","tenantId":33881,"code":"INVOICE_ERROR","path":"/api/invoices"}
+{"level":"warn","time":"2026-09-09T01:13:50.243Z","msg":"Invoice not found","tenantId":33882,"code":"INVOICE_ERROR","path":"/api/invoices/5284"}
+{"level":"warn","time":"2026-09-09T01:13:50.267Z","msg":"Invoice not found","tenantId":33882,"code":"NOT_FOUND","path":"/api/invoices/5284/payment"}
+{"level":"warn","time":"2026-09-09T01:13:50.283Z","msg":"Invoice not found","tenantId":33881,"code":"NOT_FOUND","path":"/api/invoices/5284/payment"}
+{"level":"warn","time":"2026-09-09T01:13:50.300Z","msg":"Invoice not found","tenantId":33881,"code":"NOT_FOUND","path":"/api/invoices/999999999/payment"}
+{"level":"warn","time":"2026-09-09T01:13:50.351Z","msg":"Invoice not found","tenantId":33881,"code":"NOT_FOUND","path":"/api/invoices/5287/payment"}
+PASS __tests__/invoice.test.ts
+PASS __tests__/google-drive-driver.test.ts
+{"level":"warn","time":"2026-09-09T01:13:52.595Z","msg":"File type not allowed","tenantId":33885,"code":"VALIDATION_ERROR","path":"/api/medical-records/5601/attachments"}
+{"level":"warn","time":"2026-09-09T01:13:53.565Z","msg":"Medical record not found","tenantId":33885,"code":"MEDICAL_RECORD_ERROR","path":"/api/medical-records/5602/attachments"}
+{"level":"warn","time":"2026-09-09T01:13:53.652Z","msg":"Validation failed","tenantId":33885,"code":"VALIDATION_ERROR","path":"/api/medical-records/5601/attachments"}
+{"level":"warn","time":"2026-09-09T01:13:53.832Z","msg":"Attachment not found","tenantId":33885,"code":"MEDICAL_RECORD_ERROR","path":"/api/medical-records/5601/attachments/999999/download"}
+{"level":"warn","time":"2026-09-09T01:13:53.860Z","msg":"Attachment file is missing","tenantId":33885,"code":"MEDICAL_RECORD_ERROR","path":"/api/medical-records/5601/attachments/2154/download"}
+{"level":"warn","time":"2026-09-09T01:13:54.015Z","msg":"Cannot delete an attachment on a billed medical record","tenantId":33885,"code":"MEDICAL_RECORD_ERROR","path":"/api/medical-records/5603/attachments/2157"}
+{"level":"error","time":"2026-09-09T01:13:54.214Z","msg":"Unhandled error","tenantId":33885,"err":{"name":"Error","message":"db down","stack":"Error: db down\n    at Object.<anonymous> (D:\\Development\\Anemal\\.claude\\worktrees\\refactor+code-quality-phase1\\src\\backend\\__tests__\\emr-attachments.test.ts:408:70)\n    at Promise.then.completed (D:\\Development\\Anemal\\.claude\\worktrees\\refactor+code-quality-phase1\\src\\backend\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (D:\\Development\\Anemal\\.claude\\worktrees\\refactor+code-quality-phase1\\src\\backend\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (D:\\Development\\Anemal\\.claude\\worktrees\\refactor+code-quality-phase1\\src\\backend\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at _runTest (D:\\Development\\Anemal\\.claude\\worktrees\\refactor+code-quality-phase1\\src\\backend\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (D:\\Development\\Anemal\\.claude\\worktrees\\refactor+code-quality-phase1\\src\\backend\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (D:\\Development\\Anemal\\.claude\\worktrees\\refactor+code-quality-phase1\\src\\backend\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (D:\\Development\\Anemal\\.claude\\worktrees\\refactor+code-quality-phase1\\src\\backend\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (D:\\Development\\Anemal\\.claude\\worktrees\\refactor+code-quality-phase1\\src\\backend\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (D:\\Development\\Anemal\\.claude\\worktrees\\refactor+code-quality-phase1\\src\\backend\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (D:\\Development\\Anemal\\.claude\\worktrees\\refactor+code-quality-phase1\\src\\backend\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (D:\\Development\\Anemal\\.claude\\worktrees\\refactor+code-quality-phase1\\src\\backend\\node_modules\\jest-runner\\build\\runTest.js:444:34)"},"path":"/api/medical-records/5601/attachments"}
+PASS __tests__/emr-attachments.test.ts
+{"level":"warn","time":"2026-09-09T01:13:56.021Z","msg":"Invalid credentials","code":"AUTH_ERROR","path":"/auth/login"}
+{"level":"warn","time":"2026-09-09T01:13:56.032Z","msg":"Invalid credentials","code":"AUTH_ERROR","path":"/auth/login"}
+{"level":"warn","time":"2026-09-09T01:13:56.041Z","msg":"Invalid credentials","code":"AUTH_ERROR","path":"/auth/login"}
+{"level":"warn","time":"2026-09-09T01:13:56.119Z","msg":"Invalid credentials","code":"AUTH_ERROR","path":"/auth/login"}
+{"level":"warn","time":"2026-09-09T01:13:56.126Z","msg":"Validation failed","code":"VALIDATION_ERROR","path":"/auth/login"}
+{"level":"warn","time":"2026-09-09T01:13:56.131Z","msg":"Validation failed","code":"VALIDATION_ERROR","path":"/auth/login"}
+{"level":"warn","time":"2026-09-09T01:13:56.137Z","msg":"Validation failed","code":"VALIDATION_ERROR","path":"/auth/login"}
+{"level":"warn","time":"2026-09-09T01:13:56.143Z","msg":"Validation failed","code":"VALIDATION_ERROR","path":"/auth/login"}
+{"level":"warn","time":"2026-09-09T01:13:56.157Z","msg":"Invalid credentials","code":"AUTH_ERROR","path":"/auth/login"}
+PASS __tests__/auth.test.ts
+{"level":"warn","time":"2026-09-09T01:13:57.287Z","msg":"Validation failed","tenantId":33888,"code":"VALIDATION_ERROR","path":"/admin/settings"}
+{"level":"warn","time":"2026-09-09T01:13:57.296Z","msg":"Validation failed","tenantId":33888,"code":"VALIDATION_ERROR","path":"/admin/settings"}
+{"level":"warn","time":"2026-09-09T01:13:57.305Z","msg":"Validation failed","tenantId":33888,"code":"VALIDATION_ERROR","path":"/admin/settings"}
+{"level":"warn","time":"2026-09-09T01:13:57.314Z","msg":"Validation failed","tenantId":33888,"code":"VALIDATION_ERROR","path":"/admin/settings"}
+PASS __tests__/adminSettings.test.ts
+PASS __tests__/adminUsageBranchScoping.test.ts
+PASS __tests__/adminPagesBranchScoping.test.ts
+PASS __tests__/account-id-hash.test.ts
+
+Test Suites: 93 passed, 93 total
+Tests:       1310 passed, 1310 total
+Snapshots:   0 total
+Time:        110.573 s
+Ran all test suites.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

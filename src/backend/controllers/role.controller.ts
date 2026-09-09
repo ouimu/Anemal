@@ -14,7 +14,6 @@ import { Request, Response, NextFunction } from 'express'
 import { z } from 'zod'
 import { resolvePermissions } from '../services/permission.service'
 import * as roleService from '../services/role.service'
-import prisma from '../config/db'
 
 // ---------------------------------------------------------------------------
 // Zod validation schemas
@@ -129,12 +128,7 @@ export async function listPermissions(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const perms = await prisma.permission.findMany({ orderBy: { code: 'asc' } })
-    const grouped: Record<string, string[]> = {}
-    for (const p of perms) {
-      if (!grouped[p.module]) grouped[p.module] = []
-      grouped[p.module].push(p.code)
-    }
+    const grouped = await roleService.listPermissionsByModule()
     res.json({ success: true, data: grouped })
   } catch (err) { next(err) }
 }

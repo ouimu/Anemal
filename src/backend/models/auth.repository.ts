@@ -54,3 +54,13 @@ export function touchLastLogin(tenantId: number, userId: number) {
 export function findTenantById(tenantId: number) {
   return prisma.tenant.findUnique({ where: { id: tenantId } })
 }
+
+/** Active-status-only user lookup — used by the OAuth callback re-entitlement check (Grill N-9). */
+export function findUserActiveStatus(tenantId: number, userId: number) {
+  return prisma.user.findFirst({ where: { id: userId, tenantId }, select: { isActive: true } })
+}
+
+/** Active-status-only tenant lookup — used by the OAuth callback re-entitlement check (Grill N-9). */
+export function findTenantActiveStatus(tenantId: number) {
+  return prisma.tenant.findUnique({ where: { id: tenantId }, select: { isActive: true } })
+}

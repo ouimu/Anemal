@@ -4,12 +4,11 @@
 // `state` param IS the trust boundary. Every failure path redirects; this
 // route never throws to the global error handler.
 import { Request, Response } from 'express'
-import prisma from '../config/db'
 import { verifyOAuthState } from '../utils/oauth-state'
 import { consumeNonce } from '../models/oauth-connect-nonce.repository'
+import { isStillEntitled } from '../services/auth.service'
 import * as tenantStorageConfigRepo from '../models/tenant-storage-config.repository'
 import * as auditRepo from '../models/settings-audit.repository'
-import { resolvePermissions } from '../services/permission.service'
 import { encryptField, decryptField } from '../utils/encryption'
 import { exchangeCodeForTokens, revokeGoogleToken, createGoogleDriveClient } from '../config/google-drive-client'
 import { bootstrapTenantFolders } from '../config/google-drive-driver'
@@ -61,14 +60,7 @@ export async function handleGoogleOAuthCallback(req: Request, res: Response): Pr
   // Grill N-9: re-verify the initiating user/tenant are still active and the
   // permission still held, immediately before persisting — the callback
   // never passes through authMiddleware's normal checks (it has no JWT).
-  const [user, tenant] = await Promise.all([
-    prisma.user.findFirst({ where: { id: verified.userId, tenantId: verified.tenantId }, select: { isActive: true } }),
-    prisma.tenant.findUnique({ where: { id: verified.tenantId }, select: { isActive: true } }),
-  ])
-  const perms = user?.isActive !== false && tenant?.isActive !== false
-    ? await resolvePermissions(verified.userId, verified.tenantId)
-    : new Set<string>()
-  const stillEntitled = !!user && user.isActive !== false && !!tenant && tenant.isActive !== false && perms.has('clinic.integrations.edit')
+  const stillEntitled = await isStillEntitled(verified.tenantId, verified.userId, 'clinic.integrations.edit')
   if (!stillEntitled) {
     res.redirect(`${verified.origin}/settings/storage?error=google_not_authorized`)
     return
