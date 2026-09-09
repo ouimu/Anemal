@@ -10,8 +10,7 @@
 // the correct tenant origin, which this controller explicitly avoids.
 import { Request, Response } from 'express'
 import { verifyOAuthState } from '../utils/oauth-state'
-import { consumeNonce } from '../models/oauth-connect-nonce.repository'
-import { isStillEntitled } from '../services/auth.service'
+import { runOAuthCallbackGuard } from '../services/oauth-callback-guard.service'
 import * as tenantStorageConfigRepo from '../models/tenant-storage-config.repository'
 import * as auditRepo from '../models/settings-audit.repository'
 import { encryptField } from '../utils/encryption'
@@ -46,38 +45,15 @@ export async function handleOneDriveOAuthCallback(req: Request, res: Response): 
     res.redirect(`${DEFAULT_ERROR_ORIGIN}/settings/storage?error=onedrive_consent_denied`)
     return
   }
-  if (!query.state) {
-    res.redirect(`${DEFAULT_ERROR_ORIGIN}/settings/storage?error=onedrive_state_invalid`)
+  // I-11/N-3/N-7/N-9, M-7: state signature, single-use provider-matched
+  // nonce, `code` present, and re-verified user/tenant entitlement — shared
+  // with the Google callback via runOAuthCallbackGuard.
+  const guard = await runOAuthCallbackGuard(query, 'onedrive', 'clinic.integrations.edit', DEFAULT_ERROR_ORIGIN)
+  if (!guard.ok) {
+    res.redirect(guard.redirectUrl)
     return
   }
-
-  // I-11/grill N-7: on an invalid/expired signature, NEVER read the origin
-  // out of `state` — fixed default only.
-  const verified = verifyOAuthState(query.state)
-  if (!verified) {
-    res.redirect(`${DEFAULT_ERROR_ORIGIN}/settings/storage?error=onedrive_state_invalid`)
-    return
-  }
-
-  // M-7: atomic, PROVIDER-MATCHED consume — a 'google'-minted nonce must
-  // fail here even with a structurally valid signature.
-  const nonceOk = await consumeNonce(verified.nonce, 'onedrive')
-  if (!nonceOk) {
-    res.redirect(`${verified.origin}/settings/storage?error=onedrive_state_replayed`)
-    return
-  }
-
-  if (!query.code) {
-    res.redirect(`${verified.origin}/settings/storage?error=onedrive_consent_denied`)
-    return
-  }
-
-  // N-9/I-12: re-verify user/tenant active + permission still held, right before persisting.
-  const stillEntitled = await isStillEntitled(verified.tenantId, verified.userId, 'clinic.integrations.edit')
-  if (!stillEntitled) {
-    res.redirect(`${verified.origin}/settings/storage?error=onedrive_not_authorized`)
-    return
-  }
+  const { verified, code } = guard
 
   const clientId = process.env.ONEDRIVE_OAUTH_CLIENT_ID
   const clientSecret = process.env.ONEDRIVE_OAUTH_CLIENT_SECRET
@@ -87,7 +63,7 @@ export async function handleOneDriveOAuthCallback(req: Request, res: Response): 
   }
 
   try {
-    const tokens = await exchangeCodeForTokens({ clientId, clientSecret, redirectUri: onedriveOAuthRedirectUri(), code: query.code })
+    const tokens = await exchangeCodeForTokens({ clientId, clientSecret, redirectUri: onedriveOAuthRedirectUri(), code })
 
     const client = createOneDriveClient({ clientId, clientSecret, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken })
 
