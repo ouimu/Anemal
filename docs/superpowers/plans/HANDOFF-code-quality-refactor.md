@@ -40,6 +40,9 @@ committed config to fix this (it protects a real scenario for other callers).
 
 **Baseline:** 93/93 suites, 1310/1310 tests, green — recorded at
 `docs/superpowers/plans/baseline-backend-tests-2026-09-09.log`.
+**Current (after F-1/F-3 coverage additions, commit `7cea708`):** 95/95
+suites, 1325/1325 tests, green. Use this count for Phase 2's Gate 4 check,
+not the original 93/1310.
 
 ## Phase loop (standard from here on — every phase, no exceptions)
 
@@ -80,11 +83,10 @@ those just add a step before step 1, they don't skip the QA step.
   argument order and the short-circuit around it in `isStillEntitled` — line
   by line against both original inline blocks. No tenant/RBAC drift, no
   contract change. Findings recorded, none blocking:
-  - **F-1 (medium):** `settings.controller.ts`'s `googleAuthorize`/
-    `onedriveAuthorize` have zero test coverage repo-wide (pre-existing gap,
-    not introduced by this phase) — the two `getTenantSubdomain` call sites
-    are verified by inspection only. Adding tests now would break Gate 4
-    (test-set equality) mid-phase; tracked as a follow-up, not a blocker.
+  - **F-1 (medium) — RESOLVED 2026-09-09, commit `7cea708`:** added
+    `tests/integration/settings-oauth-authorize.test.ts` — 8 new tests
+    (401/403/503/200 × google + onedrive) covering `googleAuthorize`/
+    `onedriveAuthorize` and, through them, `getTenantSubdomain()`.
   - **F-2 (medium) — RESOLVED 2026-09-09:** QA and `@ponytail-agent` counted
     "abstractions" differently (QA: +7 raw new exports; ponytail: down, by
     duplicated-call-site count). Escalated to the human, decided: count
@@ -95,14 +97,20 @@ those just add a step before step 1, they don't skip the QA step.
     original Phase 1 verdict (APPROVE) was already using this definition and
     stands unchanged. Codified in
     `.claude/agents/ponytail-agent/SKILL.md` under Mode 3 (`reverse`).
-  - **F-3 (low):** only `isStillEntitled`'s inactive-user branch is
-    test-covered; tenant-inactive / permission-revoked / cross-tenant-userId
-    branches aren't (pre-existing gap, now cheaply unit-testable).
+  - **F-3 (low) — RESOLVED 2026-09-09, commit `7cea708`:** added
+    `__tests__/isStillEntitled.test.ts` — 7 mocked unit tests covering every
+    branch (active+entitled, active-but-lacking-permission, user-inactive,
+    tenant-inactive, both-inactive, user-not-found, tenant-not-found),
+    including an explicit assertion on the `undefined !== false`
+    short-circuit quirk preserved verbatim from the original inline code.
   - **F-4 (info):** this HANDOFF file was uncommitted at review time —
     fixed by this commit.
   - Bonus finding: zero `../config/db` imports remain anywhere under
     `src/backend/controllers/` — architecture-rules.md §1 is now fully
     satisfied for the backend controller layer, not just the 4 sites touched.
+  - **Updated baseline after F-1/F-3 fixes:** 95/95 suites (+2), 1325/1325
+    tests (+15), tsc clean. Additions only, no existing test touched
+    (Gate 4 test-set equality unaffected).
 - [ ] **Phase 2 — Duplication:** OAuth Google/OneDrive controllers still share
   ~50 near-identical lines beyond the N-9 block already deduped in Phase 1
   (state/nonce verify, error-redirect construction). Extract a shared
@@ -150,12 +158,11 @@ those just add a step before step 1, they don't skip the QA step.
 
 ## Next action
 
-Phase 1's QA formal review is in flight (`@qa-agent`, spawned this session) —
-its verdict lands here first, before Phase 2 starts.
-
-Then resume with Phase 2 (OAuth helper dedup) — same files already touched in
-Phase 1, same test coverage, low risk. Follow the **Phase loop** above in full,
-QA step included.
+Phase 1 is fully closed: implementation, ponytail gate, QA review, and all 4
+QA findings (F-1 through F-4) resolved. Resume with Phase 2 (OAuth helper
+dedup) — same files already touched in Phase 1, same test coverage, low
+risk. Follow the **Phase loop** above in full, QA step included. Compare
+against the **95/95, 1325/1325** current baseline, not the original count.
 
 Do not merge to `main` until the user has reviewed the full backlog and
 decided how many phases they want landed in this pass.
