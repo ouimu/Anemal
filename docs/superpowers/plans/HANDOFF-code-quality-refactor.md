@@ -40,9 +40,8 @@ committed config to fix this (it protects a real scenario for other callers).
 
 **Baseline:** 93/93 suites, 1310/1310 tests, green — recorded at
 `docs/superpowers/plans/baseline-backend-tests-2026-09-09.log`.
-**Current (after F-1/F-3 coverage additions, commit `7cea708`):** 95/95
-suites, 1325/1325 tests, green. Use this count for Phase 2's Gate 4 check,
-not the original 93/1310.
+**Current (after Phase 3, commit `506a398`):** 97/97 suites, 1335/1335
+tests, green. Use this count for Phase 4's Gate 4 check.
 
 ## Phase loop (standard from here on — every phase, no exceptions)
 
@@ -145,11 +144,62 @@ those just add a step before step 1, they don't skip the QA step.
   - **F-7 (info) — fixed by this commit:** this backlog line originally
     named the target file `oauth-callback.helper.ts`; shipped code uses
     `services/oauth-callback-guard.service.ts` instead.
-- [ ] **Phase 3 — Duplication:** stock-deduction raw SQL repeated in
-  `invoice.repository.ts:68`, `prescription.repository.ts:48`,
-  `transfer.repository.ts:17`. Extract one `deductBranchStock(tx, tenantId,
-  branchId, productId, qty)` helper. Check existing coverage per repo file
-  before touching — these are financial/inventory paths, treat cautiously.
+- [x] **Phase 3 — Duplication (financial/inventory, extra scrutiny):**
+  stock-deduction raw SQL was repeated in `invoice.repository.ts:68`,
+  `prescription.repository.ts:48`, `transfer.repository.ts:17`. Extracted
+  `product.repository.ts`'s `deductBranchStock(tx, tenantId, branchId,
+  productId, qty): Promise<boolean>` — deliberately returns a boolean, never
+  throws, so each call site's distinct failure handling (invoice: per-item
+  ConflictError; prescription: return null; transfer: fixed-message
+  ConflictError) stayed untouched. Committed `8db4a68`.
+  Reverse-ponytail: APPROVE (abstraction count down — 3 duplicated blocks
+  to 1 — files/deps flat, LOC +4 code-only).
+  QA formal review (`@qa-agent`) — took **3 rounds**, the most scrutiny any
+  phase in this backlog has had, appropriately for a money/inventory path:
+  - **Round 1: BLOCKED.** The extracted code itself verified correct (SQL
+    byte-identical, return-value semantics equivalent, all 3 failure
+    behaviors preserved, tenant scoping intact) — but `prescription.repository.ts`'s
+    `deductStockAndCreate` and `transfer.repository.ts`'s `createTransfer`
+    had **zero test coverage** before this refactor, violating Lane D
+    Gate 0. Fixed: added `__tests__/prescription-stock-deduction.test.ts`
+    and `__tests__/transfer-stock-deduction.test.ts` (happy path, exact-stock
+    boundary, insufficient-stock with no-partial-writes verified via DB
+    state not just return value, and a concurrency case). Committed
+    `5bc4a45`. 97/97 suites, 1333/1333 tests.
+  - **Round 2: CONDITIONALLY APPROVED**, on one finding: QA *measured*
+    (mutated `deductBranchStock` to a naive SELECT-then-UPDATE, ran only the
+    new concurrency test) that it passed 5/5 even against the broken
+    version — the "two concurrent calls" test only proved JS-level timing
+    interleaving, not real database-level atomicity. Fixed: added a
+    deterministic version holding one transaction's row lock open and
+    starting the second only once the first's lock was signaled taken.
+    Committed `c46bffc`. Self-verified both directions before resubmitting.
+  - **Round 2.5 (same conditional-approval cycle): STILL BLOCKED.** QA
+    measured the "deterministic" fix directly (timing instrumentation) and
+    found it wasn't deterministic either — `releaseA()` fired before B's
+    UPDATE reached Postgres in most runs (B completed uncontended in 1-5ms,
+    not the ~400ms+ a real block takes), because a resolved-promise
+    continuation is faster than a fresh transaction's BEGIN round-trip.
+    Assertions passed regardless (A always commits first either way) —
+    false confidence, not a false failure. QA's own suggested fix: don't
+    release the first transaction until the second is *observed* blocked
+    via `pg_stat_activity`, not assumed from promise ordering. Fixed:
+    capture B's backend pid via `SELECT pg_backend_pid()`, poll a third
+    connection for `wait_event_type = 'Lock'` on that pid, assert
+    `observedBlocked === true` before releasing. Committed `506a398`.
+  - **Round 3: APPROVE.** QA verified the fix two independent ways
+    (a timing probe confirming B genuinely blocks 427-438ms once contended,
+    and re-running the same naive-mutation test — which now correctly
+    FAILS instead of passing by luck), confirmed no mutation artifacts
+    leaked into `product.repository.ts` (byte-identical to `8db4a68`), and
+    confirmed Gate 4 holds (95→97 suites, 1325→1335 tests, additions only).
+  - **Non-blocking backlog note:** `deductStockAndCreate` and
+    `createTransfer` open `prisma.$transaction` in the repository layer;
+    `architecture-rules.md` §5 puts transaction ownership in the service
+    layer. Pre-existing (not introduced by Phase 3), not fixed here — a
+    candidate for a future phase if this backlog grows one.
+  - **Updated baseline after Phase 3 (all 4 commits):** 97/97 suites,
+    1335/1335 tests, tsc clean.
 - [ ] **Phase 4 — God-file:** `services/platform-customers.service.ts` (563
   lines) mixes tenant/customer lifecycle with tenant-admin-user lifecycle.
   Split in two — `platform-customer-admin-users.test.ts` already treats the
@@ -187,16 +237,17 @@ those just add a step before step 1, they don't skip the QA step.
 
 ## Next action
 
-Phase 1 and Phase 2 are fully closed (implementation, ponytail gate, QA
-review). Baseline is still **95/95 suites, 1325/1325 tests** — Phase 2 added
-no test files, only refactored existing controllers, so the count didn't
-move. F-5/F-6 (low-priority test-coverage gaps on the new shared guard) are
-open, not blocking — fold into whichever phase next touches the OAuth test
-files, or do as a standalone small task if asked.
+Phases 1, 2, and 3 are fully closed (implementation, ponytail gate, QA
+review — Phase 3 took 3 QA rounds, appropriate scrutiny for a money path).
+Baseline is now **97/97 suites, 1335/1335 tests**. Open non-blocking items
+carried forward: F-5/F-6 (OAuth guard test-coverage gaps, low priority) and
+Phase 3's transaction-layering note (repo-owned `$transaction`, pre-existing).
 
-Resume with Phase 3 (stock-deduction SQL dedup across invoice/prescription/
-transfer repositories) — financial/inventory paths, treat cautiously per
-the backlog note. Follow the **Phase loop** above in full, QA step included.
+Resume with Phase 4 (split `platform-customers.service.ts`, 563 lines,
+tenant/customer lifecycle mixed with tenant-admin-user lifecycle — partial
+characterization coverage already exists via
+`platform-customer-admin-users.test.ts`, verify it's complete before
+splitting). Follow the **Phase loop** above in full, QA step included.
 
 Do not merge to `main` until the user has reviewed the full backlog and
 decided how many phases they want landed in this pass.
