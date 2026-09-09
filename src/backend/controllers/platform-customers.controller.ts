@@ -11,6 +11,7 @@
 import { Request, Response, NextFunction } from 'express'
 import { z } from 'zod'
 import * as customersService from '../services/platform-customers.service'
+import * as adminUsersService from '../services/platform-customer-admin-users.service'
 import * as plansService from '../services/platform-plans.service'
 import * as provisioningService from '../services/platform-provisioning.service'
 import * as usageService from '../services/usage.service'
@@ -313,7 +314,7 @@ export async function handleCreateTenantAdminUser(
     const tenantId = Number(req.params.id)
     const body = req.body as z.infer<typeof createTenantAdminUserSchema>
     const performedById = req.context!.platformUserId!
-    const data = await customersService.createTenantAdminUser(tenantId, body, performedById)
+    const data = await adminUsersService.createTenantAdminUser(tenantId, body, performedById)
     res.status(201).json({ success: true, data })
   } catch (err) {
     next(err)
@@ -330,7 +331,7 @@ export async function handleListTenantAdminUsers(
 ): Promise<void> {
   try {
     const tenantId = Number(req.params.id)
-    const data = await customersService.listTenantAdminUsers(tenantId)
+    const data = await adminUsersService.listTenantAdminUsers(tenantId)
     res.status(200).json({ success: true, data })
   } catch (err) {
     next(err)
@@ -349,7 +350,7 @@ export async function handleDeactivateTenantAdminUser(
     const tenantId = Number(req.params.id)
     const userId = Number(req.params.userId)
     const performedById = req.context!.platformUserId!
-    const data = await customersService.deactivateTenantAdminUser(tenantId, userId, performedById)
+    const data = await adminUsersService.deactivateTenantAdminUser(tenantId, userId, performedById)
     res.status(200).json({ success: true, data })
   } catch (err) {
     next(err)
@@ -369,7 +370,7 @@ export async function handleResetTenantAdminUserPassword(
     const userId = Number(req.params.userId)
     const body = req.body as z.infer<typeof resetTenantAdminUserPasswordSchema>
     const performedById = req.context!.platformUserId!
-    const data = await customersService.resetTenantAdminUserPassword(tenantId, userId, body.password, performedById)
+    const data = await adminUsersService.resetTenantAdminUserPassword(tenantId, userId, body.password, performedById)
     res.status(200).json({ success: true, data })
   } catch (err) {
     next(err)
