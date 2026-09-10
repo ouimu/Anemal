@@ -316,9 +316,42 @@ those just add a step before step 1, they don't skip the QA step.
   presentation. Largest, riskiest phase in this backlog; needs
   characterization tests first (Lane D gate 2) since frontend test coverage
   on these views was not verified in this pass — **check before starting**.
-- [ ] **Phase 8 — Bypass pattern:** `hooks/useAuth.ts:64` and
-  `store/authStore.ts:164` call raw `fetch()` instead of the shared
-  `utils/api.ts` axios client, skipping centralized 401 handling.
+- [x] **Phase 8 — Bypass pattern:** `hooks/useAuth.ts`'s `fetchMe()` and
+  `store/authStore.ts`'s `refreshPermissions()` called raw `fetch()` instead
+  of the shared `utils/api.ts` axios client. Migrated both to `api.get`.
+  `api.ts`'s request interceptor now lets a caller-supplied `Authorization`
+  header win over its store-derived default (needed for `fetchMe`'s
+  not-yet-persisted fresh token, ADR-0024). Introduces a circular import
+  (`authStore.ts` <-> `api.ts`) — both usages are inside function bodies,
+  not module-top-level, confirmed safe by direct code trace (see QA below).
+  Committed `8f8ea79` + `a9ed963`.
+  Reverse-ponytail: APPROVE on round 2. Round 1 REJECTed on a real bug it
+  caught: axios doesn't throw on a malformed/non-JSON 200 body (unlike
+  `fetch().json()`), so `fetchMe` would have silently returned a raw string
+  as a "successful" identity instead of throwing — fixed with an explicit
+  `typeof`-guard, self-verified by reverting it and confirming the fixed
+  test row fails without it.
+  QA formal review (`@qa-agent`): **APPROVE**, conditional on one gap —
+  `api.test.ts` covered only the response interceptor, so all 3 lines this
+  refactor exists to add could be deleted with the full suite still green.
+  Closed in `a9ed963`: added a request-interceptor test block, which caught
+  a second real gap in passing — the guard's `config.headers.Authorization`
+  truthiness check was case-sensitive, silently overwriting a lowercase
+  `authorization` header. Fixed with `.has()` (case-insensitive), same
+  self-verification discipline (reverted, confirmed 2/4 new tests fail,
+  restored).
+  **QA also corrected the commit message:** its "verified via the full test
+  suite" claim for the circular-import safety was not actually true — no
+  committed test loads both real (unmocked) modules together; QA proved
+  safety by direct code trace instead (neither module's top-level code
+  invokes the other at import time). Recorded here so the inaccurate claim
+  isn't repeated.
+  **Non-blocking, tracked for later, not fixed here:** `refreshPermissions`'s
+  401 branch skips `clearServerState()` (the global interceptor's 401
+  handler calls it; this one always has, pre-existing, correctly
+  *preserved* not introduced) — cached PII can survive a session-expiry
+  detected via this specific path. Worth its own Lane B ticket per QA.
+  **Baseline after Phase 8:** 60/60 files, 421/421 tests, tsc clean.
 - [ ] **Phase 9 — Design-system drift:** hardcoded hex in chart/canvas
   contexts (`AdminDashboard.tsx:136`, `ClinicTransactions.tsx:6`,
   `ClinicEMR.tsx:62`) not in the documented token table. Consolidate into
@@ -330,23 +363,23 @@ those just add a step before step 1, they don't skip the QA step.
 
 ## Next action
 
-**Phases 1-5 are fully closed** (backend, implementation + ponytail gate +
-QA review each). **Baseline: 98/98 suites, 1342/1342 backend tests**;
-frontend baseline separately established at 60/60 files, 410/410 tests
-(see Phase 6's entry for the `npm ci` setup needed in `src/frontend` too).
+**Phases 1-5 and 8 are fully closed** (backend Phases 1-5: 98/98 suites,
+1342/1342 tests; frontend Phase 8: 60/60 files, 421/421 tests — each phase
+ran the full implementation + ponytail gate + QA review loop, no shortcuts).
 
 **Phase 6 was attempted, then pulled to Lane A** by human decision — see
 its backlog entry above for the full reasoning and what to reuse when that
 work starts. Do not resume Phase 6 as Lane D.
 
-**Phases 7-10 are PAUSED** by explicit human decision (2026-09-10) — do
-not start any of them without the user asking first. When they do:
+**Phase 7 and Phase 9's `ClinicEMR.tsx` portion remain PAUSED** by explicit
+human decision (2026-09-10) — do not start without the user asking first.
 - Phase 7 (god-components) is the largest/riskiest remaining item — check
   characterization coverage per component before touching anything
   (`ClinicPets.tsx` already has 4 test files per an earlier scan; the
   others are unverified).
-- Phase 8 (auth fetch→axios), 9 (design tokens), 10 (minor cleanup batch)
-  are smaller, independent of Phase 7 and of each other.
+- Phase 9's two non-`ClinicEMR.tsx` sites (`AdminDashboard.tsx`,
+  `ClinicTransactions.tsx`) and Phase 10 (minor cleanup batch) are
+  independent of Phase 7 and of each other — fine to pick up any time.
 
 A separate, standalone security finding — **not part of this backlog**,
 spawned as its own task — is in flight: `findDueSoon`'s cross-tenant PII
