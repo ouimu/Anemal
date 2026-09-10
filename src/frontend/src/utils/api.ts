@@ -25,7 +25,11 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   // are not atomic with setAuth: ADR-0024 resolves /auth/me BEFORE the
   // token is persisted). Every other call site never sets this, so the
   // store-derived default below is unaffected.
-  if (!config.headers.Authorization) {
+  // @qa-agent (2026-09-10): `.has()` is a case-insensitive header lookup
+  // (AxiosHeaders); a plain `config.headers.Authorization` truthiness check
+  // would miss a caller that set a lowercase `authorization` key and silently
+  // overwrite it with the store token.
+  if (!config.headers.has('Authorization')) {
     const token = useAuthStore.getState().token
     if (token) config.headers.Authorization = `Bearer ${token}`
   }
