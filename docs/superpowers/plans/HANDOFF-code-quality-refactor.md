@@ -224,12 +224,44 @@ those just add a step before step 1, they don't skip the QA step.
   **Baseline unchanged:** 97/97 suites, 1335/1335 tests (pure structural
   move, no test file touched — the existing admin-user test already reached
   this code over HTTP regardless of which file it lived in).
-- [ ] **Phase 5 — Multi-tenancy consistency:** `vaccination.repository.ts:66`
-  (`findDueSoonWorklist`) joins `pets`/`owners` without an explicit tenant
-  guard on the joined tables (FK integrity covers it today; inconsistent with
-  the explicit-guard pattern elsewhere). Low risk, defense-in-depth only —
-  **hand to `@db-agent` for review**, not a plain Lane D mechanical fix, since
-  it touches the multi-tenancy veto surface.
+- [x] **Phase 5 — Multi-tenancy consistency:** `vaccination.repository.ts`'s
+  `findDueSoonWorklist` joined `pets`/`owners` without an explicit tenant
+  guard, relying on FK integrity alone. `@db-agent` confirmed this is real
+  (no composite FK ties tenantId across vaccinations/pets/owners — verified
+  against the schema) and specified the exact fix: `AND p."tenantId" = ...`
+  / `AND o."tenantId" = ...` on 5 JOIN clauses. Implemented exactly as
+  specified, with 7 new characterization tests
+  (`__tests__/vaccination-worklist-repository.test.ts`) run against the
+  original code first (Gate 0), then the fix (same 7 pass — no-op on valid
+  data). Committed `b60a11f`.
+  Reverse-ponytail: APPROVE. Zero new abstractions (no shared guard-builder
+  extracted across the two query variants), production LOC +8 (comment
+  block only).
+  QA formal review (`@qa-agent`): **APPROVE**, with 2 non-blocking findings
+  and one **important side-discovery**:
+  - **F-5.1 (HIGH, not from this commit, flagged as a separate task, NOT
+    fixed here):** while adversarially testing the fix, QA found the
+    *sibling* function `findDueSoon` (same file) has the **identical
+    cross-tenant PII leak** via a different code path — a Prisma `include`
+    that follows the pet/owner relation without a tenant filter, instead of
+    raw SQL. QA reproduced it live (seeded a cross-tenant FK mismatch,
+    confirmed leaked pet/owner data in the response). Route-reachable
+    (`GET /vaccinations/due-soon`). This is a real bug outside `@db-agent`'s
+    original review scope (raw SQL only) and outside Lane D (fixing it
+    changes behavior on corrupted data, arguably fine for Lane D's own
+    "no-op on valid data" standard, but it needs its own review + Gate 0
+    pass, not a bundled addition to this commit). Spawned as a standalone
+    task for the user rather than silently deferred — **not yet fixed**.
+  - **F-5.2 (medium, non-blocking):** no test exercises the guard itself —
+    deleting it would keep all 1342 tests green. QA's own adversarial probe
+    (seed a cross-tenant FK violation, assert 0 leaked rows) should be
+    productionized into the test file as a follow-up.
+  - QA also independently verified the date-comparison fix in the
+    characterization tests is timezone-invariant by construction (traced
+    the actual UTC round-trip through Postgres), correcting my own
+    description of it as "intermittent" — it failed deterministically
+    within a ~7-hour UTC-offset window, not randomly.
+  **Baseline after Phase 5:** 98/98 suites, 1342/1342 tests, tsc clean.
 
 ### Frontend
 - [ ] **Phase 6 — Duplication:** ~25 screens hand-roll modal overlay markup
