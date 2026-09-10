@@ -2,7 +2,9 @@
 
 **Worktree:** `D:\Development\Anemal\.claude\worktrees\refactor+code-quality-phase1`
 **Branch:** `worktree-refactor+code-quality-phase1`
-**Status:** Phase 1 committed. Main untouched. Not merged.
+**Status:** Phases 1-5 done (backend). Phase 6 attempted, pulled to Lane A
+(human decision, 2026-09-10) — see its entry below. Phases 7-10 PAUSED,
+awaiting explicit go-ahead. Main untouched. Not merged.
 
 ## Origin
 
@@ -264,10 +266,50 @@ those just add a step before step 1, they don't skip the QA step.
   **Baseline after Phase 5:** 98/98 suites, 1342/1342 tests, tsc clean.
 
 ### Frontend
-- [ ] **Phase 6 — Duplication:** ~25 screens hand-roll modal overlay markup
-  instead of reusing `components/platform/PlatformModal.tsx`. Extract one
-  shared `<Modal>` primitive, migrate call sites incrementally (this alone
-  should probably be its own multi-commit phase, screen by screen).
+- [~] **Phase 6 — Duplication — MOVED TO LANE A, 2026-09-10, human decision.**
+  Attempted as Lane D: migrated 5 modal instances (AdminBranches, one dialog
+  in UserManagementTab, ClinicAppointments, StoragePage, RoleList) onto
+  `components/platform/PlatformModal.tsx` — commits `910b70c` (migration)
+  and `01b8348` (characterization tests). Ponytail APPROVEd after 2 rounds
+  (fixed an unused prop, a stray `package.json` change, disclosed a UI
+  delta). QA then found **F-2**: real rendered-result changes stack up
+  across the 5 sites that Lane D's "nothing observable changes" bar does
+  not allow — `role="dialog"` added on 3 sites that never had it, a close
+  (X) button added on 2 sites that never had one, `<h3>`→`<h2>` heading
+  changes, StoragePage's title font restyled. Confirmed concretely while
+  writing F-1's characterization tests: they cannot pass unmodified against
+  the pre-migration DOM (no `role="dialog"` existed), which is itself the
+  proof these are real UI changes, not refactor-safe internal reshuffling.
+  **Decision:** pull this from the Lane D branch. Same goal (consolidate
+  duplicated modal markup), but re-enter through Lane A
+  (`/superpowers:brainstorm` → BA → **UIUX A designs the role/close-button/
+  heading changes deliberately** instead of them falling out accidentally
+  from a shared component) so the visual changes are intended and reviewed,
+  not incidental. Commits `910b70c`/`01b8348` stay in this branch's history
+  as a **reference/starting point** for that Lane A work, not as part of
+  this branch's own deliverable — do not count them toward this Lane D
+  branch's merge, and do not build further Lane D phases on top of them.
+  **When resuming Lane A for this:** new branch/worktree (never mix a
+  refactor and a feature in one branch), starting point is `910b70c` for
+  the shared-component shape and `01b8348` for a first pass at
+  characterization coverage to build from. Files touched, for reference:
+  `components/platform/PlatformModal.tsx` (gained `closeOnBackdropClick`
+  prop), `views/admin/AdminBranches.tsx`, `views/admin/UserManagementTab.tsx`
+  (only its `DeactivateConfirmDialog` — the main edit `Modal` was never
+  touched, sticky-footer layout conflict), `views/clinic/ClinicAppointments.tsx`,
+  `views/settings/StoragePage.tsx`, `components/roles/RoleList.tsx`.
+  Remaining untouched candidates for whenever Lane A picks this up:
+  `views/clinic/ClinicGrooming.tsx` (same sticky-footer conflict),
+  `components/roles/CloneRoleModal.tsx`, `views/admin/AdminBloodBank.tsx`,
+  `views/clinic/ClinicInventory.tsx`, `components/BarcodeScanner/BarcodeScanner.tsx`,
+  `components/IdleLogoutModal.tsx` (all zero test coverage — Gate 0/
+  characterization needed regardless of lane), plus `ClinicPets.tsx`/
+  `ClinicBilling.tsx`/`ClinicInpatient.tsx` (Phase 7's god-components,
+  don't touch their modals until Phase 7 restructures them).
+
+- [ ] **PAUSED, 2026-09-10, human decision — do not start without an explicit
+  go-ahead.** Phases 7-10 below are queued but not begun. Resume only when
+  the user explicitly asks.
 - [ ] **Phase 7 — God-components:** `ClinicPets.tsx` (936 lines, 30 useState),
   `ClinicBilling.tsx`, `ClinicInpatient.tsx` (799 lines), `ClinicEMR.tsx` (767
   lines) — inline modals with their own fetch calls, mixing logic/fetch/
@@ -288,18 +330,28 @@ those just add a step before step 1, they don't skip the QA step.
 
 ## Next action
 
-Phases 1-4 are fully closed (implementation, ponytail gate, QA review).
-Baseline is still **97/97 suites, 1335/1335 tests** (Phase 4 was a pure file
-split, no test count change). Open non-blocking items carried forward:
-F-5/F-6 (OAuth guard test-coverage gaps, low priority) and Phase 3's
-transaction-layering note (repo-owned `$transaction`, pre-existing).
+**Phases 1-5 are fully closed** (backend, implementation + ponytail gate +
+QA review each). **Baseline: 98/98 suites, 1342/1342 backend tests**;
+frontend baseline separately established at 60/60 files, 410/410 tests
+(see Phase 6's entry for the `npm ci` setup needed in `src/frontend` too).
 
-Resume with Phase 5 (`vaccination.repository.ts:66` tenant-guard
-consistency — **hand to `@db-agent` first**, this is the multi-tenancy veto
-surface, not a plain Lane D mechanical fix per the backlog note below).
-6 phases remain after Phase 4: 5 (db-agent review), 6-7 (frontend, largest/
-riskiest), 8-10 (frontend, smaller). Follow the **Phase loop** above in
-full, QA step included.
+**Phase 6 was attempted, then pulled to Lane A** by human decision — see
+its backlog entry above for the full reasoning and what to reuse when that
+work starts. Do not resume Phase 6 as Lane D.
 
-Do not merge to `main` until the user has reviewed the full backlog and
-decided how many phases they want landed in this pass.
+**Phases 7-10 are PAUSED** by explicit human decision (2026-09-10) — do
+not start any of them without the user asking first. When they do:
+- Phase 7 (god-components) is the largest/riskiest remaining item — check
+  characterization coverage per component before touching anything
+  (`ClinicPets.tsx` already has 4 test files per an earlier scan; the
+  others are unverified).
+- Phase 8 (auth fetch→axios), 9 (design tokens), 10 (minor cleanup batch)
+  are smaller, independent of Phase 7 and of each other.
+
+A separate, standalone security finding — **not part of this backlog**,
+spawned as its own task — is in flight: `findDueSoon`'s cross-tenant PII
+leak (F-5.1, discovered during Phase 5's QA review). Track it separately;
+it is Lane B/C, not Lane D, and does not block or depend on anything here.
+
+Do not merge this branch to `main` until the user has reviewed and decided
+how much of the backlog to land in this pass.
