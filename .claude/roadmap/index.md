@@ -16,7 +16,7 @@ removed only when its follow-up ships. Debt older than one phase is raised to th
 
 | Date | Branch | Symptom | Exemptions used | Follow-up |
 |------|--------|---------|-----------------|-----------|
-| _(none)_ | | | | |
+| 2026-09-10 | hotfix/vaccination-due-soon-cross-tenant-pii-leak | `findDueSoon` leaked cross-tenant pet/owner PII (name, phone) via an unguarded Prisma `include` when a vaccination row's `petId` FK pointed at a pet in another tenant — a data-integrity state the schema does not prevent (`vaccinations.pet_id` has no composite FK on `tenant_id`) | Skipped brainstorm · BA · `/grill-with-docs` · arch · ponytail | Lane B: audit remaining repositories for the same unguarded-`include` pattern (nested Prisma `include` that follows a FK without re-checking `tenantId`) · Lane A (`@db-agent`): decide whether to add compound tenant-scoped FKs / triggers across pet↔owner↔vaccination chains instead of per-repository app-level guards |
 
 ---
 

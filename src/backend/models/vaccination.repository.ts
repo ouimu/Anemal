@@ -22,14 +22,26 @@ export function createVaccination(tenantId: number, data: CreateVaccinationInput
   })
 }
 
-export function findDueSoon(tenantId: number, from: Date, to: Date) {
-  return prisma.vaccination.findMany({
+// HOTFIX: vaccinations.pet_id has no composite FK on tenant_id, so a corrupt row
+// (vaccination.tenantId matching but pointing at a pet in a different tenant) is
+// possible without violating any DB constraint. Prisma cannot filter a to-one
+// `include` by a field on the related row, so we select the pet's tenantId and
+// drop any row that fails the check before it ever reaches the caller — same
+// defense-in-depth as the explicit tenantId join guards in findDueSoonWorklist.
+export async function findDueSoon(tenantId: number, from: Date, to: Date) {
+  const rows = await prisma.vaccination.findMany({
     where: { tenantId, nextDueAt: { lte: to, gte: from } },
     include: {
-      pet: { select: { id: true, name: true, species: true, owner: { select: { firstName: true, lastName: true, phone: true } } } },
+      pet: { select: { id: true, name: true, species: true, tenantId: true, owner: { select: { firstName: true, lastName: true, phone: true } } } },
     },
     orderBy: { nextDueAt: 'asc' },
   })
+  return rows
+    .filter(row => row.pet?.tenantId === tenantId)
+    .map(({ pet, ...row }) => ({
+      ...row,
+      pet: pet ? { id: pet.id, name: pet.name, species: pet.species, owner: pet.owner } : null,
+    }))
 }
 
 export interface WorklistRow {
