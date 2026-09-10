@@ -3,6 +3,7 @@
 // more). "Remember me" no longer affects session lifetime — see
 // docs/adr/0010-remember-me-username-recall-not-session-persistence.md.
 import { create } from 'zustand'
+import api from '../utils/api'
 
 const STORAGE_KEY = 'vc_auth'
 
@@ -159,29 +160,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // simultaneously claimed and violated ADR-0026 decision 7. The dead branch
     // is removed rather than "fixed": a guard for an unreachable state gives
     // false confidence, and the same reasoning retired the AUTH-401-03 ternary.
-    let res: Response
-    try {
-      res = await fetch('/auth/me', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-    } catch {
-      // Network throw — could not tell, not "no permissions". Never mutate
-      // permissionsLoaded/permissions here (F-2/AUTH-INV-PERM-01).
-      return { ok: false }
-    }
-
-    if (res.status === 401) {
-      get().clearAuth()
-      window.location.href = '/login?reason=session-expired'
-      return { ok: false }
-    }
-
-    if (!res.ok) return { ok: false }
-
+    //
+    // skipAuthRedirect: this store's own 401 branch below (clearAuth +
+    // redirect, no clearServerState) is the pre-existing, load-bearing
+    // behavior here — the shared api.ts interceptor's 401 handler does an
+    // extra clearServerState() step this call has never done and must not
+    // start doing as a side effect of routing through the shared client.
     let json: unknown
     try {
-      json = await res.json()
-    } catch {
+      const res = await api.get('/auth/me', { skipAuthRedirect: true })
+      json = res.data
+    } catch (err) {
+      const status = (err as { response?: { status?: number } })?.response?.status
+      if (status === 401) {
+        get().clearAuth()
+        window.location.href = '/login?reason=session-expired'
+        return { ok: false }
+      }
+      // Network throw or any other non-2xx — could not tell, not "no
+      // permissions". Never mutate permissionsLoaded/permissions here
+      // (F-2/AUTH-INV-PERM-01).
       return { ok: false }
     }
     const body = ((json as { data?: unknown }).data ?? json) as {

@@ -19,8 +19,16 @@ declare module 'axios' {
 const api = axios.create({ baseURL: '/' })
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = useAuthStore.getState().token
-  if (token) config.headers.Authorization = `Bearer ${token}`
+  // A caller-supplied Authorization header wins — used by the identity-
+  // resolution calls that must authenticate with a freshly issued token
+  // that hasn't been written to the auth store yet (login/select-branch
+  // are not atomic with setAuth: ADR-0024 resolves /auth/me BEFORE the
+  // token is persisted). Every other call site never sets this, so the
+  // store-derived default below is unaffected.
+  if (!config.headers.Authorization) {
+    const token = useAuthStore.getState().token
+    if (token) config.headers.Authorization = `Bearer ${token}`
+  }
   return config
 })
 

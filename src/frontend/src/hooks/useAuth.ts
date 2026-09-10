@@ -59,19 +59,34 @@ export class IdentityLoadError extends Error {}
  * generic/`null` value.
  */
 async function fetchMe(token: string): Promise<MeResponse> {
-  let res: Response
+  // Authorization is set explicitly with the freshly issued token, not the
+  // (not-yet-written) auth store — api.ts's request interceptor lets an
+  // explicit header win over its store-derived default for exactly this.
+  // skipAuthRedirect: a 401 here must surface as IdentityLoadError (below,
+  // shown to the user per the grill's C1 ruling), not trigger the global
+  // "clear auth + redirect to /login" handler — there is no session to
+  // clear yet, identity resolution hasn't completed.
+  let json: unknown
   try {
-    res = await fetch('/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+    const res = await api.get('/auth/me', {
+      headers: { Authorization: `Bearer ${token}` },
+      skipAuthRedirect: true,
+    })
+    json = res.data
   } catch (cause) {
     throw new IdentityLoadError('Could not load permissions', { cause })
   }
-  if (!res.ok) throw new IdentityLoadError('Could not load permissions')
-  try {
-    const json = await res.json()
-    return (json.data ?? json) as MeResponse
-  } catch (cause) {
-    throw new IdentityLoadError('Could not load permissions', { cause })
+  // @ponytail-agent (2026-09-10): unlike fetch().json(), axios does not throw
+  // on a malformed/non-JSON 200 body by default (strictJSONParsing is off
+  // unless responseType:'json') — it silently returns the raw string. A dev
+  // fallback route or misconfigured proxy returning HTML on /auth/me would
+  // otherwise flow through as a "successful" MeResponse with every field
+  // undefined. Explicit guard restores the original throw-on-malformed-body
+  // contract this function's own docblock promises.
+  if (typeof json !== 'object' || json === null) {
+    throw new IdentityLoadError('Could not load permissions')
   }
+  return ((json as { data?: unknown }).data ?? json) as MeResponse
 }
 
 export function useLogin() {

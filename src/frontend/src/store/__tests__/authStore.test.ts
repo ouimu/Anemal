@@ -113,12 +113,23 @@ describe('authStore — sessionStorage-only persistence', () => {
   })
 })
 
+// Phase 8 (2026-09-10 code-quality refactor): refreshPermissions moved from
+// raw fetch() to the shared axios client (utils/api.ts) so it gets consistent
+// auth-header handling like every other request in the app. Mocking api.get
+// instead of global fetch — same assertions, same behavior contract, matching
+// how axios call sites are mocked elsewhere in this test suite (e.g.
+// __tests__/AddPetModal.test.tsx).
+const apiGetMock = vi.fn()
+vi.mock('../../utils/api', () => ({
+  default: { get: (...args: unknown[]) => apiGetMock(...args) },
+}))
+
 describe('refreshPermissions total contract (ADR-0026, C-7/C-8, F-2)', () => {
   beforeEach(() => {
     localStorage.clear()
     sessionStorage.clear()
     vi.resetModules()
-    vi.stubGlobal('fetch', vi.fn())
+    apiGetMock.mockReset()
     delete (window as unknown as { location?: unknown }).location
     ;(window as unknown as { location: { href: string } }).location = { href: '' }
   })
@@ -130,17 +141,17 @@ describe('refreshPermissions total contract (ADR-0026, C-7/C-8, F-2)', () => {
     return useAuthStore
   }
 
-  it('1. no token -> resolves { ok: false }, no fetch call', async () => {
+  it('1. no token -> resolves { ok: false }, no request made', async () => {
     const { useAuthStore } = await import('../authStore')
     // Fresh module, never logged in -> token === ''
     const result = await useAuthStore.getState().refreshPermissions()
     expect(result).toEqual({ ok: false })
-    expect(globalThis.fetch).not.toHaveBeenCalled()
+    expect(apiGetMock).not.toHaveBeenCalled()
   })
 
-  it('2. fetch rejects (network throw) -> resolves { ok: false }, no unhandled rejection', async () => {
+  it('2. request rejects (network throw) -> resolves { ok: false }, no unhandled rejection', async () => {
     const useAuthStore = await seedLoggedIn()
-    vi.mocked(globalThis.fetch).mockRejectedValueOnce(new Error('network down'))
+    apiGetMock.mockRejectedValueOnce(new Error('network down'))
     await expect(useAuthStore.getState().refreshPermissions()).resolves.toEqual({ ok: false })
   })
 
@@ -155,7 +166,7 @@ describe('refreshPermissions total contract (ADR-0026, C-7/C-8, F-2)', () => {
     const permsBefore = [...before.permissions]
     const loadedBefore = before.permissionsLoaded
 
-    vi.mocked(globalThis.fetch).mockRejectedValueOnce(new Error('network down'))
+    apiGetMock.mockRejectedValueOnce(new Error('network down'))
     await useAuthStore.getState().refreshPermissions()
 
     const after = useAuthStore.getState()
@@ -167,20 +178,16 @@ describe('refreshPermissions total contract (ADR-0026, C-7/C-8, F-2)', () => {
 
   it('3. 401 response -> resolves { ok: false }, clearAuth() called, redirect carries reason=session-expired', async () => {
     const useAuthStore = await seedLoggedIn()
-    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-      status: 401, ok: false, json: async () => ({}),
-    } as Response)
+    apiGetMock.mockRejectedValueOnce({ response: { status: 401, data: {} } })
     const result = await useAuthStore.getState().refreshPermissions()
     expect(result).toEqual({ ok: false })
     expect(useAuthStore.getState().isAuthenticated()).toBe(false)
     expect(window.location.href).toContain('reason=session-expired')
   })
 
-  it('4. non-ok (e.g. 500) -> resolves { ok: false }, permissionsLoaded/permissions unchanged', async () => {
+  it('4. non-2xx (e.g. 500) -> resolves { ok: false }, permissionsLoaded/permissions unchanged', async () => {
     const useAuthStore = await seedLoggedIn()
-    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-      status: 500, ok: false, json: async () => ({}),
-    } as Response)
+    apiGetMock.mockRejectedValueOnce({ response: { status: 500, data: {} } })
     const before = useAuthStore.getState()
     const result = await useAuthStore.getState().refreshPermissions()
     expect(result).toEqual({ ok: false })
@@ -190,10 +197,9 @@ describe('refreshPermissions total contract (ADR-0026, C-7/C-8, F-2)', () => {
 
   it('5. 200 with a well-formed body -> resolves { ok: true }, permissionsLoaded: true', async () => {
     const useAuthStore = await seedLoggedIn()
-    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-      status: 200, ok: true,
-      json: async () => ({ data: { permissions: ['a.view', 'b.view'], roleIds: [2], permSetVersion: 3 } }),
-    } as Response)
+    apiGetMock.mockResolvedValueOnce({
+      data: { data: { permissions: ['a.view', 'b.view'], roleIds: [2], permSetVersion: 3 } },
+    })
     const result = await useAuthStore.getState().refreshPermissions()
     expect(result).toEqual({ ok: true })
     expect(useAuthStore.getState().permissionsLoaded).toBe(true)
@@ -202,10 +208,7 @@ describe('refreshPermissions total contract (ADR-0026, C-7/C-8, F-2)', () => {
 
   it('6. F-2: 200 with permissions missing/non-array -> resolves { ok: false }, permissionsLoaded/permissions unchanged (not flipped to [])', async () => {
     const useAuthStore = await seedLoggedIn()
-    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-      status: 200, ok: true,
-      json: async () => ({ data: { permissions: 'not-an-array' } }),
-    } as Response)
+    apiGetMock.mockResolvedValueOnce({ data: { data: { permissions: 'not-an-array' } } })
     const before = useAuthStore.getState()
     const result = await useAuthStore.getState().refreshPermissions()
     expect(result).toEqual({ ok: false })
@@ -217,9 +220,7 @@ describe('refreshPermissions total contract (ADR-0026, C-7/C-8, F-2)', () => {
   // none" out of "could not tell" — re-run across the failing exits above.
   it('AUTH-INV-PERM-01: a 401 leaves permissionsLoaded/permissions untouched before clearAuth resets them, not fabricated to []/true', async () => {
     const useAuthStore = await seedLoggedIn()
-    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-      status: 401, ok: false, json: async () => ({}),
-    } as Response)
+    apiGetMock.mockRejectedValueOnce({ response: { status: 401, data: {} } })
     await useAuthStore.getState().refreshPermissions()
     // clearAuth() resets permissionsLoaded to false (logged-out state) — it
     // must NOT be true with a manufactured empty permissions array.
