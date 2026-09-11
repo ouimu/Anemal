@@ -33,17 +33,16 @@ Recorded as open hotfix debt in `.claude/roadmap/index.md` (2026-09-10 row).
      E-1 (`reminder.repository.ts` `listAllDue()` is *deliberately* cross-tenant for the background
      dispatcher — needs a named exemption, not an accidental pass).
 
-## Next action — two blockers, both must clear before Step 3.4
+## Next action — one blocker remaining before Step 3.4
 
-- **C-7**: This work reached Lane A via hotfix-debt escalation, not a brainstorm — it has never had a
-  Step 1 human approval gate. **Needs the human to explicitly approve scope before `@arch-agent` starts.**
-- **C-1**: `@qa-agent` must attempt to reproduce a live write path that creates a cross-tenant FK
-  mismatch (not just the direct-DB-insert the hotfix test used). **If any app-reachable write path is
-  found, this flips to Lane C immediately** (per BA's stated trigger) — do not proceed to Step 3.4 arch
-  design until this is resolved either way.
+- **C-7 — CLEARED 2026-09-11.** Human (kritsapon) explicitly approved scope for this Lane A work
+  proceeding via hotfix-debt escalation (no separate brainstorm needed).
+- **C-1 — IN PROGRESS.** `@qa-agent` dispatched 2026-09-11 to attempt a live write-path reproduction
+  of a cross-tenant FK mismatch (not just the direct-DB-insert the hotfix test used). **If any
+  app-reachable write path is found, this flips to Lane C immediately** (per BA's stated trigger) —
+  do not proceed to Step 3.4 arch design until this resolves either way (HIT/MISS/INCONCLUSIVE).
 
-Once both clear: invoke `@arch-agent` at Step 3.4 with the BA sign-off doc as input. Do NOT skip to
-`/write-plan` — the BA doc explicitly says Step 1 approval (C-7) must land first.
+Once C-1 resolves: invoke `@arch-agent` at Step 3.4 with the BA sign-off doc as input.
 
 ## Files to read, in order
 
