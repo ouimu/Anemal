@@ -12,7 +12,8 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "ts-node prisma/seed.ts",
     "db:studio": "prisma studio",
-    "db:generate": "prisma generate"
+    "db:generate": "prisma generate",
+    "db:integrity-scan": "ts-node scripts/tenant-integrity-scan.ts"
   },
   "dependencies": {
     "@marsaud/smb2": "^0.18.0",

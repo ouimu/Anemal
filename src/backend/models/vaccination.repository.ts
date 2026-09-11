@@ -26,8 +26,15 @@ export function createVaccination(tenantId: number, data: CreateVaccinationInput
 // (vaccination.tenantId matching but pointing at a pet in a different tenant) is
 // possible without violating any DB constraint. Prisma cannot filter a to-one
 // `include` by a field on the related row, so we select the pet's tenantId and
-// drop any row that fails the check before it ever reaches the caller — same
-// defense-in-depth as the explicit tenantId join guards in findDueSoonWorklist.
+// drop any row that fails the check before it ever reaches the caller.
+//
+// CORRECTION (XTI-4, 2026-09-11): this comment previously claimed the same
+// defense-in-depth as "the explicit tenantId join guards in findDueSoonWorklist"
+// — that claim was false (BA F-1) both here and in PR #73's commit message
+// (1add331): findDueSoonWorklist's raw-SQL JOINs to pets/owners below have no
+// tenantId predicate in their ON clause today. The actual guard is added by
+// XTI-8 (ADR-0027 dialect 3); until that lands, do not assume this function is
+// tenant-guarded. See `.claude/roadmap/index.md`'s PR #73 correction note.
 export async function findDueSoon(tenantId: number, from: Date, to: Date) {
   const rows = await prisma.vaccination.findMany({
     where: { tenantId, nextDueAt: { lte: to, gte: from } },

@@ -6,6 +6,12 @@ import type { CreatePetInput, UpdatePetInput } from '../services/pet.service'
 
 const listInclude = { owner: { select: { id: true, firstName: true, lastName: true, phone: true } } }
 
+// XTI-3 (arch §4.2, FROZEN CONSTRAINT): the response shape for `pet: { select: petSummarySelect } }`
+// at every to-one traversal into Pet from another model. Scalar-only, on purpose — no relation key
+// may ever be added here; see ownerSummarySelect (owner.repository.ts) for the analyzer-resolvability
+// reason this stays inside models/.
+export const petSummarySelect = { id: true, name: true, species: true, photoUrl: true } as const
+
 function buildWhere(tenantId: number, ownerId?: number, species?: string) {
   return {
     tenantId,

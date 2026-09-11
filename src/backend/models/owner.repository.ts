@@ -7,6 +7,16 @@ import type { CreateOwnerInput, UpdateOwnerInput } from '../services/owner.servi
 
 const listInclude = { pets: { where: { isActive: true }, select: { id: true, name: true, species: true } } }
 
+// XTI-3 (arch §4.2, FROZEN CONSTRAINT): the response shape for `owner: { select: ownerSummarySelect }`
+// at every to-one traversal into Owner from another model (appointment/invoice/pet/prescription).
+// Scalar-only, on purpose — no relation key may ever be added here. Declared inside models/ so it
+// stays inside the tenantRelationConformance analyzer's own resolvable set (arch §6.2.1 shape (c));
+// moving it to utils/, types/ or a shared _select.ts would make it unresolvable and fail every
+// site that imports it closed. Do not add idCardNumber/idCardType/address/lineId/email/isActive/
+// loyaltyPoints/membershipTier — those are exactly the fields §4.2 removes from cross-tenant-visible
+// endpoints.
+export const ownerSummarySelect = { id: true, firstName: true, lastName: true, phone: true } as const
+
 function buildWhere(tenantId: number, search?: string, includeInactive?: boolean) {
   return {
     tenantId,
