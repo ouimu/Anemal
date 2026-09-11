@@ -6,6 +6,7 @@ import { useUiStore } from '../store/uiStore'
 import { useT } from '../i18n'
 import MaterialIcon from '../components/MaterialIcon'
 import TopNav from '../components/TopNav'
+import { ADMIN_NAV_PERMS, CLINIC_NAV_PERMS } from './navAccess'
 
 const NAV = [
   { to: '/clinic/dashboard',    icon: 'dashboard',        label: 'nav.dashboard',  perm: 'dashboard.view' },
@@ -28,7 +29,16 @@ export default function ClinicLayout() {
   const t      = useT()
   const { sidebarOpen, toggleSidebar } = useUiStore()
 
-  if (role === 'admin') return <Navigate to="/clinic-admin/dashboard" replace />
+  // RBAC-based entry (F-3): the legacy role==='admin' gate blocked
+  // clinic_admin (role 'admin') even when the RBAC matrix granted it a
+  // clinic-tree permission (e.g. appointments/inventory/grooming). Only
+  // bounce away when the role holds NO clinic-tree permission but does hold
+  // an admin-tree one — otherwise render and let each route's
+  // RequirePermission decide (avoids a redirect loop when a role holds
+  // permissions in neither tree).
+  const hasAnyClinicPerm = CLINIC_NAV_PERMS.some(hasPermission)
+  const hasAnyAdminPerm  = ADMIN_NAV_PERMS.some(hasPermission)
+  if (!hasAnyClinicPerm && hasAnyAdminPerm) return <Navigate to="/clinic-admin/dashboard" replace />
 
   const sidebarW  = sidebarOpen ? 'w-56' : 'w-14'
   const mainClass = sidebarOpen ? 'ml-56' : 'ml-14'

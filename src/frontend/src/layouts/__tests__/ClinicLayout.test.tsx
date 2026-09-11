@@ -73,3 +73,30 @@ describe('ClinicLayout — nav honesty', () => {
     expect(links).toContain('/clinic/dashboard')
   })
 })
+
+describe('ClinicLayout — permission-based entry (F-3)', () => {
+  // AUTH: role === 'admin' (clinic_admin) but holding a clinic-tree
+  // permission (e.g. appointments.view, inventory.view, grooming.view) must
+  // NOT be bounced to /clinic-admin/dashboard before RequirePermission runs.
+  it('does not redirect an admin role that holds a clinic-tree permission (appointments.view)', () => {
+    authState.role = 'admin'
+    authState.hasPermission = (code: string) => code === 'appointments.view'
+    render(<ClinicLayout />)
+    expect(screen.queryByTestId('navigate')).not.toBeInTheDocument()
+  })
+
+  it('redirects an admin role with zero clinic-tree permissions but some admin-tree permission to /clinic-admin/dashboard', () => {
+    authState.role = 'admin'
+    authState.hasPermission = (code: string) => code === 'staff.view'
+    render(<ClinicLayout />)
+    const nav = screen.getByTestId('navigate')
+    expect(nav.getAttribute('data-to')).toBe('/clinic-admin/dashboard')
+  })
+
+  it('does not redirect (renders in-shell) when the role has zero permissions in either tree', () => {
+    authState.role = 'admin'
+    authState.hasPermission = () => false
+    render(<ClinicLayout />)
+    expect(screen.queryByTestId('navigate')).not.toBeInTheDocument()
+  })
+})
