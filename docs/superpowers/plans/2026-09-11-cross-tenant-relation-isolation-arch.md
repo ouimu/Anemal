@@ -234,17 +234,28 @@ Per `architecture-rules.md` §3 abuse signals, this would be "a layer that only 
 
 ## 4. Contract (FROZEN) — the seam Step 6 builds against
 
-### 4.1 Repository signatures — **unchanged**
+### 4.1 Repository signatures — **unchanged** (REVISED rev 3, 2026-09-11 — ponytail Step 5 gate)
 
 `tenantId` stays the first parameter of every repository function. No function is renamed, removed, or
-reordered. **Three functions gain one optional trailing parameter**, following the pattern already in
+reordered. **Two functions gain one optional trailing parameter**, following the pattern already in
 `pet.repository.ts:56` and `hospitalization.repository.ts:47`:
 
 ```ts
 petRepo.findOwner(tenantId: number, ownerId: number, client?: Prisma.TransactionClient | typeof prisma)
-appointmentRepo.findPetForBooking(tenantId: number, petId: number, client?: …)   // extracted from appointment.service
+petRepo.findPetById(tenantId: number, id: number, includeEmr?: boolean, client?: …)   // client? is 4th,
+                                                                                        // after the existing includeEmr
 bloodBankRepo.findDonorPet(tenantId: number, petId: number, client?: …)          // moved down from blood-bank.service
 ```
+
+**Correction (rev 3):** rev 2 named a third function, `appointmentRepo.findPetForBooking(...)
+// extracted from appointment.service`. This was wrong — `appointment.service.ts:66,85` hold no inline
+pet-check logic to extract; both sites already call the existing `petRepo.findPetById(tenantId, petId)`
+(`pet.repository.ts:32`). There is nothing to extract, and building a second tenant-scoped pet lookup
+in `appointment.repository.ts` would duplicate `findPetById` — exactly the double-guarding §8.2's B-3
+ruling forbids by name. The atomicity fix for `createAppointment`/`createWalkIn` (XTI-11/arch §8.2)
+reuses `findPetById` with its `client?` param added, called with `includeEmr: false` (the booking check
+needs only tenant/existence, not the EMR-shaped include `findPetById` returns by default — passing
+`false` skips that work). `findPetById` stays in `pet.repository.ts`, not `appointment.repository.ts`.
 
 No other signature may change. **A worker that wants a different signature stops and raises it** —
 Step 6 parallelism depends on this list being complete.
