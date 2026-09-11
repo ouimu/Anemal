@@ -1,26 +1,64 @@
 # HANDOFF — Cross-Tenant Relation Isolation (Lane A)
 
-**Status as of 2026-09-11:** Step 4 **COMPLETE.** `@pm-agent` wrote the implementation plan at
+**Status as of 2026-09-11:** Step 4b **COMPLETE — PASS (3rd pass, independent full re-scan).**
+`@pm-agent` wrote the implementation plan at
 `docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-plan.md` — 14 tasks (XTI-1…XTI-14)
 across W0 (serial, 6 tasks) → W1a/b/c/d (parallel, 4 tasks) → W2 (parallel, 4 tasks), a work-partition
 manifest satisfying one-owner-per-file-per-wave, and AC-1…AC-10 carried forward from BA §12 with AC-4
 as reworded at the grill. Both ponytail FLAG items (catch-all scope, `product.repository.ts` both
 branches) and grill decision #3 (`tenant-integrity-scan.ts` committed to W0) are folded into the task
-content, not left as separate notes.
+content, not left as separate notes. `@scribe-agent` independently re-verified every file path, every
+cited line number, and every cross-doc section reference in the plan against the actual branch content
+(not just the 2 previously-flagged `:70`→`:69` spots) — see verdict below.
 
 ## Next action — literally this
 
 ```
-@scribe-agent   reference pre-check (Step 4b)
-input: docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-plan.md
-check: every file path and line number cited in the plan resolves on this branch
-        (the 35-file src/backend/models/*.repository.ts glob, all named repository/service files,
-        .claude/roadmap/index.md, scripts/ and config/ target paths that don't exist yet — confirm
-        those are correctly flagged as "to be created" not "to be edited")
-output: PASS, or a list of dangling references that blocks Step 5 until fixed
-then: @ponytail-agent, mode `gate` (Step 5) — 9 criteria against {arch doc + plan}, checking for
-      drift between what arch froze at 3.4 and what the plan assigned at 4
+@ponytail-agent   mode `gate` (Step 5)
+input: docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-arch.md (frozen at 3.4)
+       + docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-plan.md
+check: the 9 simplicity-gate criteria against {arch doc + plan} together — ANY criterion yes = REJECT
+       — specifically checking for drift between what @arch-agent froze at 3.4 (§4 contract, §6.2/
+       §6.2.1 resolution model, §B wave/worker partition) and what @pm-agent's plan assigned at Step 4
+output: APPROVE → `/superpowers:execute-plan` (Step 6, W0 serial then W1 four workers in parallel);
+        REJECT → returns to @pm-agent (or further back, per the gate's own routing)
 ```
+
+### Step 4b — scribe-agent reference pre-check, 3rd pass (2026-09-11) — PASS
+
+Full independent re-scan of `2026-09-11-cross-tenant-relation-isolation-plan.md` (607 lines), not a
+spot-check of the 2 previously-named lines:
+- Every file path cited (repository/service files under `src/backend/models/` and
+  `src/backend/services/`, the 6 pending W0 artefacts correctly framed as "to be created," the 5 cross-
+  doc inputs, `.claude/roadmap/index.md`, `.claude/skills/anemal-dev-lanes/references/hotfix.md`)
+  resolves on this branch — mechanical dangling-reference scan (SKILL.md §1) returned zero breaks.
+- Every cited line number verified against the actual file content: `product.repository.ts:57` and
+  `:69` (both ternary branches — the fix the orchestrator applied), `vaccination.repository.ts:25-30`
+  (comment), `:31-45` (post-filter block), `:75`/`:88-89`/`:113-114` (raw-SQL joins),
+  `appointment.repository.ts:85`, `pet.repository.ts:32`, `prescription.repository.ts:34`,
+  `invoice.repository.ts:137`, `:198-221` and `:218` (claimInvoicePaid + the F-4 read-back line),
+  `:244`/`:272`/`:282`/`:284` (paymentHistoryWhere + its 3 usage sites), `appointment.service.ts:66,85`,
+  `pet.service.ts:53-54`, `blood-bank.service.ts:43`, `product.repository.ts:242/254/266` (the
+  reference dialect-3 pattern XTI-8 mirrors) — all exact matches, no further drift found.
+  `.claude/roadmap/index.md` and the "35-file" glob count (line 601) were already corrected by the
+  orchestrator (commit `2656e8d`) and are confirmed still correct.
+- Every cross-doc section reference resolves: arch doc §3.1–§3.3, §4.1–§4.5, §5, §6.1–§6.4, §7, §8.1–
+  §8.3, §9, §10, §B all exist as headed sections; BA sign-off §2, §3, §7, §10–§14, §17, §18 all exist;
+  ADR-0027 and ADR-0028 exist and their cited concepts (three dialects, Precondition 1) are present;
+  `hotfix.md` §5a exists.
+- **Extra finding, out of the plan doc's own scope but caught in this pass:** the HANDOFF file itself
+  (this file) carried the same wrong fact three more times — `product.repository.ts:57,70` at the old
+  lines 66/80/115 — the identical `:70`-should-be-`:69` error the orchestrator already fixed twice in
+  the plan doc, just in a third document nobody had re-checked. Fixed in this pass (all three now read
+  `:57,69`). This is why the full-file re-scan (vs. spot-checking the 2 named lines) was worth doing.
+- **Minor, non-blocking note (not a dangling reference — does not block Step 5):** the plan cites several
+  bare filenames (`appointment.service.ts`, `architecture-rules.md`, etc.) without restating their
+  directory each time. Each resolves unambiguously to exactly one file repo-wide, and the base
+  (`src/backend/{models,services}/`, `.claude/standards/`) is established by CLAUDE.md's T0-loaded
+  Project Structure section. Not a break; noted for completeness only.
+
+**Verdict: PASS — no dangling references, no line-number drift, no unresolved cross-doc section
+reference. Nothing blocks Step 5.**
 
 ---
 
@@ -63,7 +101,7 @@ output: docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-plan.m
 - **Ponytail FLAG #1**: §6.2.1's catch-all row must apply only at relation-key/guard positions, not
   every scalar leaf in a `where` (20 scalar accesses like `data.petId` across 8 files would otherwise
   false-positive on day one of W0).
-- **Ponytail FLAG #2**: `product.repository.ts:57,70` — both ternary branches fail R-1, not just the
+- **Ponytail FLAG #2**: `product.repository.ts:57,69` — both ternary branches fail R-1, not just the
   `: true` one; the work order must say so explicitly so a worker doesn't fix only the obvious half.
 - **AC-4 is now in the W0 baseline** (grill decision #3) — `scripts/tenant-integrity-scan.ts` is
   committed work, not conditional on a later BA answer.
@@ -77,7 +115,7 @@ output: docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-plan.m
    printed violation list on day one. Fix is one sentence: unresolvability applies at relation-key and
    guard positions, not every scalar leaf.
 2. **§6.2.1(e) / §B W1d understates the `product.repository.ts` defect.** Both ternary branches at
-   `:57,70` fail R-1, not just the `: true` branch — the "guarded" branch (`{ where: { branchId } }`)
+   `:57,69` fail R-1, not just the `: true` branch — the "guarded" branch (`{ where: { branchId } }`)
    has no `tenantId` either. The analyzer catches both, but the work-order narrative should say so
    explicitly or a worker may fix only the obvious half.
 
@@ -112,7 +150,7 @@ count of 17 is exact). Not worth a grill slot on its own.
 
 - All five builder functions (`pet`/`owner`/`audit`/`invoice`/`product`) end in a **single
   `return <object literal>`** — so the bounded resolver covers **10 of 10** call-expression sites.
-- **`BranchInventory` is tenant-scoped**, and `product.repository.ts:57,70` writes
+- **`BranchInventory` is tenant-scoped**, and `product.repository.ts:57,69` writes
   `branchInventory: cond ? { where: { branchId } } : true` — the `: true` branch is a **live unguarded
   to-many include** that a literals-only analyzer would never have seen. Added to W1d.
 - `invoice.paymentHistoryWhere` (:244) is a **mutable accumulator** on tenant-scoped `PaymentHistory`
