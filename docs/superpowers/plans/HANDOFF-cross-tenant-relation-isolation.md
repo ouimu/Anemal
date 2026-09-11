@@ -11,17 +11,40 @@ content, not left as separate notes. `@scribe-agent` independently re-verified e
 cited line number, and every cross-doc section reference in the plan against the actual branch content
 (not just the 2 previously-flagged `:70`→`:69` spots) — see verdict below.
 
+## Step 5 — APPROVED 2026-09-11 (3rd pass, after 2 REJECTs fixed)
+
+Ponytail gate (mode `gate`) went through 3 rounds:
+1. REJECT — drift: arch §4.1's frozen signatures had no task owning the repository files needed to
+   write them. Fixed: XTI-11 (W2) given exclusive scope over `pet.repository.ts`,
+   `appointment.repository.ts`, `blood-bank.repository.ts`.
+2. REJECT — criterion 2 (duplicate work): arch §4.1 rev 2 claimed `appointmentRepo.findPetForBooking`
+   needed extracting from `appointment.service.ts`'s "inline pet-check logic" — verified against
+   source, that logic doesn't exist; both call sites already use `petRepo.findPetById`. Fixed:
+   **arch §4.1 rev 3** — `findPetById` gains the `client?` param (4th, after existing `includeEmr`)
+   instead of a new function being built. `appointment.repository.ts` removed from XTI-11's scope,
+   stays XTI-7/W1a's alone.
+3. **APPROVE** — all 9 criteria pass, drift resolved, no new issues. 3 non-blocking cosmetic notes
+   (stale "rev 2" label, a wrong precedent citation, `includeEmr` default preservation) fixed same
+   commit.
+
+**Step 6 is unblocked.** Arch doc is now rev 3; plan reflects it throughout.
+
 ## Next action — literally this
 
 ```
-@ponytail-agent   mode `gate` (Step 5)
-input: docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-arch.md (frozen at 3.4)
-       + docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-plan.md
-check: the 9 simplicity-gate criteria against {arch doc + plan} together — ANY criterion yes = REJECT
-       — specifically checking for drift between what @arch-agent froze at 3.4 (§4 contract, §6.2/
-       §6.2.1 resolution model, §B wave/worker partition) and what @pm-agent's plan assigned at Step 4
-output: APPROVE → `/superpowers:execute-plan` (Step 6, W0 serial then W1 four workers in parallel);
-        REJECT → returns to @pm-agent (or further back, per the gate's own routing)
+/superpowers:execute-plan   (Step 6 — not available as a skill in this session,
+                              orchestrated directly via @dev-agent / @qa-agent / @db-agent /
+                              @scribe-agent dispatches matching the plan's wave structure)
+W0 (SERIAL — do not parallelize): XTI-1 (analyzer+fixtures), XTI-2 (exemption registry),
+  XTI-3 (summary-select consts), XTI-4 (fix false comment), XTI-5 (@scribe-agent — roadmap
+  correction record), XTI-6 (tenant-integrity-scan.ts) — all Dev A except XTI-5.
+  🔗 Integration checkpoint after W0: analyzer runs against current models/, prints violation list —
+  this is the real answer to "how many sites," not the ~57/~19 estimates anywhere in the docs.
+W1 (parallel, 4 disjoint workers): W1a Dev A (XTI-7) · W1b Dev B (XTI-8) · W1c Dev C (XTI-9) ·
+  W1d Dev D (XTI-10). 🔗 Integration checkpoint after W1: XTI-1's analyzer reports 0 violations.
+W2 (parallel, 4 workers): Dev A (XTI-11) · Dev B (XTI-12, measurement only) ·
+  @qa-agent (XTI-13) · @db-agent (XTI-14, non-overrulable isolation veto).
+Then: Step 7 (@qa-agent code-review + sign-off) → Step 8 (@scribe-agent /anemal-finish-branch).
 ```
 
 ### Step 4b — scribe-agent reference pre-check, 3rd pass (2026-09-11) — PASS
