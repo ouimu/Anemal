@@ -314,8 +314,9 @@ Permission(s): appointments.view, crm.view, prescriptions.view, billing.view, bi
   (no codes added or changed — existing routes, existing permissions, narrower response only)
 Dependencies: XTI-1, XTI-2, XTI-3 (needs the analyzer, exemption registry, and summary-select consts
   to exist first — but XTI-7 does not touch those files)
-Contract referenced: ADR-0027 dialect 1 & 2-level example; arch §4.1 (findOwner gains optional
-  client? param), §4.2 (ownerSummarySelect), §3.3 (why paymentHistoryWhere is rewritten, not wrapped)
+Contract referenced: ADR-0027 dialect 1 & 2-level example; §4.2 (ownerSummarySelect), §3.3 (why
+  paymentHistoryWhere is rewritten, not wrapped). arch §4.1 (the client? param) is XTI-11's task, not
+  this one — XTI-7 does the tenant-predicate fix only; do not add the client? param here.
 
 ---
 
@@ -406,18 +407,30 @@ Contract referenced: arch §6.2.1 shape (e) (branch-splitting); arch §4.5 (exem
 Task ID: XTI-11   Actor/role: appointments.create / crm.create / blood-bank writers (clinic_admin,
                   doctor, clinic_staff per module)   Device: Both
 Wave: W2   Owner: Dev A
-Files (exclusive): appointment.service.ts, pet.service.ts, blood-bank.service.ts
-Description: XTI-5 (write-side atomicity, arch §8.2). Move the 3 service-layer FK checks that
-  currently run outside their write transaction into it, so the check is atomic with the write:
-  appointment.service.ts:66,85 (findPetForBooking check before createAppointment/createWalkIn) →
+Files (exclusive): appointment.service.ts, pet.service.ts, blood-bank.service.ts,
+  pet.repository.ts, appointment.repository.ts, blood-bank.repository.ts
+  (repository files transfer ownership into this wave from XTI-7/W1a (pet, appointment) and
+  XTI-10/W1d (blood-bank) — same cross-wave transfer pattern as config/tenant-relation-exemptions.ts
+  W0→W1d; no same-wave collision, see §6)
+Description: XTI-5 (write-side atomicity, arch §8.2) AND arch §4.1 (frozen repository signatures —
+  this is the one task that owns and executes §4.1, not just references it). Move the 3 service-layer
+  FK checks that currently run outside their write transaction into it, so the check is atomic with
+  the write: appointment.service.ts:66,85 (check before createAppointment/createWalkIn) →
   service opens prisma.$transaction, passes tx to both check and write. pet.service.ts:53-54
   (findOwner check before createPet) → findOwner moves inside createWithQuotaLock's existing
   transaction callback. blood-bank.service.ts:43 (registerDonor's pet check) → service opens tx,
-  passes tx to both. The 5 repositories that already open their own transaction with the check inside
-  it (hospitalization, grooming, reminder, medicalRecord, invoice) are UNCHANGED — that deviation from
-  architecture-rules.md §5 is grandfathered as backlog B-6 (Lane D + ADR), not rolled back here; doing
-  so would be a behaviour-preserving refactor with no isolation payoff and is exactly the scope bloat
-  the ponytail gate exists to catch.
+  passes tx to both. **This requires creating new repository code, not just adding a parameter:**
+  `petRepo.findOwner` (pet.repository.ts:50) already exists — add its trailing optional `client?`
+  param in place. `appointmentRepo.findPetForBooking` does **not exist** — extract it from
+  appointment.service.ts's inline pet-check logic into appointment.repository.ts with the client?
+  param from the start. `bloodBankRepo.findDonorPet` does **not exist** — move the inline
+  `prisma.pet.findFirst` check out of blood-bank.service.ts:43 into blood-bank.repository.ts as a
+  named function with the client? param. All three land in the repository files now added to this
+  task's exclusive scope above. The 5 repositories that already open their own transaction with the
+  check inside it (hospitalization, grooming, reminder, medicalRecord, invoice) are UNCHANGED — that
+  deviation from architecture-rules.md §5 is grandfathered as backlog B-6 (Lane D + ADR), not rolled
+  back here; doing so would be a behaviour-preserving refactor with no isolation payoff and is exactly
+  the scope bloat the ponytail gate exists to catch.
 Acceptance Criteria:
   - [ ] All 3 writes (createAppointment, createWalkIn, createPet, registerDonor) have their FK check
         and their write inside the same transaction — a check-then-write race is structurally
@@ -521,7 +534,7 @@ different agent types) rather than forcing an unused DBA/UIUX A row into the tab
 | XTI-8 | W1b | Dev B | `vaccination.repository.ts` (function bodies, not the W0 comment region) | XTI-1, XTI-2 | ADR-0027 dialect 3; arch §3.2 |
 | XTI-9 | W1c | Dev C | `search.repository.ts`, `medical-record.repository.ts`, `hospitalization.repository.ts`, `owner.repository.ts` | XTI-1, XTI-2, XTI-3 | arch §5 (R-4 narrowed) |
 | XTI-10 | W1d | Dev D | `reminder.repository.ts`, `blood-bank.repository.ts`, `grooming.repository.ts`, `transfer.repository.ts`, `product.repository.ts`, `user.repository.ts`, `role.repository.ts`, `auth.repository.ts`, `usage.repository.ts`, `report.repository.ts`, `tenant-settings.repository.ts`, `config/tenant-relation-exemptions.ts` (entries only — ownership transfers from Dev A for this wave) | XTI-1, XTI-2, XTI-3 | arch §6.2.1 shape (e); §4.5 |
-| XTI-11 | W2 | Dev A | `appointment.service.ts`, `pet.service.ts`, `blood-bank.service.ts` | XTI-7, XTI-9, XTI-10 | arch §4.1, §8.2 |
+| XTI-11 | W2 | Dev A | `appointment.service.ts`, `pet.service.ts`, `blood-bank.service.ts`, `pet.repository.ts`, `appointment.repository.ts`, `blood-bank.repository.ts` (repository files transfer in from XTI-7/W1a and XTI-10/W1d for this wave) | XTI-7, XTI-9, XTI-10 | arch §4.1, §8.2 |
 | XTI-12 | W2 | Dev B | none (measurement only) | XTI-9 | BA §10 NFR-01 |
 | XTI-13 | W2 | @qa-agent | 9 new test files + `tests/integration/crossTenantFkWritePathRepro.test.ts` (convert) | XTI-7…XTI-11 | arch §9 |
 | XTI-14 | W2 | @db-agent | none (review + script run) | XTI-7…XTI-10, XTI-6 | CLAUDE.md multi-tenancy rule |
@@ -540,6 +553,16 @@ different agent types) rather than forcing an unused DBA/UIUX A row into the tab
   must land before W1 starts (structural requirement — W0 gates W1 entirely, so this is automatic).
   Within W1, `pet.repository.ts` is Dev A's alone (W1a); `owner.repository.ts` is Dev C's alone (W1c) —
   no two W1 workers share a file.
+- `pet.repository.ts`, `appointment.repository.ts`, `blood-bank.repository.ts` (arch §4.1 — 3 waves,
+  found by ponytail's Step 5 gate review, corrected here): `pet.repository.ts` is touched in **W0**
+  (XTI-3, const declaration, Dev A), **W1a** (XTI-7, T1 tenant-predicate fix, Dev A), and **W2**
+  (XTI-11, the arch §4.1 `client?` param + `findOwner`, Dev A) — three waves, same owner (Dev A)
+  throughout, no conflict. `appointment.repository.ts` is touched in **W1a** (XTI-7, Dev A) and **W2**
+  (XTI-11, `findPetForBooking` extracted, Dev A) — same owner both waves. `blood-bank.repository.ts` is
+  touched in **W1d** (XTI-10, Dev D) and **W2** (XTI-11, `findDonorPet` moved down, Dev A) — ownership
+  transfers from Dev D to Dev A across the W1d→W2 wave boundary, same pattern as
+  `config/tenant-relation-exemptions.ts`'s W0→W1d transfer above. All three land inside XTI-11's
+  exclusive scope for W2; no same-wave collision in any wave.
 - All other files: exactly one worker across the whole plan.
 
 ---
