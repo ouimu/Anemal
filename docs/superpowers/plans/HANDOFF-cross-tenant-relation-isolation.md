@@ -1,14 +1,59 @@
 # HANDOFF — Cross-Tenant Relation Isolation (Lane A)
 
-**Status as of 2026-09-11:** Step 3.4b (`@ponytail-agent` arch-precheck) returned **BLOCK**.
-Back at Step 3.4 for rework — arch design is NOT complete.
+**Status as of 2026-09-11:** Step 3.4 **rework COMPLETE** (arch doc rev 2). All 5 required fixes from
+the 3.4b BLOCK are applied. Awaiting re-run of `@ponytail-agent` arch-precheck.
 
 ## Next action — literally this
 
 ```
-@arch-agent   Step 3.4 REWORK (not a fresh design — fix these 5 items only)
-input:  the BLOCK report below + docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-arch.md
+@ponytail-agent   mode arch-precheck (Step 3.4b, RE-RUN after rework)
+input:  docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-arch.md (rev 2)
+        docs/adr/0027-tenant-scoped-relation-traversal-carries-its-own-predicate.md (enforcement §)
+scope:  ponytail's own words — re-review §3.3, §5, §6.2.1 (NEW), §6.2 rule table, §6.3, §7,
+        and ADR-0027's enforcement paragraph. The core rule, post-filter retirement, zero-dependency
+        claim and 20-file scope were explicitly NOT objected to and are unchanged.
 ```
+
+### What the rework changed (rev 2) — the 5 fixes, one line each
+
+1. **Resolution model published** — new **§6.2.1**, one ruling per shape: same-module call expression
+   and identifier **resolve**; cross-module identifier resolves **only within `models/*.repository.ts`**
+   (the analyzer's own glob); conditional spread is **additive-only**, so it is not an obstacle;
+   conditional value has **both branches checked**; mutable accumulator (`where['k']=v`) and any import
+   from outside the set **fail closed**. Analyzer re-costed **~200 → ~350 lines** (same file, same
+   single export, same signature, still zero new dependencies).
+2. **Path (ii) chosen and stated** — bounded resolution. (i) narrow+exempt-the-builder-repos rejected
+   (it would exempt the T1 files holding the defect); (iii) inline-the-builders rejected (it would
+   change working code to suit the checker and contradict §4.2). **§3.3 rewritten**: the `relGuard()`
+   rejection's "it would hide the guard from the scanner" reason is **explicitly withdrawn** as now
+   false, and re-argued on three surviving grounds.
+3. **R-4 narrowed** to *`findX` and `countX` each carry the tenant predicate in their own root `where`*
+   — no shared-expression requirement. The forced `medical-record` builder refactor is **cancelled**
+   (verified: both functions already carry `tenantId` independently).
+4. **`select`/`include` value ruling** — by relation arity: **to-one passes on the literal key alone**
+   (the guard is in the root `where`, so the value is never read → §4.2's 5 T1 sites are safe by
+   design), **to-many fails closed** (the guard is inside the value). Plus a frozen constraint: the two
+   `*SummarySelect` consts must stay inside `models/` and stay scalar-only.
+5. **`scripts/tenant-integrity-scan.ts` marked CONDITIONAL**, not committed — built only if `@ba-agent`
+   accepts the AC-4 rewording (§7). ADR-0028's Precondition 1 reworded to depend on *a scan report
+   existing*, not on this change authoring the scanner, so the Option A deferral holds either way.
+
+### Three facts verified on the branch during rework (each changed a decision)
+
+- All five builder functions (`pet`/`owner`/`audit`/`invoice`/`product`) end in a **single
+  `return <object literal>`** — so the bounded resolver covers **10 of 10** call-expression sites.
+- **`BranchInventory` is tenant-scoped**, and `product.repository.ts:57,70` writes
+  `branchInventory: cond ? { where: { branchId } } : true` — the `: true` branch is a **live unguarded
+  to-many include** that a literals-only analyzer would never have seen. Added to W1d.
+- `invoice.paymentHistoryWhere` (:244) is a **mutable accumulator** on tenant-scoped `PaymentHistory`
+  with 3 to-one traversals → fails closed → **mechanical rewrite scheduled into W1a** (not exempted).
+
+---
+
+### The original BLOCK report — HISTORICAL, all 5 items now addressed in rev 2
+
+*Kept so the re-review can check the fixes against the original objection. Do not re-action this list;
+it is the input to a rework that is already done.*
 
 **BLOCK reason (criterion #1 — over-engineering: analyzer contract contradicts the code it must read):**
 The conformance-test analyzer (arch doc §6.2/§6.4) defines "guarded" only over a literal `where`/
@@ -38,9 +83,11 @@ post-filter retirement, zero new dependencies, refusal to build a `relGuard()` h
 scope (defect width, not scope creep). Ponytail said it only needs to re-review §5/§6.2/§6.4 and the
 ADR-0027 enforcement paragraph — not the whole doc.
 
-After rework: re-run `@ponytail-agent` arch-precheck. Then, in order: `/grill-with-docs` (Step 3.5,
-human + `@ba-agent`, MANDATORY) → `@pm-agent` `/write-plan` (Step 4) → `@scribe-agent` reference
-pre-check (4b) → `@ponytail-agent` mode `gate` (Step 5) → `/superpowers:execute-plan` (Step 6).
+**Rework is done.** Remaining order: re-run `@ponytail-agent` arch-precheck → `/grill-with-docs`
+(Step 3.5, human + `@ba-agent`, MANDATORY) → `@pm-agent` `/write-plan` (Step 4) → `@scribe-agent`
+reference pre-check (4b) → `@ponytail-agent` mode `gate` (Step 5) → `/superpowers:execute-plan` (Step 6).
+
+---
 
 ## What this is
 
@@ -79,7 +126,7 @@ gated three times. Zero new abstractions; the post-filter pattern from PR #73 is
 | C-3 Option A preconditions (a)(b)(c)(d) | @arch-agent | ✅ answered — arch §A.3, ADR-0028 |
 | C-4 E-7 pagination consistency | @arch-agent | ✅ resolved by construction — arch §5 |
 | C-5 XTI-7 enforcement named + shown failing | @arch-agent | ✅ answered — arch §6, fixtures §6.3 |
-| C-6 integrity-signal RBAC exposure | @arch-agent → @ba-agent | ✅ log/operator-script only, **no permission code**. One AC-4 rewording returned to @ba-agent — arch §7 |
+| C-6 integrity-signal RBAC exposure | @arch-agent → @ba-agent | ✅ log/operator-script only, **no permission code**. ⏳ **AC-4 rewording is an OPEN GATE with @ba-agent** — the `tenant-integrity-scan.ts` script is conditional on it and is NOT in the W0 baseline until BA answers (arch §7) |
 | C-2 false comment + roadmap record | @dev-agent + @scribe-agent | ⏳ scheduled into W0 of the plan |
 | Step 3.5 `/grill-with-docs` | human + @ba-agent | ⏳ **not yet run — MANDATORY, cannot be skipped** |
 
@@ -104,8 +151,11 @@ gated three times. Zero new abstractions; the post-filter pattern from PR #73 is
 - **Escalation for the human at Step 3.5:** if `db:integrity-scan` finds cross-tenant rows in
   production, who reassigns them, and is that inside this change? Arch's position: **outside** — it is
   per-row clinical judgement (arch §A.3a).
-- **Back to @ba-agent:** AC-4 needs rewording from "a signal is emitted when the read executes" to an
-  assertion about `npm run db:integrity-scan` (arch §7). Nothing else returns to BA.
+- **Back to @ba-agent (now a GATE, not a note):** AC-4 needs rewording from "a signal is emitted when
+  the read executes" to an assertion about `npm run db:integrity-scan` (arch §7). **If BA accepts, the
+  script is built in W0; if BA declines, it is not built by this change** and XTI-INV-b returns to BA as
+  an open requirement. @pm-agent must carry this answer into Step 4 as a precondition on W0's scope.
+  Nothing else returns to BA.
 - **New backlog:** B-6 (five repositories open their own transaction, deviating from
   `architecture-rules.md` §5 — Lane D + ADR) · B-7 (R3-F1 promoted to a precondition of Option A).
   BA's B-5 (no response-shaping layer) is acknowledged and deliberately **not** absorbed.

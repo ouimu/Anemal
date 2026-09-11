@@ -51,11 +51,17 @@ cost/benefit rather than being discovered mid-migration.
 "someday" — they are sequenced behind three named preconditions, after which they run as their own
 Lane A change with `@db-agent` holding the veto.
 
-**Precondition 1 — evidence.** `npm run db:integrity-scan`, shipped by the cross-tenant relation
-isolation change, generates one `SELECT` per tenant-scoped forward relation from the same
-`Prisma.dmmf` relation map and reports every child row whose `tenantId` differs from its parent's. It
-selects ids only and never a PII column. A constraint cannot be added `VALID` over data nobody has
-inspected, and until that report exists this option cannot be costed.
+**Precondition 1 — evidence.** A scan report must exist: one `SELECT` per tenant-scoped forward
+relation, generated from the `Prisma.dmmf` relation map, reporting every child row whose `tenantId`
+differs from its parent's, selecting ids only and never a PII column. A constraint cannot be added
+`VALID` over data nobody has inspected, and until that report exists this option cannot be costed.
+
+**The precondition is the report, not its author.** `npm run db:integrity-scan` is specified in the
+cross-tenant relation isolation change (arch doc §7), but whether that change *builds* it is
+conditional on `@ba-agent` accepting a rewording of its AC-4 (ADR-0027, closing section). If the
+scanner ships there, this precondition is cheap to discharge; if it does not, building it becomes
+Option A's own first task. **Nothing in this deferral depends on which of the two happens** — only on
+the report existing before a constraint is written.
 
 **Precondition 2 — a business decision, if the scan finds anything.** The remedy for an existing
 violation is not an engineering choice. *Quarantine* (null the FK, keep the row) and *delete* both
@@ -118,7 +124,10 @@ operator scripts (`prisma/seed.ts`, `scripts/backfill-main-branch.ts`, `scripts/
 by a restore, or by direct SQL — and after ADR-0027 they are silent, because the read-side guard hides
 the row from its own tenant. `npm run db:integrity-scan` is the only control on that path until this
 option ships, and it is on-demand rather than continuous. Operators must run it after any seed,
-backfill or restore.
+backfill or restore. **If that scan is not built** — its authorship is conditional, per Precondition 1
+— **then there is no control on that path at all**, and this ADR's deferral rests on a fault being
+silent *and* unmeasured. That is the strongest argument for building the scan somewhere, and the reason
+the question is a gate rather than a preference.
 
 **Trigger for revisiting.** Any one of: the integrity scan reporting a non-zero count on production;
 R3-F1 being scheduled; or a fourth independent raising of the composite-FK question. The first is the

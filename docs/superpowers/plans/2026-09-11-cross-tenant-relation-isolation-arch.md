@@ -7,6 +7,32 @@
 **ADRs produced:** `docs/adr/0027-tenant-scoped-relation-traversal-carries-its-own-predicate.md` ·
 `docs/adr/0028-composite-tenant-foreign-keys-deferred.md`
 
+**Revision:** rev 2 (2026-09-11) — rework after `@ponytail-agent` `arch-precheck` **BLOCK**.
+
+> **What changed in rev 2, for a targeted re-review.** The BLOCK was correct: the analyzer was
+> specified over literal `where`/`include` values, but 17 of 35 model files put those values behind a
+> call expression, an identifier or a spread — and R-4 *mandated* the very shape the analyzer could not
+> read, on the flagship T1 files. Five edits, nothing else touched:
+>
+> | # | Fix | Sections |
+> |---|---|---|
+> | 1 | Resolution model stated per shape, with a re-costed analyzer (~200 → **~350 lines**) | **new §6.2.1** |
+> | 2 | Path **(ii)** chosen — bounded resolution; (i) and (iii) rejected on the record; §3.3's `relGuard()` rejection **re-argued** after withdrawing its dead reason | §6.2.1, **§3.3 rewritten** |
+> | 3 | **R-4 narrowed** to "`findX` and `countX` each carry the predicate" — the forced `medical-record` builder refactor is cancelled | §5, R-4 row, §B W1c |
+> | 4 | Unresolvable `select`/`include` **value** ruled on by relation arity (to-one passes on the key, to-many fails closed) | §6.2.1 table, §4.2 |
+> | 5 | `scripts/tenant-integrity-scan.ts` marked **CONDITIONAL** on BA's AC-4 answer, not committed | §0, §7, §A.4, §B |
+>
+> **Untouched by design** (ponytail did not object): the core rule and its three dialects (§3.1), the
+> post-filter retirement (§3.2), zero new dependencies (**still true** — TS compiler API only, A-6),
+> the 20-file scope, and ADR-0028's deferral of Option A.
+>
+> **Three facts verified on this branch during rework**, each of which changed a decision:
+> all five builder functions end in a single `return <object literal>` (so shape (a) resolves);
+> `BranchInventory` is tenant-scoped and `product.repository.ts:57,70`'s `: true` ternary branch is a
+> **live unguarded include** a literals-only analyzer would never have seen; and
+> `medical-record.findByPet`/`countByPet` **already each carry `tenantId`**, so R-4's refactor was
+> never buying isolation.
+
 ---
 
 ## 0. Read this first — the shape of the change
@@ -20,7 +46,8 @@
 > **New abstractions introduced: zero.** No interface, no wrapper client, no helper, no new layer,
 > no new error class, no new permission code, no schema migration, no new dependency.
 > **New runtime code: zero** — every read-side change is a predicate added to an existing `where`.
-> **New artefacts: two test files and one operator script.**
+> **New artefacts: two test files**, plus one operator script **that is conditional on a BA answer
+> and may not be built at all** (§7, item 3 below).
 >
 > The diff is wide because the defect is structural. The *design* is one line.
 
@@ -28,9 +55,9 @@
 
 | # | Artefact | Kind | Why it exists |
 |---|---|---|---|
-| 1 | `tenantRelationConformance.test.ts` + 4 fixtures | new test | XTI-7. The only thing that stops a twelfth site. |
+| 1 | `tenantRelationConformance.test.ts` + 6 fixtures | new test | XTI-7. The only thing that stops a twelfth site. |
 | 2 | `config/tenant-relation-exemptions.ts` | new 20-line data file | E-1 / E-5 named, reviewed exemptions |
-| 3 | `scripts/tenant-integrity-scan.ts` | new operator script | XTI-INV-b + Option A's precondition — one artefact, two jobs |
+| 3 | `scripts/tenant-integrity-scan.ts` | new operator script — **CONDITIONAL, not committed** | XTI-INV-b + Option A's precondition. Built **only if** @ba-agent accepts the AC-4 rewording (§7). Not decided here. |
 | 4 | `crossTenantFkWritePathRepro.test.ts` | **converted**, not added | XTI-5. A throwaway reproduction becomes the standing prober. |
 | 5 | 57 `include:` occurrences + 19 raw-SQL `JOIN`s (see scope note) | edits, ~1 line each | XTI-1…XTI-4 |
 | 6 | 4 write-path FK checks | **relocated** into their write transaction | XTI-5 atomicity (BA F-3) |
@@ -169,17 +196,37 @@ hatch for a traversal Prisma cannot express — it is not being replaced.
 
 This is a **deletion**, not an addition. The change removes a pattern from the codebase.
 
-### 3.3 Why there is no helper
+### 3.3 Why there is no helper — re-argued, because my first argument was wrong
 
-The obvious move is `relGuard(tenantId)` returning `{ is: { tenantId } }`. **Rejected**, three reasons:
+The obvious move is `relGuard(tenantId)` returning `{ is: { tenantId } }`. Still **rejected** — but one
+of the three reasons I originally gave has to be **withdrawn**, and saying so is cheaper than leaving a
+dead argument standing.
 
-- It saves four tokens and costs an indirection.
-- **It would hide the guard from the scanner.** The enforcement point reads the literal `where`. A
-  guard behind a call expression has to be resolved to be checked — which trades a reliable check for
-  a shorter line. The security predicate must be the thing you can see.
-- The nullable form (`OR: [{ is: null }, { is: { tenantId } }]`) does not compose into a single
-  keyed value; a helper for it would need `AND`-merging, and two queries with two nullable relations
-  would collide. A helper that works for the easy half and not the hard half is worse than none.
+**Withdrawn:** *"it would hide the guard from the scanner."* §6.2.1 now gives the analyzer bounded
+resolution of same-set identifiers and call expressions. The same machinery that reads
+`buildWhere(...)` would read `relGuard(...)`. That reason is dead and I am not going to pretend it
+isn't.
+
+**What survives, and why it is still enough:**
+
+- **Resolution is a cost paid to read code that already exists — not a licence to add more of it.**
+  `buildWhere`/`listWhere`/`catalogWhere` exist for a domain reason that predates this change: they
+  keep a list query and its count query on one filter. The analyzer must resolve them because they are
+  *there*, and removing them would be a behavioural regression (§5). `relGuard` would be a **new**
+  indirection, introduced by this change, whose entire benefit is four saved tokens. Every construct
+  the analyzer must resolve is a construct where the check's correctness depends on the resolver being
+  right. Paying that price to read existing code is forced; paying it again to shorten a line is a
+  choice, and the wrong one.
+- **The nullable form still does not compose.** `OR: [{ is: null }, { is: { tenantId } }]` is not a
+  single keyed value; a helper for it would need `AND`-merging, and two nullable relations in one query
+  would collide. A helper that covers the easy half and not the hard half leaves two spellings where
+  there was one — which is precisely how eleven inconsistent guards accumulated.
+- **New, and it is the same reason as the first two:** the resolver is bounded to *single terminal
+  `return` of an object literal* (§6.2.1). A `relGuard` worth having would have to branch on nullability
+  (`relGuard(tid, { nullable: true })`), which is exactly the shape the resolver refuses. **The helper
+  that would earn its keep is the one the analyzer cannot read.** That is not bad luck; branching is
+  what makes a value unresolvable and what makes a guard unreadable to a reviewer, and those are the
+  same property.
 
 Per `architecture-rules.md` §3 abuse signals, this would be "a layer that only forwards calls."
 
@@ -219,6 +266,15 @@ export const petSummarySelect   = { id: true, name: true, species: true, photoUr
 
 **Both constants are declared in W0**, before any W1 worker starts, precisely because they are the
 one thing four parallel workers share. W1 workers import them and never edit them.
+
+> **FROZEN CONSTRAINT — these two consts must stay inside `src/backend/models/*.repository.ts`.**
+> That glob is not just a convention here; it is exactly the analyzer's source set (§6.2), so a const
+> declared inside it is **resolvable** and the same const moved to `utils/`, `types/` or a shared
+> `_select.ts` is **not**. Moving them would make the analyzer blind to whatever they contain and, per
+> the §6.2.1 ruling, would turn all five T1 sites into fail-closed violations. Both properties — "no
+> new file in `models/`" and "inside the analyzer's own glob" — point the same way, which is why this
+> placement is frozen rather than merely preferred. `select` values are also **scalar-only by rule**:
+> neither const may ever gain a relation key (§6.2.1 (c)).
 
 `ownerSummarySelect` replaces `owner: true` at all five T1 sites (`appointment.repository.ts:93`,
 `invoice.repository.ts:146`, `invoice.repository.ts:218`, `pet.repository.ts:36`,
@@ -282,16 +338,30 @@ Three rules the scanner enforces on the registry itself:
 **Resolution: the bug cannot occur, because nothing is filtered in application memory.** The predicate
 is part of the `where` that Postgres evaluates before `LIMIT`. `take: 20` returns 20 rows.
 
-**For `count` to agree, the two queries must share the predicate** — so the design adds one structural
-rule, enforced as scanner rule R-4:
+**For `count` to agree, both queries must carry the predicate** — enforced as scanner rule R-4.
 
-> Every `findX` / `countX` pair in the same repository file must obtain its `where` from the **same
-> expression** — a shared builder function, not two literals.
+**R-4 was too strong in the first draft and is narrowed here.** It previously demanded that a
+`findX`/`countX` pair derive its `where` from *the same expression* — a shared builder, not two
+literals. That mandated a **code structure** when what the requirement actually needs is a **property**:
 
-`pet.repository.ts:9` (`buildWhere`) and `owner.repository.ts:10` already satisfy this; adding the
-predicate there fixes both queries at once. `medical-record.repository.ts:10-34` (`findByPet` /
-`countByPet`) duplicates its `where` as two literals and **must be refactored to a shared builder** —
-that is the exact drift R-4 exists to prevent, and it is a live instance, not a hypothetical.
+> **R-4 (narrowed).** For every relation predicate that R-2 requires in `findX`'s **root `where`**,
+> the `countX` in the same file must carry an equivalent predicate in its **own** root `where`.
+> Each query is checked against its own resolved `where`. **No shared expression is required.**
+
+Three things follow, and all three are improvements:
+
+1. **`medical-record.repository.ts:10-34` is no longer refactored.** `findByPet` and `countByPet`
+   duplicate their `where` as two literals and **each already carries `tenantId`**. Under narrowed
+   R-4 they each gain the relation predicate in place and the duplication stays. Forcing them into the
+   builder pattern would have been a restructuring with no isolation payoff — and, worse, the first
+   draft was mandating the very call-expression shape its own analyzer could not read.
+2. **Nested (R-1) predicates are explicitly out of R-4's scope.** A to-many guard lives in the nested
+   `where` and does not change the root row set, so it cannot desynchronise a count. Only root-`where`
+   predicates — the R-2 dialect — can, and only those are compared.
+3. **The five existing builders keep working unchanged.** `pet`/`owner`/`audit`/`invoice`/`product`
+   put the predicate in one place and both queries inherit it; the analyzer resolves the builder
+   (§6.2.1) and sees the predicate in both. R-4 no longer *requires* that shape — it simply passes
+   when it is used, and passes equally when two literals each carry the predicate.
 
 **This also answers "was the hotfix's approach ever the right template?" (grill target 2): no.** It was
 the fastest correct answer to one function. Generalised, it is a correctness regression. The design
@@ -328,18 +398,107 @@ Unit tier — **no database, no network** (`architecture-rules.md` §8.1). Pure 
    (already a devDependency, A-6).
 3. **Exemption registry** — §4.5.
 
-**Rules** (evaluated per Prisma call expression — `prisma.<m>.<op>`, `tx.<m>.<op>`, `client.<m>.<op>`)
+### 6.2.1 Resolution model — what "the `where`" means when it is not a literal
+
+**This subsection exists because the first draft did not have it, and that was the design's real
+defect.** The analyzer was specified over a literal `where`/`include` written directly on the Prisma
+call. That is not what the code looks like. Measured on this branch, across all 35 files in
+`src/backend/models/`:
+
+| Shape | Sites | Where |
+|---|---|---|
+| (a) same-module **call expression** — `where: buildWhere(...)` | **10** | `pet` ×2, `owner` ×2, `audit` ×2, `invoice` ×2, `product` ×2 |
+| (b) same-module **identifier** — `include: listInclude` | **10** | `pet`, `owner`, `platform-audit` (`SELECT`), `platform-customers` (`TENANT_SELECT` ×4, `ADMIN_USER_SELECT` ×3) |
+| (c) **cross-module identifier** | **0 today**; §4.2 introduces 6 (`ownerSummarySelect` ×5, `petSummarySelect`) | all inside `models/` |
+| (d) **conditional spread** — `...(x ? { y } : {})` | **57** | 17 files |
+| (e) **conditional expression as a value** — `include: { branchInventory: b != null ? {where:{branchId}} : true }` | **2** | `product.repository.ts:57,70` |
+| (f) **mutable accumulator** — `const where: Record<string,unknown> = {}` then `where['k'] = …` | **2 fns** (4 call sites) | `invoice.paymentHistoryWhere` (:244, used :272/:282/:284), `platform-audit.listPlatformAuditLogs` (:94) |
+
+A literals-only analyzer exempts (a)–(f) — which includes `pet.repository.ts`'s `findPets` and
+`findPetById`, **the flagship T1 files this whole change exists to fix.** An alarm that is switched
+off in the room that burned is not an alarm.
+
+**The chosen path is (ii) of the three offered: give the analyzer real resolution, bounded.**
+Paths (i) and (iii) are rejected on the record:
+
+- **(i) literals only + exempt the builder-based repos** (`pet`, `owner`, `invoice`, `audit`,
+  `product`) — **rejected.** Those five are where the defect lives. This buys a simpler analyzer by
+  deleting its coverage of the PII leak it was commissioned to catch.
+- **(iii) mandate literal `where`/`include` at guarded sites, inlining the builders** — **rejected**,
+  and it is the tempting one. Inlining `buildWhere` duplicates the filter across `findPets`/`countPets`
+  and reintroduces the exact list/count drift §5 exists to prevent; inlining `ownerSummarySelect` at
+  five sites re-scatters the PII field list that §4.2 consolidates. It would mean **changing working
+  production code to suit the checker** — the tail wagging the dog — and it contradicts §4.2 inside
+  the same document.
+
+**The resolver — scope, mechanism, and where it stops.** Resolution scope **equals** analysis scope:
+the analyzer already parses all 35 files in `models/`, so it builds one flat symbol table over that
+set and resolves within it. No TypeScript type-checker, no program-wide module graph, no
+`ts.createProgram` — `ts.createSourceFile` per file plus a symbol table keyed `file#name`, which is why
+A-6 (zero new dependencies) survives intact.
+
+| Shape | Ruling | Mechanism |
+|---|---|---|
+| **(a) same-module call expression** | **RESOLVED** | Find the callee's declaration in the same file. Resolve **only** a function whose body ends in a single terminal `return <object literal>`. Verified: **all five builders have exactly this shape** — `pet.repository.ts:9-16`, `owner:10-22`, `audit:45-59`, `invoice:~150-166`, `product.catalogWhere`. Statements before the `return` compute scalar locals only. Anything else (multiple returns, a return that is not an object literal, mutation of the returned object) → **unresolvable**. |
+| **(b) same-module identifier** | **RESOLVED** | Module-level `const X = <object literal>`. A `let`, a reassigned binding, or a non-literal initializer → **unresolvable**. |
+| **(c) cross-module identifier** | **RESOLVED — only within the source set** | Follow the `import` specifier; if it names a file in `models/*.repository.ts`, resolve the exported declaration by (b). An import from **anywhere else** (`utils/`, `config/`, `@prisma/client`, `types/`) → **unresolvable, fail closed.** This is why §4.2 freezes the two summary selects inside `models/`. |
+| **(d) conditional spread** | **ADDITIVE-ONLY — not an obstacle** | A spread adds keys; it cannot delete a sibling literal key. So a guard found literally **passes regardless of any spread**. A spread matters in exactly two cases: the guard is **absent** from the literal keys (→ it might be hiding in the spread → **fail closed**), or an unresolvable spread appears **positionally after** the guard key at the same object level (→ it could override it → **fail closed**). Both are cheap positional checks. This is what turns the 57-occurrence figure from a blocker into a non-event. |
+| **(e) conditional expression as a value** | **BOTH BRANCHES CHECKED INDEPENDENTLY** | Each branch is evaluated as its own value; **any branch that fails is a violation.** This is not bookkeeping — it found a live defect: `product.repository.ts:57` and `:70` write `branchInventory: branchId != null ? { where: { branchId } } : true`, and `BranchInventory` **is tenant-scoped** (verified in `schema.prisma`), so the `: true` branch is an unguarded to-many include. A literals-only analyzer never sees it. |
+| **(f) mutable accumulator** | **UNRESOLVABLE → FAIL CLOSED** | The genuine limit, and it is narrow: 2 functions. Data-flow analysis over `where['k'] = v` is where the cost curve turns vertical, and it is not being paid. Consequence is named work, not a silent gap — see below. |
+| anything else | **UNRESOLVABLE → FAIL CLOSED** | A violation with `file:line`, escapable only by an exemption entry with a reason (§4.5). |
+
+**The fail-closed consequences, named so nobody discovers them mid-wave:**
+
+- `invoice.paymentHistoryWhere` (:244) is shape (f), and `PaymentHistory` **is tenant-scoped**, with
+  three to-one traversals at :274-276 (`invoice`, `receivedBy`, `branch`). It will fail R-2. **Fix: the
+  `if`-chain is rewritten into the conditional-spread object literal already idiomatic in 17 files** —
+  a mechanical change, no behaviour change, and it lands in W1a. Named in §B.
+- `platform-audit.listPlatformAuditLogs` (:94) is shape (f), but `PlatformAuditLog` has **no `tenantId`**
+  (verified), so R-1/R-2 never fire on it. If its `select: SELECT` reaches a tenant-scoped relation it
+  fails closed and takes an **E-5 platform-plane exemption entry** — exactly the placeholder §4.5
+  already reserves. Resolved in W1d, not by a rule change.
+
+**Re-costing the analyzer.** The first draft said "~200 lines, one file, one export." With the symbol
+table, the bounded resolver, spread positioning and branch-splitting, the honest figure is
+**~350 lines** — still one file, still one export, still zero new dependencies, and the exported
+signature `(sourceFiles, relationMap) → Violation[]` is **unchanged**, so §6.1's "an ESLint rule can
+import this later" upgrade path survives the change. The ~150 added lines are the price of reading the
+code this repository actually contains; the alternative was an analyzer that passes by not looking.
+
+**Rules** (evaluated per Prisma call expression — `prisma.<m>.<op>`, `tx.<m>.<op>`, `client.<m>.<op>`,
+each argument first put through §6.2.1)
 
 | Rule | Assertion | Covers |
 |---|---|---|
 | **R-1** | every `include`/`select` key that is a **to-many** relation to a tenant-scoped model has an object value whose `where` contains `tenantId` | reverse includes (§17) |
 | **R-2** | every `include`/`select` key that is a **to-one** relation to a tenant-scoped model has a matching relation predicate at the mirrored path in the call's root `where`; for a nullable FK the predicate may sit in an `OR` beside `{ is: null }` | forward includes, E-4 |
 | **R-3** | in every `$queryRaw` template in `models/`, each `JOIN <table>` whose table maps to a tenant-scoped model has `"tenantId" =` inside its `ON` clause | raw SQL |
-| **R-4** | each `findX`/`countX` pair in one file derives its `where` from the same expression | E-7 / C-4 |
+| **R-4** | for every relation predicate R-2 requires in `findX`'s **root `where`**, the `countX` in the same file carries an equivalent predicate in its **own** root `where` — each checked independently, **no shared expression required** (§5) | E-7 / C-4 |
 | **R-5** | every exemption entry has a non-empty `reason` and still matches a real violation | registry hygiene |
 
 A violation not covered by an exemption fails the test with `file:line`, the relation path, and the
 missing predicate.
+
+**Does an unresolvable `select`/`include` *value* fail closed?** Asked explicitly because §4.2 puts
+`ownerSummarySelect`/`petSummarySelect` behind imported identifiers at five T1 sites. The ruling is
+**by relation arity, not by keyword**, and it falls out of where each dialect puts its guard:
+
+| Traversal | Guard lives in | Is the value read? | Unresolvable value ⇒ |
+|---|---|---|---|
+| **to-one** (R-2) | the call's **root `where`** | **No — the key alone decides** | **PASS.** `include: { pet: { select: petSummarySelect } }` is judged on the literal key `pet`; whatever `petSummarySelect` holds is irrelevant to whether a guard exists, because the guard is not in there. |
+| **to-many** (R-1) | the value's **nested `where`** | **Yes — the guard is inside it** | **FAIL CLOSED.** No resolvable value, no provable guard. |
+
+**So §4.2's five T1 sites are safe by design, not by exception:** the `pet`/`owner` include *key* stays
+literal, R-2 fires on the key, and the guard is checked in the root `where` where it actually is. The
+imported select value never needs resolving for the guard decision.
+
+**One residual hole, closed by rule rather than left open.** An opaque value could itself contain a
+further relation key — a nested traversal the analyzer cannot see. Two things close it: (1) both
+summary selects resolve anyway, because §4.2 keeps them inside the analyzer's own source set, so the
+analyzer walks into them and checks what they contain; and (2) **a `select` value that resolves to
+anything other than scalar-only keys is a violation** — neither const may ever gain a relation key. A
+value that resolves is checked; a value that does not resolve is a violation unless its relation is
+to-one. There is no third case where the analyzer looks away.
 
 **R-1 and R-2 walk the same tree in the same pass — the mechanism covers both directions by
 construction, not by a second audit.** That is the direct answer to the orchestrator's question 7:
@@ -347,7 +506,7 @@ reverse includes need **no** separate file-by-file pass. Any traversal the analy
 
 ### 6.3 Proving the detector detects — the deliberately-unguarded fixture
 
-`src/backend/tests/fixtures/tenant-conformance/` (four ~10-line files, outside `models/`, never
+`src/backend/tests/fixtures/tenant-conformance/` (six ~10-line files, outside `models/`, never
 imported by the app). The same analyzer runs over them in the same test run:
 
 | Fixture | Content | Asserted result |
@@ -356,10 +515,20 @@ imported by the app). The same analyzer runs over them in the same test run:
 | `unguarded-reverse.fixture.ts` | `prisma.pet.findFirst({ where: { id, tenantId }, include: { vaccinations: true } })` | **exactly 1 violation**, rule R-1, relation `vaccinations` |
 | `guarded-forward.fixture.ts` | the same query with `pet: { is: { tenantId } }` in the `where` | **0 violations** |
 | `guarded-reverse.fixture.ts` | the same query with `vaccinations: { where: { tenantId } }` | **0 violations** |
+| `guarded-via-builder.fixture.ts` | guarded query whose `where` is `buildWhere(tenantId)` (single terminal `return` of an object literal) **and** whose `include` is an identifier — i.e. shapes (a)+(b) | **0 violations** — proves the resolver **resolves** |
+| `unresolvable-accumulator.fixture.ts` | the `product`-style `include: { rel: cond ? {where:{tenantId}} : true }` plus a mutable-accumulator `where` — shapes (e)+(f) | **exactly 2 violations** — proves the resolver **fails closed** rather than passing what it cannot read |
 
 The two guarded fixtures are not decoration: without them a detector that always reports a violation
 would pass. **AC-5 is satisfied by this block and by nothing else** — it is the artefact BA asked to
 see failing, and it fails on every run, forever, by design.
+
+**The last two fixtures are the new ones, and they are what make §6.2.1 a mechanism rather than a
+paragraph.** The resolution model is the part of this design most likely to rot — a Prisma or
+TypeScript upgrade moves an AST shape and the resolver quietly starts returning "unresolvable" for
+everything, or worse, "resolved, no violation." `guarded-via-builder` fails loudly in the first case;
+`unresolvable-accumulator` fails loudly in the second. **A resolver whose own behaviour is not asserted
+is a claim, not a check** — and a silently-degraded resolver is precisely the failure mode that put
+this document back at Step 3.4.
 
 ### 6.4 Honest limits of R-1…R-5 — state these at the grill before someone else does
 
@@ -368,9 +537,17 @@ see failing, and it fails on every run, forever, by design.
 - **They see only `models/*.repository.ts`.** A Prisma call written in a service would be invisible —
   but `architecture-rules.md` §1 already forbids Prisma outside the repository layer, and
   `anemal-coding-rules` is the check for that. This mechanism does not duplicate it.
-- **Dynamically constructed args are opaque.** A `where` assembled by spreading a variable defined in
-  another module cannot be resolved. The analyzer treats an unresolvable `where` as a **violation**
-  (fail-closed), which forces either a literal or an exemption with a reason.
+- **Resolution is bounded, and the boundary is published** (§6.2.1). Same-set identifiers, call
+  expressions ending in a single `return <object literal>`, conditional spreads and conditional
+  branches are resolved. A **mutable accumulator** (`where['k'] = v`) and any import from outside
+  `models/` are **not**, and fail closed. Two functions in the repository are on the wrong side of that
+  line today; both are named, and one is scheduled for a mechanical rewrite rather than an exemption.
+  The line is drawn where it is because data-flow analysis is where this artefact's cost stops being
+  proportionate — not because the shapes beyond it are safe.
+- **Fail-closed is load-bearing, and it has a price.** Every unresolvable construct is a red test until
+  someone either rewrites it or writes an exemption with a reason. That will occasionally block work
+  that was not doing anything wrong. That is the correct direction (risk 2), but it is a real tax and
+  it should be named at the grill rather than discovered in W1.
 - **R-3 is regex over a template literal**, not a SQL parser. It is sufficient for the join shapes this
   codebase uses and will over-report on an exotic one. Over-reporting is the correct failure direction.
 
@@ -386,8 +563,23 @@ XTI-INV-b asks for a signal *when the read drops a row*. The design filters in t
 application never sees the corrupt row and cannot log it. Re-introducing visibility would mean
 re-introducing the post-filter — trading the E-7 fix for a log line. That trade is wrong.
 
-**Replacement: `src/backend/scripts/tenant-integrity-scan.ts`.** Generates, from the same
-`Prisma.dmmf` relation map, one `SELECT` per tenant-scoped forward relation:
+**Replacement: `src/backend/scripts/tenant-integrity-scan.ts` — proposed, and CONDITIONAL.**
+
+> **This script is not a decided deliverable of this change.** The first draft listed it in §0 as
+> committed, which was wrong: its acceptance criterion is the AC-4 rewording at the end of this
+> section, and **@ba-agent has not accepted that rewording yet.** The build trigger is therefore:
+>
+> - **BA accepts the AC-4 reword** → the script is built, in W0, as specified below.
+> - **BA declines, or rewords differently** → **the script is not built by this change.** It comes back
+>   to @arch-agent for re-scoping, and XTI-INV-b returns to BA as an open requirement. It does **not**
+>   get built anyway "because Option A will want it" — Option A is deferred (ADR-0028) and a deferred
+>   consumer is not a reason to ship an artefact now.
+>
+> Its only other customer is ADR-0028's deferred Option A precondition, which is satisfied by *a scan
+> report existing*, not by *this change building the scanner* — so ADR-0028 stays coherent either way
+> (§A.4). @pm-agent must plan W0 with this artefact behind a gate, not inside the baseline.
+
+Generates, from the same `Prisma.dmmf` relation map, one `SELECT` per tenant-scoped forward relation:
 
 ```sql
 SELECT c.id, c."tenantId" AS child_tenant, p."tenantId" AS parent_tenant
@@ -402,8 +594,10 @@ backfill or restore.
 
 **Why this is better than a read-time log, not merely a substitute:**
 - It finds **every** corrupt row, not only the ones somebody happened to read.
-- It is **the same artefact Option A needs** to prove zero violations before a constraint can be added
-  (§A, C-3a). One thing, two jobs — which is also the answer to a ponytail "is one of these enough?".
+- It happens to be **the same artefact Option A will need** to prove zero violations before a
+  constraint can be added (§A, C-3a). Stated as a fact about the artefact, **not as a justification for
+  building it now** — a deferred consumer does not earn present-tense code, and the build trigger stays
+  the AC-4 gate above.
 - It costs nothing on the request path.
 
 **A consequence nobody has stated yet, and it belongs in the grill.** After this change, a corrupt row
@@ -413,10 +607,17 @@ name. Today it is visible and wrong; afterwards it is absent and silent. The rea
 **confidentiality**; it does nothing for **integrity**, and it makes an integrity fault harder to
 notice. That is precisely why the scan is not optional and why Option A is not cancelled, only deferred.
 
-**Required of @ba-agent (the only thing coming back):** AC-4 currently reads *"when the read executes,
-then a data-integrity signal is emitted."* It should read: *"when `npm run db:integrity-scan` is run
-against a database containing the fixture, it reports the corrupt row by table and id, and emits no
-PII field value."* Falsifiable, and true of the design as built.
+**Required of @ba-agent (the only thing coming back — and it is a GATE, not a note):** AC-4 currently
+reads *"when the read executes, then a data-integrity signal is emitted."* It should read: *"when
+`npm run db:integrity-scan` is run against a database containing the fixture, it reports the corrupt
+row by table and id, and emits no PII field value."* Falsifiable, and true of the design as built.
+
+**Until BA answers, the script's status is undecided and §0 marks it so.** This is the one place where
+this design asks for something it cannot settle itself: I can rule that the *signal* moves from
+read-time to scan-time (that is an architecture call, and §7 makes it), but I cannot rewrite an
+acceptance criterion on BA's behalf and then build against my own rewrite. @pm-agent should carry the
+answer into Step 4 as a precondition on the W0 scope, and the question belongs on the `/grill-with-docs`
+agenda at Step 3.5 if it is still open then.
 
 ---
 
@@ -463,7 +664,7 @@ existence).
 
 | Tier | Artefact | Count | Question it answers |
 |---|---|---|---|
-| **Unit, no DB** | `tenantRelationConformance.test.ts` + 4 fixtures (§6) | 1 file | *Is every traversal in the repo spelled with a guard — including ones written tomorrow?* |
+| **Unit, no DB** | `tenantRelationConformance.test.ts` + 6 fixtures (§6) | 1 file | *Is every traversal in the repo spelled with a guard — including ones written tomorrow?* **and** *is the resolver still resolving, and still failing closed?* (§6.3) |
 | **Integration, corrupt-row fixture** | one per representative shape, recipe proven by `vaccinationDueSoonTenantLeak.test.ts` | **9** | *Does the guard actually work?* |
 | **Integration, standing prober** | `crossTenantFkWritePathRepro.test.ts`, **converted** | 1 file | *Can any write path still create the corrupt row?* |
 | **Regression** | `listAllDue` (AC-6) + full suite green (AC-9) | existing | *Did we break the dispatcher?* |
@@ -504,10 +705,11 @@ plus the prober discharge that for everything this change touches.
 
 | # | Risk | Mitigation |
 |---|---|---|
-| 1 | **The AST analyzer is the most expensive thing here to maintain.** A Prisma major upgrade can move `dmmf`, and TS AST shapes drift. | Accepted, deliberately. It is the only artefact that makes the property hold for code not yet written; it has zero runtime cost; and its own correctness is re-proved by the four fixtures on every single run — a broken analyzer fails loudly, it does not silently pass. It is ~200 lines in one file with one export. |
+| 1 | **The AST analyzer is the most expensive thing here to maintain**, and §6.2.1's resolver made it more so. A Prisma major upgrade can move `dmmf`; TS AST shapes drift; and a degraded resolver could fail open. | Accepted, deliberately, and now **~350 lines** rather than ~200 (re-costed in §6.2.1) — one file, one export, unchanged signature, zero new dependencies. It is the only artefact that makes the property hold for code not yet written and it has zero runtime cost. Its own correctness is re-proved by **six** fixtures on every run, two of which (`guarded-via-builder`, `unresolvable-accumulator`) exist specifically to catch a resolver that has silently stopped resolving or stopped failing closed. A broken analyzer fails loudly. |
+| 1b | **The resolver's boundary is where this design is most likely to be wrong.** It resolves same-set identifiers and single-return builders and refuses mutable accumulators — a line drawn on cost, not on safety. | Published in full (§6.2.1) instead of left implicit, which is the specific failure that sent the first draft back. Everything past the line fails closed, so being wrong about the boundary costs a false positive, never a missed leak. The two functions currently on the wrong side are named, and neither is silently exempted. |
 | 2 | Analyzer false positives block unrelated work | Over-reporting is the safe direction; the escape hatch is a registry entry with a reason, visible in the diff and deleted automatically when stale (R-5). |
 | 3 | A worker changes a repository signature mid-wave and breaks a parallel worker | §4.1 freezes the list. Any addition stops the wave and comes back here. |
-| 4 | A relation predicate is added to `findX` but not `countX` | R-4. There is already one live instance (`medical-record`). |
+| 4 | A relation predicate is added to `findX` but not `countX` | R-4, **narrowed** (§5): each query must carry the predicate in its own root `where`; no shared builder is imposed. `medical-record.findByPet`/`countByPet` satisfy it by each gaining the predicate in place — **no refactor**. |
 | 5 | NFR-01 (`searchPets` < 500 ms) regresses | `owners` is indexed `@@index([tenantId])` and `@@index([tenantId, phone])` (BA §10) so the added predicate is index-aligned, and the join is `EXISTS` on an indexed column. **Measure `searchPets` in W2 rather than assume** — BA named it as the one to check. |
 | 6 | Ponytail reads 20 files as scope bloat | §0 is written for that reading: one rule, zero abstractions, two test files, one script, and a pattern **deleted**. |
 | 7 | Someone re-raises composite FKs a fourth time | ADR-0028 records the ruling with its precondition and its successor initiative. |
@@ -516,9 +718,12 @@ plus the prober discharge that for everything this change touches.
 
 ## 11. Self-review (`architecture-rules.md` §9)
 
-1. **Simpler alternative?** Yes, two were considered and rejected — a Prisma client extension that
-   auto-injects predicates (§A, Option C′) and a lint rule (§6.1). Nothing simpler covers code not yet
-   written.
+1. **Simpler alternative?** Four were considered and rejected — a Prisma client extension that
+   auto-injects predicates (§A, Option C′), a lint rule (§6.1), a literals-only analyzer that exempts
+   the five builder-based repositories (§6.2.1 path (i)), and inlining the builders so every guarded
+   site is literal (§6.2.1 path (iii)). The last two are simpler *artefacts* that buy simplicity by
+   either not checking the files holding the defect, or by changing working production code to suit the
+   checker. Nothing simpler covers code not yet written.
 2. **Abstraction with no second implementation?** None. No interface, no abstract class, no factory.
    The only shared constants are two `select` literals and one exemption array.
 3. **Pattern with no named problem?** No pattern from the whitelist is used. Nothing to justify.
@@ -584,8 +789,11 @@ test, not a silently empty screen.
 **This is a business decision and I am escalating it, not deciding it** — consistent with BA §8 and
 Risk #4. What architecture *can* settle, and does:
 
-1. **It is now answerable rather than hypothetical.** `npm run db:integrity-scan` (§7) ships in this
-   change and produces the exact list. The question stops being "what if" and becomes a report.
+1. **It is answerable rather than hypothetical** — the scan described in §7 produces the exact list, so
+   the question stops being "what if" and becomes a report. **Who builds that scan is conditional**
+   (§7's AC-4 gate): this change if BA accepts the rewording, otherwise Option A's own first task.
+   Either way the question is answered by evidence before anyone acts on it, which is the part that
+   matters here.
 2. **The decision menu is three options, and each has a different owner:** *quarantine* (null the FK,
    retain the row — @db-agent), *reassign* (correct the FK to a row in the right tenant — clinic staff,
    per row, since only they know the true patient), *delete* (@db-agent + clinic consent). Reassign is
@@ -662,7 +870,11 @@ is absorbed here — only sequenced.
 
 **DEFERRED, conditionally, with the successor named.** Preconditions, in order:
 
-1. `npm run db:integrity-scan` (shipped by *this* change) reports its findings on production data.
+1. **A scan report exists** for production data — i.e. cross-tenant rows have been counted, not
+   guessed. The precondition is the *report*, not this change's authorship of the scanner: if §7's
+   AC-4 gate resolves yes, this change ships `npm run db:integrity-scan` and the report is cheap; if it
+   resolves no, producing the report becomes Option A's own first task. **ADR-0028's deferral holds
+   either way** — nothing in the Option A ruling depends on who builds the scanner.
 2. If violations exist → the business decision of A.3(a), owner: human + @db-agent.
 3. R3-F1's `onDelete` decision is made → A.3(d).
 4. Then Option A runs as **its own Lane A**, scoped to the 36 feasible pairs + 11 unique indexes, with
@@ -681,16 +893,16 @@ Files are disjoint per worker within a wave. **Wave boundaries are integration c
 
 | Wave | Worker | Exclusive file scope | Exit criterion |
 |---|---|---|---|
-| **W0** | Dev A (serial — nothing else may start) | `tests/unit/tenantRelationConformance.test.ts`, `tests/fixtures/tenant-conformance/*`, `config/tenant-relation-exemptions.ts`, `scripts/tenant-integrity-scan.ts`, the two `*SummarySelect` consts in `owner`/`pet.repository.ts` (§4.2 — declared here because four W1 workers share them), `models/vaccination.repository.ts:25-30` (**F-1 comment, C-2**) | analyzer runs; 4 fixtures assert as specified; it reports the **current** violation list across `models/` (that list is W1's work order) |
+| **W0** | Dev A (serial — nothing else may start) | `tests/unit/tenantRelationConformance.test.ts` (incl. the §6.2.1 resolver), `tests/fixtures/tenant-conformance/*`, `config/tenant-relation-exemptions.ts`, the two `*SummarySelect` consts in `owner`/`pet.repository.ts` (§4.2 — declared here because four W1 workers share them, and because the analyzer's symbol table must see them before W1 runs), `models/vaccination.repository.ts:25-30` (**F-1 comment, C-2**). **`scripts/tenant-integrity-scan.ts` is NOT in this scope unless the §7 AC-4 gate has resolved yes by Step 4** | analyzer runs; **6** fixtures assert as specified (incl. resolver resolves / resolver fails closed); it reports the **current** violation list across `models/` (that list is W1's work order) |
 | **W0** | @scribe-agent | `.claude/roadmap/index.md` PR #73 row (**C-2**) | the false "guarded" claim is corrected in the record as well as the code |
-| **W1a** | Dev A | `pet` · `appointment` · `invoice` · `prescription` repositories (**T1, XTI-1**) + `invoice.repository.ts:218` branch-scope drift (**F-4**) | analyzer: 0 violations in these files |
+| **W1a** | Dev A | `pet` · `appointment` · `invoice` · `prescription` repositories (**T1, XTI-1**) + `invoice.repository.ts:218` branch-scope drift (**F-4**) + **rewrite `invoice.paymentHistoryWhere` (:244) from a mutable accumulator into the conditional-spread object literal** so it resolves (§6.2.1 shape (f)) — mechanical, no behaviour change | analyzer: 0 violations in these files |
 | **W1b** | Dev B | `vaccination.repository.ts` (**XTI-2** raw SQL, both variants) + `findDueSoon` post-filter **deleted** (§3.2) | analyzer: 0 violations; `vaccination-worklist.test.ts` still green |
-| **W1c** | Dev C | `search` · `medical-record` · `hospitalization` · `owner` repositories (**XTI-3**) + `medical-record` `findByPet`/`countByPet` shared builder (**R-4**) | analyzer: 0 violations |
-| **W1d** | Dev D | `reminder` · `blood-bank` · `grooming` · `transfer` · `product` · `user` · `role` · `auth` · `usage` · `report` · `tenant-settings` repositories (**XTI-4**, T3/T4) + exemption entries for the platform-plane files | analyzer: 0 violations; every exemption carries a reason |
+| **W1c** | Dev C | `search` · `medical-record` · `hospitalization` · `owner` repositories (**XTI-3**). **`medical-record` `findByPet`/`countByPet` each gain the predicate in their own `where` — the shared-builder refactor is CANCELLED** (narrowed R-4, §5) | analyzer: 0 violations |
+| **W1d** | Dev D | `reminder` · `blood-bank` · `grooming` · `transfer` · `product` · `user` · `role` · `auth` · `usage` · `report` · `tenant-settings` repositories (**XTI-4**, T3/T4) + exemption entries for the platform-plane files. **Includes `product.repository.ts:57,70` — the `branchInventory: cond ? {where:{branchId}} : true` ternary whose `: true` branch is an unguarded to-many include on a tenant-scoped model** (§6.2.1 shape (e)) | analyzer: 0 violations; every exemption carries a reason |
 | **W2** | Dev A | `appointment.service.ts` · `pet.service.ts` · `blood-bank.service.ts` (**XTI-5** — move 4 checks into their write transaction, §8.2) | the three writes are atomic with their checks |
 | **W2** | @qa-agent | the 9 behavioural tests (§9) + convert `crossTenantFkWritePathRepro.test.ts` to the standing prober | AC-1…AC-3, AC-6…AC-8 green; parity assertion live |
 | **W2** | Dev B | measure `searchPets` latency against NFR-01 (risk 5) | measured, not assumed |
-| **W2** | @db-agent | review every changed query for isolation; run `db:integrity-scan` against the test DB | **veto point** — not overrulable |
+| **W2** | @db-agent | review every changed query for isolation; run `db:integrity-scan` against the test DB **if that script was in scope** (§7 gate) | **veto point** — not overrulable |
 
 **F-1's comment correction is in W0, not W2** (BA §11): a shipped comment telling engineers a
 vulnerable function is safe is itself the defect, and it must not survive another reading.
@@ -706,9 +918,9 @@ spelling before the checker exists is how eleven inconsistent guards were writte
 |---|---|
 | **C-2** false comment + roadmap record | routed — W0, Dev A + @scribe-agent |
 | **C-3** Option A preconditions (a)(b)(c)(d) | **answered**, §A.3, recorded in ADR-0028 |
-| **C-4** E-7 pagination | **resolved by construction**, §5; post-filter retired, R-4 enforces count parity |
-| **C-5** XTI-7 enforcement named + shown failing | **answered**, §6; four fixtures, §6.3 |
-| **C-6** integrity signal RBAC exposure | **log/metric/operator-script only — no permission code, no RBAC change.** One AC rewording returned to @ba-agent, §7 |
+| **C-4** E-7 pagination | **resolved by construction**, §5; post-filter retired, **narrowed** R-4 enforces count parity without mandating a shared builder |
+| **C-5** XTI-7 enforcement named + shown failing | **answered**, §6; **six** fixtures, §6.3; resolution model published in §6.2.1 |
+| **C-6** integrity signal RBAC exposure | **log/metric/operator-script only — no permission code, no RBAC change.** The operator script itself is **CONDITIONAL** on the AC-4 rewording, which is **still open with @ba-agent**, §7 |
 | Reverse includes (§17) | **covered by construction** — R-1 and R-2 walk the same tree; **no separate audit pass needed**, §6.2 |
 | T3/T4 not narrowed | confirmed — W1d carries them; BA §5's uniform ruling accepted without argument |
 | RLS | not designed around; nothing here is undone if it ships, §A.2 |
@@ -724,7 +936,13 @@ spelling before the checker exists is how eleven inconsistent guards were writte
   worst instance; the structural answer is a response-shaping layer, which is a bigger change than
   this requirement justifies. It stays on the backlog, unabsorbed.
 
-**Three things I want attacked at `/grill-with-docs` (§3.5), beyond BA's five:**
+**Four things I want attacked at `/grill-with-docs` (§3.5), beyond BA's five:**
+
+0. **The resolver boundary** (§6.2.1). It resolves same-set identifiers and single-return builders, and
+   fails closed on mutable accumulators. That line is drawn on **cost**, not on safety. Is ~150 extra
+   lines of AST resolution the right purchase — or is the honest answer that a checker which cannot read
+   two of its own repository's functions should have forced those two functions to change instead?
+   (I chose to change one of them and exempt nothing; argue the other way.)
 
 1. **The scanner checks spelling, not semantics** (§6.4). Is "a guard is present" plus nine
    behavioural tests genuinely enough, or does a wrong-variable guard slip through in a year?
@@ -735,5 +953,8 @@ spelling before the checker exists is how eleven inconsistent guards were writte
 
 ---
 
-*@arch-agent — Step 3.4 complete. Decision: **Option D — C built now, A ruled on and deferred, B out**.
-Next: @ponytail-agent, mode `arch-precheck` (Step 3.4b).*
+*@arch-agent — Step 3.4 **rev 2** complete (rework after BLOCK; 5 fixes applied, scope unchanged).
+Decision: **Option D — C built now, A ruled on and deferred, B out**. One artefact
+(`tenant-integrity-scan.ts`) is now **conditional on a BA answer**, not committed.
+Next: @ponytail-agent, mode `arch-precheck` (Step 3.4b) — re-review scoped to §3.3, §5, §6.2.1,
+§6.2's rule table, §6.3, §7 and ADR-0027's enforcement paragraph.*
