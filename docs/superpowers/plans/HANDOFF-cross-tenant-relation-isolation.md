@@ -1,6 +1,32 @@
 # HANDOFF — Cross-Tenant Relation Isolation (Lane A)
 
-**Status as of 2026-09-11:** Step 3.4 **COMPLETE — PASSED 3.4b on re-run.** `@ponytail-agent` returned
+**Status as of 2026-09-11:** Step 4 **COMPLETE.** `@pm-agent` wrote the implementation plan at
+`docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-plan.md` — 14 tasks (XTI-1…XTI-14)
+across W0 (serial, 6 tasks) → W1a/b/c/d (parallel, 4 tasks) → W2 (parallel, 4 tasks), a work-partition
+manifest satisfying one-owner-per-file-per-wave, and AC-1…AC-10 carried forward from BA §12 with AC-4
+as reworded at the grill. Both ponytail FLAG items (catch-all scope, `product.repository.ts` both
+branches) and grill decision #3 (`tenant-integrity-scan.ts` committed to W0) are folded into the task
+content, not left as separate notes.
+
+## Next action — literally this
+
+```
+@scribe-agent   reference pre-check (Step 4b)
+input: docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-plan.md
+check: every file path and line number cited in the plan resolves on this branch
+        (the 34-file src/backend/models/*.repository.ts glob, all named repository/service files,
+        .claude/roadmap/index.md, scripts/ and config/ target paths that don't exist yet — confirm
+        those are correctly flagged as "to be created" not "to be edited")
+output: PASS, or a list of dangling references that blocks Step 5 until fixed
+then: @ponytail-agent, mode `gate` (Step 5) — 9 criteria against {arch doc + plan}, checking for
+      drift between what arch froze at 3.4 and what the plan assigned at 4
+```
+
+---
+
+## Step 3.4 / 3.4b / 3.5 history (completed earlier 2026-09-11, kept for context)
+
+Step 3.4 **COMPLETE — PASSED 3.4b on re-run.** `@ponytail-agent` returned
 **FLAG** (not BLOCK) on arch doc rev 2 — independently re-implemented §6.2.1's resolution model as a
 real TS AST pass over all 35 `src/backend/models/*.repository.ts` files and verified every claim in
 the rework (10/10 call-expr sites exact, 10/10 identifier sites exact, all 5 builders single-return
@@ -25,18 +51,14 @@ Full record: BA doc §18. Four decisions, all now binding:
 Ponytail's 2 FLAG items (§6.2.1 catch-all scope, `product.repository.ts` work-order clarity) were not
 put to the human — technical, one-line fixes, folded into `@pm-agent`'s plan instead (see below).
 
-## Next action — literally this
+## Step 4 — DONE (see top of file for the current next action)
 
 ```
-@pm-agent   /superpowers:write-plan   (Step 4)
-inputs: docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-arch.md (rev 2)
-        docs/superpowers/plans/2026-09-10-cross-tenant-relation-isolation-ba-signoff.md (§18 grill record)
-        docs/adr/0027, docs/adr/0028
-        this HANDOFF's "work-partition manifest inputs" section below
-output: docs/superpowers/plans/YYYY-MM-DD-cross-tenant-relation-isolation.md
+@pm-agent   /superpowers:write-plan   (Step 4)   ✅ COMPLETE 2026-09-11
+output: docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-plan.md
 ```
 
-### Fold into the plan — not new grill items, just plan content
+### Fold into the plan — not new grill items, just plan content — ✅ all folded in, see plan §3
 
 - **Ponytail FLAG #1**: §6.2.1's catch-all row must apply only at relation-key/guard positions, not
   every scalar leaf in a `where` (20 scalar accesses like `data.petId` across 8 files would otherwise
