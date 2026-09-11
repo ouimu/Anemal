@@ -275,10 +275,13 @@ disclosure, and still a violation of the invariant.
    the field before returning (`vaccination.repository.ts:31-45`). Works, but it is the weakest of
    the three: it fetches the foreign row into application memory before discarding it, and the
    stripping is manual.
-4. **Reverse-direction includes are safe by construction** (parent → children, e.g.
-   `owner.repository.ts` owner→pets): the parent is already tenant-filtered and children carry their
-   own `tenantId`. Confirmed by the audit; no change needed. Arch should say this explicitly so the
-   sweep does not touch them.
+4. **CORRECTED 2026-09-11 (was wrong — see E-2 below and the QA addendum, §17).** This point
+   originally claimed reverse-direction includes (parent → children) are safe by construction.
+   `@qa-agent`'s C-1 reproduction **disproved this with a passing test**: a reverse include applies no
+   tenant predicate to the child row, so a corrupt row leaks in *both* directions — forward, tenant A's
+   corrupt row pulls tenant B's data out to A; reverse, tenant A's corrupt row pushes tenant A's own
+   data into tenant B's response (the *victim* is the tenant that did nothing wrong). Reverse includes
+   are **in scope**, not exempt. Do not carry the old "safe by construction" framing into 3.4.
 
 ### 4.4 What does not exist
 
@@ -472,7 +475,7 @@ and stays.
 | # | Case | Required behaviour |
 |---|---|---|
 | E-1 | **`reminder.repository.ts:41` `listAllDue()` is deliberately cross-tenant** — the background dispatcher's system-context read, documented at L40 and L50-52, with each write pinned to the reminder's own `tenantId` | **Must survive.** Any blanket mechanism that assumes "every query is request-scoped" breaks the reminder worker. It needs an explicit, named, reviewed exemption — not an accidental pass. |
-| E-2 | Reverse-direction includes (parent → children), e.g. `owner.repository.ts` owner→pets | Already safe. Must be **explicitly declared** safe so the sweep and the enforcement rule do not churn them. |
+| E-2 | **CORRECTED 2026-09-11 — was wrong.** Reverse-direction includes (parent → children), e.g. `owner.repository.ts` owner→pets, `medical-record.repository.ts:48` → attachments, `pet.repository.ts:38` → vaccinations | **Not safe. In scope, same as forward includes.** `@qa-agent` proved (C-1 addendum, §17) that a corrupt row leaks in both directions with opposite victims. XTI-INV and XTI-7's enforcement point must cover reverse includes too — do not exempt them. |
 | E-3 | `NULL`-branch pets appear in every branch's list by design (`blood-bank.repository.ts:19-22`; `permission-matrix.md:108-114`) | Unchanged. This is branch semantics, not tenant semantics — do not "fix" it. |
 | E-4 | A related row is legitimately `NULL` (e.g. a retail invoice with no pet — `invoice.repository.ts:18`, `invoice.service.ts:185`) | `NULL` must stay `NULL`. Must not be conflated with "failed the tenant check." |
 | E-5 | Platform-plane reads | No `tenant_id` in the token by design. The mechanism must not assume one exists. |
@@ -613,13 +616,13 @@ Step 3.4 may begin now. C-1 must complete **before** arch commits to an option; 
 
 | # | Condition | Owner |
 |---|---|---|
-| **C-1** | **Verify the write-path claim by reproduction, not by reading.** For each of the 11 affected reads, attempt to create the cross-tenant FK state through a supported API call. My trace (§F-3) says all are guarded; a trace is not a test. **If any path succeeds, stop and escalate to the human for a Lane C declaration** (`bugfix.md:62-66`). Result is an input to arch's option choice and to §11. | @qa-agent |
+| **C-1** | ✅ **RESOLVED 2026-09-11 — MISS.** `@qa-agent` ran 38 paired-control probes across every write path (`src/backend/tests/integration/crossTenantFkWritePathRepro.test.ts`) — 38 BLOCKED, 0 HIT. TOCTOU ruled out structurally (no endpoint mutates a row's `tenantId`; no id reuse). Full suite re-verified green (95 suites/1341 tests). F-3's framing stands as written. **Side effect: disproved E-2** (§17) — corrected above. §11's Lane C trigger does not fire; arch proceeds on the Lane A recommendation. | @qa-agent |
 | **C-2** | Correct `vaccination.repository.ts:25-30` and the `.claude/roadmap/index.md` PR #73 record: `findDueSoonWorklist` is **not** guarded. Do not fix the code and leave the claim standing. | @dev-agent + @scribe-agent |
 | **C-3** | Rule on Option A's preconditions: (a) migration must prove zero existing violations, and what happens if it cannot; (b) which of the 70 relations are in scope; (c) the `tenantId = NULL` parent limitation (B-4 precedent); (d) the R3-F1 `onDelete` collision. **Answers, not a proposal to answer later.** | @db-agent → @arch-agent |
 | **C-4** | Resolve **E-7** (post-filter breaks `take`/`count` consistency) before extending the PR #73 pattern to any paginated read. This is a correctness bug the current pattern introduces at scale. | @arch-agent |
 | **C-5** | Name the XTI-7 enforcement point concretely and demonstrate it failing on a deliberately unguarded fixture. A documented convention with no failure mode does not satisfy XTI-7 and I will reject it at 3.5. | @arch-agent |
 | **C-6** | If XTI-INV-b's integrity signal becomes anything a clinic user can read, it needs a permission code — return to me. If it is log/metric only, state that and no RBAC change is needed. | @arch-agent → @ba-agent |
-| **C-7** | Put the §2 scope line to the human for Step 1 approval. It has not been approved; `/write-plan` is blocked until it is. | @pm-agent → human |
+| **C-7** | ✅ **RESOLVED 2026-09-11.** Human (kritsapon) explicitly approved the §2 scope proceeding via hotfix-debt escalation, no separate `/superpowers:brainstorm` required. | @pm-agent → human |
 
 ---
 
@@ -673,10 +676,10 @@ Step 3.4 may begin now. C-1 must complete **before** arch commits to an option; 
 | NFR impact noted | ✅ §10. NFR-01 is the one to measure rather than assume. XTI-6 raises the missing NFR-12. |
 | Acceptance criteria testable | ✅ §12, AC-1…AC-10, each falsifiable against pre-fix code |
 | Dependencies & risks recorded | ✅ §13, §14, §15 |
-| Step 1 human approval | ⛔ **OPEN — C-7.** `/write-plan` is blocked until the §2 scope is ratified. |
+| Step 1 human approval | ✅ **RESOLVED 2026-09-11 — C-7.** Human approved §2 scope. |
 
-**Ready for Step 3.4 (@arch-agent).** Not ready for `/write-plan` — C-7 (human scope approval) and
-C-1 (write-path verification) must close first.
+**Ready for Step 3.4 (@arch-agent).** C-7 and C-1 are both resolved (§17) — nothing blocks arch from
+starting now.
 
 ### What @arch-agent owns from here
 
@@ -706,5 +709,44 @@ C-4 · treat "documented in coding-rules" as satisfying XTI-7.
 
 ---
 
-*@ba-agent — Lane A Steps 1 + 3 complete. Verdict: REQUIREMENT VALIDATED, 7 conditions (C-1…C-7).
+## 17. QA addendum (C-1 result, 2026-09-11)
+
+`@qa-agent` closed C-1 as **MISS**: no app-reachable write path creates the cross-tenant FK state.
+38 paired-control probes (positive control with the attacker's own id + negative control with the
+victim's id, so a bare 404 is never mistaken for a guard firing) across all nine affected tables plus
+adjacent ones this document's table omitted (attachments, loyalty, stock, transfers, discharge,
+prescription delete). 0 HIT, 0 UNTESTED. TOCTOU ruled out structurally, not statistically: no endpoint
+anywhere mutates a row's `tenantId`, and ids are global autoincrement, never reused — the race window
+required for a check-then-write exploit has nothing to swap in. Test file:
+`src/backend/tests/integration/crossTenantFkWritePathRepro.test.ts`.
+
+**Material new finding — corrects §4.3 point 4 and §9 E-2 above.** While proving the read-side leak
+requires only a corrupt row (not a live write path), QA re-verified the read-side mechanism itself and
+found the "reverse includes are safe" claim in the original sign-off was **false**. Proof (test
+`SIDE-FINDING` in the same file, using the real includes from `medical-record.repository.ts:48` and
+`pet.repository.ts:38`):
+
+```
+tenant B reads its OWN medical record -> attachments: [{tenantId: A, fileName: "FOREIGN-TENANT-A-SECRET.pdf"}]
+tenant B reads its OWN pet            -> vaccinations: [{tenantId: A, vaccineName: "FOREIGN-A-VAX"}]
+```
+
+A reverse include applies no predicate to the child row; "children carry their own `tenantId`" does
+nothing if nothing filters on it. The leak direction inverts (forward: A pulls B's data to A; reverse:
+A's corrupt row pushes A's own data into B's response) but the invariant violation is identical. **If
+arch's design excludes reverse includes on the original E-2 premise, XTI-7 ships with a blind spot.**
+This is now corrected in §4.3 and §9 above — arch must design against the corrected version.
+
+Not covered by C-1 (stated for the record, not rounded to a clean MISS): operator scripts
+(`prisma/seed.ts`, `scripts/backfill-main-branch.ts`, `scripts/reset-demo-data.ts` — not
+HTTP-reachable, E-8 still needs its in/out ruling) and direct DB/restore-from-backup access (outside
+the app by definition — this is precisely §8's argument for keeping the read-side guard even if
+Option A ships).
+
+Both C-1 and C-7 are now resolved. **No blockers remain before Step 3.4.**
+
+---
+
+*@ba-agent — Lane A Steps 1 + 3 complete. Verdict: REQUIREMENT VALIDATED. All 7 conditions resolved as
+of 2026-09-11 (C-1 MISS, C-7 approved; C-2…C-6 remain arch/dev-owned per §13).
 Next: @arch-agent, Step 3.4.*

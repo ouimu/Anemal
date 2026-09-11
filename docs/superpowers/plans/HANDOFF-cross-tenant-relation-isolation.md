@@ -33,16 +33,23 @@ Recorded as open hotfix debt in `.claude/roadmap/index.md` (2026-09-10 row).
      E-1 (`reminder.repository.ts` `listAllDue()` is *deliberately* cross-tenant for the background
      dispatcher — needs a named exemption, not an accidental pass).
 
-## Next action — one blocker remaining before Step 3.4
+## Both blockers cleared 2026-09-11 — ready for Step 3.4
 
-- **C-7 — CLEARED 2026-09-11.** Human (kritsapon) explicitly approved scope for this Lane A work
-  proceeding via hotfix-debt escalation (no separate brainstorm needed).
-- **C-1 — IN PROGRESS.** `@qa-agent` dispatched 2026-09-11 to attempt a live write-path reproduction
-  of a cross-tenant FK mismatch (not just the direct-DB-insert the hotfix test used). **If any
-  app-reachable write path is found, this flips to Lane C immediately** (per BA's stated trigger) —
-  do not proceed to Step 3.4 arch design until this resolves either way (HIT/MISS/INCONCLUSIVE).
+- **C-7 — CLEARED.** Human (kritsapon) explicitly approved scope for this Lane A work proceeding via
+  hotfix-debt escalation (no separate brainstorm needed).
+- **C-1 — CLEARED, verdict MISS.** `@qa-agent` ran 38 paired-control probes across every write path
+  (`src/backend/tests/integration/crossTenantFkWritePathRepro.test.ts`) — 0 HIT. Full suite green
+  (95 suites/1341 tests). Does not flip to Lane C; Lane A proceeds as planned.
+- **Material side-finding from the QA pass**: the BA doc's original E-2 ("reverse includes are safe by
+  construction") was **wrong** — QA proved a corrupt row leaks in both directions with opposite
+  victims. The BA sign-off doc has been corrected in place (§4.3, §9, new §17) — **read the corrected
+  version**, not the original claim, before designing.
 
-Once C-1 resolves: invoke `@arch-agent` at Step 3.4 with the BA sign-off doc as input.
+## Next action
+
+Invoke `@arch-agent` at Step 3.4 with the corrected BA sign-off doc
+(`docs/superpowers/plans/2026-09-10-cross-tenant-relation-isolation-ba-signoff.md`) as input.
+No blockers remain.
 
 ## Files to read, in order
 
