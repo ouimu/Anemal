@@ -1,19 +1,46 @@
 # HANDOFF — Cross-Tenant Relation Isolation (Lane A)
 
-**Status as of 2026-09-11:** Step 3.4 (architecture) **complete**. Next gate: Step 3.4b,
-`@ponytail-agent` mode `arch-precheck`.
+**Status as of 2026-09-11:** Step 3.4b (`@ponytail-agent` arch-precheck) returned **BLOCK**.
+Back at Step 3.4 for rework — arch design is NOT complete.
 
 ## Next action — literally this
 
 ```
-@ponytail-agent  mode: arch-precheck
-input:  docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-arch.md
-verdict: BLOCK → returns to Step 3.4 (@arch-agent) · FLAG/PASS → proceed to Step 3.5
+@arch-agent   Step 3.4 REWORK (not a fresh design — fix these 5 items only)
+input:  the BLOCK report below + docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-arch.md
 ```
 
-Then, in order: `/grill-with-docs` (Step 3.5, human + `@ba-agent`, MANDATORY) →
-`@pm-agent` `/write-plan` (Step 4) → `@scribe-agent` reference pre-check (4b) →
-`@ponytail-agent` mode `gate` (Step 5) → `/superpowers:execute-plan` (Step 6).
+**BLOCK reason (criterion #1 — over-engineering: analyzer contract contradicts the code it must read):**
+The conformance-test analyzer (arch doc §6.2/§6.4) defines "guarded" only over a literal `where`/
+`include` on the Prisma call itself. Three shapes it cannot resolve already exist live in 17 of 35
+model files — `where`/`include` behind a call expression (`pet`, `owner`, `invoice`, `audit`,
+`product`), behind an identifier (`pet.listInclude`, platform-customers ×6), and conditional spreads
+(57 occurrences / 17 files). Worse: **R-4 mandates the exact call-expression shape the analyzer can't
+resolve**, landing directly on the flagship T1 cases (`pet.findPets`, `pet.findPetById`) — the files
+holding the PII defect the mechanism exists to catch would be exempt from it.
+
+**5 required fixes (arch owns all 5, do not exceed this list):**
+1. State the analyzer's resolution model explicitly for all 4 shapes (same-module call expr,
+   same-module identifier, cross-module identifier, conditional spread) — resolved or fail-closed,
+   per shape. Re-cost the "~200 lines" estimate against this.
+2. Pick and state one of: (i) narrow the analyzer + explicitly exempt builder-based repos, (ii) specify
+   resolution (then re-argue §3.3's helper rejection — same machinery would read `relGuard()`), or
+   (iii) mandate literal `where`/`include` at guarded sites + say which builders get inlined.
+3. Narrow R-4 to the checkable property actually needed: *`findX`/`countX` each carry the tenant
+   predicate* — not a shared `where` expression (that's the construct breaking resolution).
+4. Rule explicitly whether an unresolvable `select` value fails closed (affects §4.2's
+   `ownerSummarySelect`/`petSummarySelect` cross-module consts at 5 T1 sites).
+5. Mark the `scripts/tenant-integrity-scan.ts` build as conditional on BA accepting the AC-4 reword
+   (§7), not decided — its only other customer is ADR-0028's deferred precondition.
+
+**Explicitly NOT objected to — do not touch in rework:** the core rule (one rule, three spellings),
+post-filter retirement, zero new dependencies, refusal to build a `relGuard()` helper, the 20-file
+scope (defect width, not scope creep). Ponytail said it only needs to re-review §5/§6.2/§6.4 and the
+ADR-0027 enforcement paragraph — not the whole doc.
+
+After rework: re-run `@ponytail-agent` arch-precheck. Then, in order: `/grill-with-docs` (Step 3.5,
+human + `@ba-agent`, MANDATORY) → `@pm-agent` `/write-plan` (Step 4) → `@scribe-agent` reference
+pre-check (4b) → `@ponytail-agent` mode `gate` (Step 5) → `/superpowers:execute-plan` (Step 6).
 
 ## What this is
 
