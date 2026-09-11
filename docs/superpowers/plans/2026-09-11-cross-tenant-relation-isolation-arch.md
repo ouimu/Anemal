@@ -238,12 +238,16 @@ Per `architecture-rules.md` §3 abuse signals, this would be "a layer that only 
 
 `tenantId` stays the first parameter of every repository function. No function is renamed, removed, or
 reordered. **Two functions gain one optional trailing parameter**, following the pattern already in
-`pet.repository.ts:56` and `hospitalization.repository.ts:47`:
+`pet.repository.ts:56` (`createPet(tenantId, data, client = prisma)`):
 
 ```ts
 petRepo.findOwner(tenantId: number, ownerId: number, client?: Prisma.TransactionClient | typeof prisma)
-petRepo.findPetById(tenantId: number, id: number, includeEmr?: boolean, client?: …)   // client? is 4th,
-                                                                                        // after the existing includeEmr
+petRepo.findPetById(tenantId: number, id: number, includeEmr = true, client?: …)   // client? is 4th,
+                                                                                    // includeEmr KEEPS
+                                                                                    // its existing
+                                                                                    // `= true` default —
+                                                                                    // do not change it
+                                                                                    // to optional-undefined
 bloodBankRepo.findDonorPet(tenantId: number, petId: number, client?: …)          // moved down from blood-bank.service
 ```
 

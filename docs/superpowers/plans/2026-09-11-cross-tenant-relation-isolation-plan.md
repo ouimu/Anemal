@@ -9,7 +9,7 @@ completed same day)
 **Inputs read, in order:**
 1. `docs/superpowers/plans/2026-09-10-cross-tenant-relation-isolation-ba-signoff.md` (corrected
    2026-09-11, incl. §17 QA addendum and §18 grill record — 4 binding human decisions)
-2. `docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-arch.md` (rev 2, **PASSED**
+2. `docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-arch.md` (rev 3, **PASSED**
    ponytail `arch-precheck`, verdict FLAG — 2 minor items folded in below, not re-litigated)
 3. `docs/adr/0027-tenant-scoped-relation-traversal-carries-its-own-predicate.md`
 4. `docs/adr/0028-composite-tenant-foreign-keys-deferred.md`
