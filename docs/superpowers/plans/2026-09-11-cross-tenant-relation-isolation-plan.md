@@ -119,7 +119,7 @@ analyzer's first run against current `models/` produces **zero false positives o
 `where` clauses** (spot-checked against the ~20 known scalar sites) — this is a condition of XTI-1's
 exit criterion, not a separate task.
 
-### 3.2 Ponytail FLAG #2 — `product.repository.ts:57,70` both branches, stated explicitly for W1d
+### 3.2 Ponytail FLAG #2 — `product.repository.ts:57,69` both branches, stated explicitly for W1d
 
 `branchInventory: branchId != null ? { where: { branchId } } : true` at both lines. **Both ternary
 branches fail R-1** — not only the `: true` branch. `BranchInventory` is tenant-scoped; `{ where:
@@ -390,7 +390,7 @@ Description: Fix the T3/T4 sites (BA XTI-4: pet identity, staff names via bare U
   past a real violation).
 Acceptance Criteria:
   - [ ] AC-1 passes for all sites across these 11 files
-  - [ ] product.repository.ts:57 AND :70: both ternary branches guarded, verified independently — a
+  - [ ] product.repository.ts:57 AND :69: both ternary branches guarded, verified independently — a
         test asserting only the `: true` branch was fixed is insufficient
   - [ ] Every new exemption entry has a non-empty, accurate reason and names a genuine no-tenant case
         (R-5 registry hygiene passes)

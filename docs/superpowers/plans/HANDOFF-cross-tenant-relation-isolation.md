@@ -14,7 +14,7 @@ content, not left as separate notes.
 @scribe-agent   reference pre-check (Step 4b)
 input: docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-plan.md
 check: every file path and line number cited in the plan resolves on this branch
-        (the 34-file src/backend/models/*.repository.ts glob, all named repository/service files,
+        (the 35-file src/backend/models/*.repository.ts glob, all named repository/service files,
         .claude/roadmap/index.md, scripts/ and config/ target paths that don't exist yet — confirm
         those are correctly flagged as "to be created" not "to be edited")
 output: PASS, or a list of dangling references that blocks Step 5 until fixed
