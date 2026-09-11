@@ -377,25 +377,38 @@ Wave: W1d   Owner: Dev D
 Files (exclusive): reminder.repository.ts, blood-bank.repository.ts, grooming.repository.ts,
   transfer.repository.ts, product.repository.ts, user.repository.ts, role.repository.ts,
   auth.repository.ts, usage.repository.ts, report.repository.ts, tenant-settings.repository.ts,
+  platform-customers.repository.ts (added post-W0 checkpoint — the analyzer found real findings here
+  that the original plan's file list missed; see below),
   AND (entries only, not structural edits) config/tenant-relation-exemptions.ts for platform-plane
   exemptions (E-5) — this file transfers exclusive ownership from Dev A (W0) to Dev D for this one
   wave; no other W1 worker touches it
 Description: Fix the T3/T4 sites (BA XTI-4: pet identity, staff names via bare User FK, drug/product
-  names via bare InventoryItem FK) across these 11 files, plus **both** ternary branches at
+  names via bare InventoryItem FK) across these 12 files, plus **both** ternary branches at
   product.repository.ts:57 and :69 (§3.2 above — `BranchInventory` is tenant-scoped; the `: true`
   branch is a live unguarded to-many include exactly as much as the visibly-unguarded one looks; fix
   both, do not stop at the obvious one). Add exemption entries (E-5) to
   config/tenant-relation-exemptions.ts for platform-plane repositories where a traversal genuinely has
-  no tenant to check (platform-audit.listPlatformAuditLogs and similar — verify PlatformAuditLog etc.
-  actually have no tenantId before exempting; an exemption must be a real exemption, not a shortcut
-  past a real violation).
+  no tenant to check — verified against the real W0 checkpoint output (not the ~57/~19 estimate):
+  `platform-audit.repository.ts` has **zero** analyzer findings (nothing to exempt there, the original
+  prose example was already clean); the real finding is `platform-customers.repository.ts`'s
+  `listTenants()` (:105) and `getTenantWithPlanAndQuota()` (:200) — both platform-plane functions that
+  legitimately traverse across all tenants by design (they list/aggregate across every tenant, which
+  is the platform console's whole purpose), with dozens of relations hit via conditional spread
+  (arch §6.2.1 shape (e), fails closed as designed). Verify each relation target genuinely has no
+  single tenant to check (these are platform-plane reads with no `tenant_id` scoping by design, per
+  BA §7/arch's plane-separation ruling) before adding its E-5 entry — an exemption must be a real
+  exemption, not a shortcut past a real violation. Given the volume, prefer one exemption entry per
+  function (`listTenants`, `getTenantWithPlanAndQuota`) covering all its relations if the registry
+  shape supports a wildcard/whole-function exemption; otherwise per-relation entries, whichever XTI-2's
+  actual registry shape requires — check `config/tenant-relation-exemptions.ts` (built in W0) for its
+  real interface rather than assuming.
 Acceptance Criteria:
-  - [ ] AC-1 passes for all sites across these 11 files
+  - [ ] AC-1 passes for all sites across these 12 files
   - [ ] product.repository.ts:57 AND :69: both ternary branches guarded, verified independently — a
         test asserting only the `: true` branch was fixed is insufficient
   - [ ] Every new exemption entry has a non-empty, accurate reason and names a genuine no-tenant case
         (R-5 registry hygiene passes)
-  - [ ] XTI-1's analyzer reports 0 violations in these 11 files (violations covered by a valid
+  - [ ] XTI-1's analyzer reports 0 violations in these 12 files (violations covered by a valid
         exemption entry count as 0 for this purpose)
 Permission(s): module-specific view permissions (unchanged); platform.* codes for exemption entries
   (unchanged — no new platform permission)
@@ -547,7 +560,7 @@ different agent types) rather than forcing an unused DBA/UIUX A row into the tab
 | XTI-7 | W1a | Dev A | `pet.repository.ts`, `appointment.repository.ts`, `invoice.repository.ts`, `prescription.repository.ts` | XTI-1, XTI-2, XTI-3 | ADR-0027 dialect 1; arch §4.2 (§4.1 is XTI-11's, not this task's) |
 | XTI-8 | W1b | Dev B | `vaccination.repository.ts` (function bodies, not the W0 comment region) | XTI-1, XTI-2 | ADR-0027 dialect 3; arch §3.2 |
 | XTI-9 | W1c | Dev C | `search.repository.ts`, `medical-record.repository.ts`, `hospitalization.repository.ts`, `owner.repository.ts` | XTI-1, XTI-2, XTI-3 | arch §5 (R-4 narrowed) |
-| XTI-10 | W1d | Dev D | `reminder.repository.ts`, `blood-bank.repository.ts`, `grooming.repository.ts`, `transfer.repository.ts`, `product.repository.ts`, `user.repository.ts`, `role.repository.ts`, `auth.repository.ts`, `usage.repository.ts`, `report.repository.ts`, `tenant-settings.repository.ts`, `config/tenant-relation-exemptions.ts` (entries only — ownership transfers from Dev A for this wave) | XTI-1, XTI-2, XTI-3 | arch §6.2.1 shape (e); §4.5 |
+| XTI-10 | W1d | Dev D | `reminder.repository.ts`, `blood-bank.repository.ts`, `grooming.repository.ts`, `transfer.repository.ts`, `product.repository.ts`, `user.repository.ts`, `role.repository.ts`, `auth.repository.ts`, `usage.repository.ts`, `report.repository.ts`, `tenant-settings.repository.ts`, `platform-customers.repository.ts` (added post-W0 checkpoint, real findings the original scope missed), `config/tenant-relation-exemptions.ts` (entries only — ownership transfers from Dev A for this wave) | XTI-1, XTI-2, XTI-3 | arch §6.2.1 shape (e); §4.5 |
 | XTI-11 | W2 | Dev A | `appointment.service.ts`, `pet.service.ts`, `blood-bank.service.ts`, `pet.repository.ts`, `blood-bank.repository.ts` (repository files transfer in from XTI-7/W1a (pet only) and XTI-10/W1d (blood-bank) for this wave — `appointment.repository.ts` does NOT transfer, stays XTI-7's, see arch §4.1 rev 3) | XTI-7, XTI-9, XTI-10 | arch §4.1 rev 3, §8.2 |
 | XTI-12 | W2 | Dev B | none (measurement only) | XTI-9 | BA §10 NFR-01 |
 | XTI-13 | W2 | @qa-agent | 9 new test files + `tests/integration/crossTenantFkWritePathRepro.test.ts` (convert) | XTI-7…XTI-11 | arch §9 |
