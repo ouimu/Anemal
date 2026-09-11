@@ -8,18 +8,44 @@ verified, the `product.repository.ts` and `invoice.repository.ts` live-defect cl
 zero exotic receivers that would fail the detector open). **Two non-blocking items carried to the
 Step 3.5 grill agenda** (below) — neither returns this to 3.4.
 
+## Step 3.5 grill — CONCLUDED 2026-09-11, no unresolved findings
+
+Ran interactively with the human (kritsapon), one question at a time per the `grilling` skill method.
+Full record: BA doc §18. Four decisions, all now binding:
+
+1. **Full AST resolver confirmed** (not the literals-only + exempt-T1-files alternative).
+2. **Production-data remediation is human, per-row** (no auto-delete/reassign) — ADR-0028.
+3. **`scripts/tenant-integrity-scan.ts` builds in W0**, as a periodic/manual operator script (not
+   real-time per-read — rejected on performance grounds). AC-4 reworded (BA doc §12), C-6 now resolved
+   (was conditional, now committed).
+4. **New Lane C process gate shipped same day**: `.claude/skills/anemal-dev-lanes/references/hotfix.md`
+   §5a — a hotfix may not claim other code is "already safe/guarded" without citing a passing test.
+   Directly closes the gap that let PR #73's false comment ship.
+
+Ponytail's 2 FLAG items (§6.2.1 catch-all scope, `product.repository.ts` work-order clarity) were not
+put to the human — technical, one-line fixes, folded into `@pm-agent`'s plan instead (see below).
+
 ## Next action — literally this
 
 ```
-/grill-with-docs   (Step 3.5 — human + @ba-agent, MANDATORY, cannot be skipped)
-input:  docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-arch.md (rev 2, PASSED 3.4b)
-        docs/superpowers/plans/2026-09-10-cross-tenant-relation-isolation-ba-signoff.md (corrected)
+@pm-agent   /superpowers:write-plan   (Step 4)
+inputs: docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-arch.md (rev 2)
+        docs/superpowers/plans/2026-09-10-cross-tenant-relation-isolation-ba-signoff.md (§18 grill record)
         docs/adr/0027, docs/adr/0028
-agenda: arch's own item 0 (resolver boundary cost judgement — for the human) +
-        ponytail's 2 items from the FLAG (below) +
-        BA's 5 original grill targets (BA doc §"Recommended /grill-with-docs targets") +
-        the still-open AC-4/scan-script gate with @ba-agent
+        this HANDOFF's "work-partition manifest inputs" section below
+output: docs/superpowers/plans/YYYY-MM-DD-cross-tenant-relation-isolation.md
 ```
+
+### Fold into the plan — not new grill items, just plan content
+
+- **Ponytail FLAG #1**: §6.2.1's catch-all row must apply only at relation-key/guard positions, not
+  every scalar leaf in a `where` (20 scalar accesses like `data.petId` across 8 files would otherwise
+  false-positive on day one of W0).
+- **Ponytail FLAG #2**: `product.repository.ts:57,70` — both ternary branches fail R-1, not just the
+  `: true` one; the work order must say so explicitly so a worker doesn't fix only the obvious half.
+- **AC-4 is now in the W0 baseline** (grill decision #3) — `scripts/tenant-integrity-scan.ts` is
+  committed work, not conditional on a later BA answer.
+- **C-6 is resolved**, remove its "OPEN GATE" status from the conditions table below.
 
 ### Ponytail's 2 FLAG items for the grill agenda (verified real, not blocking)
 
@@ -148,9 +174,9 @@ gated three times. Zero new abstractions; the post-filter pattern from PR #73 is
 | C-3 Option A preconditions (a)(b)(c)(d) | @arch-agent | ✅ answered — arch §A.3, ADR-0028 |
 | C-4 E-7 pagination consistency | @arch-agent | ✅ resolved by construction — arch §5 |
 | C-5 XTI-7 enforcement named + shown failing | @arch-agent | ✅ answered — arch §6, fixtures §6.3 |
-| C-6 integrity-signal RBAC exposure | @arch-agent → @ba-agent | ✅ log/operator-script only, **no permission code**. ⏳ **AC-4 rewording is an OPEN GATE with @ba-agent** — the `tenant-integrity-scan.ts` script is conditional on it and is NOT in the W0 baseline until BA answers (arch §7) |
+| C-6 integrity-signal RBAC exposure | @arch-agent → @ba-agent | ✅ **RESOLVED at grill 2026-09-11.** Log/operator-script only, no permission code. Human accepted the AC-4 reword — `tenant-integrity-scan.ts` is now committed to the W0 baseline. |
 | C-2 false comment + roadmap record | @dev-agent + @scribe-agent | ⏳ scheduled into W0 of the plan |
-| Step 3.5 `/grill-with-docs` | human + @ba-agent | ⏳ **not yet run — MANDATORY, cannot be skipped** |
+| Step 3.5 `/grill-with-docs` | human + @ba-agent | ✅ **CONCLUDED 2026-09-11** — 4 human decisions, no unresolved findings. BA doc §18. |
 
 ## Things the next agent must not get wrong
 

@@ -575,9 +575,16 @@ AC-3  Given the same fixture on a LIST endpoint, when a tenant-A user reads it,
       then the corrupt row is absent, the request succeeds, and the reported total matches the
       number of rows actually returned across the full pagination range.   [covers E-7]
 
-AC-4  Given the same fixture, when the read executes,
-      then a data-integrity signal is emitted identifying tenant, table and row id,
-      and containing no PII field value.                                    [XTI-INV-b]
+AC-4  REWORDED 2026-09-11, accepted by human at Step 3.5 grill.
+      Given `npm run db:integrity-scan` is run (operator-invoked, not per-request —
+      arch's real-time-per-read alternative was rejected at the grill on performance
+      grounds), when it scans the affected tables,
+      then every corrupt row (a tenant-scoped relation whose own tenantId differs from
+      its FK parent's) is reported by tenant, table and row id, containing no PII field
+      value.                                                                 [XTI-INV-b]
+      Human decision (grill, 2026-09-11): any row the scan finds is remediated by a
+      human reviewing it case-by-case (delete/quarantine/reassign) — no auto-remediation.
+      `scripts/tenant-integrity-scan.ts` is now IN the W0 baseline, not conditional.
 
 AC-5  Given a NEW repository read is added that follows a forward FK to a tenant-scoped row without
       a tenant guard, when the enforcement point runs (lint / conformance test / typecheck),
@@ -747,6 +754,28 @@ Both C-1 and C-7 are now resolved. **No blockers remain before Step 3.4.**
 
 ---
 
+## 18. Step 3.5 grill record (human, 2026-09-11)
+
+`/grill-with-docs` ran against arch rev 2 (PASSED ponytail 3.4b re-check, verdict FLAG). Four
+judgement calls that only the human could make were put to kritsapon directly, one at a time, each
+with a recommendation:
+
+| # | Question | Decision | Recorded in |
+|---|---|---|---|
+| 1 | Full AST resolver (~350 lines, covers all 20 sites incl. T1 PII files) vs. literals-only checker (~50-80 lines, exempts pet/owner/invoice from mechanical enforcement) | **Full AST resolver** — the exemption path would have repeated exactly the failure mode (manual-review-only on the highest-severity files) that caused this incident | Arch doc rev 2 unchanged; this confirms it, does not modify it |
+| 2 | If `db:integrity-scan` finds real cross-tenant rows in production, who decides remediation (delete/quarantine/reassign)? | **Human reviews each row case-by-case** — no auto-remediation. Corruption could be pre-existing human/data error, not just this bug; a script must not guess | ADR-0028 (Option A precondition (a)), this doc §12 AC-4 above |
+| 3 | Build `scripts/tenant-integrity-scan.ts` in W0 now, or leave XTI-INV-b as an open requirement? | **Build now**, as a periodic/manual operator script — NOT real-time per-read (rejected on performance: would add overhead to every request) | §12 AC-4 (reworded above), §13 C-6 (resolved — moves from conditional to committed) |
+| 4 | PR #73's false safety comment shipped inside a Lane C hotfix (F-1) — add a process gate to Lane C requiring safety claims about *other* code to cite a passing test, or leave as backlog? | **Add the gate now** — `.claude/skills/anemal-dev-lanes/references/hotfix.md` §5a added same day | New §5a in hotfix.md; supersedes this doc's F-1 "backlog" framing — it is now a shipped process fix, not backlog |
+
+**Ponytail's 2 FLAG items** (§6.2.1 catch-all scope, `product.repository.ts` work-order clarity) were
+technical corrections with a stated one-line fix each — not put to the human, folded directly into
+`@pm-agent`'s Step 4 plan instead.
+
+**Grill verdict: CONCLUDED, no unresolved findings.** `/write-plan` (Step 4) is unblocked.
+
+---
+
 *@ba-agent — Lane A Steps 1 + 3 complete. Verdict: REQUIREMENT VALIDATED. All 7 conditions resolved as
-of 2026-09-11 (C-1 MISS, C-7 approved; C-2…C-6 remain arch/dev-owned per §13).
-Next: @arch-agent, Step 3.4.*
+of 2026-09-11 (C-1 MISS, C-7 approved; C-2…C-6 remain arch/dev-owned per §13). Step 3.5 grill concluded
+2026-09-11 (§18) — all 4 human judgement calls resolved.
+Next: @pm-agent, Step 4 (/write-plan).*
