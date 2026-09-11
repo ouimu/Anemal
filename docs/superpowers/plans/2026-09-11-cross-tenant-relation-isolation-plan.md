@@ -243,12 +243,16 @@ Contract referenced: BA §3 F-1; hotfix.md §5a (the process rule this finding p
 
 Task ID: XTI-5   Actor/role: N/A (documentation)   Device: Both
 Wave: W0   Owner: @scribe-agent
-Description: Correct the .claude/roadmap/index.md PR #73 record (the C-2 documentation half) to state
-  that findDueSoonWorklist was NOT guarded at the time of the PR #73 hotfix — do not leave the
-  original false claim standing in the tracking record even after the code is fixed.
+Description: The false "explicit tenantId join guards" claim lives in vaccination.repository.ts's
+  code comment and the PR #73 commit message (1add331) — NOT in .claude/roadmap/index.md's PR #73 row,
+  which was checked and does not repeat it. So this task is not "remove a claim" but "add the
+  correction record": append a note to the PR #73 row (or the Open hotfix debt row it links to) stating
+  that findDueSoonWorklist was in fact unguarded at merge time, the claim in the code comment/commit
+  message was false, and this change (XTI-4) fixes both the code and the comment. Do this in the same
+  change/branch that fixes the code — not deferred.
 Acceptance Criteria:
-  - [ ] The PR #73 row in .claude/roadmap/index.md no longer repeats the false "explicit tenantId
-        join guards" claim
+  - [ ] The PR #73 row (or its linked Open hotfix debt row) in .claude/roadmap/index.md documents that
+        findDueSoonWorklist's "already guarded" claim was false and has now been fixed by this change
   - [ ] The correction is in the same change/branch that fixes the code (XTI-4, XTI-8) — not deferred
 Permission(s): None
 Dependencies: None
@@ -285,10 +289,10 @@ Files (exclusive): pet.repository.ts, appointment.repository.ts, invoice.reposit
   prescription.repository.ts
 Description: Fix the 5 T1 `owner: true` sites (BA F-2, highest severity — full Owner row incl.
   idCardNumber/address) using ADR-0027 dialect 1: predicate in the root `where`, `owner: {
-  select: ownerSummarySelect }` in the include. Sites: appointment.repository.ts:93 (findById),
-  pet.repository.ts:36 (findPetById), prescription.repository.ts:40 (findPrescriptionWithDetails,
+  select: ownerSummarySelect }` in the include. Sites: appointment.repository.ts:85 (findById),
+  pet.repository.ts:32 (findPetById), prescription.repository.ts:34 (findPrescriptionWithDetails,
   2-level — mirror the include path in the where per arch §3.1's two-level example),
-  invoice.repository.ts:146 (findInvoiceById), invoice.repository.ts:218 (claimInvoicePaid — this
+  invoice.repository.ts:137 (findInvoiceById), invoice.repository.ts:218 (claimInvoicePaid — this
   site ALSO gets the F-4 fix below in the same pass). Also fix any other violation the XTI-1 analyzer
   prints against these 4 files (forward or reverse), not only the 5 named ones.
   F-4 (BA §3): invoice.repository.ts:198-221 claimInvoicePaid claims with {id, tenantId, branchId?}
@@ -377,7 +381,7 @@ Files (exclusive): reminder.repository.ts, blood-bank.repository.ts, grooming.re
   wave; no other W1 worker touches it
 Description: Fix the T3/T4 sites (BA XTI-4: pet identity, staff names via bare User FK, drug/product
   names via bare InventoryItem FK) across these 11 files, plus **both** ternary branches at
-  product.repository.ts:57 and :70 (§3.2 above — `BranchInventory` is tenant-scoped; the `: true`
+  product.repository.ts:57 and :69 (§3.2 above — `BranchInventory` is tenant-scoped; the `: true`
   branch is a live unguarded to-many include exactly as much as the visibly-unguarded one looks; fix
   both, do not stop at the obvious one). Add exemption entries (E-5) to
   config/tenant-relation-exemptions.ts for platform-plane repositories where a traversal genuinely has
@@ -594,7 +598,7 @@ Work-partition manifest satisfies "one file, one owner, per wave." W0 is explici
 workers are explicitly parallel and disjoint; W2's four owners (2 dev, qa, db) are explicitly disjoint.
 
 **Next:** @scribe-agent, Step 4b — reference pre-check (verify every path cited above, including the
-34-file `src/backend/models/*.repository.ts` glob and every named line number, actually resolves on
+35-file `src/backend/models/*.repository.ts` glob and every named line number, actually resolves on
 this branch) — a dangling path blocks Step 5. Then @ponytail-agent, mode `gate` (Step 5) — the 9
 criteria against {arch doc + this plan}, checking specifically for drift between what arch froze and
 what this plan assigns.
