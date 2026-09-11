@@ -1,18 +1,40 @@
 # HANDOFF — Cross-Tenant Relation Isolation (Lane A)
 
-**Status as of 2026-09-11:** Step 3.4 **rework COMPLETE** (arch doc rev 2). All 5 required fixes from
-the 3.4b BLOCK are applied. Awaiting re-run of `@ponytail-agent` arch-precheck.
+**Status as of 2026-09-11:** Step 3.4 **COMPLETE — PASSED 3.4b on re-run.** `@ponytail-agent` returned
+**FLAG** (not BLOCK) on arch doc rev 2 — independently re-implemented §6.2.1's resolution model as a
+real TS AST pass over all 35 `src/backend/models/*.repository.ts` files and verified every claim in
+the rework (10/10 call-expr sites exact, 10/10 identifier sites exact, all 5 builders single-return
+verified, the `product.repository.ts` and `invoice.repository.ts` live-defect claims both verified,
+zero exotic receivers that would fail the detector open). **Two non-blocking items carried to the
+Step 3.5 grill agenda** (below) — neither returns this to 3.4.
 
 ## Next action — literally this
 
 ```
-@ponytail-agent   mode arch-precheck (Step 3.4b, RE-RUN after rework)
-input:  docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-arch.md (rev 2)
-        docs/adr/0027-tenant-scoped-relation-traversal-carries-its-own-predicate.md (enforcement §)
-scope:  ponytail's own words — re-review §3.3, §5, §6.2.1 (NEW), §6.2 rule table, §6.3, §7,
-        and ADR-0027's enforcement paragraph. The core rule, post-filter retirement, zero-dependency
-        claim and 20-file scope were explicitly NOT objected to and are unchanged.
+/grill-with-docs   (Step 3.5 — human + @ba-agent, MANDATORY, cannot be skipped)
+input:  docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-arch.md (rev 2, PASSED 3.4b)
+        docs/superpowers/plans/2026-09-10-cross-tenant-relation-isolation-ba-signoff.md (corrected)
+        docs/adr/0027, docs/adr/0028
+agenda: arch's own item 0 (resolver boundary cost judgement — for the human) +
+        ponytail's 2 items from the FLAG (below) +
+        BA's 5 original grill targets (BA doc §"Recommended /grill-with-docs targets") +
+        the still-open AC-4/scan-script gate with @ba-agent
 ```
+
+### Ponytail's 2 FLAG items for the grill agenda (verified real, not blocking)
+
+1. **§6.2.1's catch-all row is scoped too broadly as written.** 20 scalar property accesses inside
+   `where` clauses across 8 files (`data.petId`, `data.doctorId`, etc.) sit at relation-*irrelevant*
+   positions but read literally as violations under the catch-all rule, which would pollute W0's
+   printed violation list on day one. Fix is one sentence: unresolvability applies at relation-key and
+   guard positions, not every scalar leaf.
+2. **§6.2.1(e) / §B W1d understates the `product.repository.ts` defect.** Both ternary branches at
+   `:57,70` fail R-1, not just the `: true` branch — the "guarded" branch (`{ where: { branchId } }`)
+   has no `tenantId` either. The analyzer catches both, but the work-order narrative should say so
+   explicitly or a worker may fix only the obvious half.
+
+Minor: conditional-spread census is 59 occurrences on this branch, not 57 as the doc states (file
+count of 17 is exact). Not worth a grill slot on its own.
 
 ### What the rework changed (rev 2) — the 5 fixes, one line each
 
