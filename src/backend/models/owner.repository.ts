@@ -5,7 +5,12 @@ import { Prisma } from '@prisma/client'
 import prisma from '../config/db'
 import type { CreateOwnerInput, UpdateOwnerInput } from '../services/owner.service'
 
-const listInclude = { pets: { where: { isActive: true }, select: { id: true, name: true, species: true } } }
+// XTI-9 (arch §3.1 dialect 2, R-1): Owner.pets is a to-many reverse relation, so the
+// tenant predicate lives in this nested `where`. tenantId varies per call, so this is a
+// function (not a static object) — mirrored in findOwnerById below.
+function listInclude(tenantId: number) {
+  return { pets: { where: { tenantId, isActive: true }, select: { id: true, name: true, species: true } } }
+}
 
 // XTI-3 (arch §4.2, FROZEN CONSTRAINT): the response shape for `owner: { select: ownerSummarySelect }`
 // at every to-one traversal into Owner from another model (appointment/invoice/pet/prescription).
@@ -37,7 +42,7 @@ export function findOwners(tenantId: number, opts: { skip: number; take: number;
     skip: opts.skip,
     take: opts.take,
     orderBy: { createdAt: 'desc' },
-    include: listInclude,
+    include: listInclude(tenantId),
   })
 }
 
@@ -46,7 +51,7 @@ export function countOwners(tenantId: number, search?: string, includeInactive?:
 }
 
 export function findOwnerById(tenantId: number, id: number) {
-  return prisma.owner.findFirst({ where: { id, tenantId }, include: { pets: { where: { isActive: true } } } })
+  return prisma.owner.findFirst({ where: { id, tenantId }, include: { pets: { where: { tenantId, isActive: true } } } })
 }
 
 export function findOwnerByPhone(tenantId: number, phone: string, excludeId?: number) {

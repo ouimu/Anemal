@@ -3,15 +3,20 @@
 import prisma from '../config/db'
 import { Prisma } from '@prisma/client'
 import { NotFoundError } from '../utils/errors'
+import { ownerSummarySelect } from './owner.repository'
 import type {
   CreateMedicalRecordInput, UpdateMedicalRecordInput,
 } from '../services/medical-record.service'
 
+// XTI-9 (arch §5, R-4 narrowed): findByPet/countByPet each independently carry the
+// `doctor` relation predicate in their own root `where` — no shared builder (that
+// restructuring was rejected at the Step 5 gate; see arch §5 point 1).
 export function findByPet(tenantId: number, branchId: number | null | undefined, petId: number, skip: number, take: number) {
   return prisma.medicalRecord.findMany({
     where: {
       tenantId,
       petId,
+      doctor: { is: { tenantId } },
       ...(branchId != null ? { branchId } : {}),
     },
     skip,
@@ -19,7 +24,7 @@ export function findByPet(tenantId: number, branchId: number | null | undefined,
     orderBy: { createdAt: 'desc' },
     include: {
       doctor: { select: { id: true, name: true } },
-      prescriptions: { include: { drug: { select: { id: true, name: true, unit: true } } } },
+      prescriptions: { where: { tenantId }, include: { drug: { select: { id: true, name: true, unit: true } } } },
     },
   })
 }
@@ -29,6 +34,7 @@ export function countByPet(tenantId: number, branchId: number | null | undefined
     where: {
       tenantId,
       petId,
+      doctor: { is: { tenantId } },
       ...(branchId != null ? { branchId } : {}),
     },
   })
@@ -39,17 +45,20 @@ export function findById(tenantId: number, branchId: number | null | undefined, 
     where: {
       id,
       tenantId,
+      pet: { is: { tenantId, owner: { is: { tenantId } } } },
+      doctor: { is: { tenantId } },
       ...(branchId != null ? { branchId } : {}),
     },
     include: {
-      pet:    { include: { owner: { select: { firstName: true, lastName: true, phone: true } } } },
+      pet:    { include: { owner: { select: ownerSummarySelect } } },
       doctor: { select: { id: true, name: true } },
-      prescriptions: { include: { drug: true } },
+      prescriptions: { where: { tenantId }, include: { drug: true } },
       attachments: {
+        where: { tenantId },
         include: { uploadedByUser: { select: { id: true, name: true } } },
         orderBy: { createdAt: 'desc' },
       },
-      invoices: { select: { paymentStatus: true } },
+      invoices: { where: { tenantId }, select: { paymentStatus: true } },
     },
   })
 }

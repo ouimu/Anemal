@@ -197,7 +197,7 @@ export async function getUserBranches(
   userId: number,
 ): Promise<{ id: number; name: string }[]> {
   const rows = await prisma.userBranch.findMany({
-    where:   { tenantId, userId },
+    where:   { tenantId, userId, branch: { is: { tenantId } } },
     include: { branch: { select: { id: true, name: true } } },
     orderBy: { branch: { name: 'asc' } },
   })

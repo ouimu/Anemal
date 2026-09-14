@@ -3,8 +3,9 @@
 import { Prisma } from '@prisma/client'
 import prisma from '../config/db'
 import type { CreatePetInput, UpdatePetInput } from '../services/pet.service'
+import { ownerSummarySelect } from './owner.repository'
 
-const listInclude = { owner: { select: { id: true, firstName: true, lastName: true, phone: true } } }
+const listInclude = { owner: { select: ownerSummarySelect } }
 
 // XTI-3 (arch §4.2, FROZEN CONSTRAINT): the response shape for `pet: { select: petSummarySelect } }`
 // at every to-one traversal into Pet from another model. Scalar-only, on purpose — no relation key
@@ -16,6 +17,7 @@ function buildWhere(tenantId: number, ownerId?: number, species?: string) {
   return {
     tenantId,
     isActive: true,
+    owner: { is: { tenantId } },
     ...(ownerId ? { ownerId } : {}),
     ...(species ? { species } : {}),
   }
@@ -37,12 +39,13 @@ export function countPets(tenantId: number, ownerId?: number, species?: string) 
 
 export function findPetById(tenantId: number, id: number, includeEmr = true) {
   return prisma.pet.findFirst({
-    where: { id, tenantId, isActive: true },
+    where: { id, tenantId, isActive: true, owner: { is: { tenantId } } },
     include: {
-      owner: true,
+      owner: { select: ownerSummarySelect },
       ...(includeEmr ? {
-        vaccinations: { orderBy: { administeredAt: 'desc' } },
+        vaccinations: { where: { tenantId }, orderBy: { administeredAt: 'desc' } },
         medicalRecords: {
+          where: { tenantId },
           orderBy: { createdAt: 'desc' },
           take: 3,
           select: { id: true, createdAt: true, assessment: true, doctorId: true },

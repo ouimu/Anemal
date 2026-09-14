@@ -57,6 +57,91 @@ export const TENANT_RELATION_EXEMPTIONS: TenantRelationExemption[] = [
   // shape-(f) findings on models with no tenantId, i.e. never fire under R-1/R-2 by construction;
   // see arch §6.2.1's `platform-audit.listPlatformAuditLogs` note for the one that will need an
   // entry, resolved in W1d, not here).
+
+  // --- XTI-10 (W1d) ---------------------------------------------------------
+  // E-6: `ClinicRole.tenantId` is NULLABLE BY DESIGN — system roles (clinic_admin/doctor/
+  // clinic_staff, the seeded default for nearly every user) are stored with `tenantId = NULL`
+  // and are shared across every tenant (arch §A.3(c), the "B-4 case": `User.roleRef` and
+  // `UserRole.role` are explicitly named there as blocked by this same nullable parent). A
+  // literal `roleRef: { is: { tenantId } }` / `role: { is: { tenantId } }` mirror would exclude
+  // every user whose primary role is a system template (i.e. almost all users), so it cannot be
+  // added without a functional regression. The nullable-relation OR-fallback shape that WOULD
+  // express "tenantId matches OR the role is a NULL-tenant system template" is not usable right
+  // now either: it hits an open defect in the analyzer's own `hasGuardAtPath` (the OR-fallback
+  // branch dereferences a literal key that was never added to the object, because the guard was
+  // found only inside the OR array) — filed for the resolver owner, not fixed here (out of this
+  // task's file scope). No real cross-tenant leak exists in practice: `User.roleId` /
+  // `UserRole.roleId` are only ever set via role.repository.ts writes that already scope custom
+  // roles to tenantId or resolve system roles by key (`createRole`, `findSystemRoleByKey`),
+  // never from unscoped external input.
+  {
+    file: 'user.repository.ts', fn: 'findUsers', relationPath: 'roleRef',
+    reason: 'E-6: ClinicRole.tenantId is nullable for shared system-role templates; a literal ' +
+      'mirror would exclude every user on a system role. See the E-6 block comment above.',
+  },
+  {
+    file: 'user.repository.ts', fn: 'findUserById', relationPath: 'roleRef',
+    reason: 'E-6: ClinicRole.tenantId is nullable for shared system-role templates; a literal ' +
+      'mirror would exclude every user on a system role. See the E-6 block comment above.',
+  },
+  {
+    file: 'user.repository.ts', fn: 'createUserWithRoleTx', relationPath: 'roleRef',
+    reason: 'E-6: ClinicRole.tenantId is nullable for shared system-role templates; a literal ' +
+      'mirror would exclude every user on a system role. See the E-6 block comment above.',
+  },
+  {
+    file: 'user.repository.ts', fn: 'updateUser', relationPath: 'roleRef',
+    reason: 'E-6: ClinicRole.tenantId is nullable for shared system-role templates; a literal ' +
+      'mirror would exclude every user on a system role. See the E-6 block comment above.',
+  },
+  {
+    file: 'user.repository.ts', fn: 'findUserRolesWithDetails', relationPath: 'role',
+    reason: 'E-6: ClinicRole.tenantId is nullable for shared system-role templates; a literal ' +
+      'mirror would exclude every user on a system role. See the E-6 block comment above ' +
+      '(this is the UserRole.role case arch §A.3(c) names explicitly).',
+  },
+  {
+    file: 'user.repository.ts', fn: 'updateUserBranch', relationPath: 'roleRef',
+    reason: 'E-6: ClinicRole.tenantId is nullable for shared system-role templates; a literal ' +
+      'mirror would exclude every user on a system role. See the E-6 block comment above.',
+  },
+  {
+    file: 'auth.repository.ts', fn: 'findUserByTenantUsername', relationPath: 'roleRef',
+    reason: 'E-6: ClinicRole.tenantId is nullable for shared system-role templates; a literal ' +
+      'mirror would exclude every user on a system role (this is the login path — it would break ' +
+      'sign-in for every user on a default role). See the E-6 block comment above.',
+  },
+  {
+    file: 'auth.repository.ts', fn: 'findUserById', relationPath: 'roleRef',
+    reason: 'E-6: ClinicRole.tenantId is nullable for shared system-role templates; a literal ' +
+      'mirror would exclude every user on a system role. See the E-6 block comment above.',
+  },
+
+  // E-7: `platform-customers.repository.ts#getTenantWithPlanAndQuota` reads a single tenant's own
+  // optional 1:1 `TenantSettings`/`TenantQuota` row (`TenantSettings.tenantId` and
+  // `TenantQuota.tenantId` are each `@unique`/`@id` on the SAME `id` this function already filters
+  // `where: { id }` by, so the related row — when it exists — cannot belong to any tenant other
+  // than this one; there is no traversal to a different tenant to guard against). Both relations
+  // are optional (a newly-provisioned tenant may not have a settings/quota row yet), so the only
+  // guard shape the analyzer would accept is the nullable-relation OR-fallback (`OR: [{ settings:
+  // { is: null } }, { settings: { is: { tenantId: id } } }]`) — which hits the same open
+  // `hasGuardAtPath` OR-fallback defect named in the E-6 comment above and cannot be used until
+  // that is fixed. Most of the other ~60 findings originally reported against this file (every
+  // other `Tenant` relation — users/owners/pets/appointments/…) were a SEPARATE, now-fixed defect
+  // (the analyzer's resolver didn't unwrap `as const`, so `TENANT_SELECT`'s spread read as
+  // unresolvable and every Tenant relation was flagged as "possibly hidden" even though none of
+  // them are actually selected) — see the `TENANT_SELECT`/`ADMIN_USER_SELECT` comments in
+  // platform-customers.repository.ts; only these two genuine, harmless findings remain.
+  {
+    file: 'platform-customers.repository.ts', fn: 'getTenantWithPlanAndQuota', relationPath: 'settings',
+    reason: 'E-7: optional 1:1 TenantSettings row keyed on the SAME tenant id this function already ' +
+      'filters by; cannot belong to another tenant. See the E-7 block comment above.',
+  },
+  {
+    file: 'platform-customers.repository.ts', fn: 'getTenantWithPlanAndQuota', relationPath: 'quota',
+    reason: 'E-7: optional 1:1 TenantQuota row keyed on the SAME tenant id this function already ' +
+      'filters by; cannot belong to another tenant. See the E-7 block comment above.',
+  },
 ]
 
 function basename(filePath: string): string {

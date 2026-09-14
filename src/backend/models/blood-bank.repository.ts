@@ -9,7 +9,10 @@ export function findDonorByPet(tenantId: number, petId: number) {
 }
 
 export function findDonorById(tenantId: number, id: number) {
-  return prisma.bloodDonor.findFirst({ where: { id, tenantId }, include: { pet: petSel } })
+  return prisma.bloodDonor.findFirst({
+    where: { id, tenantId, pet: { is: { tenantId } } },
+    include: { pet: petSel },
+  })
 }
 
 export function createDonor(tenantId: number, data: { petId: number; bloodType: string; notes?: string | null }) {
@@ -23,7 +26,10 @@ function petBranchFilter(branchId?: number | null) {
 
 export function listDonors(tenantId: number, branchId?: number | null) {
   return prisma.bloodDonor.findMany({
-    where: { tenantId, ...(branchId ? { pet: petBranchFilter(branchId) } : {}) },
+    where: {
+      tenantId,
+      pet: { is: { tenantId, ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {}) } },
+    },
     include: { pet: petSel },
     orderBy: { createdAt: 'desc' },
   })
@@ -61,7 +67,12 @@ export function listDonations(tenantId: number, status?: string, branchId?: numb
     where: {
       tenantId,
       ...(status ? { status } : {}),
-      ...(branchId ? { donor: { pet: petBranchFilter(branchId) } } : {}),
+      donor: {
+        is: {
+          tenantId,
+          pet: { is: { tenantId, ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {}) } },
+        },
+      },
     },
     include: { donor: { include: { pet: petSel } } },
     orderBy: { collectedAt: 'desc' },
@@ -69,7 +80,10 @@ export function listDonations(tenantId: number, status?: string, branchId?: numb
 }
 
 export function findDonationById(tenantId: number, id: number) {
-  return prisma.bloodDonation.findFirst({ where: { id, tenantId }, include: { donor: true } })
+  return prisma.bloodDonation.findFirst({
+    where: { id, tenantId, donor: { is: { tenantId } } },
+    include: { donor: true },
+  })
 }
 
 /**

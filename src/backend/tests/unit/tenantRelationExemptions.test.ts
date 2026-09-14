@@ -94,10 +94,19 @@ describe('tenant-relation-exemptions registry (XTI-2)', () => {
     }
 
     it('a well-formed registry with a matching finding is healthy', () => {
-      const report = checkExemptionRegistryHygiene(TENANT_RELATION_EXEMPTIONS, [validFinding])
+      // Local single-entry registry, not the real TENANT_RELATION_EXEMPTIONS — this block tests
+      // hygiene RULES in isolation (arch §6.2.1's rule table), so it must not depend on how many
+      // real entries the actual registry happens to hold today. Checking the real registry against
+      // only one synthetic finding would flag every other real entry as "stale" (no matching finding
+      // passed), which is a test-isolation bug, not a registry defect — the real registry's own
+      // health is proved separately below in "the registry is healthy against today's real findings".
+      const localRegistry: TenantRelationExemption[] = [
+        { file: 'reminder.repository.ts', fn: 'listAllDue', relationPath: 'pet', reason: 'E-1: deliberate cross-tenant background dispatcher read' },
+      ]
+      const report = checkExemptionRegistryHygiene(localRegistry, [validFinding])
       expect(report.emptyReason).toHaveLength(0)
       expect(report.stale).toHaveLength(0)
-      expect(isExemptionRegistryHealthy(TENANT_RELATION_EXEMPTIONS, [validFinding])).toBe(true)
+      expect(isExemptionRegistryHealthy(localRegistry, [validFinding])).toBe(true)
     })
 
     it('an entry with an empty reason fails the hygiene check', () => {

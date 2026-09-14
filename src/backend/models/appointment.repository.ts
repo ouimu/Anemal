@@ -3,6 +3,7 @@
 import prisma from '../config/db'
 import { ConflictError } from '../utils/errors'
 import type { CreateAppointmentInput, AppointmentStatus } from '../services/appointment.service'
+import { ownerSummarySelect } from './owner.repository'
 
 export function findInRange(tenantId: number, branchId: number | null | undefined, start: Date, end: Date, doctorId?: number) {
   return prisma.appointment.findMany({
@@ -11,6 +12,8 @@ export function findInRange(tenantId: number, branchId: number | null | undefine
       ...(branchId != null ? { branchId } : {}),
       scheduledAt: { gte: start, lt: end },
       ...(doctorId ? { doctorId } : {}),
+      pet:    { is: { tenantId } },
+      doctor: { is: { tenantId } },
     },
     include: {
       pet:    { select: { id: true, name: true, species: true, photoUrl: true } },
@@ -88,9 +91,11 @@ export function findById(tenantId: number, branchId: number | null | undefined, 
       id,
       tenantId,
       ...(branchId != null ? { branchId } : {}),
+      pet:    { is: { tenantId, owner: { is: { tenantId } } } },
+      doctor: { is: { tenantId } },
     },
     include: {
-      pet:    { include: { owner: true } },
+      pet:    { include: { owner: { select: ownerSummarySelect } } },
       doctor: { select: { id: true, name: true } },
     },
   })

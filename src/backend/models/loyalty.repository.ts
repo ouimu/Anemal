@@ -14,7 +14,9 @@ export function getOwner(client: Client, tenantId: number, ownerId: number) {
 
 export function findInvoiceOwner(client: Client, tenantId: number, invoiceId: number) {
   return client.invoice.findFirst({
-    where: { id: invoiceId, tenantId },
+    // petId is nullable (a retail invoice may have no pet, BA E-4) — the OR mirrors
+    // invoice.repository.ts's own pattern for the same nullable FK.
+    where: { id: invoiceId, tenantId, OR: [{ pet: { is: null } }, { pet: { is: { tenantId } } }] },
     select: { id: true, totalAmount: true, pet: { select: { ownerId: true } } },
   })
 }

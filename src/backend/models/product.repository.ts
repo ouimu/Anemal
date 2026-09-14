@@ -54,7 +54,11 @@ export async function findProducts(
     where: catalogWhere(tenantId, category, search),
     orderBy: { name: 'asc' },
     skip, take,
-    include: { branchInventory: branchId != null ? { where: { branchId } } : true },
+    include: {
+      branchInventory: branchId != null
+        ? { where: { tenantId, branchId } }
+        : { where: { tenantId } },
+    },
   })
   return items.map((i) => flatten(i, branchId))
 }
@@ -66,7 +70,11 @@ export function countProducts(tenantId: number, category?: string, search?: stri
 export async function findProductById(tenantId: number, branchId: number | null, id: number) {
   const item = await prisma.inventoryItem.findFirst({
     where: { id, tenantId },
-    include: { branchInventory: branchId != null ? { where: { branchId } } : true },
+    include: {
+      branchInventory: branchId != null
+        ? { where: { tenantId, branchId } }
+        : { where: { tenantId } },
+    },
   })
   return item ? flatten(item, branchId) : null
 }

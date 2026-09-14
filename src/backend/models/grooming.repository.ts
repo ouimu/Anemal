@@ -34,7 +34,12 @@ export function listBookings(tenantId: number, branchId?: number, date?: string)
     scheduledAt = { gte: start, lt: end }
   }
   return prisma.groomingBooking.findMany({
-    where: { tenantId, ...(branchId ? { branchId } : {}), ...(scheduledAt ? { scheduledAt } : {}) },
+    where: {
+      tenantId,
+      pet: { is: { tenantId } },
+      ...(branchId ? { branchId } : {}),
+      ...(scheduledAt ? { scheduledAt } : {}),
+    },
     include: { pet: petSel },
     orderBy: { scheduledAt: 'asc' },
   })

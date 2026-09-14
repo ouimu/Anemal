@@ -86,6 +86,13 @@ export interface UpdateTenantData {
   companyTypeId?: number | null
 }
 
+// XTI-10 (arch §6.2.1 shape (b)): kept WITHOUT `as const` on purpose. The analyzer's resolver
+// only recognizes a same-module `const X = <object literal>` — an `as const` assertion wraps the
+// literal in an AsExpression node the resolver does not unwrap, so it would read every use of this
+// spread as unresolvable and flood every Tenant relation with a false "hidden behind an
+// unresolvable spread" finding (verified: this was the actual cause of ~60 such findings against
+// listTenants/getTenantWithPlanAndQuota before this fix). No caller needs the literal-`true` typing
+// `as const` would add — every use is a Prisma `select`, which accepts plain `boolean`.
 const TENANT_SELECT = {
   id:            true,
   name:          true,
@@ -95,7 +102,7 @@ const TENANT_SELECT = {
   // D-2-06: include companyTypeId in all tenant selects
   companyTypeId: true,
   createdAt:     true,
-} as const
+}
 
 /**
  * Return all tenants ordered by creation date (newest first).
@@ -280,6 +287,8 @@ export type TenantAdminUserRow = {
   createdAt: Date
 }
 
+// Same reason as TENANT_SELECT above: no `as const`, so the analyzer's shape-(b) resolver can
+// read this identifier as a plain object literal.
 const ADMIN_USER_SELECT = {
   id:        true,
   username:  true,
@@ -288,7 +297,7 @@ const ADMIN_USER_SELECT = {
   phone:     true,
   isActive:  true,
   createdAt: true,
-} as const
+}
 
 /**
  * List all clinic_admin-role users for a tenant (Q-8 — never doctor/staff rows).

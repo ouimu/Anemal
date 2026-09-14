@@ -381,9 +381,22 @@ function hasGuardAtPath(whereRoot: ResolvedNode, relPath: string[]): 'present' |
 
   for (let i = 0; i < relPath.length; i++) {
     const segment = relPath[i]
-    let state = getKeyState(cur, segment)
-    if (state === 'absent' && i === 0) state = checkOrFallback(cur, segment)
-    if (state !== 'present') return state
+    const literalState = getKeyState(cur, segment)
+
+    if (literalState === 'unresolved') return 'unresolved'
+
+    if (literalState === 'absent') {
+      // Only the FIRST segment may be satisfied via the nullable-FK OR fallback
+      // (E-4/AC-7): `OR: [{ seg: { is: null } }, { seg: { is: { tenantId, ... } } }]` at
+      // the root — a segment beyond index 0 has no equivalent OR-at-this-level escape.
+      if (i !== 0) return 'absent'
+      const orMatch = checkOrFallback(cur, segment)
+      if (orMatch === 'absent' || orMatch === 'unresolved') return orMatch
+      if (i === relPath.length - 1) return getKeyState(orMatch, 'tenantId')
+      cur = orMatch
+      continue
+    }
+
     const relProp = cur.props.get(segment)!
     if (relProp.resolved.kind !== 'object') return 'absent'
     const isState = getKeyState(relProp.resolved.obj, 'is')
@@ -396,24 +409,34 @@ function hasGuardAtPath(whereRoot: ResolvedNode, relPath: string[]): 'present' |
   return 'absent'
 }
 
-/** Nullable-FK fallback (E-4/AC-7): `OR: [{ seg: { is: null } }, { seg: { is: { tenantId } } }]` at the root. */
-function checkOrFallback(rootObj: ResolvedObject, segment: string): 'present' | 'absent' | 'unresolved' {
+/**
+ * Nullable-FK fallback (E-4/AC-7): `OR: [{ seg: { is: null } }, { seg: { is: { tenantId, ... } } }]`
+ * at the root. Returns the matched branch's inner `is` object — not just a boolean — so
+ * `hasGuardAtPath` can keep walking a further-nested relation mirrored inside that same OR branch
+ * (the two-level T1 sites, e.g. `pet: { is: { tenantId, owner: { is: { tenantId } } } }`, need this;
+ * collapsing straight to a 'present'/'absent' verdict here would silently stop checking the nested
+ * segment instead of reporting it missing).
+ */
+function checkOrFallback(rootObj: ResolvedObject, segment: string): 'absent' | 'unresolved' | ResolvedObject {
   if (getKeyState(rootObj, 'OR') !== 'present') return 'absent'
   const orResolved = rootObj.props.get('OR')!.resolved
   if (orResolved.kind === 'unresolved') return 'unresolved'
   if (orResolved.kind !== 'array') return 'absent'
   for (const el of orResolved.elements) {
-    if (el.kind === 'object' && orBranchGuardsSegment(el.obj, segment)) return 'present'
+    if (el.kind !== 'object') continue
+    const matched = orBranchGuardsSegment(el.obj, segment)
+    if (matched) return matched
   }
   return 'absent'
 }
 
-function orBranchGuardsSegment(branchObj: ResolvedObject, segment: string): boolean {
-  if (getKeyState(branchObj, segment) !== 'present') return false
+function orBranchGuardsSegment(branchObj: ResolvedObject, segment: string): ResolvedObject | null {
+  if (getKeyState(branchObj, segment) !== 'present') return null
   const segResolved = branchObj.props.get(segment)!.resolved
-  if (segResolved.kind !== 'object' || getKeyState(segResolved.obj, 'is') !== 'present') return false
+  if (segResolved.kind !== 'object' || getKeyState(segResolved.obj, 'is') !== 'present') return null
   const isVal = segResolved.obj.props.get('is')!.resolved
-  return isVal.kind === 'object' && getKeyState(isVal.obj, 'tenantId') === 'present'
+  if (isVal.kind !== 'object' || getKeyState(isVal.obj, 'tenantId') !== 'present') return null
+  return isVal.obj
 }
 
 function pushViolation(

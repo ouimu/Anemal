@@ -35,20 +35,18 @@ export function createVaccination(tenantId: number, data: CreateVaccinationInput
 // tenantId predicate in their ON clause today. The actual guard is added by
 // XTI-8 (ADR-0027 dialect 3); until that lands, do not assume this function is
 // tenant-guarded. See `.claude/roadmap/index.md`'s PR #73 correction note.
-export async function findDueSoon(tenantId: number, from: Date, to: Date) {
-  const rows = await prisma.vaccination.findMany({
-    where: { tenantId, nextDueAt: { lte: to, gte: from } },
+export function findDueSoon(tenantId: number, from: Date, to: Date) {
+  return prisma.vaccination.findMany({
+    where: {
+      tenantId,
+      nextDueAt: { lte: to, gte: from },
+      pet: { is: { tenantId, owner: { is: { tenantId } } } },
+    },
     include: {
-      pet: { select: { id: true, name: true, species: true, tenantId: true, owner: { select: { firstName: true, lastName: true, phone: true } } } },
+      pet: { select: { id: true, name: true, species: true, owner: { select: { firstName: true, lastName: true, phone: true } } } },
     },
     orderBy: { nextDueAt: 'asc' },
   })
-  return rows
-    .filter(row => row.pet?.tenantId === tenantId)
-    .map(({ pet, ...row }) => ({
-      ...row,
-      pet: pet ? { id: pet.id, name: pet.name, species: pet.species, owner: pet.owner } : null,
-    }))
 }
 
 export interface WorklistRow {
@@ -79,7 +77,7 @@ export function findDueSoonWorklist(
                  ORDER BY v."administeredAt" DESC, v.id DESC
                ) AS rn
         FROM vaccinations v
-        JOIN pets p ON p.id = v."petId"
+        JOIN pets p ON p.id = v."petId" AND p."tenantId" = ${tenantId}
         WHERE v."tenantId" = ${tenantId}
           AND v."nextDueAt" IS NOT NULL
           AND v."nextDueAt" <= ${cutoff}
@@ -92,8 +90,8 @@ export function findDueSoonWorklist(
              r."nextDueAt",
              EXTRACT(DAY FROM r."nextDueAt" - NOW())::int AS "daysDue"
       FROM ranked r
-      JOIN pets p ON p.id = r."petId"
-      JOIN owners o ON o.id = p."ownerId"
+      JOIN pets p ON p.id = r."petId" AND p."tenantId" = ${tenantId}
+      JOIN owners o ON o.id = p."ownerId" AND o."tenantId" = ${tenantId}
       WHERE r.rn = 1
       ORDER BY r."nextDueAt" ASC
     `
@@ -117,8 +115,8 @@ export function findDueSoonWorklist(
            r."nextDueAt",
            EXTRACT(DAY FROM r."nextDueAt" - NOW())::int AS "daysDue"
     FROM ranked r
-    JOIN pets p ON p.id = r."petId"
-    JOIN owners o ON o.id = p."ownerId"
+    JOIN pets p ON p.id = r."petId" AND p."tenantId" = ${tenantId}
+    JOIN owners o ON o.id = p."ownerId" AND o."tenantId" = ${tenantId}
     WHERE r.rn = 1
     ORDER BY r."nextDueAt" ASC
   `

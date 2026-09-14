@@ -3,6 +3,7 @@
 import { Prisma } from '@prisma/client'
 import prisma from '../config/db'
 import { ConflictError, NotFoundError } from '../utils/errors'
+import { ownerSummarySelect } from './owner.repository'
 
 export interface BuiltItem {
   description: string
@@ -35,7 +36,10 @@ export function findMedicalRecord(tenantId: number, medicalRecordId: number, cli
   return client.medicalRecord.findFirst({
     where: { id: medicalRecordId, tenantId },
     include: {
-      prescriptions: { include: { drug: { select: { id: true, name: true, unit: true, unitPrice: true } } } },
+      prescriptions: {
+        where: { tenantId },
+        include: { drug: { select: { id: true, name: true, unit: true, unitPrice: true } } },
+      },
     },
   })
 }
@@ -107,7 +111,7 @@ export async function createInvoiceTx(tx: Prisma.TransactionClient, tenantId: nu
         })),
       },
     },
-    include: { items: true },
+    include: { items: { where: { tenantId } } },
   })
 
   // 4. Log 'out' movements for retail lines.
@@ -140,10 +144,11 @@ export function findInvoiceById(tenantId: number, branchId: number | null | unde
       id,
       tenantId,
       ...(branchId != null ? { branchId } : {}),
+      OR: [{ pet: { is: null } }, { pet: { is: { tenantId, owner: { is: { tenantId } } } } }],
     },
     include: {
-      items: true,
-      pet:   { include: { owner: true } },
+      items: { where: { tenantId } },
+      pet:   { include: { owner: { select: ownerSummarySelect } } },
     },
   })
 }
@@ -162,6 +167,7 @@ function listWhere(tenantId: number, branchId: number | null | undefined, status
     ...(branchId != null ? { branchId } : {}),
     ...(status ? { paymentStatus: status as never } : {}),
     ...(issuedAt ? { issuedAt } : {}),
+    OR: [{ pet: { is: null } }, { pet: { is: { tenantId } } }],
   }
 }
 
@@ -215,7 +221,18 @@ export async function claimInvoicePaid(
     if (!existsInScope) throw new NotFoundError('Invoice')
     throw new ConflictError('Invoice is already paid', 'INVOICE_ALREADY_PAID')
   }
-  const invoice = await tx.invoice.findFirst({ where: { id, tenantId }, include: { items: true, pet: { include: { owner: true } } } })
+  const invoice = await tx.invoice.findFirst({
+    where: {
+      id,
+      tenantId,
+      ...(branchId != null ? { branchId } : {}),
+      OR: [{ pet: { is: null } }, { pet: { is: { tenantId, owner: { is: { tenantId } } } } }],
+    },
+    include: {
+      items: { where: { tenantId } },
+      pet:   { include: { owner: { select: ownerSummarySelect } } },
+    },
+  })
   if (!invoice) throw new NotFoundError('Invoice')
   return invoice
 }
@@ -241,35 +258,42 @@ interface PaymentHistoryParams {
   skip: number; take: number
 }
 
+// Staff/Doctor see own branch only; Admin may optionally filter by branchId query param.
 function paymentHistoryWhere(tenantId: number, userBranchId: number | null | undefined, p: PaymentHistoryParams) {
-  const where: Record<string, unknown> = { tenantId }
-  // Staff/Doctor see own branch only; Admin may optionally filter by branchId query param
-  if (userBranchId != null)        where['branchId'] = userBranchId
-  else if (p.filterBranchId != null) where['branchId'] = p.filterBranchId
-  if (p.startDate || p.endDate) {
-    const paidAt: Record<string, Date> = {}
-    if (p.startDate) paidAt['gte'] = new Date(p.startDate)
-    if (p.endDate)   paidAt['lte'] = new Date(p.endDate)
-    where['paidAt'] = paidAt
+  const branchId = userBranchId ?? p.filterBranchId
+  return {
+    tenantId,
+    invoice:    { is: { tenantId } },
+    receivedBy: { is: { tenantId } },
+    branch:     { is: { tenantId } },
+    ...(branchId != null ? { branchId } : {}),
+    ...(p.startDate || p.endDate ? {
+      paidAt: {
+        ...(p.startDate ? { gte: new Date(p.startDate) } : {}),
+        ...(p.endDate   ? { lte: new Date(p.endDate) }   : {}),
+      },
+    } : {}),
+    ...(p.method ? { method: p.method } : {}),
+    ...(p.receivedById != null ? { receivedById: p.receivedById } : {}),
   }
-  if (p.method)               where['method'] = p.method
-  if (p.receivedById != null) where['receivedById'] = p.receivedById
-  return where
 }
 
 export function findPaymentHistory(tenantId: number, userBranchId: number | null | undefined, params: PaymentHistoryParams) {
-  const where = paymentHistoryWhere(tenantId, userBranchId, params)
   // Receiver picker options use the same tenant/branch/date scope but WITHOUT
   // the method/receivedById predicates, so narrowing those two never hides a
   // valid receiver from the picker (T-3c.2). Narrowing the date/branch scope
   // MAY shrink the list — that's intended faceted-filter behavior, not a bug
   // (ADR-0013 D3, grill finding F3).
   const { method: _method, receivedById: _receivedById, ...facetParams } = params
-  const optionsWhere = paymentHistoryWhere(tenantId, userBranchId, facetParams as PaymentHistoryParams)
 
+  // Each call below builds its own `where` inline (rather than through a shared local
+  // variable) so the tenantRelationConformance analyzer (arch §6.2.1 shape (a)) can
+  // resolve it as a same-module call expression ending in a single `return <object
+  // literal>` — a local `const where = paymentHistoryWhere(...)` referenced by identifier
+  // is NOT a module-level const and is therefore unresolvable to the analyzer.
   return Promise.all([
     prisma.paymentHistory.findMany({
-      where: where as never,
+      where: paymentHistoryWhere(tenantId, userBranchId, params),
       include: {
         invoice:    { select: { id: true, invoiceNo: true } },
         receivedBy: { select: { id: true, name: true } },
@@ -279,9 +303,9 @@ export function findPaymentHistory(tenantId: number, userBranchId: number | null
       skip: params.skip,
       take: params.take,
     }),
-    prisma.paymentHistory.count({ where: where as never }),
+    prisma.paymentHistory.count({ where: paymentHistoryWhere(tenantId, userBranchId, params) }),
     prisma.paymentHistory.findMany({
-      where: optionsWhere as never,
+      where: paymentHistoryWhere(tenantId, userBranchId, facetParams as PaymentHistoryParams),
       distinct: ['receivedById'],
       select: { receivedBy: { select: { id: true, name: true } } },
     }),
