@@ -29,21 +29,52 @@ Ponytail gate (mode `gate`) went through 3 rounds:
 
 **Step 6 is unblocked.** Arch doc is now rev 3; plan reflects it throughout.
 
+## W0 — DONE (commit `4285623`, plus platform-customers.repository.ts scope fix `a5e138f`)
+
+XTI-1 through XTI-6 all complete and verified: analyzer (14/14 fixtures), exemption registry,
+summary-select consts, false-comment fix, roadmap correction, integrity-scan script. Full suite
+green at that point: 65 suites / 1010 tests. **W0→W1 checkpoint result: 18 files had real findings**
+(not the ~57/~19 estimate) — this list, not any prior estimate, is what actually drove W1.
+
+**Scope gap found and fixed before W1 dispatch:** `platform-customers.repository.ts` had real
+findings (`listTenants`, `getTenantWithPlanAndQuota`) that no task's file scope covered — added to
+XTI-10.
+
+## W1 — DONE (commit `9b710b0`)
+
+All 4 parallel workers (W1a Dev A/XTI-7, W1b Dev B/XTI-8, W1c Dev C/XTI-9, W1d Dev D/XTI-10)
+complete. Orchestrator did a consolidated re-verification after all 4 reported done (not just trusted
+each worker's own report) and found + fixed 3 more issues before committing:
+- A shared-analyzer crash (OR-fallback resolver bug) — W1a fixed it first, W1b/W1c independently
+  confirmed the same root cause from their own files.
+- **`loyalty.repository.ts`** — a THIRD file (after `platform-customers.repository.ts`) with a real
+  violation (`findInvoiceOwner`) that no task's scope covered. Fixed directly (same nullable-pet OR
+  pattern as `invoice.repository.ts`) rather than dispatching a whole new worker for one line.
+- `tenantRelationExemptions.test.ts`'s "well-formed registry" test checked the real global registry
+  against one synthetic finding — every entry W1d added read as "stale." Fixed by giving that test its
+  own local single-entry registry.
+
+**W1 exit criterion met**: 11 raw findings remain against current `models/`, all covered by valid
+exemption entries — `isExemptionRegistryHealthy(TENANT_RELATION_EXEMPTIONS, violations)` is `true`.
+Full suite green: 65 suites / 1010 tests. `tsc --noEmit` clean.
+
+**Lesson for W2 dispatch below**: the plan's file lists have twice missed real files
+(`platform-customers.repository.ts`, `loyalty.repository.ts`). Don't fully trust a file list frozen
+before W0 ran — cross-check against the analyzer's live output before considering any wave's scope
+closed.
+
 ## Next action — literally this
 
 ```
 /superpowers:execute-plan   (Step 6 — not available as a skill in this session,
                               orchestrated directly via @dev-agent / @qa-agent / @db-agent /
                               @scribe-agent dispatches matching the plan's wave structure)
-W0 (SERIAL — do not parallelize): XTI-1 (analyzer+fixtures), XTI-2 (exemption registry),
-  XTI-3 (summary-select consts), XTI-4 (fix false comment), XTI-5 (@scribe-agent — roadmap
-  correction record), XTI-6 (tenant-integrity-scan.ts) — all Dev A except XTI-5.
-  🔗 Integration checkpoint after W0: analyzer runs against current models/, prints violation list —
-  this is the real answer to "how many sites," not the ~57/~19 estimates anywhere in the docs.
-W1 (parallel, 4 disjoint workers): W1a Dev A (XTI-7) · W1b Dev B (XTI-8) · W1c Dev C (XTI-9) ·
-  W1d Dev D (XTI-10). 🔗 Integration checkpoint after W1: XTI-1's analyzer reports 0 violations.
-W2 (parallel, 4 workers): Dev A (XTI-11) · Dev B (XTI-12, measurement only) ·
-  @qa-agent (XTI-13) · @db-agent (XTI-14, non-overrulable isolation veto).
+W2 (parallel, 4 workers): Dev A (XTI-11 — transaction atomicity + arch §4.1 rev 3 signatures:
+    findOwner/findPetById gain client?, findDonorPet moves down from blood-bank.service.ts) ·
+  Dev B (XTI-12, NFR-01 searchPets latency measurement only, no code) ·
+  @qa-agent (XTI-13, 9 behavioural tests + convert crossTenantFkWritePathRepro.test.ts to a
+    registry-parity standing check) ·
+  @db-agent (XTI-14, non-overrulable isolation veto + run db:integrity-scan against test DB).
 Then: Step 7 (@qa-agent code-review + sign-off) → Step 8 (@scribe-agent /anemal-finish-branch).
 ```
 
