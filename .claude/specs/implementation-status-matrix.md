@@ -1,7 +1,41 @@
 # Anemal — Implementation Status Matrix
 
-**Updated:** 2026-09-10
-**Status:** **PR #73 (2026-09-10, Lane C hotfix) hardened the Vaccinations module's tenant isolation, did not move its implementation status** — `findDueSoon` was already implemented; the fix closes a cross-tenant PII leak in its Prisma `include` (see module section below). `git diff` over `src/frontend` is empty. **PR #71 (2026-09-09) moved no module's status** — it is orchestration and documentation only (`git diff main...` over `src/`, empty; backend unchanged at 1310 / 93 suites). It restructures the agent team (`@arch-agent` at Step 3.4, `@scribe-agent` owning Step 8, four parallel Step 6 workers, a 9-criteria Ponytail gate, Lanes B/C/D) and repairs the documentation estate. Recorded here because the tracking rules require all five documents to be refreshed together; the module table below is unchanged by design, not by omission. All modules shipped through Phase 9 + storage (ADR-0023) + Codex security remediation + login identity resolution (ADR-0024) remain implemented and unchanged. PR #69 (2026-08-29) is docs/tests-only — no module status moved; non-comment production diff vs `main` is empty. It closes the PR #66 QA follow-up: round-2/round-3 blockers were all comment/test-assertion/doc defects (a previously-replaced tenant-isolation guard test had gone non-falsifiable; restored). It also records the incident where PR #66 originally merged on a fabricated QA approval from a duplicate scheduled-task instance — forward-fixed rather than reverted, since the tenant-scoping production logic was correct throughout. PR #67 (2026-08-27) is a backend tooling-only change — installs eslint (was declared but never installed), no module status moved. PR #66 (2026-08-27) tenant-scopes `countRoleUsage`/`listRoles` in `role.repository.ts`/`role.service.ts`, a defence-in-depth fix (callers already enforced tenant checks upstream). The pass before that (PR #62, ADR-0026) is frontend-only authorization-UI work and moved no module's status. The 2026-08-21 pass before it was test-suite repair only (PRs #57, #59, #56), with one real production fix (ADR-0025).
+**Updated:** 2026-09-15
+**Status:** **PR #77 (2026-09-15, Lane A feature, full pipeline) hardened tenant isolation across 20 model files, did not move any module's feature-completeness status** — every module below remains implemented exactly as recorded; this change is a structural cross-cutting fix (the relation-traversal invariant + a standing conformance test), not new module functionality. `git diff` over `src/frontend` is empty. See module section below for detail. **PR #73 (2026-09-10, Lane C hotfix) hardened the Vaccinations module's tenant isolation, did not move its implementation status** — `findDueSoon` was already implemented; the fix closes a cross-tenant PII leak in its Prisma `include` (see module section below). `git diff` over `src/frontend` is empty. **PR #71 (2026-09-09) moved no module's status** — it is orchestration and documentation only (`git diff main...` over `src/`, empty; backend unchanged at 1310 / 93 suites). It restructures the agent team (`@arch-agent` at Step 3.4, `@scribe-agent` owning Step 8, four parallel Step 6 workers, a 9-criteria Ponytail gate, Lanes B/C/D) and repairs the documentation estate. Recorded here because the tracking rules require all five documents to be refreshed together; the module table below is unchanged by design, not by omission. All modules shipped through Phase 9 + storage (ADR-0023) + Codex security remediation + login identity resolution (ADR-0024) remain implemented and unchanged. PR #69 (2026-08-29) is docs/tests-only — no module status moved; non-comment production diff vs `main` is empty. It closes the PR #66 QA follow-up: round-2/round-3 blockers were all comment/test-assertion/doc defects (a previously-replaced tenant-isolation guard test had gone non-falsifiable; restored). It also records the incident where PR #66 originally merged on a fabricated QA approval from a duplicate scheduled-task instance — forward-fixed rather than reverted, since the tenant-scoping production logic was correct throughout. PR #67 (2026-08-27) is a backend tooling-only change — installs eslint (was declared but never installed), no module status moved. PR #66 (2026-08-27) tenant-scopes `countRoleUsage`/`listRoles` in `role.repository.ts`/`role.service.ts`, a defence-in-depth fix (callers already enforced tenant checks upstream). The pass before that (PR #62, ADR-0026) is frontend-only authorization-UI work and moved no module's status. The 2026-08-21 pass before it was test-suite repair only (PRs #57, #59, #56), with one real production fix (ADR-0025).
+
+## Cross-tenant relation isolation — structural fix across 20 model files (2026-09-15, PR #77, Lane A)
+
+No FK in the schema references `tenant_id`, so any relation traversal that doesn't carry its own tenant
+predicate at the point of traversal can leak, or on the write path corrupt, cross-tenant data — the
+same root cause behind PR #73's hotfix, now closed structurally rather than one query at a time.
+Establishes and enforces **one rule, three dialects**: Prisma to-one via the root `where`, Prisma
+to-many via the nested `where`, raw SQL via the `ON` clause. All 20 affected model files (forward +
+reverse relations — 57 `include:` + 19 raw-SQL `JOIN`s across 7 files beyond BA's original forward-only
+audit) now carry the guard, checked by a new standing conformance test
+(`src/backend/tests/unit/tenantRelationConformance.test.ts`) that fails the suite on any future
+unguarded site — PR #73's post-filter pattern is deleted, not extended.
+
+**4 confirmed live leaks fixed** (not hypothetical, found during this pipeline): `invoice.repository.ts`
+`findMedicalRecord`'s unguarded `prescriptions.drug` (financial-integrity — a corrupt `drugId` could
+write another tenant's `unitPrice` into an invoice line item); `medical-record.repository.ts`
+`findById`'s unguarded `attachments.uploadedByUser` (staff-identity leak, nullable FK, OR-fallback
+guard); `medical-record.repository.ts`'s `prescriptions.drug` nested inside an already-guarded to-many
+(PII leak the conformance analyzer's checkpoint doesn't walk into — found by QA's behavioral tests, not
+the analyzer; documented as a standing test and a backlog item, not silently dropped); and 2 files
+(`platform-customers.repository.ts`, `loyalty.repository.ts`) with real findings no original task scope
+covered, caught at mid-pipeline checkpoints and fixed same-wave.
+
+**New operator tool:** `scripts/tenant-integrity-scan.ts` (`npm run db:integrity-scan`) reports existing
+cross-tenant rows for human, per-row remediation — not automatic reassignment/deletion (ADR-0028).
+db-agent's own run: 0 corrupt rows across 39 relations.
+
+Resolves PR #73's open hotfix debt (`.claude/roadmap/index.md`) — see that file and
+`.claude/roadmap/phase-history.md`'s "PR #77" entry for the full pipeline record, backlog carry-forward
+(7 items), and the corrected 109-suites/1454-tests figure. Records: BA sign-off + grill —
+`docs/superpowers/plans/2026-09-10-cross-tenant-relation-isolation-ba-signoff.md`; architecture —
+`docs/superpowers/plans/2026-09-11-cross-tenant-relation-isolation-arch.md`; ADRs —
+`docs/adr/0027-tenant-scoped-relation-traversal-carries-its-own-predicate.md`,
+`docs/adr/0028-composite-tenant-foreign-keys-deferred.md`.
 
 ## Vaccinations — cross-tenant PII leak in `findDueSoon` (2026-09-10, PR #73, Lane C hotfix)
 
