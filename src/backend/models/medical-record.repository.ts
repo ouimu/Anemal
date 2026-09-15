@@ -61,8 +61,18 @@ export function findById(tenantId: number, branchId: number | null | undefined, 
       // by a field on the related row (same reason as ADR-0027's root case), so the
       // predicate mirrors into `prescriptions`'s own `where` — dialect 1, one level deeper.
       prescriptions: { where: { tenantId, drug: { is: { tenantId } } }, include: { drug: true } },
+      // XTI-14 (@db-agent veto) finding: uploadedByUser (InventoryItem sibling case —
+      // required-vs-nullable matters here) was unguarded, leaking another tenant's staff
+      // id+name. uploadedByUserId is nullable (onDelete: SetNull, a deleted uploader leaves
+      // the attachment intact per ADR-0021) — a bare `is: { tenantId }` mirror would silently
+      // drop every attachment whose uploader was later deleted, which is NOT the same as a
+      // failed tenant check (E-4's null-relation rule). The OR fallback keeps both: a null
+      // uploader passes, a present one must match this tenant.
       attachments: {
-        where: { tenantId },
+        where: {
+          tenantId,
+          OR: [{ uploadedByUser: { is: null } }, { uploadedByUser: { is: { tenantId } } }],
+        },
         include: { uploadedByUser: { select: { id: true, name: true } } },
         orderBy: { createdAt: 'desc' },
       },

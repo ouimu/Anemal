@@ -36,8 +36,13 @@ export function findMedicalRecord(tenantId: number, medicalRecordId: number, cli
   return client.medicalRecord.findFirst({
     where: { id: medicalRecordId, tenantId },
     include: {
+      // XTI-14 (@db-agent veto) finding: drug (required FK -> InventoryItem, tenant-scoped)
+      // was unguarded — a corrupt prescription.drugId leaked another tenant's item name AND
+      // unitPrice into this invoice's line items (financial-integrity corruption, not just a
+      // read leak, since this function feeds invoice creation). Same dialect-1 pattern as
+      // medical-record.repository.ts's identical prescriptions.drug fix.
       prescriptions: {
-        where: { tenantId },
+        where: { tenantId, drug: { is: { tenantId } } },
         include: { drug: { select: { id: true, name: true, unit: true, unitPrice: true } } },
       },
     },

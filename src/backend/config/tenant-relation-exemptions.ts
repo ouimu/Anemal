@@ -65,12 +65,16 @@ export const TENANT_RELATION_EXEMPTIONS: TenantRelationExemption[] = [
   // `UserRole.role` are explicitly named there as blocked by this same nullable parent). A
   // literal `roleRef: { is: { tenantId } }` / `role: { is: { tenantId } }` mirror would exclude
   // every user whose primary role is a system template (i.e. almost all users), so it cannot be
-  // added without a functional regression. The nullable-relation OR-fallback shape that WOULD
-  // express "tenantId matches OR the role is a NULL-tenant system template" is not usable right
-  // now either: it hits an open defect in the analyzer's own `hasGuardAtPath` (the OR-fallback
-  // branch dereferences a literal key that was never added to the object, because the guard was
-  // found only inside the OR array) — filed for the resolver owner, not fixed here (out of this
-  // task's file scope). No real cross-tenant leak exists in practice: `User.roleId` /
+  // added without a functional regression. CORRECTED (XTI-14 @db-agent veto review): an earlier
+  // version of this comment blamed an "open defect" in the analyzer's `hasGuardAtPath` OR-fallback
+  // for why the OR shape couldn't be used here either — that defect was real but was fixed in W1a
+  // (`checkOrFallback` now returns the matched branch's resolved object; verified working). The
+  // actual reason the OR shape doesn't apply is structural, not a tool limitation: the supported
+  // OR pattern expresses "the RELATION is null OR its tenantId matches" (`roleRef: { is: null }`),
+  // but `User.roleRef`/`UserRole.role` are non-nullable relations — every user has a role — so
+  // `is: null` is never true here. What's nullable is the TARGET row's `tenantId` column, not the
+  // relation itself, and there is no guard shape that expresses that. This is a genuine exemption,
+  // not a workaround for a bug. No real cross-tenant leak exists in practice: `User.roleId` /
   // `UserRole.roleId` are only ever set via role.repository.ts writes that already scope custom
   // roles to tenantId or resolve system roles by key (`createRole`, `findSystemRoleByKey`),
   // never from unscoped external input.
@@ -122,11 +126,14 @@ export const TENANT_RELATION_EXEMPTIONS: TenantRelationExemption[] = [
   // `TenantQuota.tenantId` are each `@unique`/`@id` on the SAME `id` this function already filters
   // `where: { id }` by, so the related row — when it exists — cannot belong to any tenant other
   // than this one; there is no traversal to a different tenant to guard against). Both relations
-  // are optional (a newly-provisioned tenant may not have a settings/quota row yet), so the only
-  // guard shape the analyzer would accept is the nullable-relation OR-fallback (`OR: [{ settings:
-  // { is: null } }, { settings: { is: { tenantId: id } } }]`) — which hits the same open
-  // `hasGuardAtPath` OR-fallback defect named in the E-6 comment above and cannot be used until
-  // that is fixed. Most of the other ~60 findings originally reported against this file (every
+  // are optional (a newly-provisioned tenant may not have a settings/quota row yet), so the guard
+  // shape would be the nullable-relation OR-fallback (`OR: [{ settings: { is: null } }, { settings:
+  // { is: { tenantId: id } } }]`) — this one COULD be expressed that way (unlike E-6's roleRef/role,
+  // `settings`/`quota` genuinely are nullable relations), but it would be pure ceremony: the related
+  // row is keyed on the same `id` this function already filters by, so `settings.tenantId` can only
+  // ever equal `id` or not exist — there is no OTHER tenant's row it could possibly resolve to.
+  // Exempted as a real no-tenant-to-check case, not a workaround. Most of the other ~60 findings
+  // originally reported against this file (every
   // other `Tenant` relation — users/owners/pets/appointments/…) were a SEPARATE, now-fixed defect
   // (the analyzer's resolver didn't unwrap `as const`, so `TENANT_SELECT`'s spread read as
   // unresolvable and every Tenant relation was flagged as "possibly hidden" even though none of

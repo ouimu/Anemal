@@ -26,6 +26,8 @@ let B: TenantFixture
 let recordId = 0
 let ownAttachmentId = 0
 let foreignAttachmentId = 0
+let nullUploaderAttachmentId = 0
+let foreignUploaderAttachmentId = 0
 let ownPrescriptionId = 0
 let foreignPrescriptionId = 0
 let ownInvoiceId = 0
@@ -55,6 +57,26 @@ beforeAll(async () => {
     },
   })).id
 
+  // XTI-14 (@db-agent veto) finding: `attachments`'s `uploadedByUser` (nullable FK,
+  // onDelete: SetNull per ADR-0021) was unguarded — a corrupt uploadedByUserId leaked
+  // another tenant's staff id+name. Two fixtures prove both halves of the fix:
+  // a NULL uploader (E-4 — must still appear, not treated as a failed check) and a
+  // foreign-tenant uploader (must not leak that staff member's name).
+  nullUploaderAttachmentId = (await prisma.attachment.create({
+    data: {
+      tenantId: A.tenantId, medicalRecordId: recordId,
+      fileName: 'own-no-uploader.pdf', fileUrl: 'https://a.example/own-no-uploader.pdf', fileType: 'lab',
+      uploadedByUserId: null,
+    },
+  })).id
+  foreignUploaderAttachmentId = (await prisma.attachment.create({
+    data: {
+      tenantId: A.tenantId, medicalRecordId: recordId,
+      fileName: 'own-foreign-uploader.pdf', fileUrl: 'https://a.example/own-foreign-uploader.pdf', fileType: 'lab',
+      uploadedByUserId: B.doctorUserId,
+    },
+  })).id
+
   ownPrescriptionId = (await prisma.prescription.create({
     data: { tenantId: A.tenantId, medicalRecordId: recordId, drugId: A.productId, quantity: 1 },
   })).id
@@ -80,7 +102,7 @@ afterAll(async () => {
 
 interface RecordDetail {
   id: number
-  attachments: { id: number; tenantId: number; fileName: string }[]
+  attachments: { id: number; tenantId: number; fileName: string; uploadedByUser: { id: number; name: string } | null }[]
   prescriptions: { id: number; tenantId: number }[]
   invoices: { paymentStatus: string }[]
 }
@@ -120,6 +142,27 @@ describe('XTI-13 shape 7 — reverse include #2 (medicalRecord -> attachments / 
     expect(JSON.stringify(res.body)).not.toContain('FOREIGN-')
   })
 
+  it('AC-4/E-4: an attachment with a NULL uploader still appears — not treated as a failed tenant check', async () => {
+    const res = await getRecord(recordId, A.adminToken)
+    expect(res.status).toBe(200)
+    const rec = res.body.data as RecordDetail
+    const nullOne = rec.attachments.find((a) => a.id === nullUploaderAttachmentId)
+    expect(nullOne).toBeDefined()
+    expect(nullOne?.uploadedByUser).toBeNull()
+  })
+
+  it('XTI-14 finding: an attachment whose uploader belongs to another tenant is omitted, and that tenant\'s staff name never reaches the caller', async () => {
+    const res = await getRecord(recordId, A.adminToken)
+    expect(res.status).toBe(200)
+    const rec = res.body.data as RecordDetail
+    // The attachment itself belongs to tenant A, but its uploadedByUser FK is corrupt
+    // (points at tenant B's doctor) — per XTI-INV-a a row failing the check is treated as
+    // non-existent, so the whole attachment is omitted from the list, not returned with a
+    // null/stripped uploadedByUser.
+    expect(rec.attachments.map((a) => a.id)).not.toContain(foreignUploaderAttachmentId)
+    expect(JSON.stringify(res.body)).not.toContain(`Doctor ${B.label}`)
+  })
+
   it('AC-1: the foreign prescription and the foreign invoice are omitted too', async () => {
     const res = await getRecord(recordId, A.adminToken)
     expect(res.status).toBe(200)
@@ -145,8 +188,12 @@ describe('XTI-13 shape 7 — reverse include #2 (medicalRecord -> attachments / 
     expect(res.status).toBe(200)
     const rec = res.body.data as RecordDetail
     expect(rec.id).toBe(recordId)
-    expect(rec.attachments).toHaveLength(1)
-    expect(rec.attachments[0].fileName).toBe('own-lab.pdf')
+    // own-lab.pdf + own-no-uploader.pdf are visible; own-foreign-uploader.pdf is excluded
+    // (corrupt uploadedByUser FK) despite belonging to tenant A itself — see the XTI-14 test above.
+    expect(rec.attachments).toHaveLength(2)
+    expect(rec.attachments.map((a) => a.fileName)).toEqual(
+      expect.arrayContaining(['own-lab.pdf', 'own-no-uploader.pdf']),
+    )
   })
 
   it('the foreign tenant cannot reach A\'s record by id, despite owning children on it', async () => {
