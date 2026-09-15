@@ -63,19 +63,45 @@ Full suite green: 65 suites / 1010 tests. `tsc --noEmit` clean.
 before W0 ran — cross-check against the analyzer's live output before considering any wave's scope
 closed.
 
+## W2 — 3 of 4 done (commit `e795abe`)
+
+- **XTI-11 (Dev A) — DONE, fully closed.** Atomicity for createPet/registerDonor landed clean.
+  createAppointment/createWalkIn's fix was initially partial (check ran in a transaction, write
+  ran in its own nested one, since the first pass avoided touching `appointment.repository.ts`)
+  — orchestrator closed it fully by adding `client?` to both repository functions, since no other
+  W2 worker touches that file this wave. All 3 writes now have their FK check and write in one
+  literal transaction.
+- **XTI-12 (Dev B) — DONE, measurement only, no code.** `searchPets` p95 8–12ms, well under
+  NFR-01's 500ms — **but found a real, separate regression**: on a freshly bulk-loaded tenant
+  (before Postgres autovacuum's first `ANALYZE`), the same query jumps to 3.7–5.6s due to stale
+  cardinality estimates on the join XTI-9 introduced. **Orchestrator's call: backlog, not a Step 7
+  blocker** — narrow operational window (post-bulk-import, pre-autovacuum), not a correctness bug
+  from this change, steady-state is comfortably fast. Needs a `@db-agent`/`@arch-agent` follow-up
+  (an explicit `ANALYZE` step after bulk import, or a query restructure less sensitive to stale
+  stats) — **not done in this change**, record as backlog when this ships.
+- **XTI-13 (@qa-agent) — DONE, 9 behavioural tests + 1 fixture helper, found and fixed a REAL
+  live leak** the analyzer's checkpoint never printed: `medical-record.repository.ts`'s
+  `prescriptions.drug` (a to-one nested inside an already-guarded to-many) was unguarded — fixed.
+  Confirmed a genuine, scoped gap in XTI-1's analyzer (doesn't walk into a to-many's own nested
+  include) — documented as a standing test, not silently dropped; extending the analyzer is
+  separate follow-up work, out of scope here. **Not done**: converting
+  `crossTenantFkWritePathRepro.test.ts` into an ongoing registry-parity check (QA's agent hit a
+  rate limit before reaching this part of XTI-13) — the file is unchanged from its original C-1
+  form and still passes; this is a nice-to-have regression-guard upgrade, not a correctness gap,
+  and is now backlog too.
+- **XTI-14 (@db-agent) — NOT YET DISPATCHED.** This is genuinely next.
+
+Full backend suite green after all of the above: 75 suites / 1076 tests. `tsc --noEmit` clean.
+
 ## Next action — literally this
 
 ```
-/superpowers:execute-plan   (Step 6 — not available as a skill in this session,
-                              orchestrated directly via @dev-agent / @qa-agent / @db-agent /
-                              @scribe-agent dispatches matching the plan's wave structure)
-W2 (parallel, 4 workers): Dev A (XTI-11 — transaction atomicity + arch §4.1 rev 3 signatures:
-    findOwner/findPetById gain client?, findDonorPet moves down from blood-bank.service.ts) ·
-  Dev B (XTI-12, NFR-01 searchPets latency measurement only, no code) ·
-  @qa-agent (XTI-13, 9 behavioural tests + convert crossTenantFkWritePathRepro.test.ts to a
-    registry-parity standing check) ·
-  @db-agent (XTI-14, non-overrulable isolation veto + run db:integrity-scan against test DB).
-Then: Step 7 (@qa-agent code-review + sign-off) → Step 8 (@scribe-agent /anemal-finish-branch).
+@db-agent   XTI-14 (W2, non-overrulable isolation veto + run db:integrity-scan)
+Review every changed query in W1a-d and XTI-11 (all committed: 4285623, a5e138f, 9b710b0, e795abe).
+Run `npm run db:integrity-scan` against the test DB.
+Then: Step 7 (@qa-agent code-review + sign-off — carry forward the 2 backlog items above,
+  the perf regression and the registry-parity conversion, so they're recorded before merge) →
+  Step 8 (@scribe-agent /anemal-finish-branch).
 ```
 
 ### Step 4b — scribe-agent reference pre-check, 3rd pass (2026-09-11) — PASS
