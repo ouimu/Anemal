@@ -147,18 +147,44 @@ coverage gap the round-1 commit message falsely claimed didn't exist. Verify db-
 independently when reviewing its output (as done each time above) — but also don't assume round 3
 will be clean just because rounds 1-2 are now addressed.
 
+## XTI-14, 3rd VETO round — fixes applied, 4th review pending (commit `da1dfcf`)
+
+`@db-agent`'s 3rd pass independently traced the actual code (not just restated claims) and
+confirmed the round-2 fixes are substantively correct, but found 2 more defects in those same
+changes:
+- The new invoice test's `totalPrice` string-absence assertion was **vacuous** — Prisma `Decimal`
+  serializes quoted (`"50"`, not `50`), so the check could never fail either way. Fixed.
+- The E-6 comment's tally was off by one AND misclassified which site is blocked: **`findUsers` is
+  NOT blocked** (a one-line branch-filter restructure fixes it, zero analyzer change) —
+  **`createUserWithRoleTx` IS the genuinely blocked one** (a `prisma.create()` has no `where` at
+  all to attach a guard to — a different problem than an analyzer limitation). Comment rewritten
+  with the correct split: 6 sites mechanically fixable today, 1 needs a restructure, 1 needs a
+  different fix shape, plus the login-path product-decision flag on `findUserByTenantUsername`.
+
+**db-agent's backlog grouping (their explicit answer, carry forward verbatim to Step 7/8):**
+E-6 = own tracked item (live residual leak, medium severity). Analyzer to-many-nesting gap = own
+tracked item (detection blind spot, low severity, different risk class — do NOT merge with E-6).
+E-7 = **NOT backlog** — resolved-as-exempt, permanent (verified: both relations keyed on the same
+id already filtered by, no other tenant's row reachable under any guard shape).
+
+Full suite green: 76 suites / 1082 tests. `tsc --noEmit` clean.
+
+**Pattern note for whoever runs Step 7/8**: this task has now gone through 3 VETO rounds, each
+catching something real that survived the previous "fix." Do not assume a 4th pass will be clean
+just because the pattern feels like it should terminate — verify db-agent's next verdict the same
+way each prior round was verified (re-read the actual diff, don't just trust the summary).
+
 ## Next action — literally this
 
 ```
-@db-agent   XTI-14 re-review, 3rd pass (NARROW — same instruction as before: the two changed
-             files plus the new assertions, not a full re-review of W0-W2)
-input: src/backend/config/tenant-relation-exemptions.ts (E-6 comment, 2nd correction)
-       src/backend/tests/integration/crossTenantRelation.invoiceForeignDrug.test.ts (new file)
+@db-agent   XTI-14 re-review, 4th pass (NARROW — same instruction as every prior round: only the
+             files changed in commit da1dfcf)
+input: src/backend/config/tenant-relation-exemptions.ts (E-6 comment, 3rd correction)
+       src/backend/tests/integration/crossTenantRelation.invoiceForeignDrug.test.ts (assertion fix)
 output: APPROVE or another VETO with what's still wrong
-Then: Step 7 (@qa-agent code-review + sign-off — carry forward ALL backlog items: the perf
-  regression (XTI-12), the registry-parity conversion (XTI-13), the analyzer's residual
-  to-many-nesting gap, AND E-6's scheduled-not-structural status (XTI-14) — all need REAL
-  backlog entries, not just code comments) →
+Then: Step 7 (@qa-agent code-review + sign-off — carry forward the backlog exactly as db-agent
+  grouped it above: E-6 own item, analyzer gap own item, E-7 closed not backlog, plus XTI-12's
+  perf regression and XTI-13's unfinished registry-parity conversion) →
   Step 8 (@scribe-agent /anemal-finish-branch).
 ```
 
