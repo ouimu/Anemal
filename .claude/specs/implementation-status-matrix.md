@@ -1,7 +1,40 @@
 # Anemal — Implementation Status Matrix
 
-**Updated:** 2026-09-15
-**Status:** **PR #77 (2026-09-15, Lane A feature, full pipeline) hardened tenant isolation across 20 model files, did not move any module's feature-completeness status** — every module below remains implemented exactly as recorded; this change is a structural cross-cutting fix (the relation-traversal invariant + a standing conformance test), not new module functionality. `git diff` over `src/frontend` is empty. See module section below for detail. **PR #73 (2026-09-10, Lane C hotfix) hardened the Vaccinations module's tenant isolation, did not move its implementation status** — `findDueSoon` was already implemented; the fix closes a cross-tenant PII leak in its Prisma `include` (see module section below). `git diff` over `src/frontend` is empty. **PR #71 (2026-09-09) moved no module's status** — it is orchestration and documentation only (`git diff main...` over `src/`, empty; backend unchanged at 1310 / 93 suites). It restructures the agent team (`@arch-agent` at Step 3.4, `@scribe-agent` owning Step 8, four parallel Step 6 workers, a 9-criteria Ponytail gate, Lanes B/C/D) and repairs the documentation estate. Recorded here because the tracking rules require all five documents to be refreshed together; the module table below is unchanged by design, not by omission. All modules shipped through Phase 9 + storage (ADR-0023) + Codex security remediation + login identity resolution (ADR-0024) remain implemented and unchanged. PR #69 (2026-08-29) is docs/tests-only — no module status moved; non-comment production diff vs `main` is empty. It closes the PR #66 QA follow-up: round-2/round-3 blockers were all comment/test-assertion/doc defects (a previously-replaced tenant-isolation guard test had gone non-falsifiable; restored). It also records the incident where PR #66 originally merged on a fabricated QA approval from a duplicate scheduled-task instance — forward-fixed rather than reverted, since the tenant-scoping production logic was correct throughout. PR #67 (2026-08-27) is a backend tooling-only change — installs eslint (was declared but never installed), no module status moved. PR #66 (2026-08-27) tenant-scopes `countRoleUsage`/`listRoles` in `role.repository.ts`/`role.service.ts`, a defence-in-depth fix (callers already enforced tenant checks upstream). The pass before that (PR #62, ADR-0026) is frontend-only authorization-UI work and moved no module's status. The 2026-08-21 pass before it was test-suite repair only (PRs #57, #59, #56), with one real production fix (ADR-0025).
+**Updated:** 2026-09-16
+**Status:** **PR #80 (2026-09-16, Lane A feature, full pipeline) consolidated 15 modal call sites onto one shared `Dialog` component, a structural/consistency change that did not move any module's feature-completeness status** — every module below remains implemented exactly as recorded; this is a cross-cutting UI-contract fix (one `DismissalPolicy`-driven component replacing per-site hand-rolled modals), not new module functionality. `git diff` over `src/backend` is empty. See module section below for detail. **PR #77 (2026-09-15, Lane A feature, full pipeline) hardened tenant isolation across 20 model files, did not move any module's feature-completeness status** — every module below remains implemented exactly as recorded; this change is a structural cross-cutting fix (the relation-traversal invariant + a standing conformance test), not new module functionality. `git diff` over `src/frontend` is empty. See module section below for detail. **PR #73 (2026-09-10, Lane C hotfix) hardened the Vaccinations module's tenant isolation, did not move its implementation status** — `findDueSoon` was already implemented; the fix closes a cross-tenant PII leak in its Prisma `include` (see module section below). `git diff` over `src/frontend` is empty. **PR #71 (2026-09-09) moved no module's status** — it is orchestration and documentation only (`git diff main...` over `src/`, empty; backend unchanged at 1310 / 93 suites). It restructures the agent team (`@arch-agent` at Step 3.4, `@scribe-agent` owning Step 8, four parallel Step 6 workers, a 9-criteria Ponytail gate, Lanes B/C/D) and repairs the documentation estate. Recorded here because the tracking rules require all five documents to be refreshed together; the module table below is unchanged by design, not by omission. All modules shipped through Phase 9 + storage (ADR-0023) + Codex security remediation + login identity resolution (ADR-0024) remain implemented and unchanged. PR #69 (2026-08-29) is docs/tests-only — no module status moved; non-comment production diff vs `main` is empty. It closes the PR #66 QA follow-up: round-2/round-3 blockers were all comment/test-assertion/doc defects (a previously-replaced tenant-isolation guard test had gone non-falsifiable; restored). It also records the incident where PR #66 originally merged on a fabricated QA approval from a duplicate scheduled-task instance — forward-fixed rather than reverted, since the tenant-scoping production logic was correct throughout. PR #67 (2026-08-27) is a backend tooling-only change — installs eslint (was declared but never installed), no module status moved. PR #66 (2026-08-27) tenant-scopes `countRoleUsage`/`listRoles` in `role.repository.ts`/`role.service.ts`, a defence-in-depth fix (callers already enforced tenant checks upstream). The pass before that (PR #62, ADR-0026) is frontend-only authorization-UI work and moved no module's status. The 2026-08-21 pass before it was test-suite repair only (PRs #57, #59, #56), with one real production fix (ADR-0025).
+
+## Modal consolidation — shared `Dialog` component across 15 call sites (2026-09-16, PR #80, Lane A)
+
+15 previously hand-rolled modal sites (5 platform-plane on `PlatformModal`, 10 clinic-plane) now share
+one component, `src/frontend/src/components/Dialog.tsx` — a plane-neutral rename of
+`components/platform/PlatformModal.tsx`. A single 2-branch `DismissalPolicy` prop (`'dismissible'` /
+`'blocking'`) derives dialog role (`dialog`/`alertdialog`), Escape/backdrop/close-button behavior, and
+unmount-on-close (not CSS-hide, so a consumer's `useEffect` cleanup — `MediaStream`, timers — fires
+reliably) instead of each site making its own judgement call. `IdleLogoutModal` migrates onto the
+standard under `dismissal='blocking'` (Escape also becomes a no-op, matching APG's `alertdialog`
+carve-out) rather than remaining a bespoke exception.
+
+**2 real defects fixed during QA (Step 7):** dismissing the idle-logout warning also unmounted whatever
+dialog was open underneath it — each `Dialog` had its own independent Escape listener, a data-loss path
+over possibly-unsaved clinical data; fixed with a module-level open-dialog stack so only the topmost
+dialog reacts to Escape. A drag-select that started inside the panel and released on the backdrop was
+misread as a backdrop click, closing dismissible dialogs unintentionally on tablet; fixed with
+press-start tracking and one-shot suppression.
+
+**Known doc defect, filed as backlog `ADR-DUP-1`, not fixed in this pass:** this feature's ADR shipped
+as `docs/adr/0027-shared-modal-dismissal-policy-and-plane-neutrality.md`, but ADR-0027 was already taken
+by PR #77's `0027-tenant-scoped-relation-traversal-carries-its-own-predicate.md` (merged first). Two
+Accepted ADRs currently share the number 0027 — see `.claude/roadmap/phase-history.md` Backlog for the
+fix (renumber to 0029, sweep ~15 references, several in production source).
+
+Records: BA sign-off `docs/superpowers/plans/2026-09-11-modal-consolidation-ba-signoff.md`; arch brief
+`docs/superpowers/plans/2026-09-11-modal-consolidation-arch-brief.md`; plan + work-partition manifest
+`docs/superpowers/plans/2026-09-11-modal-consolidation.md`; QA sign-off
+`docs/superpowers/plans/2026-09-11-modal-consolidation-qa-signoff.md`; smoke walkthrough
+`docs/superpowers/plans/2026-09-16-modal-consolidation-smoke-walkthrough.md`.
+
+Frontend **581 passing / 0 failing / 71 files** (up from 410/60 — 171 tests / 11 files added). Backend
+untouched.
 
 ## Cross-tenant relation isolation — structural fix across 20 model files (2026-09-15, PR #77, Lane A)
 
