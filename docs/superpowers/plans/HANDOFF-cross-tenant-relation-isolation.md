@@ -93,14 +93,52 @@ closed.
 
 Full backend suite green after all of the above: 75 suites / 1076 tests. `tsc --noEmit` clean.
 
+## XTI-14 — VETOed once, fixes applied, re-review pending (commit `1a33d0a`)
+
+`@db-agent`'s first pass **VETOed** (non-overrulable): found 2 MORE live leaks of the exact same
+shape XTI-13 had already found and fixed once (to-one nested inside an already-guarded to-many):
+1. `invoice.repository.ts` `findMedicalRecord` — `prescriptions.drug` (required FK) unguarded.
+   Worse than the sibling case: feeds invoice creation, so a corrupt `drugId` wrote another
+   tenant's `unitPrice` into a new invoice's line items — financial-integrity corruption, not just
+   a read leak.
+2. `medical-record.repository.ts` `findById` — `attachments.uploadedByUser` (nullable FK,
+   `onDelete: SetNull`) unguarded, leaking another tenant's staff id+name. Needed the
+   OR-fallback (null-or-matches), not a bare mirror, since the FK is genuinely nullable (E-4).
+
+Both fixed, both got real behavioral test coverage (`crossTenantRelation.reverseIncludeAttachments
+.test.ts` — a corrupt-uploader attachment is proven omitted with no name leak, a NULL-uploader one
+proven to still appear). Also fixed 2 stale exemption-registry comments (E-6/E-7) that blamed a
+now-fixed analyzer bug for something that's actually a structural exemption. Full suite green:
+75 suites / 1078 tests. `tsc --noEmit` clean.
+
+**`db-agent`'s own integrity-scan run (AC-4) was clean**: `0 corrupt row(s) found across 39
+relation(s)` — that part does not need re-running unless the re-review wants to.
+
+**Environment note for whoever re-reviews**: db-agent's own jest invocation couldn't discover
+tests from inside this worktree (the checked-in `jest.config.js`'s `testPathIgnorePatterns`
+excludes `.claude/worktrees/`, which also matches this worktree's own path — a known, pre-existing
+quirk, not something this change caused). The orchestrator's numbers above were produced with an
+inline `--config` override that omits that ignore pattern (same trick used throughout this whole
+Step 6) — use the same override to reproduce them rather than plain `npm test`.
+
+**db-agent's closing position on the analyzer's residual gap** (does not walk into a to-many's own
+nested include): "shipping the gap documented is acceptable... provided extending the analyzer is
+recorded as real scheduled work, not a nice-to-have." Carry this into Step 7/8 — it needs an actual
+backlog entry, not just a code comment.
+
 ## Next action — literally this
 
 ```
-@db-agent   XTI-14 (W2, non-overrulable isolation veto + run db:integrity-scan)
-Review every changed query in W1a-d and XTI-11 (all committed: 4285623, a5e138f, 9b710b0, e795abe).
-Run `npm run db:integrity-scan` against the test DB.
-Then: Step 7 (@qa-agent code-review + sign-off — carry forward the 2 backlog items above,
-  the perf regression and the registry-parity conversion, so they're recorded before merge) →
+@db-agent   XTI-14 re-review (NARROW — per db-agent's own instruction: "those two files plus the
+             new assertions", not a full re-review of W0-W2)
+input: src/backend/models/invoice.repository.ts (findMedicalRecord)
+       src/backend/models/medical-record.repository.ts (findById's attachments)
+       src/backend/tests/integration/crossTenantRelation.reverseIncludeAttachments.test.ts (new assertions)
+       src/backend/config/tenant-relation-exemptions.ts (E-6/E-7 comment corrections)
+output: APPROVE or another VETO with what's still wrong
+Then: Step 7 (@qa-agent code-review + sign-off — carry forward ALL backlog items: the perf
+  regression (XTI-12), the registry-parity conversion (XTI-13), and the analyzer's residual
+  to-many-nesting gap needing a REAL scheduled follow-up, not just a comment) →
   Step 8 (@scribe-agent /anemal-finish-branch).
 ```
 
