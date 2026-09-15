@@ -78,7 +78,7 @@ export const TENANT_RELATION_EXEMPTIONS: TenantRelationExemption[] = [
   // above were both wrong. There are **8** E-6 sites below, not 9, and they split into three
   // groups, not two:
   //   - **6 sites take the OR guard mechanically, today, with no analyzer change**:
-  //     `findUserById`, `updateUser` (the `findFirst` at line ~105, not the sibling
+  //     `findUserById`, `updateUser` (the `findFirst` at line ~78, not the sibling
   //     `updateMany`), `findUserRolesWithDetails`, `updateUserBranch`,
   //     `auth.findUserByTenantUsername`, `auth.findUserById`. One of these — `findUserByTenantUsername`
   //     — is the LOGIN path: filtering out a corrupt-role row turns a corrupt `roleId` into a
