@@ -2,6 +2,7 @@
 import prisma from '../config/db'
 import { NotFoundError } from '../utils/errors'
 import type { CreatePrescriptionInput } from '../services/prescription.service'
+import { ownerSummarySelect } from './owner.repository'
 
 export function findMedicalRecord(tenantId: number, medicalRecordId: number) {
   return prisma.medicalRecord.findFirst({ where: { id: medicalRecordId, tenantId } })
@@ -33,11 +34,16 @@ export function findPrescription(tenantId: number, branchId: number | null | und
 
 export function findPrescriptionWithDetails(tenantId: number, id: number) {
   return prisma.prescription.findFirst({
-    where: { id, tenantId },
+    where: {
+      id,
+      tenantId,
+      drug:          { is: { tenantId } },
+      medicalRecord: { is: { tenantId, pet: { is: { tenantId, owner: { is: { tenantId } } } } } },
+    },
     include: {
       drug: { select: { name: true, unit: true } },
       medicalRecord: {
-        include: { pet: { include: { owner: true } } },
+        include: { pet: { include: { owner: { select: ownerSummarySelect } } } },
       },
     },
   })

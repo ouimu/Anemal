@@ -49,10 +49,14 @@ export async function getPet(tenantId: number, id: number, includeEmr = true) {
 // R3-HI-04: quota check + insert now happen inside one advisory-lock-serialized
 // transaction (subscription.service.createWithQuotaLock) instead of a preceding,
 // independent count check that a concurrent request could race past.
+// arch §8.2 atomicity fix: the owner-existence FK check also moved inside this same
+// transaction (was a preceding, independent read) so the check is atomic with the write.
 export async function createPet(tenantId: number, data: CreatePetInput) {
-  const owner = await petRepo.findOwner(tenantId, data.ownerId)
-  if (!owner) throw new PetError('Owner not found', 404)
-  return createWithQuotaLock(tenantId, 'pets', (tx) => petRepo.createPet(tenantId, data, tx))
+  return createWithQuotaLock(tenantId, 'pets', async (tx) => {
+    const owner = await petRepo.findOwner(tenantId, data.ownerId, tx)
+    if (!owner) throw new PetError('Owner not found', 404)
+    return petRepo.createPet(tenantId, data, tx)
+  })
 }
 
 export async function updatePet(tenantId: number, id: number, data: UpdatePetInput) {

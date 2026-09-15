@@ -22,7 +22,12 @@ export function create(tenantId: number, data: ReminderInput) {
 
 export function list(tenantId: number, status?: string, petId?: number) {
   return prisma.petReminder.findMany({
-    where: { tenantId, ...(status ? { status } : {}), ...(petId ? { petId } : {}) },
+    where: {
+      tenantId,
+      pet: { is: { tenantId } },
+      ...(status ? { status } : {}),
+      ...(petId ? { petId } : {}),
+    },
     include: { pet: petSel },
     orderBy: { dueDate: 'asc' },
   })
@@ -31,7 +36,7 @@ export function list(tenantId: number, status?: string, petId?: number) {
 export function listDue(tenantId: number) {
   const end = new Date(); end.setHours(23, 59, 59, 999)
   return prisma.petReminder.findMany({
-    where: { tenantId, status: 'pending', dueDate: { lte: end } },
+    where: { tenantId, status: 'pending', dueDate: { lte: end }, pet: { is: { tenantId } } },
     include: { pet: petSel },
     orderBy: { dueDate: 'asc' },
   })

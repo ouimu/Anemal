@@ -1,4 +1,5 @@
 // Blood bank repository (Phase 4, FR-10) — donors, donations, transfusions. Tenant-scoped.
+import { Prisma } from '@prisma/client'
 import prisma from '../config/db'
 import { ConflictError } from '../utils/errors'
 
@@ -9,11 +10,28 @@ export function findDonorByPet(tenantId: number, petId: number) {
 }
 
 export function findDonorById(tenantId: number, id: number) {
-  return prisma.bloodDonor.findFirst({ where: { id, tenantId }, include: { pet: petSel } })
+  return prisma.bloodDonor.findFirst({
+    where: { id, tenantId, pet: { is: { tenantId } } },
+    include: { pet: petSel },
+  })
 }
 
-export function createDonor(tenantId: number, data: { petId: number; bloodType: string; notes?: string | null }) {
-  return prisma.bloodDonor.create({ data: { tenantId, ...data } })
+// FK validation for registerDonor — pet table, scoped to tenant (arch §4.1 rev 3: new function,
+// moved out of blood-bank.service.ts's inline `prisma.pet.findFirst` check). `client` defaults to
+// the shared `prisma` instance but accepts a `Prisma.TransactionClient` so the service can run this
+// check inside the same write transaction as `createDonor` (arch §8.2 atomicity fix).
+export function findDonorPet(tenantId: number, petId: number, client: Prisma.TransactionClient | typeof prisma = prisma) {
+  return client.pet.findFirst({ where: { id: petId, tenantId } })
+}
+
+// `client` defaults to the shared `prisma` instance but accepts a `Prisma.TransactionClient` so
+// `registerDonor` (blood-bank.service.ts) can run the FK check and this write inside one transaction.
+export function createDonor(
+  tenantId: number,
+  data: { petId: number; bloodType: string; notes?: string | null },
+  client: Prisma.TransactionClient | typeof prisma = prisma,
+) {
+  return client.bloodDonor.create({ data: { tenantId, ...data } })
 }
 
 // ponytail: NULL-branch pets (no branch assigned) show up in every branch's view, same rule as usage.repository's vaccination query.
@@ -23,7 +41,10 @@ function petBranchFilter(branchId?: number | null) {
 
 export function listDonors(tenantId: number, branchId?: number | null) {
   return prisma.bloodDonor.findMany({
-    where: { tenantId, ...(branchId ? { pet: petBranchFilter(branchId) } : {}) },
+    where: {
+      tenantId,
+      pet: { is: { tenantId, ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {}) } },
+    },
     include: { pet: petSel },
     orderBy: { createdAt: 'desc' },
   })
@@ -61,7 +82,12 @@ export function listDonations(tenantId: number, status?: string, branchId?: numb
     where: {
       tenantId,
       ...(status ? { status } : {}),
-      ...(branchId ? { donor: { pet: petBranchFilter(branchId) } } : {}),
+      donor: {
+        is: {
+          tenantId,
+          pet: { is: { tenantId, ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {}) } },
+        },
+      },
     },
     include: { donor: { include: { pet: petSel } } },
     orderBy: { collectedAt: 'desc' },
@@ -69,7 +95,10 @@ export function listDonations(tenantId: number, status?: string, branchId?: numb
 }
 
 export function findDonationById(tenantId: number, id: number) {
-  return prisma.bloodDonation.findFirst({ where: { id, tenantId }, include: { donor: true } })
+  return prisma.bloodDonation.findFirst({
+    where: { id, tenantId, donor: { is: { tenantId } } },
+    include: { donor: true },
+  })
 }
 
 /**

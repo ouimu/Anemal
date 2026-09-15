@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { AppError } from '../utils/errors'
+import prisma from '../config/db'
 import * as appointmentRepo from '../models/appointment.repository'
 import * as petRepo from '../models/pet.repository'
 import { shiftWarning } from './branch.service'
@@ -62,33 +63,49 @@ export async function getAppointment(tenantId: number, branchId: number | null |
   return appt
 }
 
+// arch §8.2 atomicity fix: the pet-existence FK check moves inside a transaction shared
+// with the write, closing the TOCTOU gap between the check and the create. `findPetById`
+// is called with `includeEmr: false` — this booking check needs only tenant/existence,
+// not the EMR-shaped default include (arch §4.1 rev 3). `appointmentRepo.createAppointment`
+// now accepts an optional `client` (added to close this gap fully, since leaving the create in
+// its own nested transaction meant the check and write were never really one atomic unit) —
+// passing `tx` here makes it run its advisory lock, conflict check, and insert directly against
+// this same transaction instead of opening a second one.
 export async function createAppointment(tenantId: number, branchId: number | null, data: CreateAppointmentInput) {
-  const pet = await petRepo.findPetById(tenantId, data.petId)
-  if (!pet) throw new AppointmentError('Pet not found', 404)
-
-  const doctor = await appointmentRepo.findDoctorById(tenantId, data.doctorId)
-  if (!doctor) throw new AppointmentError('Doctor not found', 404)
-
   const start = new Date(data.scheduledAt)
 
-  // Soft doctor-shift check (Phase 4) — warns but does not block.
-  const warning = branchId ? await shiftWarning(tenantId, branchId, data.doctorId, start) : null
+  return prisma.$transaction(async (tx) => {
+    const pet = await petRepo.findPetById(tenantId, data.petId, false, tx)
+    if (!pet) throw new AppointmentError('Pet not found', 404)
 
-  // R3-HI-01: conflict-check + insert now happen atomically inside the repository
-  // (advisory-lock-serialized transaction) — a lost race throws ConflictError (409),
-  // which propagates through the global error handler like any other AppError.
-  const appt = await appointmentRepo.createAppointment(tenantId, branchId, data, start)
-  return { ...appt, shiftWarning: warning }
+    const doctor = await appointmentRepo.findDoctorById(tenantId, data.doctorId)
+    if (!doctor) throw new AppointmentError('Doctor not found', 404)
+
+    // Soft doctor-shift check (Phase 4) — warns but does not block.
+    const warning = branchId ? await shiftWarning(tenantId, branchId, data.doctorId, start) : null
+
+    // R3-HI-01: conflict-check + insert happen atomically inside the repository
+    // (advisory-lock-serialized transaction, now the SAME transaction as the pet check above) —
+    // a lost race throws ConflictError (409), which propagates through the global error handler
+    // like any other AppError.
+    const appt = await appointmentRepo.createAppointment(tenantId, branchId, data, start, tx)
+    return { ...appt, shiftWarning: warning }
+  })
 }
 
+// arch §8.2 atomicity fix: same pattern as createAppointment — the pet-existence check and the
+// insert now run inside the same shared transaction (`appointmentRepo.createWalkIn` also gained
+// an optional `client` param for this).
 export async function createWalkIn(tenantId: number, branchId: number | null, petId: number, doctorId: number, reason?: string | null) {
-  const pet = await petRepo.findPetById(tenantId, petId)
-  if (!pet) throw new AppointmentError('Pet not found', 404)
+  return prisma.$transaction(async (tx) => {
+    const pet = await petRepo.findPetById(tenantId, petId, false, tx)
+    if (!pet) throw new AppointmentError('Pet not found', 404)
 
-  const doctor = await appointmentRepo.findDoctorById(tenantId, doctorId)
-  if (!doctor) throw new AppointmentError('Doctor not found', 404)
+    const doctor = await appointmentRepo.findDoctorById(tenantId, doctorId)
+    if (!doctor) throw new AppointmentError('Doctor not found', 404)
 
-  return appointmentRepo.createWalkIn(tenantId, branchId, petId, doctorId, reason)
+    return appointmentRepo.createWalkIn(tenantId, branchId, petId, doctorId, reason, tx)
+  })
 }
 
 export async function updateStatus(tenantId: number, branchId: number | null | undefined, id: number, status: AppointmentStatus) {

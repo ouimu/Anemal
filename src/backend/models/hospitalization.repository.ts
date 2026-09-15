@@ -28,9 +28,17 @@ export function admit(tenantId: number, branchId: number | null, data: AdmitInpu
   })
 }
 
+// XTI-9 (arch §3.1 dialect 1, T2 site): Hospitalization.petId and Pet.ownerId are both
+// required FKs — the tenant predicate mirrors the two-level include path in the root
+// `where`, per ADR-0027.
 export function findActive(tenantId: number, branchId?: number | null) {
   return prisma.hospitalization.findMany({
-    where: { tenantId, status: 'admitted', ...(branchId != null ? { branchId } : {}) },
+    where: {
+      tenantId,
+      status: 'admitted',
+      pet: { is: { tenantId, owner: { is: { tenantId } } } },
+      ...(branchId != null ? { branchId } : {}),
+    },
     include: { pet: petSelect, _count: { select: { careLogs: true } } },
     orderBy: { admittedAt: 'asc' },
   })
@@ -46,10 +54,15 @@ export function findActive(tenantId: number, branchId?: number | null) {
 // write).
 async function findByIdWith(client: Client, tenantId: number, branchId: number | null | undefined, id: number) {
   const hosp = await client.hospitalization.findFirst({
-    where: { id, tenantId, ...(branchId != null ? { branchId } : {}) },
+    where: {
+      id,
+      tenantId,
+      pet: { is: { tenantId, owner: { is: { tenantId } } } },
+      ...(branchId != null ? { branchId } : {}),
+    },
     include: {
       pet: petSelect,
-      careLogs: { orderBy: { recordedAt: 'desc' } },
+      careLogs: { where: { tenantId }, orderBy: { recordedAt: 'desc' } },
     },
   })
   if (!hosp) return null

@@ -116,6 +116,7 @@ export function listTransfers(tenantId: number, branchId?: number) {
   return prisma.stockMovement.findMany({
     where: {
       tenantId,
+      item: { is: { tenantId } },
       movementType: { in: ['transfer_out', 'transfer_in'] },
       ...(branchId ? { branchId } : {}),
     },

@@ -39,12 +39,21 @@ export class BloodBankError extends AppError {
 
 const donationIntervalDays = (species: string) => (species.toLowerCase().startsWith('cat') ? 30 : 56)
 
+// arch §8.2 atomicity fix: the pet-existence FK check (formerly an inline
+// `prisma.pet.findFirst`, now `bbRepo.findDonorPet` per arch §4.1 rev 3) and the
+// `createDonor` write now run inside the same transaction, closing the TOCTOU gap
+// between them. The duplicate-donor check keeps its original position (still a
+// separate read, unchanged) — only the FK check + write pairing needed atomicity.
 export async function registerDonor(tenantId: number, data: DonorInput) {
-  const pet = await prisma.pet.findFirst({ where: { id: data.petId, tenantId } })
-  if (!pet) throw new BloodBankError('Pet not found', 404)
-  const existing = await bbRepo.findDonorByPet(tenantId, data.petId)
-  if (existing) throw new BloodBankError('Pet is already a registered donor', 409)
-  return bbRepo.createDonor(tenantId, data)
+  return prisma.$transaction(async (tx) => {
+    const pet = await bbRepo.findDonorPet(tenantId, data.petId, tx)
+    if (!pet) throw new BloodBankError('Pet not found', 404)
+
+    const existing = await bbRepo.findDonorByPet(tenantId, data.petId)
+    if (existing) throw new BloodBankError('Pet is already a registered donor', 409)
+
+    return bbRepo.createDonor(tenantId, data, tx)
+  })
 }
 
 export function listDonors(tenantId: number, branchId?: number | null) {

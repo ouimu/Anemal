@@ -63,6 +63,28 @@ green — that is the documented ship-gate exemption, not a bypass.
 Even under incident pressure: at least one test · tenant isolation intact · the follow-up entry.
 Everything else in the pipeline is negotiable here; these three are not.
 
+## 5a. Safety claims about code you did not change
+
+**A claim that another function/file/pattern is "already safe," "already guarded," or "same
+defense-in-depth as X" must cite a passing test proving it — never state it from reading the code.**
+
+**Why:** PR #73 (2026-09-10) shipped a comment and commit message asserting `findDueSoonWorklist` had
+"explicit tenantId join guards" identical to the function being fixed. It did not — its raw-SQL joins
+were unguarded, leaking a *superset* of the PII the hotfix closed. The claim was never tested, only
+read, under the speed pressure Lane C exists for. It shipped inside a security fix and stood for a day
+before an unrelated audit caught it. See `docs/superpowers/plans/2026-09-10-cross-tenant-relation-isolation-ba-signoff.md`
+§F-1 for the full trace.
+
+**Rule:** if the hotfix's patch, comment, or PR body states or implies that a *different* piece of code
+is already correct/safe/guarded, one of two things must be true before merge:
+- a test exists (new or pre-existing) that would fail if that claim were false, and it is named in the
+  comment/PR body — or
+- the claim is dropped. State only what this hotfix's own test proves, nothing about neighbouring code.
+
+This does not add a review step or slow Lane C down for the fix itself — it only blocks *unverified
+claims about other code* from riding along inside the fix. `@scribe-agent` checks for this at Step 8
+alongside the HOTFIX block fields.
+
 ## 6. After the incident
 
 The follow-up item carries the real fix through Lane A or B. `@scribe-agent` removes the debt entry

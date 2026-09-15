@@ -18,6 +18,14 @@ removed only when its follow-up ships. Debt older than one phase is raised to th
 |------|--------|---------|-----------------|-----------|
 | 2026-09-10 | hotfix/vaccination-due-soon-cross-tenant-pii-leak | `findDueSoon` leaked cross-tenant pet/owner PII (name, phone) via an unguarded Prisma `include` when a vaccination row's `petId` FK pointed at a pet in another tenant — a data-integrity state the schema does not prevent (`vaccinations.pet_id` has no composite FK on `tenant_id`) | Skipped brainstorm · BA · `/grill-with-docs` · arch · ponytail | Lane B: audit remaining repositories for the same unguarded-`include` pattern (nested Prisma `include` that follows a FK without re-checking `tenantId`) · Lane A (`@db-agent`): decide whether to add compound tenant-scoped FKs / triggers across pet↔owner↔vaccination chains instead of per-repository app-level guards |
 
+**Correction (2026-09-11, branch `docs/cross-tenant-isolation-ba-signoff`, tasks XTI-4/XTI-8):**
+`findDueSoonWorklist` (`vaccination.repository.ts`) was in fact **unguarded** at PR #73 merge time.
+The code comment at `vaccination.repository.ts:30` and the PR #73 commit message (`1add331`) both
+claimed `findDueSoonWorklist` already had "explicit tenantId join guards" — that claim was false; no
+such guard existed on that function at merge. This change corrects the comment (XTI-4) and adds the
+actual tenant-scoped join guard to `findDueSoonWorklist` (XTI-8), so the statement becomes true rather
+than being removed.
+
 ---
 
 ## Pipeline metrics — the P4 retro ledger

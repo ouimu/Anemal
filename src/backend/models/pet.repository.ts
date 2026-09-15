@@ -3,13 +3,21 @@
 import { Prisma } from '@prisma/client'
 import prisma from '../config/db'
 import type { CreatePetInput, UpdatePetInput } from '../services/pet.service'
+import { ownerSummarySelect } from './owner.repository'
 
-const listInclude = { owner: { select: { id: true, firstName: true, lastName: true, phone: true } } }
+const listInclude = { owner: { select: ownerSummarySelect } }
+
+// XTI-3 (arch §4.2, FROZEN CONSTRAINT): the response shape for `pet: { select: petSummarySelect } }`
+// at every to-one traversal into Pet from another model. Scalar-only, on purpose — no relation key
+// may ever be added here; see ownerSummarySelect (owner.repository.ts) for the analyzer-resolvability
+// reason this stays inside models/.
+export const petSummarySelect = { id: true, name: true, species: true, photoUrl: true } as const
 
 function buildWhere(tenantId: number, ownerId?: number, species?: string) {
   return {
     tenantId,
     isActive: true,
+    owner: { is: { tenantId } },
     ...(ownerId ? { ownerId } : {}),
     ...(species ? { species } : {}),
   }
@@ -29,14 +37,24 @@ export function countPets(tenantId: number, ownerId?: number, species?: string) 
   return prisma.pet.count({ where: buildWhere(tenantId, ownerId, species) })
 }
 
-export function findPetById(tenantId: number, id: number, includeEmr = true) {
-  return prisma.pet.findFirst({
-    where: { id, tenantId, isActive: true },
+// `client` defaults to the shared `prisma` instance but accepts a `Prisma.TransactionClient`
+// so a caller (e.g. appointment.service's booking-atomicity fix, arch §8.2/§4.1 rev 3) can
+// run this check inside its own write transaction. `includeEmr` keeps its existing default —
+// this is a trailing 4th param, not a replacement for it.
+export function findPetById(
+  tenantId: number,
+  id: number,
+  includeEmr = true,
+  client: Prisma.TransactionClient | typeof prisma = prisma,
+) {
+  return client.pet.findFirst({
+    where: { id, tenantId, isActive: true, owner: { is: { tenantId } } },
     include: {
-      owner: true,
+      owner: { select: ownerSummarySelect },
       ...(includeEmr ? {
-        vaccinations: { orderBy: { administeredAt: 'desc' } },
+        vaccinations: { where: { tenantId }, orderBy: { administeredAt: 'desc' } },
         medicalRecords: {
+          where: { tenantId },
           orderBy: { createdAt: 'desc' },
           take: 3,
           select: { id: true, createdAt: true, assessment: true, doctorId: true },
@@ -46,9 +64,11 @@ export function findPetById(tenantId: number, id: number, includeEmr = true) {
   })
 }
 
-// FK validation for createPet — owners table, scoped to tenant.
-export function findOwner(tenantId: number, ownerId: number) {
-  return prisma.owner.findFirst({ where: { id: ownerId, tenantId } })
+// FK validation for createPet — owners table, scoped to tenant. `client` defaults to the
+// shared `prisma` instance but accepts a `Prisma.TransactionClient` so `createPet` (pet.service.ts)
+// can run this check inside `createWithQuotaLock`'s existing transaction (arch §8.2 atomicity fix).
+export function findOwner(tenantId: number, ownerId: number, client: Prisma.TransactionClient | typeof prisma = prisma) {
+  return client.owner.findFirst({ where: { id: ownerId, tenantId } })
 }
 
 // `client` defaults to the shared `prisma` instance but accepts a `Prisma.TransactionClient`
