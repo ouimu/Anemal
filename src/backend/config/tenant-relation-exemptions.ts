@@ -74,18 +74,37 @@ export const TENANT_RELATION_EXEMPTIONS: TenantRelationExemption[] = [
   // IS accepted by the analyzer today: `OR: [{ roleRef: { is: { tenantId: null } } }, { roleRef:
   // { is: { tenantId } } }]` (an explicit `tenantId: null` literal — not a null relation check —
   // passes `getKeyState`'s key-presence test, verified against `tenantRelationConformance.test.ts`).
-  // This closes 8 of the 9 sites below and a real residual leak (a corrupt `roleId` pointing at
-  // ANOTHER TENANT'S CUSTOM role currently leaks that role's id/name, not just system templates).
-  // `findUsers` is the one exception: it already builds a root `OR` for branch filtering, so the
-  // guard would need `AND: [{ OR: [...branch...] }, { OR: [...tenant...] }]`, and
-  // `checkOrFallback` only recognizes a root-level `OR`, not one nested inside `AND` — a real,
-  // narrow analyzer-shape limitation (not the same "defect" fixed in W1a). E-6 is therefore NOT a
-  // clean structural exemption — it is scheduled follow-up work: apply the OR guard to the 8
-  // sites where it already works, and either extend `checkOrFallback` to recognize `AND`-wrapped
-  // `OR`, or restructure `findUsers`'s branch filter, for the 9th. Until that lands, `User.roleId`/
-  // `UserRole.roleId` being set only via role.repository.ts writes that already scope custom roles
-  // to tenantId (`createRole`) or resolve system roles by key (`findSystemRoleByKey`) is the only
-  // thing preventing this from being live today — a write-path guarantee, not a read-side one.
+  // CORRECTED A THIRD TIME (XTI-14 @db-agent veto, 3rd pass) — the tally and the grouping
+  // above were both wrong. There are **8** E-6 sites below, not 9, and they split into three
+  // groups, not two:
+  //   - **6 sites take the OR guard mechanically, today, with no analyzer change**:
+  //     `findUserById`, `updateUser` (the `findFirst` at line ~105, not the sibling
+  //     `updateMany`), `findUserRolesWithDetails`, `updateUserBranch`,
+  //     `auth.findUserByTenantUsername`, `auth.findUserById`. One of these — `findUserByTenantUsername`
+  //     — is the LOGIN path: filtering out a corrupt-role row turns a corrupt `roleId` into a
+  //     failed sign-in instead of a leaked role name. That is a product decision (fail closed
+  //     on login), not a mechanical edit, and must be surfaced when this ships, not silently
+  //     folded into "apply the guard".
+  //   - **`findUsers` is NOT blocked** (an earlier version of this comment wrongly said it
+  //     was, needing `checkOrFallback` to recognize `OR` nested inside `AND`). Its existing
+  //     branch filter (`OR: [{ userBranches: { some: { branchId } } }, { userBranches: { none: {} } }]`)
+  //     can move inside `AND: [{ OR: [...branch...] }]`, freeing the root `OR` for the tenant
+  //     guard — a one-line restructure, zero analyzer change, lands today like the other 6.
+  //   - **`createUserWithRoleTx` is the one site genuinely blocked**, and for a different
+  //     reason than "the analyzer can't see it": it is a `prisma.user.create(...)`, and a
+  //     Prisma `create` call has no `where` clause at all — there is nowhere to attach an OR
+  //     guard, mechanical or otherwise. Its remedy is a different shape entirely (drop
+  //     `include: { roleRef: true }` from the create and re-read the role separately, or trust
+  //     the already-validated `roleId` from the write-path guarantee below).
+  // A corrupt `roleId` pointing at ANOTHER TENANT'S CUSTOM role (not a system template) is a
+  // real residual leak at all 8 sites today — held shut only by `User.roleId`/`UserRole.roleId`
+  // being set exclusively via role.repository.ts writes that already scope custom roles to
+  // tenantId (`createRole`) or resolve system roles by key (`findSystemRoleByKey`): a
+  // write-path guarantee, not a read-side one. E-6 is scheduled follow-up work (apply the
+  // guard to the 6, restructure `findUsers`, redesign `createUserWithRoleTx`'s read), not a
+  // clean structural exemption — track it as its own backlog item, separate from the
+  // analyzer's to-many-nesting gap (that one is a detection blind spot; this one is a live
+  // data-isolation leak, a different risk class).
   {
     file: 'user.repository.ts', fn: 'findUsers', relationPath: 'roleRef',
     reason: 'E-6: ClinicRole.tenantId is nullable for shared system-role templates; a literal ' +

@@ -98,7 +98,10 @@ describe('XTI-14 V2 — POST /api/invoices auto-pulled prescription lines never 
     expect(serialized).not.toContain(B.productName)
     // 5 units of B's drug @ unitPrice 10 = 50 — the value that would have appeared as a
     // second line's totalPrice if the guard had failed.
-    expect(serialized).not.toContain('"totalPrice":50')
+    // InvoiceItem.totalPrice is a Prisma Decimal, which JSON.stringify renders quoted
+    // ("50", not 50) — db-agent's round-3 review caught this assertion checking for the
+    // unquoted form, which can never match either way and was vacuous.
+    expect(serialized).not.toContain('"totalPrice":"50"')
   })
 
   it('positive control — with ONLY the corrupt line on the record, invoice creation fails cleanly rather than silently succeeding with a leaked line', async () => {
