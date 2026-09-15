@@ -11,7 +11,7 @@ import {
 } from '../../hooks/usePlatformCustomers'
 import { usePlatformPlans } from '../../hooks/usePlatformPlans'
 import StatusBadge from '../../components/platform/StatusBadge'
-import PlatformModal from '../../components/platform/PlatformModal'
+import Dialog from '../../components/Dialog'
 import MaterialIcon from '../../components/MaterialIcon'
 import { getErrorMessage } from '../../utils/errorMessage'
 
@@ -127,7 +127,7 @@ export default function CustomerListView() {
       </div>
 
       {/* ── Add Customer Modal ───────────────────────────────────────────── */}
-      <PlatformModal title="Add Customer" open={modalOpen} onClose={closeModal}>
+      <Dialog title="Add Customer" open={modalOpen} onClose={closeModal}>
         <form onSubmit={handleSubmit} className="space-y-md">
           <div>
             <label className="block text-label-md text-on-surface-variant mb-xs" htmlFor="cust-name">
@@ -204,7 +204,7 @@ export default function CustomerListView() {
             </button>
           </div>
         </form>
-      </PlatformModal>
+      </Dialog>
     </div>
   )
 }

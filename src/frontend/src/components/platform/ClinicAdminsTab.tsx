@@ -16,7 +16,7 @@ import {
   type TenantAdminUser,
   type CreateTenantAdminUserPayload,
 } from '../../hooks/usePlatformCustomers'
-import PlatformModal from './PlatformModal'
+import Dialog from '../Dialog'
 import { usePasswordField } from './PasswordField'
 import MaterialIcon from '../MaterialIcon'
 
@@ -79,7 +79,7 @@ function ResetPasswordDialog({ user, password, onPasswordChange, onConfirm, onCa
   const errorCode = error?.response?.data?.code
   const { field, toggleButton } = usePasswordField({ id: 'ca-reset-password', value: password, onChange: onPasswordChange })
   return (
-    <PlatformModal title="Reset password" open onClose={onCancel} width="max-w-md">
+    <Dialog title="Reset password" open onClose={onCancel} width="max-w-md">
       <div className="space-y-md">
         <p className="text-body-sm text-on-surface">
           Set a new password for <strong>{user.username}</strong>. Type one or generate a new one.
@@ -109,7 +109,7 @@ function ResetPasswordDialog({ user, password, onPasswordChange, onConfirm, onCa
           </div>
         </div>
       </div>
-    </PlatformModal>
+    </Dialog>
   )
 }
 
@@ -120,7 +120,7 @@ function DeactivateConfirmDialog({ user, onConfirm, onCancel, isPending, error }
 }) {
   const errorCode = error?.response?.data?.code
   return (
-    <PlatformModal title="Deactivate clinic admin?" open onClose={onCancel} width="max-w-md">
+    <Dialog title="Deactivate clinic admin?" open onClose={onCancel} width="max-w-md">
       <div className="space-y-md">
         <p className="text-body-sm text-on-surface">
           Deactivating <strong>{user.username}</strong> immediately blocks their login.
@@ -148,7 +148,7 @@ function DeactivateConfirmDialog({ user, onConfirm, onCancel, isPending, error }
           </button>
         </div>
       </div>
-    </PlatformModal>
+    </Dialog>
   )
 }
 
@@ -291,7 +291,7 @@ export default function ClinicAdminsTab({ id }: { id: number }) {
         </table>
       </div>
 
-      <PlatformModal title="Create Clinic Admin" open={createOpen} onClose={closeCreate}>
+      <Dialog title="Create Clinic Admin" open={createOpen} onClose={closeCreate}>
         <form onSubmit={handleCreateSubmit} className="space-y-md">
           <div>
             <label className="block text-label-md text-on-surface-variant mb-xs" htmlFor="ca-name">
@@ -355,7 +355,7 @@ export default function ClinicAdminsTab({ id }: { id: number }) {
             </div>
           </div>
         </form>
-      </PlatformModal>
+      </Dialog>
 
       {deactivateTarget && (
         <DeactivateConfirmDialog
