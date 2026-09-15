@@ -65,19 +65,27 @@ export const TENANT_RELATION_EXEMPTIONS: TenantRelationExemption[] = [
   // `UserRole.role` are explicitly named there as blocked by this same nullable parent). A
   // literal `roleRef: { is: { tenantId } }` / `role: { is: { tenantId } }` mirror would exclude
   // every user whose primary role is a system template (i.e. almost all users), so it cannot be
-  // added without a functional regression. CORRECTED (XTI-14 @db-agent veto review): an earlier
-  // version of this comment blamed an "open defect" in the analyzer's `hasGuardAtPath` OR-fallback
-  // for why the OR shape couldn't be used here either — that defect was real but was fixed in W1a
-  // (`checkOrFallback` now returns the matched branch's resolved object; verified working). The
-  // actual reason the OR shape doesn't apply is structural, not a tool limitation: the supported
-  // OR pattern expresses "the RELATION is null OR its tenantId matches" (`roleRef: { is: null }`),
-  // but `User.roleRef`/`UserRole.role` are non-nullable relations — every user has a role — so
-  // `is: null` is never true here. What's nullable is the TARGET row's `tenantId` column, not the
-  // relation itself, and there is no guard shape that expresses that. This is a genuine exemption,
-  // not a workaround for a bug. No real cross-tenant leak exists in practice: `User.roleId` /
-  // `UserRole.roleId` are only ever set via role.repository.ts writes that already scope custom
-  // roles to tenantId or resolve system roles by key (`createRole`, `findSystemRoleByKey`),
-  // never from unscoped external input.
+  // added without a functional regression. CORRECTED TWICE (XTI-14 @db-agent veto, 2nd pass):
+  // the previous version of this comment claimed "`roleRef`/`role` are non-nullable relations...
+  // there is no guard shape that expresses [the nullable-tenantId case]" — both false, checked
+  // against the schema and the live analyzer. `User.roleRef` IS a nullable relation field
+  // (`schema.prisma:229`, `ClinicRole?`) — it is simply never null AT RUNTIME because the backing
+  // scalar `User.roleId` is `Int` NOT NULL (`schema.prisma:213`). And a guard shape DOES exist and
+  // IS accepted by the analyzer today: `OR: [{ roleRef: { is: { tenantId: null } } }, { roleRef:
+  // { is: { tenantId } } }]` (an explicit `tenantId: null` literal — not a null relation check —
+  // passes `getKeyState`'s key-presence test, verified against `tenantRelationConformance.test.ts`).
+  // This closes 8 of the 9 sites below and a real residual leak (a corrupt `roleId` pointing at
+  // ANOTHER TENANT'S CUSTOM role currently leaks that role's id/name, not just system templates).
+  // `findUsers` is the one exception: it already builds a root `OR` for branch filtering, so the
+  // guard would need `AND: [{ OR: [...branch...] }, { OR: [...tenant...] }]`, and
+  // `checkOrFallback` only recognizes a root-level `OR`, not one nested inside `AND` — a real,
+  // narrow analyzer-shape limitation (not the same "defect" fixed in W1a). E-6 is therefore NOT a
+  // clean structural exemption — it is scheduled follow-up work: apply the OR guard to the 8
+  // sites where it already works, and either extend `checkOrFallback` to recognize `AND`-wrapped
+  // `OR`, or restructure `findUsers`'s branch filter, for the 9th. Until that lands, `User.roleId`/
+  // `UserRole.roleId` being set only via role.repository.ts writes that already scope custom roles
+  // to tenantId (`createRole`) or resolve system roles by key (`findSystemRoleByKey`) is the only
+  // thing preventing this from being live today — a write-path guarantee, not a read-side one.
   {
     file: 'user.repository.ts', fn: 'findUsers', relationPath: 'roleRef',
     reason: 'E-6: ClinicRole.tenantId is nullable for shared system-role templates; a literal ' +
