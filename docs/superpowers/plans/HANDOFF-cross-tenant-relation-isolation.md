@@ -174,18 +174,51 @@ catching something real that survived the previous "fix." Do not assume a 4th pa
 just because the pattern feels like it should terminate — verify db-agent's next verdict the same
 way each prior round was verified (re-read the actual diff, don't just trust the summary).
 
+## XTI-14, 4th pass — APPROVE (commit `4168efb`). Veto closed.
+
+`@db-agent`'s 4th pass independently re-traced both fixes against source (not the restatement) and
+**APPROVED**:
+- Traced the `"totalPrice":"50"` assertion's whole value path (schema `Decimal(10,2)` → service
+  `round2(qty*unitPrice)` → fixture seed price → actual installed `Prisma.Decimal` serialization
+  behavior) and confirmed it now discriminates leak-present vs leak-absent — not vacuous.
+- Parsed the E-6 registry: exactly 8 entries, tally now correct. Independently re-verified the two
+  named sites' actual code (`findUsers`'s branch filter, `createUserWithRoleTx`'s `prisma.create()`
+  shape) rather than trusting the comment's restatement — both classifications hold.
+- Extra check not on the named list: verified `auth.findUserByTenantUsername` (`findUnique`, not
+  `findFirst`) is still guard-safe against the installed Prisma client's generated
+  `UserWhereUniqueInput` type (`OR` is legal there) — would have been a 7th blocked site otherwise.
+- **One non-blocking nit**: E-6 comment located `updateUser`'s `findFirst` at "line ~105" (actually
+  line 78; the disambiguating text was already correct and uniquely identified the site). Fixed in
+  commit `4168efb`.
+
+**XTI-14 is now closed.** 4 rounds total: round 1 found 2 live cross-tenant leaks nobody else had
+caught; round 2 found the round-1 fix's own correction comment was itself wrong plus a false
+test-coverage claim; round 3 found a vacuous assertion and an off-by-one/misclassified exemption
+tally; round 4 found only a cosmetic line-pointer nit and approved. Full suite green: 76 suites /
+1082 tests. `tsc --noEmit` clean.
+
+**Backlog to carry forward verbatim into Step 7/8** (db-agent's explicit grouping, round 3, reconfirmed
+round 4):
+- E-6 — live residual leak via `ClinicRole`-nullable-`tenantId` at 8 sites, held shut only by
+  write-path guarantees. **Own tracked backlog item, medium severity.**
+- Analyzer's to-many-nesting detection gap (doesn't walk into a to-many's own nested `include`).
+  **Own SEPARATE tracked backlog item, low severity, different risk class — do NOT merge with E-6.**
+- E-7 — **NOT backlog**, resolved-as-exempt permanently (both relations keyed on the same id already
+  filtered by).
+- XTI-12's perf regression under stale-Postgres-stats bulk-import conditions — needs an operator
+  `ANALYZE pets, owners;` step after bulk imports; db-agent agreed this doesn't block.
+- XTI-13's unfinished conversion of `crossTenantFkWritePathRepro.test.ts` into a standing
+  registry-parity check (QA's agent hit a rate limit before reaching this part).
+
 ## Next action — literally this
 
 ```
-@db-agent   XTI-14 re-review, 4th pass (NARROW — same instruction as every prior round: only the
-             files changed in commit da1dfcf)
-input: src/backend/config/tenant-relation-exemptions.ts (E-6 comment, 3rd correction)
-       src/backend/tests/integration/crossTenantRelation.invoiceForeignDrug.test.ts (assertion fix)
-output: APPROVE or another VETO with what's still wrong
-Then: Step 7 (@qa-agent code-review + sign-off — carry forward the backlog exactly as db-agent
-  grouped it above: E-6 own item, analyzer gap own item, E-7 closed not backlog, plus XTI-12's
-  perf regression and XTI-13's unfinished registry-parity conversion) →
-  Step 8 (@scribe-agent /anemal-finish-branch).
+@qa-agent   /code-review + sign-off (Step 7)
+scope: full branch docs/cross-tenant-isolation-ba-signoff since it diverged from main
+carry forward: the 5 backlog items listed immediately above, grouped exactly as shown
+gate: findings closed + arch conformance (per arch doc, ADR-0027, ADR-0028)
+Then: Step 8 (@scribe-agent /anemal-finish-branch — PR, red-suite ship gate, merge, refresh the 5
+  tracking docs per doc-maintenance.md, resolve the "Open hotfix debt" follow-up row for PR #73).
 ```
 
 ### Step 4b — scribe-agent reference pre-check, 3rd pass (2026-09-11) — PASS
