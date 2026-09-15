@@ -323,3 +323,45 @@ describe('Row-level Deactivate/Restore', () => {
     await waitFor(() => expect(screen.getByText(/Quota exceeded for users/i)).toBeInTheDocument())
   })
 })
+
+// MODAL-3: DeactivateConfirmDialog migrated onto the shared Dialog
+// (dismissal='explicit') — docs/superpowers/plans/2026-09-11-modal-consolidation.md
+describe('Deactivate confirm dialog — migrated onto Dialog (MODAL-3)', () => {
+  it('renders a real visible <h2> heading (replacing the old screen-reader-only aria-label)', async () => {
+    renderTab()
+    const deactivateButtons = await screen.findAllByRole('button', { name: /^Deactivate$/i })
+    fireEvent.click(deactivateButtons[0])
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByRole('heading', { level: 2, name: 'Confirm deactivate' })).toBeInTheDocument()
+  })
+
+  it('Escape closes the dialog (dismissal=explicit), backdrop click is a no-op', async () => {
+    renderTab()
+    const deactivateButtons = await screen.findAllByRole('button', { name: /^Deactivate$/i })
+    fireEvent.click(deactivateButtons[0])
+    const dialog = screen.getByRole('dialog')
+
+    // Backdrop click must not close an 'explicit' dialog.
+    fireEvent.click(dialog.parentElement as HTMLElement)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(api.delete).not.toHaveBeenCalled()
+
+    // Escape does close it.
+    fireEvent.keyDown(document, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  })
+
+  it('does not collide with the edit-user Modal (local function Modal at L36) when both are open', async () => {
+    renderTab()
+    const editButtons = await screen.findAllByRole('button', { name: 'Edit' })
+    fireEvent.click(editButtons[1]) // opens the local `Modal` (SECOND_ADMIN)
+    expect(screen.getByText('Edit user')).toBeInTheDocument()
+
+    const deactivateButtons = screen.getAllByRole('button', { name: /^Deactivate$/i })
+    fireEvent.click(deactivateButtons[0]) // opens the Dialog-based DeactivateConfirmDialog
+
+    expect(screen.getByText('Edit user')).toBeInTheDocument()
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByRole('heading', { name: 'Confirm deactivate' })).toBeInTheDocument()
+  })
+})

@@ -12,6 +12,7 @@
  */
 import { useState } from 'react'
 import MaterialIcon from '../MaterialIcon'
+import Dialog from '../Dialog'
 import RolePermissionEditor from './RolePermissionEditor'
 import CloneRoleModal from './CloneRoleModal'
 import {
@@ -45,76 +46,76 @@ function DeleteDialog({ roleName, assignedCount, onConfirm, onClose, isDeleting 
   const t = useT()
   const hasUsers = assignedCount !== null && assignedCount > 0
 
+  // AC-6/AC-7: destructive confirm — dismissal='explicit' means Escape and the
+  // header (X) close, but a backdrop click is a no-op (ADR-0027 table). The
+  // title-bar red color/icon that the 409 branch used to render is dropped
+  // per the unified standard; the in-body error message it protects is not.
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      aria-modal="true"
-      role="dialog"
-    >
-      <div className="bg-surface rounded-xl shadow-lvl3 p-xl w-[440px] max-w-[calc(100vw-32px)] space-y-lg">
-        {hasUsers ? (
+    <Dialog
+      title={hasUsers ? 'Cannot Delete Role' : t('roles.deleteRole')}
+      open
+      onClose={onClose}
+      dismissal="explicit"
+      width="max-w-md"
+      footer={
+        hasUsers ? (
           /* AC-6: 409 path */
-          <>
-            <div className="flex items-center gap-md">
-              <MaterialIcon name="warning" size={28} className="text-error flex-shrink-0" />
-              <h3 className="text-headline-sm font-headline font-semibold text-error">
-                Cannot Delete Role
-              </h3>
-            </div>
-            <div className="p-md bg-error-container rounded-lg flex items-center gap-md">
-              <MaterialIcon name="info" size={18} className="text-error-on-container flex-shrink-0" />
-              <p className="text-body-sm text-error-on-container font-bold">
-                {t('roles.deleteBlocked').replace('{n}', String(assignedCount))}
-              </p>
-            </div>
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-lg py-base border border-outline-variant rounded-lg text-on-surface
-                           font-bold hover:bg-surface-container min-h-[44px] transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-lg py-base border border-outline-variant rounded-lg text-on-surface
+                         font-bold hover:bg-surface-container min-h-[44px] transition-colors"
+            >
+              Close
+            </button>
+          </div>
         ) : (
           /* AC-7: 200 path */
-          <>
-            <h3 className="text-headline-sm font-headline font-semibold text-error">{t('roles.deleteRole')}</h3>
-            <p className="text-body-sm text-on-surface-variant">
-              Are you sure you want to delete <strong className="text-on-surface">{roleName}</strong>?
-              This action cannot be undone.
-            </p>
-            <div className="flex gap-md justify-end">
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={isDeleting}
-                className="px-lg py-base border border-outline-variant rounded-lg text-on-surface
-                           font-bold hover:bg-surface-container min-h-[44px] transition-colors
-                           disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={onConfirm}
-                disabled={isDeleting}
-                className="px-lg py-base bg-error text-on-primary font-bold rounded-lg
-                           hover:opacity-90 min-h-[44px] flex items-center gap-xs transition-opacity
-                           disabled:opacity-50"
-              >
-                {isDeleting ? (
-                  <MaterialIcon name="progress_activity" size={16} className="animate-spin" />
-                ) : null}
-                Delete
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+          <div className="flex gap-md justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isDeleting}
+              className="px-lg py-base border border-outline-variant rounded-lg text-on-surface
+                         font-bold hover:bg-surface-container min-h-[44px] transition-colors
+                         disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={isDeleting}
+              className="px-lg py-base bg-error text-on-primary font-bold rounded-lg
+                         hover:opacity-90 min-h-[44px] flex items-center gap-xs transition-opacity
+                         disabled:opacity-50"
+            >
+              {isDeleting ? (
+                <MaterialIcon name="progress_activity" size={16} className="animate-spin" />
+              ) : null}
+              Delete
+            </button>
+          </div>
+        )
+      }
+    >
+      {hasUsers ? (
+        /* AC-6: 409 path — the in-use error message stays in the body. */
+        <div className="p-md bg-error-container rounded-lg flex items-center gap-md">
+          <MaterialIcon name="info" size={18} className="text-error-on-container flex-shrink-0" />
+          <p className="text-body-sm text-error-on-container font-bold">
+            {t('roles.deleteBlocked').replace('{n}', String(assignedCount))}
+          </p>
+        </div>
+      ) : (
+        /* AC-7: 200 path */
+        <p className="text-body-sm text-on-surface-variant">
+          Are you sure you want to delete <strong className="text-on-surface">{roleName}</strong>?
+          This action cannot be undone.
+        </p>
+      )}
+    </Dialog>
   )
 }
 

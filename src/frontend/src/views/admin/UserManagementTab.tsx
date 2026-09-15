@@ -10,6 +10,7 @@ import { useT } from '../../i18n'
 import { describeSaveError } from '../../utils/errorMessages'
 import MaterialIcon from '../../components/MaterialIcon'
 import BranchSwitcher from '../../components/BranchSwitcher'
+import Dialog from '../../components/Dialog'
 
 interface User {
   id: number; name: string; username: string; email: string | null
@@ -250,24 +251,22 @@ function DeactivateConfirmDialog({ user, onCancel, onConfirmed }: { user: User; 
     },
   })
   return (
-    <div role="dialog" aria-label="Confirm deactivate" className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-sm p-6">
-        <p className="text-sm text-on-surface mb-4">
-          Deactivate {user.name}? They will no longer be able to log in. You can restore them later.
-        </p>
-        {deactivate.isError && <p className="text-xs text-error-on-container mb-2">{describeSaveError(deactivate.error)}</p>}
-        <div className="flex gap-2">
-          <button onClick={onCancel} className="flex-1 min-h-[44px] border border-outline-variant rounded-lg text-sm text-on-surface-variant hover:bg-surface-container-low">Cancel</button>
-          <button
-            onClick={() => deactivate.mutate()}
-            disabled={deactivate.isPending}
-            className="flex-1 min-h-[44px] bg-error text-error-on rounded-lg text-sm font-semibold disabled:opacity-50 hover:bg-error/90"
-          >
-            {deactivate.isPending ? 'Deactivating…' : 'Deactivate'}
-          </button>
-        </div>
+    <Dialog title="Confirm deactivate" open onClose={onCancel} dismissal="explicit" width="max-w-sm">
+      <p className="text-body-sm text-on-surface mb-4">
+        Deactivate {user.name}? They will no longer be able to log in. You can restore them later.
+      </p>
+      {deactivate.isError && <p className="text-label-md text-error-on-container mb-2">{describeSaveError(deactivate.error)}</p>}
+      <div className="flex gap-2">
+        <button onClick={onCancel} className="flex-1 min-h-[44px] border border-outline-variant rounded-lg text-body-sm text-on-surface-variant hover:bg-surface-container-low">Cancel</button>
+        <button
+          onClick={() => deactivate.mutate()}
+          disabled={deactivate.isPending}
+          className="flex-1 min-h-[44px] bg-error text-error-on rounded-lg text-body-sm font-semibold disabled:opacity-50 hover:bg-error/90"
+        >
+          {deactivate.isPending ? 'Deactivating…' : 'Deactivate'}
+        </button>
       </div>
-    </div>
+    </Dialog>
   )
 }
 

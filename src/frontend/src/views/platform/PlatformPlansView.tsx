@@ -11,7 +11,7 @@ import {
   type Plan,
   type CreatePlanPayload,
 } from '../../hooks/usePlatformPlans'
-import PlatformModal from '../../components/platform/PlatformModal'
+import Dialog from '../../components/Dialog'
 import MaterialIcon from '../../components/MaterialIcon'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -289,7 +289,7 @@ export default function PlatformPlansView() {
       </div>
 
       {/* ── Create / Edit Modal ──────────────────────────────────────────── */}
-      <PlatformModal
+      <Dialog
         title={modalMode === 'create' ? 'New Plan' : `Edit: ${editingPlan?.name ?? ''}`}
         open={modalMode !== null}
         onClose={closeModal}
@@ -322,7 +322,7 @@ export default function PlatformPlansView() {
             </button>
           </div>
         </form>
-      </PlatformModal>
+      </Dialog>
     </div>
   )
 }

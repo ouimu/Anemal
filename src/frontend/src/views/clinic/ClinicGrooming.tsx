@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
+import Dialog from '../../components/Dialog'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface GroomingBooking {
@@ -97,119 +98,13 @@ function BookingModal({ date, onClose, onSaved }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-md" onClick={onClose}>
-      <div
-        className="bg-surface rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto flex flex-col"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-xl pt-xl pb-md border-b border-outline-variant sticky top-0 bg-surface z-10">
-          <p className="text-headline-sm font-headline font-bold text-on-surface">New Grooming Booking</p>
-          <button onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-surface-container text-on-surface-variant transition-colors">
-            <MaterialIcon name="close" size={20} />
-          </button>
-        </div>
-
-        <div className="px-xl py-lg flex flex-col gap-lg">
-          {/* Pet search */}
-          <div className="flex flex-col gap-xs">
-            <label className="text-label-lg text-on-surface-variant">Patient</label>
-            {selectedPet ? (
-              <div className="flex items-center justify-between bg-surface-container-low rounded-xl px-lg py-md">
-                <div>
-                  <p className="text-body-md font-medium text-on-surface">{selectedPet.petName}</p>
-                  <p className="text-label-md text-on-surface-variant">{selectedPet.ownerName} · {selectedPet.phone}</p>
-                </div>
-                <button onClick={() => { setSelectedPet(null); setPetSearch('') }} className="min-h-[44px] min-w-[44px] flex items-center justify-center text-on-surface-variant hover:text-error transition-colors">
-                  <MaterialIcon name="close" size={16} />
-                </button>
-              </div>
-            ) : (
-              <div className="relative">
-                <input
-                  type="text"
-                  value={petSearch}
-                  onChange={e => setPetSearch(e.target.value)}
-                  placeholder="Search by pet name, owner name, or phone…"
-                  className="w-full rounded-xl border border-outline-variant bg-surface px-lg py-md text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
-                />
-                {searchResults.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-xs bg-surface border border-outline-variant rounded-xl shadow-lg z-20 overflow-hidden">
-                    {searchResults.map(r => (
-                      <button
-                        key={r.petId}
-                        onClick={() => { setSelectedPet(r); setPetSearch('') }}
-                        className="w-full text-left px-lg py-md hover:bg-surface-container transition-colors border-b border-outline-variant last:border-0"
-                      >
-                        <p className="text-body-md font-medium text-on-surface">{r.petName}</p>
-                        <p className="text-label-md text-on-surface-variant">{r.ownerName} · {r.phone}</p>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Service type */}
-          <div className="flex flex-col gap-xs">
-            <label className="text-label-lg text-on-surface-variant">Service</label>
-            <div className="flex flex-wrap gap-xs">
-              {SERVICE_TYPES.map(s => (
-                <button
-                  key={s}
-                  onClick={() => setServiceType(s)}
-                  className={`px-md py-sm rounded-xl border-2 text-body-sm font-medium transition-colors min-h-[44px]
-                    ${serviceType === s
-                      ? 'border-primary bg-primary-fixed text-primary font-bold'
-                      : 'border-outline-variant bg-surface text-on-surface hover:bg-surface-container'}`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Groomer */}
-          <div className="flex flex-col gap-xs">
-            <label className="text-label-lg text-on-surface-variant">Groomer (optional)</label>
-            <select
-              value={groomerId}
-              onChange={e => setGroomerId(e.target.value ? Number(e.target.value) : '')}
-              className="w-full rounded-xl border border-outline-variant bg-surface px-lg py-md text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors min-h-[44px]"
-            >
-              <option value="">Any available groomer</option>
-              {staff.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-            </select>
-          </div>
-
-          {/* Time slot */}
-          <div className="flex flex-col gap-xs">
-            <label className="text-label-lg text-on-surface-variant">Time slot</label>
-            <select
-              value={hour}
-              onChange={e => setHour(Number(e.target.value))}
-              className="w-full rounded-xl border border-outline-variant bg-surface px-lg py-md text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors min-h-[44px]"
-            >
-              {HOURS.map(h => (
-                <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Special instructions */}
-          <div className="flex flex-col gap-xs">
-            <label className="text-label-lg text-on-surface-variant">Special instructions (optional)</label>
-            <textarea
-              value={instructions}
-              onChange={e => setInstructions(e.target.value)}
-              rows={2}
-              placeholder="Allergies, temperament notes…"
-              className="w-full rounded-xl border border-outline-variant bg-surface px-lg py-md text-body-md text-on-surface placeholder:text-on-surface-variant resize-none focus:outline-none focus:border-primary transition-colors"
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-sm px-xl pb-xl sticky bottom-0 bg-surface pt-md border-t border-outline-variant">
+    <Dialog
+      title="New Grooming Booking"
+      open
+      onClose={onClose}
+      width="max-w-md"
+      footer={
+        <div className="flex gap-sm">
           <button onClick={onClose} className="flex-1 min-h-[44px] rounded-xl border border-outline-variant bg-surface text-on-surface hover:bg-surface-container text-body-md font-medium transition-colors">
             Cancel
           </button>
@@ -221,8 +116,108 @@ function BookingModal({ date, onClose, onSaved }: {
             {mut.isPending ? 'Booking…' : 'Book Appointment'}
           </button>
         </div>
+      }
+    >
+      <div className="flex flex-col gap-lg">
+        {/* Pet search */}
+        <div className="flex flex-col gap-xs">
+          <label className="text-label-lg text-on-surface-variant">Patient</label>
+          {selectedPet ? (
+            <div className="flex items-center justify-between bg-surface-container-low rounded-xl px-lg py-md">
+              <div>
+                <p className="text-body-md font-medium text-on-surface">{selectedPet.petName}</p>
+                <p className="text-label-md text-on-surface-variant">{selectedPet.ownerName} · {selectedPet.phone}</p>
+              </div>
+              <button onClick={() => { setSelectedPet(null); setPetSearch('') }} className="min-h-[44px] min-w-[44px] flex items-center justify-center text-on-surface-variant hover:text-error transition-colors">
+                <MaterialIcon name="close" size={16} />
+              </button>
+            </div>
+          ) : (
+            <div className="relative">
+              <input
+                type="text"
+                value={petSearch}
+                onChange={e => setPetSearch(e.target.value)}
+                placeholder="Search by pet name, owner name, or phone…"
+                className="w-full rounded-xl border border-outline-variant bg-surface px-lg py-md text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
+              />
+              {searchResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-xs bg-surface border border-outline-variant rounded-xl shadow-lg z-20 overflow-hidden">
+                  {searchResults.map(r => (
+                    <button
+                      key={r.petId}
+                      onClick={() => { setSelectedPet(r); setPetSearch('') }}
+                      className="w-full text-left px-lg py-md hover:bg-surface-container transition-colors border-b border-outline-variant last:border-0"
+                    >
+                      <p className="text-body-md font-medium text-on-surface">{r.petName}</p>
+                      <p className="text-label-md text-on-surface-variant">{r.ownerName} · {r.phone}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Service type */}
+        <div className="flex flex-col gap-xs">
+          <label className="text-label-lg text-on-surface-variant">Service</label>
+          <div className="flex flex-wrap gap-xs">
+            {SERVICE_TYPES.map(s => (
+              <button
+                key={s}
+                onClick={() => setServiceType(s)}
+                className={`px-md py-sm rounded-xl border-2 text-body-sm font-medium transition-colors min-h-[44px]
+                  ${serviceType === s
+                    ? 'border-primary bg-primary-fixed text-primary font-bold'
+                    : 'border-outline-variant bg-surface text-on-surface hover:bg-surface-container'}`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Groomer */}
+        <div className="flex flex-col gap-xs">
+          <label className="text-label-lg text-on-surface-variant">Groomer (optional)</label>
+          <select
+            value={groomerId}
+            onChange={e => setGroomerId(e.target.value ? Number(e.target.value) : '')}
+            className="w-full rounded-xl border border-outline-variant bg-surface px-lg py-md text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors min-h-[44px]"
+          >
+            <option value="">Any available groomer</option>
+            {staff.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+          </select>
+        </div>
+
+        {/* Time slot */}
+        <div className="flex flex-col gap-xs">
+          <label className="text-label-lg text-on-surface-variant">Time slot</label>
+          <select
+            value={hour}
+            onChange={e => setHour(Number(e.target.value))}
+            className="w-full rounded-xl border border-outline-variant bg-surface px-lg py-md text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors min-h-[44px]"
+          >
+            {HOURS.map(h => (
+              <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Special instructions */}
+        <div className="flex flex-col gap-xs">
+          <label className="text-label-lg text-on-surface-variant">Special instructions (optional)</label>
+          <textarea
+            value={instructions}
+            onChange={e => setInstructions(e.target.value)}
+            rows={2}
+            placeholder="Allergies, temperament notes…"
+            className="w-full rounded-xl border border-outline-variant bg-surface px-lg py-md text-body-md text-on-surface placeholder:text-on-surface-variant resize-none focus:outline-none focus:border-primary transition-colors"
+          />
+        </div>
       </div>
-    </div>
+    </Dialog>
   )
 }
 

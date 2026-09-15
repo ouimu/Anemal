@@ -4,6 +4,7 @@ import api from '../../utils/api'
 import { useAuthStore } from '../../store/authStore'
 import MaterialIcon from '../../components/MaterialIcon'
 import BranchSwitcher from '../../components/BranchSwitcher'
+import Dialog from '../../components/Dialog'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface PetLite { id: number; name: string; species: string }
@@ -57,21 +58,6 @@ function PetSearch({ selected, onSelect }: { selected: SearchResult | null; onSe
   )
 }
 
-function Modal({ title, onClose, children, footer }: { title: string; onClose: () => void; children: React.ReactNode; footer: React.ReactNode }) {
-  return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-md" onClick={onClose}>
-      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-xl pt-xl pb-md border-b border-outline-variant">
-          <p className="text-headline-sm font-headline font-bold text-on-surface">{title}</p>
-          <button onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-surface-container text-on-surface-variant"><MaterialIcon name="close" size={20} /></button>
-        </div>
-        <div className="px-xl py-lg flex flex-col gap-md">{children}</div>
-        <div className="flex gap-sm px-xl pb-xl">{footer}</div>
-      </div>
-    </div>
-  )
-}
-
 const cancelBtn = 'flex-1 min-h-[44px] rounded-xl border border-outline-variant bg-surface text-on-surface hover:bg-surface-container text-body-md font-medium transition-colors'
 const saveBtn = 'flex-1 min-h-[44px] rounded-xl bg-primary text-primary-on text-body-md font-medium hover:opacity-90 disabled:opacity-50 transition-opacity'
 
@@ -86,21 +72,25 @@ function DonorModal({ onClose }: { onClose: () => void }) {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['bb-donors'] }); onClose() },
   })
   return (
-    <Modal title="Register Donor" onClose={onClose} footer={<>
-      <button onClick={onClose} className={cancelBtn}>Cancel</button>
-      <button disabled={!pet || mut.isPending} onClick={() => pet && mut.mutate({ petId: pet.petId, bloodType, notes: notes || null })} className={saveBtn}>
-        {mut.isPending ? 'Saving…' : 'Register'}
-      </button>
-    </>}>
-      <div className="flex flex-col gap-xs"><label className="text-label-lg text-on-surface-variant">Donor pet *</label><PetSearch selected={pet} onSelect={setPet} /></div>
-      <div className="flex flex-col gap-xs"><label className="text-label-lg text-on-surface-variant">Blood type *</label>
-        <select className={inputCls} value={bloodType} onChange={e => setBloodType(e.target.value)}>{BLOOD_TYPES.map(t => <option key={t}>{t}</option>)}</select>
+    <Dialog title="Register Donor" open onClose={onClose} width="max-w-md" footer={
+      <div className="flex gap-sm">
+        <button onClick={onClose} className={cancelBtn}>Cancel</button>
+        <button disabled={!pet || mut.isPending} onClick={() => pet && mut.mutate({ petId: pet.petId, bloodType, notes: notes || null })} className={saveBtn}>
+          {mut.isPending ? 'Saving…' : 'Register'}
+        </button>
       </div>
-      <div className="flex flex-col gap-xs"><label className="text-label-lg text-on-surface-variant">Notes</label>
-        <textarea className={`${inputCls} min-h-[64px] resize-none`} value={notes} onChange={e => setNotes(e.target.value)} rows={2} />
+    }>
+      <div className="flex flex-col gap-md">
+        <div className="flex flex-col gap-xs"><label className="text-label-lg text-on-surface-variant">Donor pet *</label><PetSearch selected={pet} onSelect={setPet} /></div>
+        <div className="flex flex-col gap-xs"><label className="text-label-lg text-on-surface-variant">Blood type *</label>
+          <select className={inputCls} value={bloodType} onChange={e => setBloodType(e.target.value)}>{BLOOD_TYPES.map(t => <option key={t}>{t}</option>)}</select>
+        </div>
+        <div className="flex flex-col gap-xs"><label className="text-label-lg text-on-surface-variant">Notes</label>
+          <textarea className={`${inputCls} min-h-[64px] resize-none`} value={notes} onChange={e => setNotes(e.target.value)} rows={2} />
+        </div>
+        {mut.isError && <p className="text-body-sm text-error">{(mut.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Could not register donor.'}</p>}
       </div>
-      {mut.isError && <p className="text-body-sm text-error">{(mut.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Could not register donor.'}</p>}
-    </Modal>
+    </Dialog>
   )
 }
 
@@ -115,27 +105,31 @@ function CollectionModal({ donors, onClose }: { donors: Donor[]; onClose: () => 
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['bb-bags'] }); qc.invalidateQueries({ queryKey: ['bb-donors'] }); onClose() },
   })
   return (
-    <Modal title="Record Collection" onClose={onClose} footer={<>
-      <button onClick={onClose} className={cancelBtn}>Cancel</button>
-      <button disabled={!donorId || !expiry || mut.isPending}
-        onClick={() => mut.mutate({ donorId: Number(donorId), volumeMl: Number(volumeMl), expiryDate: new Date(expiry).toISOString(), notes: null })} className={saveBtn}>
-        {mut.isPending ? 'Saving…' : 'Record Bag'}
-      </button>
-    </>}>
-      <div className="flex flex-col gap-xs"><label className="text-label-lg text-on-surface-variant">Donor *</label>
-        <select className={inputCls} value={donorId} onChange={e => setDonorId(e.target.value)}>
-          <option value="">Select donor…</option>
-          {donors.map(d => <option key={d.id} value={d.id}>{d.pet.name} · {d.bloodType}{!d.isEligible ? ' (not eligible)' : ''}</option>)}
-        </select>
+    <Dialog title="Record Collection" open dismissal="explicit" onClose={onClose} width="max-w-md" footer={
+      <div className="flex gap-sm">
+        <button onClick={onClose} className={cancelBtn}>Cancel</button>
+        <button disabled={!donorId || !expiry || mut.isPending}
+          onClick={() => mut.mutate({ donorId: Number(donorId), volumeMl: Number(volumeMl), expiryDate: new Date(expiry).toISOString(), notes: null })} className={saveBtn}>
+          {mut.isPending ? 'Saving…' : 'Record Bag'}
+        </button>
       </div>
-      <div className="flex flex-col gap-xs"><label className="text-label-lg text-on-surface-variant">Volume (mL) *</label>
-        <input type="number" min="1" className={inputCls} value={volumeMl} onChange={e => setVolumeMl(e.target.value)} />
+    }>
+      <div className="flex flex-col gap-md">
+        <div className="flex flex-col gap-xs"><label className="text-label-lg text-on-surface-variant">Donor *</label>
+          <select className={inputCls} value={donorId} onChange={e => setDonorId(e.target.value)}>
+            <option value="">Select donor…</option>
+            {donors.map(d => <option key={d.id} value={d.id}>{d.pet.name} · {d.bloodType}{!d.isEligible ? ' (not eligible)' : ''}</option>)}
+          </select>
+        </div>
+        <div className="flex flex-col gap-xs"><label className="text-label-lg text-on-surface-variant">Volume (mL) *</label>
+          <input type="number" min="1" className={inputCls} value={volumeMl} onChange={e => setVolumeMl(e.target.value)} />
+        </div>
+        <div className="flex flex-col gap-xs"><label className="text-label-lg text-on-surface-variant">Expiry date *</label>
+          <input type="date" className={inputCls} value={expiry} onChange={e => setExpiry(e.target.value)} />
+        </div>
+        {mut.isError && <p className="text-body-sm text-error">{(mut.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Could not record collection.'}</p>}
       </div>
-      <div className="flex flex-col gap-xs"><label className="text-label-lg text-on-surface-variant">Expiry date *</label>
-        <input type="date" className={inputCls} value={expiry} onChange={e => setExpiry(e.target.value)} />
-      </div>
-      {mut.isError && <p className="text-body-sm text-error">{(mut.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Could not record collection.'}</p>}
-    </Modal>
+    </Dialog>
   )
 }
 
@@ -157,7 +151,12 @@ function TransfusionModal({ bags, onClose }: { bags: Bag[]; onClose: () => void 
   const mismatch = !!selectedBag && !!recipientBloodType && selectedBag.donor.bloodType !== recipientBloodType
 
   return (
-    <Modal title="Record Transfusion" onClose={onClose} footer={<>
+    <Dialog title="Record Transfusion" open dismissal="explicit" onClose={onClose} width="max-w-md" footer={
+      // `flex gap-sm` wrapper, matching DonorModal/CollectionModal above. A
+      // bare fragment left cancelBtn/saveBtn's `flex-1` inert, so the two
+      // actions shrank to content width instead of splitting the footer —
+      // an unintended touch-target regression from the local-Modal removal.
+      <div className="flex gap-sm">
       <button onClick={onClose} className={cancelBtn}>Cancel</button>
       <button disabled={!pet || mut.isPending || (mismatch && !ack)}
         onClick={() => pet && mut.mutate({
@@ -170,7 +169,9 @@ function TransfusionModal({ bags, onClose }: { bags: Bag[]; onClose: () => void 
         })} className={saveBtn}>
         {mut.isPending ? 'Saving…' : 'Record'}
       </button>
-    </>}>
+      </div>
+    }>
+      <div className="flex flex-col gap-md">
       <div className="flex flex-col gap-xs"><label className="text-label-lg text-on-surface-variant">Recipient pet *</label><PetSearch selected={pet} onSelect={setPet} /></div>
       <div className="flex flex-col gap-xs"><label className="text-label-lg text-on-surface-variant">Recipient blood type</label>
         <select className={inputCls} value={recipientBloodType} onChange={e => setRecipientBloodType(e.target.value)}>
@@ -204,7 +205,8 @@ function TransfusionModal({ bags, onClose }: { bags: Bag[]; onClose: () => void 
         </div>
       )}
       {mut.isError && <p className="text-body-sm text-error">{(mut.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Could not record transfusion.'}</p>}
-    </Modal>
+      </div>
+    </Dialog>
   )
 }
 
