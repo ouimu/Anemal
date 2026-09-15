@@ -126,19 +126,39 @@ nested include): "shipping the gap documented is acceptable... provided extendin
 recorded as real scheduled work, not a nice-to-have." Carry this into Step 7/8 — it needs an actual
 backlog entry, not just a code comment.
 
+## XTI-14, 2nd VETO round — fixes applied, 3rd review pending (commit `3e40867`)
+
+`@db-agent`'s 2nd pass confirmed both repository fixes correct, but VETOed on 2 remaining issues:
+- **V1**: the E-6 exemption comment's own correction was itself factually wrong (`roleRef` IS a
+  nullable relation field per schema — just never null at runtime; and a valid, analyzer-accepted
+  guard shape DOES exist for 8 of 9 E-6 sites, blocked at the 9th (`findUsers`) by a real, narrow
+  `checkOrFallback` limitation — OR nested inside AND isn't recognized). Comment rewritten to say
+  this accurately: E-6 is scheduled follow-up work, not a clean structural exemption.
+- **V2**: `invoice.repository.ts`'s fix had ZERO test coverage (the prior commit's claim otherwise
+  was wrong — `reverseIncludeAttachments.test.ts` never touches invoice creation). Added
+  `crossTenantRelation.invoiceForeignDrug.test.ts` proving the actual financial-corruption property
+  via `POST /api/invoices` (subtotal excludes the foreign drug's price, not just a string check).
+
+Full suite green: 76 suites / 1082 tests. `tsc --noEmit` clean.
+
+**Pattern across all 3 db-agent rounds so far**: round 1 found 2 live leaks the human/orchestrator
+missed; round 2 found the round-1 fix's OWN correction comment was itself wrong, plus a test-
+coverage gap the round-1 commit message falsely claimed didn't exist. Verify db-agent's claims
+independently when reviewing its output (as done each time above) — but also don't assume round 3
+will be clean just because rounds 1-2 are now addressed.
+
 ## Next action — literally this
 
 ```
-@db-agent   XTI-14 re-review (NARROW — per db-agent's own instruction: "those two files plus the
-             new assertions", not a full re-review of W0-W2)
-input: src/backend/models/invoice.repository.ts (findMedicalRecord)
-       src/backend/models/medical-record.repository.ts (findById's attachments)
-       src/backend/tests/integration/crossTenantRelation.reverseIncludeAttachments.test.ts (new assertions)
-       src/backend/config/tenant-relation-exemptions.ts (E-6/E-7 comment corrections)
+@db-agent   XTI-14 re-review, 3rd pass (NARROW — same instruction as before: the two changed
+             files plus the new assertions, not a full re-review of W0-W2)
+input: src/backend/config/tenant-relation-exemptions.ts (E-6 comment, 2nd correction)
+       src/backend/tests/integration/crossTenantRelation.invoiceForeignDrug.test.ts (new file)
 output: APPROVE or another VETO with what's still wrong
 Then: Step 7 (@qa-agent code-review + sign-off — carry forward ALL backlog items: the perf
-  regression (XTI-12), the registry-parity conversion (XTI-13), and the analyzer's residual
-  to-many-nesting gap needing a REAL scheduled follow-up, not just a comment) →
+  regression (XTI-12), the registry-parity conversion (XTI-13), the analyzer's residual
+  to-many-nesting gap, AND E-6's scheduled-not-structural status (XTI-14) — all need REAL
+  backlog entries, not just code comments) →
   Step 8 (@scribe-agent /anemal-finish-branch).
 ```
 
