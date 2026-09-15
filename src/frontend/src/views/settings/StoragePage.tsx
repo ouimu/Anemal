@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import Dialog from '../../components/Dialog'
 import MaterialIcon from '../../components/MaterialIcon'
 import { useStorageConfig, useUpdateStorageConfig, useGoogleAuthorize, useOneDriveAuthorize, type StorageConfigInput } from '../../hooks/useStorageConfig'
 import { getErrorMessage } from '../../utils/errorMessage'
@@ -329,37 +330,42 @@ export default function StoragePage(): React.ReactElement {
         </div>
       )}
 
-      {confirmOpen && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-lg">
-          <div className="bg-surface rounded-2xl p-lg max-w-md w-full flex flex-col gap-md">
-            <h3 className="text-title-md font-medium text-on-surface">Change storage location?</h3>
-            <p className="text-body-md text-on-surface-variant">
-              Files already uploaded will stay at their current location and won't be visible at the new
-              location until moved there manually. Backing them up is now your clinic's responsibility.
-              {data?.provider === 'google_drive' && ' This also disconnects the currently connected Google account.'}
-              {data?.provider === 'onedrive' && ' This also disconnects the currently connected Microsoft account.'}
-            </p>
-            <p className="text-body-md text-on-surface-variant">
-              Switching providers does not automatically move your existing files. The app won't see them until
-              you switch back — nothing is deleted, and switching back restores visibility at any time.
-            </p>
-            <p className="text-body-md text-on-surface-variant">
-              If a file is deleted while a different provider than the one storing it is active, the physical file
-              at the old provider is not removed and can no longer be reached through the app.
-            </p>
-            <div className="flex justify-end gap-sm">
-              <button type="button" onClick={() => setConfirmOpen(false)}
-                className="min-h-[44px] px-lg border border-outline-variant rounded-xl text-body-md text-on-surface hover:bg-surface-container-low">
-                Cancel
-              </button>
-              <button type="button" onClick={handleConfirmSwitch}
-                className="min-h-[44px] px-lg bg-primary text-surface rounded-xl text-body-md font-medium hover:opacity-90">
-                Confirm
-              </button>
-            </div>
+      <Dialog
+        title="Change storage location?"
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        dismissal="explicit"
+        width="max-w-md"
+        footer={
+          <div className="flex justify-end gap-sm">
+            <button type="button" onClick={() => setConfirmOpen(false)}
+              className="min-h-[44px] px-lg border border-outline-variant rounded-xl text-body-md text-on-surface hover:bg-surface-container-low">
+              Cancel
+            </button>
+            <button type="button" onClick={handleConfirmSwitch}
+              className="min-h-[44px] px-lg bg-primary text-surface rounded-xl text-body-md font-medium hover:opacity-90">
+              Confirm
+            </button>
           </div>
+        }
+      >
+        <div className="flex flex-col gap-md">
+          <p className="text-body-md text-on-surface-variant">
+            Files already uploaded will stay at their current location and won't be visible at the new
+            location until moved there manually. Backing them up is now your clinic's responsibility.
+            {data?.provider === 'google_drive' && ' This also disconnects the currently connected Google account.'}
+            {data?.provider === 'onedrive' && ' This also disconnects the currently connected Microsoft account.'}
+          </p>
+          <p className="text-body-md text-on-surface-variant">
+            Switching providers does not automatically move your existing files. The app won't see them until
+            you switch back — nothing is deleted, and switching back restores visibility at any time.
+          </p>
+          <p className="text-body-md text-on-surface-variant">
+            If a file is deleted while a different provider than the one storing it is active, the physical file
+            at the old provider is not removed and can no longer be reached through the app.
+          </p>
         </div>
-      )}
+      </Dialog>
     </form>
   )
 }

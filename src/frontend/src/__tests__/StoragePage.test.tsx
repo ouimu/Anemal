@@ -84,6 +84,44 @@ describe('StoragePage', () => {
     ))
   })
 
+  it('Escape closes the confirmation dialog (dismissal=explicit) without switching provider', async () => {
+    state.data = { provider: 'google_drive', configured: true, connected: true }
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: /Disconnect/i }))
+    await waitFor(() => expect(screen.getByText(/Change storage location\?/i)).toBeInTheDocument())
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    await waitFor(() => expect(screen.queryByText(/Change storage location\?/i)).not.toBeInTheDocument())
+    expect(h.mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('backdrop click is a no-op (dismissal=explicit does not close on backdrop click)', async () => {
+    state.data = { provider: 'google_drive', configured: true, connected: true }
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: /Disconnect/i }))
+    const title = await screen.findByText(/Change storage location\?/i)
+
+    const backdrop = title.closest('[role="dialog"]')?.parentElement
+    expect(backdrop).toBeTruthy()
+    if (backdrop) fireEvent.click(backdrop)
+
+    expect(screen.getByText(/Change storage location\?/i)).toBeInTheDocument()
+    expect(h.mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('the confirmation dialog exposes a close (X) control that cancels without switching', async () => {
+    state.data = { provider: 'google_drive', configured: true, connected: true }
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: /Disconnect/i }))
+    await waitFor(() => expect(screen.getByText(/Change storage location\?/i)).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: /Close dialog/i }))
+
+    await waitFor(() => expect(screen.queryByText(/Change storage location\?/i)).not.toBeInTheDocument())
+    expect(h.mutateAsync).not.toHaveBeenCalled()
+  })
+
   it('an SMB_HOST_UNREACHABLE error renders under the host field', () => {
     state.error = { response: { data: { code: 'SMB_HOST_UNREACHABLE' } } }
     renderPage()

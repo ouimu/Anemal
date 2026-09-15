@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
+import Dialog from '../../components/Dialog'
 
 interface Branch {
   id: number
@@ -55,42 +56,41 @@ function BranchForm({ branch, onClose }: { branch: Branch | null; onClose: () =>
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-md" onClick={onClose}>
-      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-xl pt-xl pb-md border-b border-outline-variant">
-          <p className="text-headline-sm font-headline font-bold text-on-surface">{isEdit ? 'Edit Branch' : 'New Branch'}</p>
-          <button onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-surface-container text-on-surface-variant">
-            <MaterialIcon name="close" size={20} />
-          </button>
-        </div>
-        <div className="px-xl py-lg flex flex-col gap-md">
-          <div className="flex flex-col gap-xs">
-            <label className="text-label-lg text-on-surface-variant">Branch name *</label>
-            <input className={inputCls} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Main Branch" />
-          </div>
-          <div className="flex flex-col gap-xs">
-            <label className="text-label-lg text-on-surface-variant">Phone</label>
-            <input className={inputCls} value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="02-000-0000" />
-          </div>
-          <div className="flex flex-col gap-xs">
-            <label className="text-label-lg text-on-surface-variant">Email</label>
-            <input className={inputCls} value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="branch@clinic.com" />
-          </div>
-          <div className="flex flex-col gap-xs">
-            <label className="text-label-lg text-on-surface-variant">Address</label>
-            <textarea className={`${inputCls} min-h-[72px] resize-none`} value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} rows={2} />
-          </div>
-          {mut.isError && <p className="text-body-sm text-error">{(mut.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Could not save branch.'}</p>}
-        </div>
-        <div className="flex gap-sm px-xl pb-xl">
+    <Dialog
+      title={isEdit ? 'Edit Branch' : 'New Branch'}
+      open
+      onClose={onClose}
+      width="max-w-md"
+      footer={
+        <div className="flex gap-sm">
           <button onClick={onClose} className="flex-1 min-h-[44px] rounded-xl border border-outline-variant bg-surface text-on-surface hover:bg-surface-container text-body-md font-medium transition-colors">Cancel</button>
           <button onClick={submit} disabled={!form.name.trim() || mut.isPending}
             className="flex-1 min-h-[44px] rounded-xl bg-primary text-primary-on text-body-md font-medium hover:opacity-90 disabled:opacity-50 transition-opacity">
             {mut.isPending ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Branch'}
           </button>
         </div>
+      }
+    >
+      <div className="flex flex-col gap-md">
+        <div className="flex flex-col gap-xs">
+          <label className="text-label-lg text-on-surface-variant">Branch name *</label>
+          <input className={inputCls} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Main Branch" />
+        </div>
+        <div className="flex flex-col gap-xs">
+          <label className="text-label-lg text-on-surface-variant">Phone</label>
+          <input className={inputCls} value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="02-000-0000" />
+        </div>
+        <div className="flex flex-col gap-xs">
+          <label className="text-label-lg text-on-surface-variant">Email</label>
+          <input className={inputCls} value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="branch@clinic.com" />
+        </div>
+        <div className="flex flex-col gap-xs">
+          <label className="text-label-lg text-on-surface-variant">Address</label>
+          <textarea className={`${inputCls} min-h-[72px] resize-none`} value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} rows={2} />
+        </div>
+        {mut.isError && <p className="text-body-sm text-error">{(mut.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Could not save branch.'}</p>}
       </div>
-    </div>
+    </Dialog>
   )
 }
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent, act, within } from '@testing-library/react'
 import RoleList from '../components/roles/RoleList'
 
 interface MockAuth {
@@ -18,10 +18,10 @@ vi.mock('../store/authStore', () => ({
   useAuthStore: (s: (s: MockAuth) => unknown) => s(auth),
 }))
 
-const h = vi.hoisted(() => ({ updateMutate: vi.fn() }))
+const h = vi.hoisted(() => ({ updateMutate: vi.fn(), deleteMutate: vi.fn() }))
 vi.mock('../hooks/useRoles', () => ({
   useUpdateRolePermissionsMutation: () => ({ mutate: h.updateMutate, isPending: false }),
-  useDeleteRoleMutation: () => ({ mutate: vi.fn(), isPending: false }),
+  useDeleteRoleMutation: () => ({ mutate: h.deleteMutate, isPending: false }),
 }))
 
 // Stub the real editor (which disables Save for system roles per AC-2) with a
@@ -41,6 +41,12 @@ const roles = [
   { id: '2', name: 'Doctor', key: 'doctor',        isSystem: true,  permissions: [], assignedUserCount: 2 },
 ]
 
+// A custom (non-system) role, the only kind the delete control targets
+// (RoleList.tsx L340: `!role.isSystem && canManage`).
+const customRole = {
+  id: '3', name: 'Front Desk', key: 'front_desk', isSystem: false, permissions: [], assignedUserCount: 0,
+}
+
 describe('RoleList — Admin clone lockdown', () => {
   it('does not render a Clone button on the Admin row', () => {
     render(<RoleList roles={roles} catalogue={{}} canManage={true} onAssignStaff={() => {}} />)
@@ -52,6 +58,34 @@ describe('RoleList — Admin clone lockdown', () => {
     render(<RoleList roles={roles} catalogue={{}} canManage={true} onAssignStaff={() => {}} />)
     const doctorRow = screen.getByText('Doctor').closest('div')!.parentElement!
     expect(doctorRow.querySelector('[title="Clone this role"]')).not.toBeNull()
+  })
+
+  // MODAL-8-REGR (added at Step 7 by @qa-agent). The two cases above only
+  // separate a sealed system role from an unsealed one — both sides of
+  // `role.key !== SEALED_ROLE_KEY`. The other two conjuncts of RoleList.tsx
+  // L325 (`role.isSystem && … && canManage`) had no assertion in either
+  // direction, so "clone is offered on system roles only" — MODAL-8's
+  // privilege-escalation regression AC — was only half covered. The server
+  // is safe regardless (role.service.ts `cloneRole` resolves the source via
+  // findRoleByName(name, null), which only matches a global/system role), but
+  // a dev restructuring the migrated markup could surface the affordance on a
+  // custom role or to a caller without roles.manage and nothing would fail.
+  it('MODAL-8-REGR: offers no Clone control on a custom (non-system) role', () => {
+    render(
+      <RoleList roles={[...roles, customRole]} catalogue={{}} canManage={true} onAssignStaff={() => {}} />
+    )
+    const customRow = screen.getByText('Front Desk').closest('div')!.parentElement!
+    expect(customRow.querySelector('[title="Clone this role"]')).toBeNull()
+  })
+
+  it('MODAL-8-REGR: offers no Clone control on any role when canManage is false', () => {
+    render(
+      <RoleList roles={[...roles, customRole]} catalogue={{}} canManage={false} onAssignStaff={() => {}} />
+    )
+    for (const name of ['Admin', 'Doctor', 'Front Desk']) {
+      const row = screen.getByText(name).closest('div')!.parentElement!
+      expect(row.querySelector('[title="Clone this role"]'), `${name} row`).toBeNull()
+    }
   })
 })
 
@@ -140,5 +174,94 @@ describe('RoleList — honest refresh (ADR-0026 decision 6, AUTH-REFRESH-01/02/0
     expect(screen.getByText('Permissions updated')).toBeInTheDocument()
     act(() => { vi.advanceTimersByTime(4_001) })
     expect(screen.queryByText('Permissions updated')).toBeNull()
+  })
+})
+
+describe('RoleList — DeleteDialog on Dialog (MODAL-6)', () => {
+  beforeEach(() => {
+    h.deleteMutate.mockReset()
+  })
+
+  // Regression guard (RoleList.tsx L340: `!role.isSystem && canManage`). The
+  // migration onto Dialog must not accidentally surface a delete control for
+  // system roles — this is the exact case the arch task called out as a
+  // silent-drop risk for a dev restructuring the migrated markup.
+  it('MODAL-6-REGR: exposes no delete control at all on a system role, even with canManage', () => {
+    render(<RoleList roles={roles} catalogue={{}} canManage={true} onAssignStaff={() => {}} />)
+    const adminRow = screen.getByText('Admin').closest('div')!.parentElement!
+    const doctorRow = screen.getByText('Doctor').closest('div')!.parentElement!
+    expect(adminRow.querySelector('[title="Delete this role"]')).toBeNull()
+    expect(doctorRow.querySelector('[title="Delete this role"]')).toBeNull()
+  })
+
+  it('renders a delete control on a custom (non-system) role when canManage is true', () => {
+    render(
+      <RoleList roles={[...roles, customRole]} catalogue={{}} canManage={true} onAssignStaff={() => {}} />
+    )
+    const customRow = screen.getByText('Front Desk').closest('div')!.parentElement!
+    expect(customRow.querySelector('[title="Delete this role"]')).not.toBeNull()
+  })
+
+  it('does not render a delete control on a custom role when canManage is false', () => {
+    render(
+      <RoleList roles={[...roles, customRole]} catalogue={{}} canManage={false} onAssignStaff={() => {}} />
+    )
+    const customRow = screen.getByText('Front Desk').closest('div')!.parentElement!
+    expect(customRow.querySelector('[title="Delete this role"]')).toBeNull()
+  })
+
+  it('AC-7: confirming delete on an unused role calls the delete mutation and shows a success toast', () => {
+    h.deleteMutate.mockImplementation((_id: string, opts: { onSuccess: () => void }) => opts.onSuccess())
+
+    render(
+      <RoleList roles={[...roles, customRole]} catalogue={{}} canManage={true} onAssignStaff={() => {}} />
+    )
+    fireEvent.click(screen.getByTitle('Delete this role'))
+
+    // Dialog renders through the shared shell with dismissal='explicit'.
+    const dialog = screen.getByRole('dialog')
+    expect(dialog).toBeInTheDocument()
+    expect(within(dialog).getByText('Delete Role')).toBeInTheDocument()
+    expect(within(dialog).getByText(/Are you sure you want to delete/)).toBeInTheDocument()
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
+
+    expect(h.deleteMutate).toHaveBeenCalledWith(customRole.id, expect.anything())
+    expect(screen.getByText(/deleted/)).toBeInTheDocument()
+  })
+
+  it('AC-6: a 409 in-use response keeps the error message in the dialog body (title-bar red styling dropped)', () => {
+    h.deleteMutate.mockImplementation(
+      (_id: string, opts: { onError: (err: unknown) => void }) =>
+        opts.onError({ response: { status: 409, data: { data: { assignedCount: 3 } } } })
+    )
+
+    render(
+      <RoleList roles={[...roles, customRole]} catalogue={{}} canManage={true} onAssignStaff={() => {}} />
+    )
+    fireEvent.click(screen.getByTitle('Delete this role'))
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+
+    // Title is the plain Dialog heading — no red text/icon assertion, per the
+    // unified standard. The in-use error message must still be present.
+    expect(screen.getByText('Cannot Delete Role')).toBeInTheDocument()
+    expect(screen.getByText(/Reassign 3 staff/)).toBeInTheDocument()
+  })
+
+  it('explicit dismissal: backdrop click is a no-op, Escape and Close both dismiss', () => {
+    render(
+      <RoleList roles={[...roles, customRole]} catalogue={{}} canManage={true} onAssignStaff={() => {}} />
+    )
+    fireEvent.click(screen.getByTitle('Delete this role'))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    // Backdrop click: the outer fixed-position overlay is the dialog's parent.
+    const overlay = screen.getByRole('dialog').parentElement!
+    fireEvent.click(overlay)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    // Escape closes (dismissal='explicit' -> escapeCloses: true).
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 })

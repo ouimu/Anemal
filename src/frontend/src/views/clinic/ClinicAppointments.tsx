@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
+import Dialog from '../../components/Dialog'
+import { useAuthStore } from '../../store/authStore'
 import { useT } from '../../i18n'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -206,35 +208,46 @@ function BookingForm({ selectedDate, selectedHour, doctors, onClose, onSaved }: 
   )
 }
 
-// ─── Appointment detail popover ───────────────────────────────────────────────
+// ─── Appointment detail modal ──────────────────────────────────────────────────
 function AppointmentDetail({ appt, onClose, onStatusChange }: {
   appt: Appointment
   onClose: () => void
   onStatusChange: (id: number, status: string) => void
 }) {
+  // Deny-by-default: a role without appointments.edit (e.g. doctor holding
+  // appointments.view only) gets a read-only detail view — no status-change
+  // affordance is rendered. The server independently enforces this on
+  // PUT /api/appointments/:id/status regardless of what the client renders.
+  const canEditStatus = useAuthStore(s => s.hasPermission('appointments.edit'))
+
   return (
-    <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-lg">
-      <div className="bg-surface rounded-xl shadow-lg w-full max-w-sm p-xl">
-        <div className="flex items-center justify-between mb-lg">
-          <h3 className="text-headline-sm font-headline font-bold">{appt.pet.name}</h3>
-          <button onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-surface-container-low rounded-lg"><MaterialIcon name="close" size={20} /></button>
-        </div>
-        <div className="flex flex-col gap-sm mb-lg">
-          <p className="text-body-sm"><span className="text-on-surface-variant">Doctor:</span> {appt.doctor.name}</p>
-          <p className="text-body-sm"><span className="text-on-surface-variant">Time:</span> {formatTime(appt.scheduledAt)} · {appt.durationMin} min</p>
-          {appt.reason && <p className="text-body-sm"><span className="text-on-surface-variant">Reason:</span> {appt.reason}</p>}
-        </div>
-        <p className="text-body-sm font-medium text-on-surface-variant mb-sm">Update Status</p>
-        <div className="grid grid-cols-2 gap-sm">
-          {STATUS_OPTIONS.map(s => (
-            <button key={s} onClick={() => { onStatusChange(appt.id, s); onClose() }}
-              className={`min-h-[44px] rounded-lg text-body-sm font-medium capitalize transition-colors ${appt.status === s ? 'ring-2 ring-primary' : 'bg-surface-container-low hover:bg-surface-container'}`}>
-              {s.replace('_', ' ')}
-            </button>
-          ))}
-        </div>
+    <Dialog
+      title={appt.pet.name}
+      open
+      onClose={onClose}
+      width="max-w-sm"
+      footer={
+        canEditStatus ? (
+          <>
+            <p className="text-body-sm font-medium text-on-surface-variant mb-sm">Update Status</p>
+            <div className="grid grid-cols-2 gap-sm">
+              {STATUS_OPTIONS.map(s => (
+                <button key={s} onClick={() => { onStatusChange(appt.id, s); onClose() }}
+                  className={`min-h-[44px] rounded-lg text-body-sm font-medium capitalize transition-colors ${appt.status === s ? 'ring-2 ring-primary' : 'bg-surface-container-low hover:bg-surface-container'}`}>
+                  {s.replace('_', ' ')}
+                </button>
+              ))}
+            </div>
+          </>
+        ) : undefined
+      }
+    >
+      <div className="flex flex-col gap-sm">
+        <p className="text-body-sm"><span className="text-on-surface-variant">Doctor:</span> {appt.doctor.name}</p>
+        <p className="text-body-sm"><span className="text-on-surface-variant">Time:</span> {formatTime(appt.scheduledAt)} · {appt.durationMin} min</p>
+        {appt.reason && <p className="text-body-sm"><span className="text-on-surface-variant">Reason:</span> {appt.reason}</p>}
       </div>
-    </div>
+    </Dialog>
   )
 }
 
