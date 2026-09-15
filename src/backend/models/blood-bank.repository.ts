@@ -1,4 +1,5 @@
 // Blood bank repository (Phase 4, FR-10) — donors, donations, transfusions. Tenant-scoped.
+import { Prisma } from '@prisma/client'
 import prisma from '../config/db'
 import { ConflictError } from '../utils/errors'
 
@@ -15,8 +16,22 @@ export function findDonorById(tenantId: number, id: number) {
   })
 }
 
-export function createDonor(tenantId: number, data: { petId: number; bloodType: string; notes?: string | null }) {
-  return prisma.bloodDonor.create({ data: { tenantId, ...data } })
+// FK validation for registerDonor — pet table, scoped to tenant (arch §4.1 rev 3: new function,
+// moved out of blood-bank.service.ts's inline `prisma.pet.findFirst` check). `client` defaults to
+// the shared `prisma` instance but accepts a `Prisma.TransactionClient` so the service can run this
+// check inside the same write transaction as `createDonor` (arch §8.2 atomicity fix).
+export function findDonorPet(tenantId: number, petId: number, client: Prisma.TransactionClient | typeof prisma = prisma) {
+  return client.pet.findFirst({ where: { id: petId, tenantId } })
+}
+
+// `client` defaults to the shared `prisma` instance but accepts a `Prisma.TransactionClient` so
+// `registerDonor` (blood-bank.service.ts) can run the FK check and this write inside one transaction.
+export function createDonor(
+  tenantId: number,
+  data: { petId: number; bloodType: string; notes?: string | null },
+  client: Prisma.TransactionClient | typeof prisma = prisma,
+) {
+  return client.bloodDonor.create({ data: { tenantId, ...data } })
 }
 
 // ponytail: NULL-branch pets (no branch assigned) show up in every branch's view, same rule as usage.repository's vaccination query.

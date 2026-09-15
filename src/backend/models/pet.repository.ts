@@ -37,8 +37,17 @@ export function countPets(tenantId: number, ownerId?: number, species?: string) 
   return prisma.pet.count({ where: buildWhere(tenantId, ownerId, species) })
 }
 
-export function findPetById(tenantId: number, id: number, includeEmr = true) {
-  return prisma.pet.findFirst({
+// `client` defaults to the shared `prisma` instance but accepts a `Prisma.TransactionClient`
+// so a caller (e.g. appointment.service's booking-atomicity fix, arch §8.2/§4.1 rev 3) can
+// run this check inside its own write transaction. `includeEmr` keeps its existing default —
+// this is a trailing 4th param, not a replacement for it.
+export function findPetById(
+  tenantId: number,
+  id: number,
+  includeEmr = true,
+  client: Prisma.TransactionClient | typeof prisma = prisma,
+) {
+  return client.pet.findFirst({
     where: { id, tenantId, isActive: true, owner: { is: { tenantId } } },
     include: {
       owner: { select: ownerSummarySelect },
@@ -55,9 +64,11 @@ export function findPetById(tenantId: number, id: number, includeEmr = true) {
   })
 }
 
-// FK validation for createPet — owners table, scoped to tenant.
-export function findOwner(tenantId: number, ownerId: number) {
-  return prisma.owner.findFirst({ where: { id: ownerId, tenantId } })
+// FK validation for createPet — owners table, scoped to tenant. `client` defaults to the
+// shared `prisma` instance but accepts a `Prisma.TransactionClient` so `createPet` (pet.service.ts)
+// can run this check inside `createWithQuotaLock`'s existing transaction (arch §8.2 atomicity fix).
+export function findOwner(tenantId: number, ownerId: number, client: Prisma.TransactionClient | typeof prisma = prisma) {
+  return client.owner.findFirst({ where: { id: ownerId, tenantId } })
 }
 
 // `client` defaults to the shared `prisma` instance but accepts a `Prisma.TransactionClient`

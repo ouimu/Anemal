@@ -24,7 +24,8 @@ export function findByPet(tenantId: number, branchId: number | null | undefined,
     orderBy: { createdAt: 'desc' },
     include: {
       doctor: { select: { id: true, name: true } },
-      prescriptions: { where: { tenantId }, include: { drug: { select: { id: true, name: true, unit: true } } } },
+      // XTI-13 finding — same drug-hop gap as findById below, fixed the same way.
+      prescriptions: { where: { tenantId, drug: { is: { tenantId } } }, include: { drug: { select: { id: true, name: true, unit: true } } } },
     },
   })
 }
@@ -52,7 +53,14 @@ export function findById(tenantId: number, branchId: number | null | undefined, 
     include: {
       pet:    { include: { owner: { select: ownerSummarySelect } } },
       doctor: { select: { id: true, name: true } },
-      prescriptions: { where: { tenantId }, include: { drug: true } },
+      // XTI-13 finding (nonPiiT4 regression): the analyzer's static check does not
+      // descend into a to-one relation nested inside an already-guarded to-many include,
+      // so this needed a human-caught fix — `drug` (a to-one relation, InventoryItem) was
+      // bare `true` with no tenant guard, leaking another tenant's whole InventoryItem row
+      // through a corrupt prescription.drugId FK. Prisma cannot filter a to-one `include`
+      // by a field on the related row (same reason as ADR-0027's root case), so the
+      // predicate mirrors into `prescriptions`'s own `where` — dialect 1, one level deeper.
+      prescriptions: { where: { tenantId, drug: { is: { tenantId } } }, include: { drug: true } },
       attachments: {
         where: { tenantId },
         include: { uploadedByUser: { select: { id: true, name: true } } },

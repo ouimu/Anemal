@@ -1,5 +1,6 @@
 // Appointment repository — all Prisma access (incl. the raw-SQL overlap check).
 
+import { Prisma } from '@prisma/client'
 import prisma from '../config/db'
 import { ConflictError } from '../utils/errors'
 import type { CreateAppointmentInput, AppointmentStatus } from '../services/appointment.service'
@@ -143,14 +144,20 @@ type PrismaTxOrClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
  * durable long-term fix (see BA finding R3-HI-01); this advisory lock is the accepted
  * interim per the BA-approved remediation plan.
  */
+// `client` defaults to the shared `prisma` instance but accepts a `Prisma.TransactionClient` so
+// `createAppointment` (appointment.service.ts, arch §8.2) can share one transaction with the
+// service's pet-existence check instead of opening its own nested one. When a `client` is passed
+// in, the advisory lock + conflict check + insert run directly against it (already inside the
+// caller's transaction); otherwise this function opens its own transaction as before.
 export async function createAppointment(
   tenantId: number, branchId: number | null, data: CreateAppointmentInput, scheduledAt: Date,
+  client: Prisma.TransactionClient | typeof prisma = prisma,
 ) {
   const durationMin = data.durationMin
   const end = new Date(scheduledAt.getTime() + durationMin * 60_000)
   const lockKey = `appt:${tenantId}:${data.doctorId}:${scheduledAt.toISOString().slice(0, 10)}`
 
-  return prisma.$transaction(async (tx) => {
+  const run = async (tx: Prisma.TransactionClient | typeof prisma) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`
 
     const conflicts = await countDoctorConflictsTx(tx, tenantId, branchId, data.doctorId, scheduledAt, end)
@@ -159,11 +166,19 @@ export async function createAppointment(
     }
 
     return tx.appointment.create({ data: { ...data, tenantId, branchId, scheduledAt } })
-  })
+  }
+
+  if (client !== prisma) return run(client)
+  return prisma.$transaction(run)
 }
 
-export function createWalkIn(tenantId: number, branchId: number | null, petId: number, doctorId: number, reason?: string | null) {
-  return prisma.appointment.create({
+// `client` — same rationale as createAppointment above (arch §8.2): lets createWalkIn's insert
+// share the service layer's transaction with its pet-existence check.
+export function createWalkIn(
+  tenantId: number, branchId: number | null, petId: number, doctorId: number, reason?: string | null,
+  client: Prisma.TransactionClient | typeof prisma = prisma,
+) {
+  return client.appointment.create({
     data: {
       tenantId,
       branchId,
