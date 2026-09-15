@@ -80,7 +80,12 @@ inside a to-many `include` are excluded, since they do not change the root row s
 desynchronise a count.
 
 **Enforcement is a conformance test in the backend Jest suite**
-(`src/backend/tests/unit/tenantRelationConformance.test.ts`), not a lint rule. The repository has no
+(`src/backend/tests/integration/crossTenantRelation.standingGuards.test.ts`, which asserts the
+`remaining` violation set against the real `models/` sources is `[]`), not a lint rule.
+`src/backend/tests/unit/tenantRelationConformance.test.ts` is where the analyzer itself
+(`analyzeTenantRelationConformance`) is defined and unit-tested against fixtures — its own assertion
+against the real models is intentionally non-enforcing (`Array.isArray(violations)`), so
+`standingGuards.test.ts` is the actual gate a future change must not break. The repository has no
 `.github/workflows`; `npm run lint` is run by no gate, while the test suite is gated three times — by
 `@qa-agent` at Step 7, by the red-suite ship gate at Step 8, and by the rule that a red `main` blocks
 the next merge. The analyzer derives its relation map from `Prisma.dmmf.datamodel.models`, so relation
@@ -110,8 +115,10 @@ entry that no longer matches a real violation fails, so exemptions cannot rot in
 
 **Write side:** the FK check is a precondition of the write and must be atomic with it. The check
 lives with whoever owns the transaction; it is never duplicated. `crossTenantFkWritePathRepro.test.ts`
-is converted from a one-off reproduction into a standing prober that walks the Express route table and
-fails when a write route has no registry entry.
+remains, as of this change, its original fixed list of hand-written probes (C-1 form) — converting it
+into a standing prober that walks the Express route table and fails on an unregistered write route was
+scoped into XTI-13 but not completed (rate-limited mid-task). **Deferred, tracked as backlog**, not
+shipped as part of this change; revisit before relying on this ADR's write-side coverage as automatic.
 
 **No new abstraction, error class, permission code, dependency or layer is introduced.** The layering
 of `architecture-rules.md` §1 is unchanged: a tenant predicate is a data-access concern and lives in

@@ -210,15 +210,71 @@ round 4):
 - XTI-13's unfinished conversion of `crossTenantFkWritePathRepro.test.ts` into a standing
   registry-parity check (QA's agent hit a rate limit before reaching this part).
 
+## Correction — every "full suite green: 75/76 suites" figure above measured ~70% of the suite
+
+`@qa-agent` (Step 7) found that the inline `--config` override used throughout Step 6 excluded the
+whole `src/backend/__tests__/` directory (33 suites — `multitenancy-isolation`, `rbac`, `inventory`,
+`subscription`, `reports`, `owner-idcard`, etc.), not just the `.claude/worktrees/` path it was meant
+to exclude. Every "75/76 suites" number in this file (§ XTI-13 close-out and all three XTI-14 rounds
+above) is real but incomplete — those 33 suites were never run against this branch until Step 7.
+**Corrected, verified figure: 109 suites / 1454 tests, all green**, confirmed by `@qa-agent` running
+all four shards. `tsc --noEmit` clean. Nothing was hidden — all 33 previously-unrun suites pass — but
+`@scribe-agent`'s Step 8 red-suite ship gate must baseline on **109/1454**, not 76/1082, or it will
+under-measure `main`. A single unsharded run exhausts Postgres connections around suite 47 regardless
+of code correctness (F4 below) — shard by 4 with `--runInBand --forceExit`, per Step 7's repro command.
+
+## Step 7 — QA code-review + sign-off: REQUEST CHANGES (docs only), code APPROVED
+
+`@qa-agent` reviewed the full branch diff against `main` (not just XTI-14's files), independently
+checked all 51 added/changed tenant-predicate sites against `schema.prisma`'s FK nullability (51/51
+correct — bare mirror only on non-nullable FKs, OR-fallback on the 3 genuinely nullable ones), and
+confirmed arch §4.1 rev 3 signatures, RBAC/plane-isolation suites, and no-PII-in-integrity-scan all
+hold. **Verdict: code is correct, no isolation defect found. Approval withheld pending two doc fixes**,
+both applied by the orchestrator in this pass, no re-test needed:
+
+- **F1 (blocking)**: ADR-0027's "Write side" paragraph asserted `crossTenantFkWritePathRepro.test.ts`
+  "is converted" into a route-table-walking standing prober — it was not (XTI-13's write-side AC-5 was
+  never completed, rate-limited mid-task; the file is unchanged from its original C-1 form). This is
+  the exact failure mode `hotfix.md` §5a (this branch's own new rule) forbids — an unverified safety
+  claim about code. **Fixed**: ADR-0027 now states this is deferred/backlog, not shipped.
+- **F1b (non-blocking, corrected anyway)**: ADR-0027 named the wrong enforcement file
+  (`tenantRelationConformance.test.ts`, whose real-models assertion is vacuous by design). Actual
+  enforcement is `crossTenantRelation.standingGuards.test.ts`'s `remaining` === `[]` assertion.
+  **Fixed**: ADR-0027 now names both correctly.
+- **F5 (blocking)**: HANDOFF suite-count correction, see section immediately above.
+
+**2 new backlog items from Step 7** (not blocking, add to the same tracked list as E-6/analyzer-gap):
+- **F2, medium**: `appointment.service.ts` calls `findDoctorById`/`shiftWarning` on the global prisma
+  client from *inside* `prisma.$transaction` (which holds `pg_advisory_xact_lock`) — each booking now
+  needs ≥2 pool connections concurrently and extends time under the advisory lock. Introduced by this
+  branch (XTI-11), outside every db-agent round's file scope and outside XTI-12's perf measurement
+  (which only covered `searchPets`). Fix: pass `tx` through, or move both reads before the transaction.
+- **F4, low, test infra**: the full suite cannot run unsharded — ~2 leaked PG connections/suite exhaust
+  `max_connections=100` around suite 47. `jest.config.js` already has a noted TODO to add
+  `afterAll(() => prisma.$disconnect())`; apply it. Sharding (4-way) is the workaround until then.
+- **F3, informational, not backlog**: `blood-bank.repository.ts:130`'s `listTransfusions` filters
+  `recipientPet` by branch with no tenant predicate — no leak (scalars-only select, no `include`, so
+  the analyzer is correctly silent), but a corrupt row's foreign pet's `branchId` can affect whether an
+  own-tenant row is included. Filter-correctness quirk, noted for awareness only.
+
+QA's backlog-grouping disposition: **E-6, analyzer gap, F2, and F4 are each their own item** — QA
+explicitly does not merge F2 or F4 into E-6 or the analyzer gap (different failure classes). E-7 stays
+not-backlog. XTI-12 perf and XTI-13's registry-parity conversion carry forward as before, with XTI-13's
+now reclassified per F1 (an unmet ADR-0027 decision, not a nice-to-have).
+
 ## Next action — literally this
 
 ```
-@qa-agent   /code-review + sign-off (Step 7)
-scope: full branch docs/cross-tenant-isolation-ba-signoff since it diverged from main
-carry forward: the 5 backlog items listed immediately above, grouped exactly as shown
-gate: findings closed + arch conformance (per arch doc, ADR-0027, ADR-0028)
-Then: Step 8 (@scribe-agent /anemal-finish-branch — PR, red-suite ship gate, merge, refresh the 5
-  tracking docs per doc-maintenance.md, resolve the "Open hotfix debt" follow-up row for PR #73).
+@scribe-agent   /anemal-finish-branch (Step 8)
+gate: red-suite ship gate baselines on 109 suites / 1454 tests (see correction above), 4-way sharded
+  run required (see repro command in Step 7 section) — do not use the old 76/1082 unsharded figure.
+carry forward backlog (7 items, do not merge groupings): E-6 (medium) · analyzer to-many-nesting gap
+  (low, separate from E-6) · F2 appointment-service pool/advisory-lock overlap (medium, separate) ·
+  F4 jest afterAll/$disconnect + sharding (low, test infra) · F3 blood-bank branch-filter quirk
+  (informational) · XTI-12 perf (ANALYZE after bulk import) · XTI-13 registry-parity conversion
+  (now an unmet ADR-0027 decision, not a nice-to-have).
+also: resolve the "Open hotfix debt" follow-up row in .claude/roadmap/index.md for PR #73 — this
+  Lane A change is its resolution. Refresh the 5 tracking docs per doc-maintenance.md.
 ```
 
 ### Step 4b — scribe-agent reference pre-check, 3rd pass (2026-09-11) — PASS
