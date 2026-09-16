@@ -669,10 +669,17 @@ function CageCard({ hospit, doctors, onCare, onDischarge, onEdit, onDelete, onHi
 }
 
 // ─── Main view ────────────────────────────────────────────────────────────────
+// Which single modal (if any) is open, and for which record — a discriminated
+// union rather than 3 independent nullable states, so only one modal can ever
+// be "the open one" structurally (Lane B fix: previously nothing cleared one
+// modal's state when another opened, so two could render stacked at once).
+type InpatientModalState =
+  | { kind: 'care'; hospit: Hospitalization }
+  | { kind: 'edit'; hospit: Hospitalization }
+  | { kind: 'history'; hospit: Hospitalization }
+
 export default function ClinicInpatient() {
-  const [careTarget, setCareTarget] = useState<Hospitalization | null>(null)
-  const [editTarget, setEditTarget] = useState<Hospitalization | null>(null)
-  const [historyTarget, setHistoryTarget] = useState<Hospitalization | null>(null)
+  const [activeModal, setActiveModal] = useState<InpatientModalState | null>(null)
   const qc = useQueryClient()
 
   const { data, isLoading, isError, refetch } = useQuery<Hospitalization[]>({
@@ -758,40 +765,40 @@ export default function ClinicInpatient() {
               key={h.id}
               hospit={h}
               doctors={doctors}
-              onCare={() => setCareTarget(h)}
+              onCare={() => setActiveModal({ kind: 'care', hospit: h })}
               onDischarge={() => handleDischarge(h)}
-              onEdit={() => setEditTarget(h)}
+              onEdit={() => setActiveModal({ kind: 'edit', hospit: h })}
               onDelete={() => handleDelete(h)}
-              onHistory={() => setHistoryTarget(h)}
+              onHistory={() => setActiveModal({ kind: 'history', hospit: h })}
             />
           ))}
         </div>
       )}
 
       {/* Care modal */}
-      {careTarget && (
+      {activeModal?.kind === 'care' && (
         <CareModal
-          hospit={careTarget}
-          onClose={() => setCareTarget(null)}
-          onSaved={() => setCareTarget(null)}
+          hospit={activeModal.hospit}
+          onClose={() => setActiveModal(null)}
+          onSaved={() => setActiveModal(null)}
         />
       )}
 
       {/* Edit modal */}
-      {editTarget && (
+      {activeModal?.kind === 'edit' && (
         <EditModal
-          hospit={editTarget}
+          hospit={activeModal.hospit}
           doctors={doctors}
-          onClose={() => setEditTarget(null)}
-          onSaved={() => setEditTarget(null)}
+          onClose={() => setActiveModal(null)}
+          onSaved={() => setActiveModal(null)}
         />
       )}
 
       {/* Care history modal */}
-      {historyTarget && (
+      {activeModal?.kind === 'history' && (
         <CareHistoryModal
-          hospit={historyTarget}
-          onClose={() => setHistoryTarget(null)}
+          hospit={activeModal.hospit}
+          onClose={() => setActiveModal(null)}
         />
       )}
     </div>
