@@ -40,6 +40,47 @@ interface PetResult { petId: number; petName: string; ownerId: number; ownerName
 interface PreviewLine { description: string; qty: number; unitPrice: number }
 interface CartItem { key: number; description: string; itemType: string; qty: number; unitPrice: number; productId?: number }
 
+interface ComputedTotals {
+  subtotal: number
+  maxRedeemable: number
+  redeemDiscount: number
+  discountNum: number
+  tax: number
+  total: number
+}
+
+/**
+ * Pure checkout arithmetic: subtotal (cart + prescription preview lines) →
+ * loyalty redemption cap → manual + loyalty discount → `calcVat` → total.
+ * `loyaltyPoints` is the owner's current balance, not `maxRedeemable` — the
+ * cap is derived here from the computed subtotal, so passing the cap in
+ * would be circular. Callers must not trust a previously-clamped `redeemPts`
+ * value: this function re-clamps against the current cart on every call, so
+ * a cart edit after a Max-redeem never overpays loyalty points against a
+ * stale, larger subtotal. Exported for unit testing.
+ */
+export function computeTotals(
+  cart: CartItem[],
+  previewLines: PreviewLine[],
+  loyaltyPoints: number,
+  redeemPts: number,
+  discount: string,
+  vatMode: VatMode,
+  vatRate: number,
+): ComputedTotals {
+  const previewTotal = previewLines.reduce((s, l) => s + l.qty * l.unitPrice, 0)
+  const cartTotal = cart.reduce((s, c) => s + c.qty * c.unitPrice, 0)
+  const subtotal = previewTotal + cartTotal
+  // Loyalty: 1 point = ฿1, capped at 20% of subtotal and the owner's balance.
+  const maxRedeemable = Math.min(loyaltyPoints, Math.floor(subtotal * LOYALTY_REDEEM_RATIO))
+  const redeemDiscount = Math.min(redeemPts, maxRedeemable)
+  const manualDiscount = Number(discount || 0)
+  const discountNum = Math.min(manualDiscount + redeemDiscount, subtotal)
+  const taxable = subtotal - discountNum
+  const { taxAmount: tax, total } = calcVat(vatMode, vatRate, taxable)
+  return { subtotal, maxRedeemable, redeemDiscount, discountNum, tax, total }
+}
+
 let keySeq = 1
 
 export default function ClinicBilling() {
@@ -113,16 +154,9 @@ export default function ClinicBilling() {
     }),
   )
 
-  const previewTotal = previewLines.reduce((s, l) => s + l.qty * l.unitPrice, 0)
-  const cartTotal = cart.reduce((s, c) => s + c.qty * c.unitPrice, 0)
-  const subtotal = previewTotal + cartTotal
-  // Loyalty: 1 point = ฿1, capped at 20% of subtotal and the owner's balance.
-  const maxRedeemable = Math.min(loyalty?.points ?? 0, Math.floor(subtotal * LOYALTY_REDEEM_RATIO))
-  const redeemDiscount = Math.min(redeemPts, maxRedeemable)
-  const manualDiscount = Number(discount || 0)
-  const discountNum = Math.min(manualDiscount + redeemDiscount, subtotal)
-  const taxable = subtotal - discountNum
-  const { taxAmount: tax, total } = calcVat(vatMode, vatRate, taxable)
+  const { subtotal, maxRedeemable, redeemDiscount, discountNum, tax, total } = computeTotals(
+    cart, previewLines, loyalty?.points ?? 0, redeemPts, discount, vatMode, vatRate,
+  )
   const change = method === 'cash' ? Number(tendered || 0) - total : 0
   const hasLines = previewLines.length > 0 || cart.length > 0
 
@@ -143,6 +177,18 @@ export default function ClinicBilling() {
   }
   function removeItem(key: number) { setCart(cart.filter((c) => c.key !== key)) }
 
+  // Redeem loyalty points (best-effort — payment already succeeded by the time
+  // this runs, so a failure here must never block or roll back the sale).
+  // invoiceTotal is `subtotal` — pre-discount, pre-VAT — matching the backend
+  // redeem endpoint's expected basis; do not change to post-discount/post-VAT.
+  async function redeemLoyaltyIfNeeded() {
+    if (!pet?.ownerId || redeemDiscount <= 0) return
+    try {
+      await api.post('/api/loyalty/redeem', { ownerId: pet.ownerId, points: redeemDiscount, invoiceTotal: subtotal })
+      qc.invalidateQueries({ queryKey: ['loyalty', pet.ownerId] })
+    } catch { /* discount already applied to invoice; ignore redeem failure */ }
+  }
+
   async function finalize() {
     setErr('')
     if (!hasLines) { setErr('Add at least one line item.'); return }
@@ -159,13 +205,7 @@ export default function ClinicBilling() {
         return  // stop here — user scans QR, then clicks "Payment Received"
       }
       const settled = await recordPayment.mutateAsync({ id: invoice.id, paymentMethod: method })
-      // Redeem loyalty points (best-effort — payment already succeeded).
-      if (pet?.ownerId && redeemDiscount > 0) {
-        try {
-          await api.post('/api/loyalty/redeem', { ownerId: pet.ownerId, points: redeemDiscount, invoiceTotal: subtotal })
-          qc.invalidateQueries({ queryKey: ['loyalty', pet.ownerId] })
-        } catch { /* discount already applied to invoice; ignore redeem failure */ }
-      }
+      await redeemLoyaltyIfNeeded()
       const earned = Math.floor(Number(settled.totalAmount) / 100)
       if (pet?.ownerId && earned > 0) setEarnedMsg(`+${earned} loyalty point${earned !== 1 ? 's' : ''} earned`)
       setPaid(settled)
@@ -179,13 +219,7 @@ export default function ClinicBilling() {
     setErr('')
     try {
       const settled = await recordPayment.mutateAsync({ id: pendingInvoiceId, paymentMethod: method })
-      // Redeem loyalty points (best-effort — payment already succeeded).
-      if (pet?.ownerId && redeemDiscount > 0) {
-        try {
-          await api.post('/api/loyalty/redeem', { ownerId: pet.ownerId, points: redeemDiscount, invoiceTotal: subtotal })
-          qc.invalidateQueries({ queryKey: ['loyalty', pet.ownerId] })
-        } catch { /* best-effort */ }
-      }
+      await redeemLoyaltyIfNeeded()
       const earned = Math.floor(Number(settled.totalAmount) / 100)
       if (pet?.ownerId && earned > 0) setEarnedMsg(`+${earned} loyalty point${earned !== 1 ? 's' : ''} earned`)
       setPendingInvoiceId(null)
