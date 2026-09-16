@@ -53,9 +53,14 @@ const fieldClass = 'bg-surface-container-low rounded-lg px-md py-sm min-h-[44px]
  * modals (arch audit §2.2). `submitFn` performs the request(s) for one
  * submit attempt; `onSuccess` runs only when `submitFn` resolves without
  * throwing. `formatError` lets a caller customize or suppress the message
- * shown for a given error — `EditPetModal` needs this so a photo-upload
- * failure (already surfaced via `usePhotoUpload`'s own `uploadError`) is
- * not also reported here; every other modal uses the default extraction.
+ * for a given error. `EditPetModal` passes an override that suppresses
+ * when `usePhotoUpload`'s `uploadError` is set — note that check reads a
+ * stale closure (this render's `uploadError`, not the failing attempt's),
+ * so it only ever suppresses a *later*, unrelated failure after a photo
+ * failure already showed `uploadError`, not the photo failure itself. This
+ * is a known pre-existing bug, pinned not fixed (see the call site and
+ * ClinicPets.characterization.test.tsx); every other modal uses the
+ * default extraction.
  */
 function useModalSubmit(
   submitFn: () => Promise<void>,

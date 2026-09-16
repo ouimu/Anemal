@@ -522,11 +522,12 @@ describe('ClinicPets — EditPetModal', () => {
     expect(screen.getByText('Edit Pet')).toBeInTheDocument()
   })
 
-  // Drives the real `usePhotoUpload` hook (this file does not mock it —
-  // see the header comment), matching how QA's own probe exercised the
-  // formatError suppression branch useModalSubmit's `uploadError` param
-  // restructured. Zero coverage existed anywhere for this branch before
-  // (EditPetModal.test.tsx hard-mocks usePhotoUpload with uploadError: '').
+  // Drives the real `usePhotoUpload` hook (this file mocks only ../utils/api
+  // and ../store/authStore, not usePhotoUpload), so uploadError genuinely
+  // varies across renders — exercising the formatError suppression branch
+  // EditPetModal's useModalSubmit call passes. Zero coverage existed
+  // anywhere for this branch before (EditPetModal.test.tsx hard-mocks
+  // usePhotoUpload with uploadError: '').
   it('photo-upload failure on save shows the upload error and does not call PUT', async () => {
     globalThis.URL.createObjectURL = vi.fn().mockReturnValue('blob:mock-url')
     await openEditPetModal()
