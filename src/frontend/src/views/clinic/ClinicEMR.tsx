@@ -353,6 +353,30 @@ function PrescriptionPanel({ recordId, prescriptions, onRefresh }: {
 const SOAP_TABS = ['Subjective', 'Objective', 'Assessment', 'Plan'] as const
 type SoapTab = typeof SOAP_TABS[number]
 
+// ─── Draft record ─────────────────────────────────────────────────────────────
+/**
+ * The nine SOAP/vitals/anatomy fields of the record currently being edited.
+ * Written together (hydration effect), read together (save payload), and
+ * reset together (`resetForm`) — collapsed into one object so those three
+ * operations touch one piece of state instead of nine.
+ */
+interface EmrDraft {
+  subjective: string
+  objective: string
+  assessment: string
+  plan: string
+  weightKg: number | null
+  tempC: number | null
+  heartRate: number | null
+  respRate: number | null
+  anatomy: AnatomyAnnotation | null
+}
+
+const EMPTY_DRAFT: EmrDraft = {
+  subjective: '', objective: '', assessment: '', plan: '',
+  weightKg: null, tempC: null, heartRate: null, respRate: null, anatomy: null,
+}
+
 // ─── Main View ────────────────────────────────────────────────────────────────
 export default function ClinicEMR() {
   const t = useT()
@@ -376,17 +400,14 @@ export default function ClinicEMR() {
 
   // SOAP form state
   const [soapTab, setSoapTab] = useState<SoapTab>('Subjective')
-  const [subjective, setSubjective]   = useState('')
-  const [objective, setObjective]     = useState('')
-  const [assessment, setAssessment]   = useState('')
-  const [plan, setPlan]               = useState('')
-  const [weightKg, setWeightKg]       = useState<number | null>(null)
-  const [tempC, setTempC]             = useState<number | null>(null)
-  const [heartRate, setHeartRate]     = useState<number | null>(null)
-  const [respRate, setRespRate]       = useState<number | null>(null)
-  const [anatomy, setAnatomy]         = useState<AnatomyAnnotation | null>(null)
-  const [saving, setSaving]           = useState(false)
-  const [saveMsg, setSaveMsg]         = useState('')
+  const [draft, setDraft]     = useState<EmrDraft>(EMPTY_DRAFT)
+  const [saving, setSaving]   = useState(false)
+  const [saveMsg, setSaveMsg] = useState('')
+
+  /** Update a single draft field, keeping the rest of the draft object intact. */
+  const setField = useCallback(<K extends keyof EmrDraft>(key: K, value: EmrDraft[K]) => {
+    setDraft(prev => ({ ...prev, [key]: value }))
+  }, [])
 
   // Patient search
   const { data: searchData } = useQuery({
@@ -453,23 +474,24 @@ export default function ClinicEMR() {
   // Load existing record into form
   useEffect(() => {
     if (record && !isNewRecord) {
-      setSubjective(record.subjective ?? '')
-      setObjective(record.objective ?? '')
-      setAssessment(record.assessment ?? '')
-      setPlan(record.plan ?? '')
-      setWeightKg(record.weightKg ? Number(record.weightKg) : null)
-      setTempC(record.temperatureC ? Number(record.temperatureC) : null)
-      setHeartRate(record.heartRateBpm ?? null)
-      setRespRate(record.respRateRpm ?? null)
-      setAnatomy(record.anatomyAnnotation ?? null)
+      setDraft({
+        subjective: record.subjective ?? '',
+        objective: record.objective ?? '',
+        assessment: record.assessment ?? '',
+        plan: record.plan ?? '',
+        weightKg: record.weightKg ? Number(record.weightKg) : null,
+        tempC: record.temperatureC ? Number(record.temperatureC) : null,
+        heartRate: record.heartRateBpm ?? null,
+        respRate: record.respRateRpm ?? null,
+        anatomy: record.anatomyAnnotation ?? null,
+      })
     }
   // record intentionally excluded — effect re-runs only when the record ID changes, not on field updates
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [record?.id, isNewRecord])
 
   const resetForm = () => {
-    setSubjective(''); setObjective(''); setAssessment(''); setPlan('')
-    setWeightKg(null); setTempC(null); setHeartRate(null); setRespRate(null); setAnatomy(null)
+    setDraft(EMPTY_DRAFT)
     setSoapTab('Subjective')
   }
 
@@ -484,7 +506,12 @@ export default function ClinicEMR() {
     setSaving(true)
     setSaveMsg('')
     try {
-      const body = { petId: selectedPetId, doctorId: userId, subjective, objective, assessment, plan, weightKg, temperatureC: tempC, heartRateBpm: heartRate, respRateRpm: respRate, anatomyAnnotation: anatomy }
+      const body = {
+        petId: selectedPetId, doctorId: userId,
+        subjective: draft.subjective, objective: draft.objective, assessment: draft.assessment, plan: draft.plan,
+        weightKg: draft.weightKg, temperatureC: draft.tempC, heartRateBpm: draft.heartRate, respRateRpm: draft.respRate,
+        anatomyAnnotation: draft.anatomy,
+      }
 
       if (isNewRecord) {
         const res = await api.post('/api/medical-records', body)
@@ -596,8 +623,8 @@ export default function ClinicEMR() {
               <textarea
                 className="w-full bg-surface-container-low rounded-xl px-lg py-md text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary min-h-[200px] resize-none"
                 placeholder={t('clinic.emr.notes')}
-                value={subjective}
-                onChange={e => setSubjective(e.target.value)}
+                value={draft.subjective}
+                onChange={e => setField('subjective', e.target.value)}
               />
             )}
 
@@ -607,10 +634,10 @@ export default function ClinicEMR() {
                 <div>
                   <p className="text-body-sm font-semibold text-on-surface-variant mb-md">Vital Signs</p>
                   <div className="flex flex-wrap gap-md">
-                    <VitalStepper label={t('clinic.emr.weight')} unit="kg" value={weightKg} onChange={setWeightKg} step={0.1} max={999.99} />
-                    <VitalStepper label={t('clinic.emr.temperature')} unit="°C" value={tempC} onChange={setTempC} step={0.1} max={999.9} />
-                    <VitalStepper label="Heart Rate" unit="bpm" value={heartRate} onChange={setHeartRate} step={1} min={1} max={3000} />
-                    <VitalStepper label="Resp Rate" unit="rpm" value={respRate} onChange={setRespRate} step={1} min={1} max={3000} />
+                    <VitalStepper label={t('clinic.emr.weight')} unit="kg" value={draft.weightKg} onChange={v => setField('weightKg', v)} step={0.1} max={999.99} />
+                    <VitalStepper label={t('clinic.emr.temperature')} unit="°C" value={draft.tempC} onChange={v => setField('tempC', v)} step={0.1} max={999.9} />
+                    <VitalStepper label="Heart Rate" unit="bpm" value={draft.heartRate} onChange={v => setField('heartRate', v)} step={1} min={1} max={3000} />
+                    <VitalStepper label="Resp Rate" unit="rpm" value={draft.respRate} onChange={v => setField('respRate', v)} step={1} min={1} max={3000} />
                   </div>
                 </div>
 
@@ -620,15 +647,15 @@ export default function ClinicEMR() {
                   <textarea
                     className="w-full bg-surface-container-low rounded-xl px-lg py-md text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary min-h-[120px] resize-none"
                     placeholder="Physical findings, auscultation, palpation…"
-                    value={objective}
-                    onChange={e => setObjective(e.target.value)}
+                    value={draft.objective}
+                    onChange={e => setField('objective', e.target.value)}
                   />
                 </div>
 
                 {/* Anatomy canvas */}
                 <div>
                   <p className="text-body-sm font-semibold text-on-surface-variant mb-md">Anatomy Annotation</p>
-                  <AnatomyCanvas value={anatomy} onChange={setAnatomy} />
+                  <AnatomyCanvas value={draft.anatomy} onChange={v => setField('anatomy', v)} />
                 </div>
               </div>
             )}
@@ -637,8 +664,8 @@ export default function ClinicEMR() {
               <textarea
                 className="w-full bg-surface-container-low rounded-xl px-lg py-md text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary min-h-[200px] resize-none"
                 placeholder={t('clinic.emr.diagnosis')}
-                value={assessment}
-                onChange={e => setAssessment(e.target.value)}
+                value={draft.assessment}
+                onChange={e => setField('assessment', e.target.value)}
               />
             )}
 
@@ -646,8 +673,8 @@ export default function ClinicEMR() {
               <textarea
                 className="w-full bg-surface-container-low rounded-xl px-lg py-md text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary min-h-[200px] resize-none"
                 placeholder={t('clinic.emr.treatment')}
-                value={plan}
-                onChange={e => setPlan(e.target.value)}
+                value={draft.plan}
+                onChange={e => setField('plan', e.target.value)}
               />
             )}
           </div>
