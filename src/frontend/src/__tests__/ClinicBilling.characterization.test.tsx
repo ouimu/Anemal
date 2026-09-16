@@ -212,6 +212,36 @@ describe('ClinicBilling — cart assembly (Gate 0)', () => {
   })
 })
 
+// ─── 1b. Subtotal must include prescription preview lines (Gate 0 gap B) ────
+// QA proved via mutation testing that dropping `previewLines` from the
+// subtotal computation (ClinicBilling.tsx:118, `subtotal = previewTotal +
+// cartTotal`) still passed every test in this file — every existing test
+// with a prescription preview only asserts the POST payload and that the
+// drug name renders (see "happy path payload" in section 7 below), never a
+// money value. This test fails if previewTotal is dropped from the sum: the
+// subtotal would render ฿300.00 (cart only) instead of ฿460.00.
+describe('ClinicBilling — subtotal includes prescription preview lines (Gate 0 gap B)', () => {
+  it('the displayed subtotal and total due include BOTH the prescription preview total and the cart total', async () => {
+    recordsForPet = [{ id: 77, assessment: 'Annual checkup', createdAt: '2026-08-01T00:00:00.000Z' }]
+    recordDetails[77] = { prescriptions: [{ quantity: '2', drug: { name: 'Amoxicillin', unitPrice: '80.00' } }] }
+    renderBilling()
+    await selectMilo()
+
+    await userEvent.selectOptions(await screen.findByRole('combobox'), '77')
+    expect(await screen.findByText('Amoxicillin')).toBeInTheDocument() // preview total = 2 × 80 = 160
+
+    await userEvent.click(screen.getByText('Service'))
+    const row = cartRowOf(screen.getByPlaceholderText('Description'))
+    const [, priceInput] = within(row).getAllByRole('spinbutton')
+    await userEvent.clear(priceInput); await userEvent.type(priceInput, '300') // cart total = 300
+
+    // subtotal = previewTotal (160) + cartTotal (300) = 460
+    await waitFor(() => expect(subtotalValue()).toBe('฿460.00'))
+    // total due = 460 × 1.07 (exclusive VAT, default settings) = 492.20
+    expect(totalDueValue()).toBe('฿492.20')
+  })
+})
+
 // ─── 2. Discount ────────────────────────────────────────────────────────────
 describe('ClinicBilling — discount (Gate 0)', () => {
   async function addCartLine(price: string) {
@@ -341,6 +371,45 @@ describe('ClinicBilling — loyalty redemption (Gate 0)', () => {
 
     await userEvent.click(screen.getByText(/Confirm Payment/))
     expect(await screen.findByText('+5 loyalty points earned')).toBeInTheDocument() // floor(535/100)
+  })
+})
+
+// ─── 3b. Loyalty redeem re-clamps when the cart shrinks after Max (Gate 0 gap A) ──
+// QA proved via mutation testing that deleting the `Math.min(redeemPts,
+// maxRedeemable)` clamp (ClinicBilling.tsx:121) still passed every existing
+// test — none of them redeem via Max and then shrink the cart before
+// finalizing. redeemPts is only written by the Max button or by typing; it is
+// NOT reset when the cart (and therefore maxRedeemable) shrinks afterward, so
+// the effective redeemed amount must be re-derived from the new
+// maxRedeemable at read time, not trusted as stored. Without the clamp, the
+// stale 200-point value from the larger cart is sent instead of the
+// re-capped 100.
+describe('ClinicBilling — loyalty redeem re-clamps when the cart shrinks after Max (Gate 0 gap A)', () => {
+  it('sends the re-clamped point value to the redeem endpoint, not the stale Max value from the larger cart', async () => {
+    renderBilling()
+    await selectMilo()
+    await userEvent.click(screen.getByText('Service'))
+    const row = cartRowOf(screen.getByPlaceholderText('Description'))
+    const [, priceInput] = within(row).getAllByRole('spinbutton')
+    await userEvent.clear(priceInput); await userEvent.type(priceInput, '1000')
+    await screen.findByText('500 pts')
+
+    // maxRedeemable = min(500, floor(1000 * 0.2)) = 200
+    await userEvent.click(screen.getByText('Max'))
+    expect(screen.getByPlaceholderText('0')).toHaveValue(200)
+
+    // Shrink the cart: 1000 -> 500. maxRedeemable now = min(500, floor(500 * 0.2)) = 100.
+    // redeemPts state itself stays 200 here — only Max/typing writes it.
+    await userEvent.clear(priceInput); await userEvent.type(priceInput, '500')
+    await waitFor(() => expect(screen.getByText(/redeem \(max 100/)).toBeInTheDocument())
+
+    await userEvent.type(screen.getByPlaceholderText('0.00'), '999')
+    await userEvent.click(screen.getByText(/Confirm Payment/))
+    await screen.findByText('Payment Successful!')
+
+    const redeemCalls = postMock.mock.calls.filter((c) => c[0] === '/api/loyalty/redeem')
+    expect(redeemCalls).toHaveLength(1)
+    expect(redeemCalls[0][1]).toEqual({ ownerId: 10, points: 100, invoiceTotal: 500 })
   })
 })
 
