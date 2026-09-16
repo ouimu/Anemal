@@ -41,34 +41,70 @@ function maskIdCard(idCardNumber: string) {
   return '•'.repeat(Math.max(idCardNumber.length - 4, 0)) + last4
 }
 
-// ─── Modal: Add Owner ─────────────────────────────────────────────────────────
-function AddOwnerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
-  const t = useT()
-  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', email: '', address: '', lineId: '', idCardType: '', idCardNumber: '' })
+// ─── Shared modal form styling ─────────────────────────────────────────────────
+/** The 150-char input/select className repeated verbatim across all five modals below. */
+const fieldClass = 'bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary'
+
+// ─── Shared modal submit state ─────────────────────────────────────────────────
+/** Extracts a user-facing message from an Axios-style error — the expression every modal below used inline. */
+function extractErrorMessage(err: unknown): string {
+  return (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save'
+}
+
+/**
+ * Centralizes the `form`/`error`/`saving` state triple and the
+ * submit-try/catch/finally mechanics repeated across ClinicPets' five
+ * modals (arch audit §2.2). `submitFn` performs the request(s) for one
+ * submit attempt; `onSuccess` runs only when `submitFn` resolves without
+ * throwing. `formatError` lets a caller customize or suppress the message
+ * shown for a given error — `EditPetModal` needs this so a photo-upload
+ * failure (already surfaced via `usePhotoUpload`'s own `uploadError`) is
+ * not also reported here; every other modal uses the default extraction.
+ */
+function useModalSubmit(
+  submitFn: () => Promise<void>,
+  onSuccess: () => void,
+  formatError: (err: unknown) => string | null = extractErrorMessage,
+) {
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
-
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-    setForm(f => ({ ...f, [k]: e.target.value }))
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     setError('')
     try {
-      await api.post('/api/owners', {
-        ...form,
-        email: form.email || null,
-        address: form.address || null,
-        lineId: form.lineId || null,
-        idCardType: form.idCardType || null,
-        idCardNumber: form.idCardType ? form.idCardNumber : null,
-      })
+      await submitFn()
       onSuccess()
     } catch (err) {
-      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save')
-    } finally { setSaving(false) }
+      const message = formatError(err)
+      if (message !== null) setError(message)
+    } finally {
+      setSaving(false)
+    }
   }
+
+  return { error, saving, submit }
+}
+
+// ─── Modal: Add Owner ─────────────────────────────────────────────────────────
+function AddOwnerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const t = useT()
+  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', email: '', address: '', lineId: '', idCardType: '', idCardNumber: '' })
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    setForm(f => ({ ...f, [k]: e.target.value }))
+
+  const { error, saving, submit } = useModalSubmit(async () => {
+    await api.post('/api/owners', {
+      ...form,
+      email: form.email || null,
+      address: form.address || null,
+      lineId: form.lineId || null,
+      idCardType: form.idCardType || null,
+      idCardNumber: form.idCardType ? form.idCardNumber : null,
+    })
+  }, onSuccess)
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-lg">
@@ -77,21 +113,21 @@ function AddOwnerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
         {error && <p className="text-error text-body-sm mb-md">{error}</p>}
         <form onSubmit={submit} className="flex flex-col gap-md">
           <div className="flex gap-md">
-            <input required className="flex-1 min-w-0 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.firstName')} value={form.firstName} onChange={set('firstName')} />
-            <input required className="flex-1 min-w-0 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.lastName')} value={form.lastName} onChange={set('lastName')} />
+            <input required className={`flex-1 min-w-0 ${fieldClass}`} placeholder={t('clinic.pets.firstName')} value={form.firstName} onChange={set('firstName')} />
+            <input required className={`flex-1 min-w-0 ${fieldClass}`} placeholder={t('clinic.pets.lastName')} value={form.lastName} onChange={set('lastName')} />
           </div>
-          <input required className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.phone')} value={form.phone} onChange={set('phone')} />
-          <input type="email" className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.emailOptional')} value={form.email} onChange={set('email')} />
-          <input className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.addressOptional')} value={form.address} onChange={set('address')} />
+          <input required className={fieldClass} placeholder={t('clinic.pets.phone')} value={form.phone} onChange={set('phone')} />
+          <input type="email" className={fieldClass} placeholder={t('clinic.pets.emailOptional')} value={form.email} onChange={set('email')} />
+          <input className={fieldClass} placeholder={t('clinic.pets.addressOptional')} value={form.address} onChange={set('address')} />
           <label className="text-body-sm text-on-surface-variant" htmlFor="add-owner-idcard-type">{t('clinic.pets.idCardType')}</label>
-          <select id="add-owner-idcard-type" aria-label={t('clinic.pets.idCardType')} className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.idCardType} onChange={set('idCardType')}>
+          <select id="add-owner-idcard-type" aria-label={t('clinic.pets.idCardType')} className={fieldClass} value={form.idCardType} onChange={set('idCardType')}>
             <option value="">{t('clinic.pets.idCardTypeNone')}</option>
             <option value="thai_id">{t('clinic.pets.idCardTypeThai')}</option>
             <option value="passport">{t('clinic.pets.idCardTypePassport')}</option>
           </select>
           {form.idCardType === 'thai_id' && (
             <input
-              className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary"
+              className={fieldClass}
               placeholder={t('clinic.pets.idCardNumberThai')}
               value={form.idCardNumber}
               onChange={set('idCardNumber')}
@@ -101,7 +137,7 @@ function AddOwnerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
           )}
           {form.idCardType === 'passport' && (
             <input
-              className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary"
+              className={fieldClass}
               placeholder={t('clinic.pets.idCardNumberPassport')}
               value={form.idCardNumber}
               onChange={set('idCardNumber')}
@@ -131,30 +167,20 @@ export function EditOwnerModal({ owner, onClose, onSuccess }: { owner: Owner; on
     idCardType: owner.idCardType ?? '',
     idCardNumber: owner.idCardNumber ?? '',
   })
-  const [error, setError] = useState('')
-  const [saving, setSaving] = useState(false)
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
-    setError('')
-    try {
-      await api.put(`/api/owners/${owner.id}`, {
-        ...form,
-        email: form.email || null,
-        address: form.address || null,
-        lineId: form.lineId || null,
-        idCardType: form.idCardType || null,
-        idCardNumber: form.idCardType ? form.idCardNumber : null,
-      })
-      onSuccess()
-    } catch (err) {
-      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save')
-    } finally { setSaving(false) }
-  }
+  const { error, saving, submit } = useModalSubmit(async () => {
+    await api.put(`/api/owners/${owner.id}`, {
+      ...form,
+      email: form.email || null,
+      address: form.address || null,
+      lineId: form.lineId || null,
+      idCardType: form.idCardType || null,
+      idCardNumber: form.idCardType ? form.idCardNumber : null,
+    })
+  }, onSuccess)
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-lg">
@@ -163,21 +189,21 @@ export function EditOwnerModal({ owner, onClose, onSuccess }: { owner: Owner; on
         {error && <p className="text-error text-body-sm mb-md">{error}</p>}
         <form onSubmit={submit} className="flex flex-col gap-md">
           <div className="flex gap-md">
-            <input required className="flex-1 min-w-0 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.firstName')} value={form.firstName} onChange={set('firstName')} />
-            <input required className="flex-1 min-w-0 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.lastName')} value={form.lastName} onChange={set('lastName')} />
+            <input required className={`flex-1 min-w-0 ${fieldClass}`} placeholder={t('clinic.pets.firstName')} value={form.firstName} onChange={set('firstName')} />
+            <input required className={`flex-1 min-w-0 ${fieldClass}`} placeholder={t('clinic.pets.lastName')} value={form.lastName} onChange={set('lastName')} />
           </div>
-          <input required className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.phone')} value={form.phone} onChange={set('phone')} />
-          <input type="email" className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.emailOptional')} value={form.email} onChange={set('email')} />
-          <input className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.addressOptional')} value={form.address} onChange={set('address')} />
+          <input required className={fieldClass} placeholder={t('clinic.pets.phone')} value={form.phone} onChange={set('phone')} />
+          <input type="email" className={fieldClass} placeholder={t('clinic.pets.emailOptional')} value={form.email} onChange={set('email')} />
+          <input className={fieldClass} placeholder={t('clinic.pets.addressOptional')} value={form.address} onChange={set('address')} />
           <label className="text-body-sm text-on-surface-variant" htmlFor="edit-owner-idcard-type">{t('clinic.pets.idCardType')}</label>
-          <select id="edit-owner-idcard-type" aria-label={t('clinic.pets.idCardType')} className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.idCardType} onChange={set('idCardType')}>
+          <select id="edit-owner-idcard-type" aria-label={t('clinic.pets.idCardType')} className={fieldClass} value={form.idCardType} onChange={set('idCardType')}>
             <option value="">{t('clinic.pets.idCardTypeNone')}</option>
             <option value="thai_id">{t('clinic.pets.idCardTypeThai')}</option>
             <option value="passport">{t('clinic.pets.idCardTypePassport')}</option>
           </select>
           {form.idCardType === 'thai_id' && (
             <input
-              className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary"
+              className={fieldClass}
               placeholder={t('clinic.pets.idCardNumberThai')}
               value={form.idCardNumber}
               onChange={set('idCardNumber')}
@@ -187,7 +213,7 @@ export function EditOwnerModal({ owner, onClose, onSuccess }: { owner: Owner; on
           )}
           {form.idCardType === 'passport' && (
             <input
-              className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary"
+              className={fieldClass}
               placeholder={t('clinic.pets.idCardNumberPassport')}
               value={form.idCardNumber}
               onChange={set('idCardNumber')}
@@ -208,8 +234,6 @@ export function EditOwnerModal({ owner, onClose, onSuccess }: { owner: Owner; on
 export function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerId: number; ownerName: string; onClose: () => void; onSuccess: () => void }) {
   const t = useT()
   const [form, setForm] = useState({ name: '', species: 'canine', breed: '', color: '', gender: '', birthDate: '', weightKg: '', microchipId: '', allergies: '', underlyingConditions: '' })
-  const [error, setError] = useState('')
-  const [saving, setSaving] = useState(false)
   const [photoFile, setPhotoFile]       = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -225,36 +249,28 @@ export function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerI
     setPhotoPreview(URL.createObjectURL(file))
   }
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
-    setError('')
-    try {
-      const res = await api.post('/api/pets', {
-        ownerId,
-        name: form.name,
-        species: form.species,
-        breed: form.breed || null,
-        color: form.color || null,
-        gender: form.gender || null,
-        birthDate: form.birthDate || null,
-        weightKg: form.weightKg ? Number(form.weightKg) : null,
-        microchipId: form.microchipId || null,
-        allergies: form.allergies || null,
-        underlyingConditions: form.underlyingConditions || null,
-      })
-      const newPetId = res.data.data.id as number
-      if (photoFile) {
-        // Grill G3: no rollback on photo failure — the pet is already
-        // created and valid without a photo; swallow the error here and
-        // let the user retry from Edit Pet.
-        try { await uploadPhoto(newPetId, photoFile) } catch { /* non-fatal, see G3 */ }
-      }
-      onSuccess()
-    } catch (err: unknown) {
-      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save')
-    } finally { setSaving(false) }
-  }
+  const { error, saving, submit } = useModalSubmit(async () => {
+    const res = await api.post('/api/pets', {
+      ownerId,
+      name: form.name,
+      species: form.species,
+      breed: form.breed || null,
+      color: form.color || null,
+      gender: form.gender || null,
+      birthDate: form.birthDate || null,
+      weightKg: form.weightKg ? Number(form.weightKg) : null,
+      microchipId: form.microchipId || null,
+      allergies: form.allergies || null,
+      underlyingConditions: form.underlyingConditions || null,
+    })
+    const newPetId = res.data.data.id as number
+    if (photoFile) {
+      // Grill G3: no rollback on photo failure — the pet is already
+      // created and valid without a photo; swallow the error here and
+      // let the user retry from Edit Pet.
+      try { await uploadPhoto(newPetId, photoFile) } catch { /* non-fatal, see G3 */ }
+    }
+  }, onSuccess)
 
   const busy = saving || isUploading
 
@@ -293,15 +309,15 @@ export function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerI
             </div>
           </div>
 
-          <input required className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.petName')} value={form.name} onChange={set('name')} />
+          <input required className={fieldClass} placeholder={t('clinic.pets.petName')} value={form.name} onChange={set('name')} />
           <div className="flex gap-md">
-            <select className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.species} onChange={set('species')}>
+            <select className={`flex-1 ${fieldClass}`} value={form.species} onChange={set('species')}>
               <option value="canine">Canine</option>
               <option value="feline">Feline</option>
               <option value="avian">Avian</option>
               <option value="other">Other</option>
             </select>
-            <select className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.gender} onChange={set('gender')}>
+            <select className={`flex-1 ${fieldClass}`} value={form.gender} onChange={set('gender')}>
               <option value="">Gender</option>
               <option value="male">Male</option>
               <option value="female">Female</option>
@@ -309,12 +325,12 @@ export function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerI
             </select>
           </div>
           <div className="flex gap-md">
-            <input className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.breedOptional')} value={form.breed} onChange={set('breed')} />
-            <input className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.colorOptional')} value={form.color} onChange={set('color')} />
+            <input className={`flex-1 ${fieldClass}`} placeholder={t('clinic.pets.breedOptional')} value={form.breed} onChange={set('breed')} />
+            <input className={`flex-1 ${fieldClass}`} placeholder={t('clinic.pets.colorOptional')} value={form.color} onChange={set('color')} />
           </div>
-          <input type="number" step="0.01" min="0" className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.weightOptional')} value={form.weightKg} onChange={set('weightKg')} />
-          <input type="date" className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.birthDate} onChange={set('birthDate')} />
-          <input className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.microchipOptional')} value={form.microchipId} onChange={set('microchipId')} />
+          <input type="number" step="0.01" min="0" className={fieldClass} placeholder={t('clinic.pets.weightOptional')} value={form.weightKg} onChange={set('weightKg')} />
+          <input type="date" className={fieldClass} value={form.birthDate} onChange={set('birthDate')} />
+          <input className={fieldClass} placeholder={t('clinic.pets.microchipOptional')} value={form.microchipId} onChange={set('microchipId')} />
           <textarea className="bg-surface-container-low rounded-lg px-md py-sm min-h-[80px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary resize-none" placeholder={t('clinic.pets.allergiesOptional')} value={form.allergies} onChange={set('allergies')} />
           <textarea className="bg-surface-container-low rounded-lg px-md py-sm min-h-[80px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary resize-none" placeholder={t('clinic.pets.conditionsOptional')} value={form.underlyingConditions} onChange={set('underlyingConditions')} />
           <div className="flex gap-md pt-sm">
@@ -338,8 +354,6 @@ export function EditPetModal({ pet, onClose, onSuccess }: { pet: Pet; onClose: (
     gender: pet.gender ?? '', birthDate: pet.birthDate ? pet.birthDate.slice(0, 10) : '', weightKg: pet.weightKg?.toString() ?? '',
     microchipId: pet.microchipId ?? '', allergies: pet.allergies ?? '', underlyingConditions: pet.underlyingConditions ?? '',
   })
-  const [error, setError] = useState('')
-  const [saving, setSaving] = useState(false)
   const [photoFile, setPhotoFile]       = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -355,11 +369,8 @@ export function EditPetModal({ pet, onClose, onSuccess }: { pet: Pet; onClose: (
     setPhotoPreview(URL.createObjectURL(file))
   }
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
-    setError('')
-    try {
+  const { error, saving, submit } = useModalSubmit(
+    async () => {
       if (photoFile) await uploadPhoto(pet.id, photoFile)
       await api.put(`/api/pets/${pet.id}`, {
         name: form.name,
@@ -374,13 +385,12 @@ export function EditPetModal({ pet, onClose, onSuccess }: { pet: Pet; onClose: (
         underlyingConditions: form.underlyingConditions || null,
       })
       qc.invalidateQueries({ queryKey: ['pet', pet.id] })
-      onSuccess()
-    } catch (err: unknown) {
-      if (!uploadError) {
-        setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save')
-      }
-    } finally { setSaving(false) }
-  }
+    },
+    onSuccess,
+    // A failed photo upload already reports itself via usePhotoUpload's own
+    // uploadError, rendered alongside `error` below — don't double-report it.
+    (err) => (uploadError ? null : extractErrorMessage(err)),
+  )
 
   const busy = saving || isUploading
 
@@ -418,15 +428,15 @@ export function EditPetModal({ pet, onClose, onSuccess }: { pet: Pet; onClose: (
             </div>
           </div>
 
-          <input required className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.petName')} value={form.name} onChange={set('name')} />
+          <input required className={fieldClass} placeholder={t('clinic.pets.petName')} value={form.name} onChange={set('name')} />
           <div className="flex gap-md">
-            <select className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.species} onChange={set('species')}>
+            <select className={`flex-1 ${fieldClass}`} value={form.species} onChange={set('species')}>
               <option value="canine">Canine</option>
               <option value="feline">Feline</option>
               <option value="avian">Avian</option>
               <option value="other">Other</option>
             </select>
-            <select className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.gender} onChange={set('gender')}>
+            <select className={`flex-1 ${fieldClass}`} value={form.gender} onChange={set('gender')}>
               <option value="">Gender</option>
               <option value="male">Male</option>
               <option value="female">Female</option>
@@ -434,12 +444,12 @@ export function EditPetModal({ pet, onClose, onSuccess }: { pet: Pet; onClose: (
             </select>
           </div>
           <div className="flex gap-md">
-            <input className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.breedOptional')} value={form.breed} onChange={set('breed')} />
-            <input className="flex-1 bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.colorOptional')} value={form.color} onChange={set('color')} />
+            <input className={`flex-1 ${fieldClass}`} placeholder={t('clinic.pets.breedOptional')} value={form.breed} onChange={set('breed')} />
+            <input className={`flex-1 ${fieldClass}`} placeholder={t('clinic.pets.colorOptional')} value={form.color} onChange={set('color')} />
           </div>
-          <input type="number" step="0.01" min="0" className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.weightOptional')} value={form.weightKg} onChange={set('weightKg')} />
-          <input type="date" className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.birthDate} onChange={set('birthDate')} />
-          <input className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.microchipOptional')} value={form.microchipId} onChange={set('microchipId')} />
+          <input type="number" step="0.01" min="0" className={fieldClass} placeholder={t('clinic.pets.weightOptional')} value={form.weightKg} onChange={set('weightKg')} />
+          <input type="date" className={fieldClass} value={form.birthDate} onChange={set('birthDate')} />
+          <input className={fieldClass} placeholder={t('clinic.pets.microchipOptional')} value={form.microchipId} onChange={set('microchipId')} />
           <textarea className="bg-surface-container-low rounded-lg px-md py-sm min-h-[80px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary resize-none" placeholder={t('clinic.pets.allergiesOptional')} value={form.allergies} onChange={set('allergies')} />
           <textarea className="bg-surface-container-low rounded-lg px-md py-sm min-h-[80px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary resize-none" placeholder={t('clinic.pets.conditionsOptional')} value={form.underlyingConditions} onChange={set('underlyingConditions')} />
           <div className="flex gap-md pt-sm">
@@ -456,23 +466,13 @@ export function EditPetModal({ pet, onClose, onSuccess }: { pet: Pet; onClose: (
 function AddVaccinationModal({ petId, onClose, onSuccess }: { petId: number; onClose: () => void; onSuccess: () => void }) {
   const t = useT()
   const [form, setForm] = useState({ vaccineName: '', administeredAt: '', nextDueAt: '', batchNo: '', notes: '' })
-  const [error, setError] = useState('')
-  const [saving, setSaving] = useState(false)
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
-    setError('')
-    try {
-      await api.post('/api/vaccinations', { petId, ...form, nextDueAt: form.nextDueAt || null, batchNo: form.batchNo || null, notes: form.notes || null })
-      onSuccess()
-    } catch (err) {
-      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save')
-    } finally { setSaving(false) }
-  }
+  const { error, saving, submit } = useModalSubmit(async () => {
+    await api.post('/api/vaccinations', { petId, ...form, nextDueAt: form.nextDueAt || null, batchNo: form.batchNo || null, notes: form.notes || null })
+  }, onSuccess)
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-lg">
@@ -480,12 +480,12 @@ function AddVaccinationModal({ petId, onClose, onSuccess }: { petId: number; onC
         <h3 className="text-headline-sm font-headline font-bold text-primary mb-lg">Record Vaccination</h3>
         {error && <p className="text-error text-body-sm mb-md">{error}</p>}
         <form onSubmit={submit} className="flex flex-col gap-md">
-          <input required className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.vaccineName')} value={form.vaccineName} onChange={set('vaccineName')} />
+          <input required className={fieldClass} placeholder={t('clinic.pets.vaccineName')} value={form.vaccineName} onChange={set('vaccineName')} />
           <label className="text-body-sm text-on-surface-variant">Date administered</label>
-          <input required type="date" className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.administeredAt} onChange={set('administeredAt')} />
+          <input required type="date" className={fieldClass} value={form.administeredAt} onChange={set('administeredAt')} />
           <label className="text-body-sm text-on-surface-variant">Next due date (optional)</label>
-          <input type="date" className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" value={form.nextDueAt} onChange={set('nextDueAt')} />
-          <input className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('clinic.pets.batchOptional')} value={form.batchNo} onChange={set('batchNo')} />
+          <input type="date" className={fieldClass} value={form.nextDueAt} onChange={set('nextDueAt')} />
+          <input className={fieldClass} placeholder={t('clinic.pets.batchOptional')} value={form.batchNo} onChange={set('batchNo')} />
           <div className="flex gap-md pt-sm">
             <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
             <button type="submit" disabled={saving} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? 'Saving…' : 'Save'}</button>
