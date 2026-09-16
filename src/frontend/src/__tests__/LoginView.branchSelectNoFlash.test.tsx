@@ -8,10 +8,11 @@
  * before awaiting identity resolution) and getting a full green run.
  *
  * This test instead renders the REAL LoginView + real useLogin + real authStore
- * (only api.post and global fetch are mocked) and holds the /auth/me fetch
- * pending so the intermediate render — the only place the bug was ever
- * observable — can be inspected directly while it's still on screen, rather
- * than sampled after the fact.
+ * (only api.post/api.get are mocked — /auth/me moved from raw fetch() to the
+ * shared axios client in the Phase 8 code-quality refactor, 2026-09-10) and
+ * holds the /auth/me request pending so the intermediate render — the only
+ * place the bug was ever observable — can be inspected directly while it's
+ * still on screen, rather than sampled after the fact.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
@@ -21,9 +22,13 @@ import { useAuthStore } from '../store/authStore'
 
 const navigateMock = vi.fn()
 const postMock = vi.fn()
+const getMock = vi.fn()
 
 vi.mock('../utils/api', () => ({
-  default: { post: (...args: unknown[]) => postMock(...args) },
+  default: {
+    post: (...args: unknown[]) => postMock(...args),
+    get: (...args: unknown[]) => getMock(...args),
+  },
 }))
 
 vi.mock('react-router-dom', () => ({
@@ -79,13 +84,14 @@ describe('LoginView — AC-1 branch-select no-flash guard (real components)', ()
     await submitCredentials()
 
     postMock.mockResolvedValueOnce({ data: { data: step2Response } })
-    let resolveFetch!: (v: unknown) => void
-    globalThis.fetch = vi.fn(
-      () => new Promise((resolve) => { resolveFetch = resolve }),
-    ) as unknown as typeof fetch
+    let resolveGet!: (v: unknown) => void
+    getMock.mockReset()
+    getMock.mockImplementationOnce(
+      () => new Promise((resolve) => { resolveGet = resolve }),
+    )
 
     fireEvent.click(screen.getByText('Main'))
-    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(getMock).toHaveBeenCalledTimes(1))
 
     // /auth/me is still pending here — this is the exact window the original
     // bug exposed. The picker must still be the thing on screen: no blank
@@ -95,11 +101,10 @@ describe('LoginView — AC-1 branch-select no-flash guard (real components)', ()
     expect(useAuthStore.getState().isAuthenticated()).toBe(false)
     expect(navigateMock).not.toHaveBeenCalled()
 
-    resolveFetch({
-      ok: true,
-      json: async () => ({
+    resolveGet({
+      data: {
         data: { userId: 1, tenantId: 1, branchId: 1, name: 'Alice', email: 'a@b.com', roleIds: [1], permissions: ['pets.view'] },
-      }),
+      },
     })
 
     await waitFor(() => expect(navigateMock).toHaveBeenCalled())

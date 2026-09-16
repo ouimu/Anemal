@@ -22,6 +22,10 @@ export function getTenantName(tenantId: number) {
   return prisma.tenant.findUnique({ where: { id: tenantId }, select: { name: true } })
 }
 
+export function getTenantSubdomain(tenantId: number) {
+  return prisma.tenant.findUnique({ where: { id: tenantId }, select: { subdomain: true } })
+}
+
 export function updateTenantName(tenantId: number, name: string) {
   return prisma.tenant.update({ where: { id: tenantId }, data: { name } })
 }

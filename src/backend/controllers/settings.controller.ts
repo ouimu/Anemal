@@ -8,7 +8,6 @@ import * as settingsSvc from '../services/tenant-settings.service'
 import * as prefsSvc from '../services/user-preferences.service'
 import * as connTest from '../services/connection-test.service'
 import * as storageConfigSvc from '../services/storage-config.service'
-import prisma from '../config/db'
 import { signOAuthState } from '../utils/oauth-state'
 import { createNonce } from '../models/oauth-connect-nonce.repository'
 import { resolvePermissions } from '../services/permission.service'
@@ -223,7 +222,7 @@ export async function googleAuthorize(req: Request, res: Response, next: NextFun
     }
 
     const { tenantId, userId } = req.context!
-    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { subdomain: true } })
+    const tenant = await settingsSvc.getTenantSubdomain(tenantId)
     if (!tenant) { res.status(404).json({ success: false, error: 'Tenant not found' }); return }
 
     const rawNonce = await createNonce({ tenantId, userId, provider: 'google', expiresAt: new Date(Date.now() + OAUTH_STATE_TTL_MS) })
@@ -263,7 +262,7 @@ export async function onedriveAuthorize(req: Request, res: Response, next: NextF
     }
 
     const { tenantId, userId } = req.context!
-    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { subdomain: true } })
+    const tenant = await settingsSvc.getTenantSubdomain(tenantId)
     if (!tenant) { res.status(404).json({ success: false, error: 'Tenant not found' }); return }
 
     const rawNonce = await createNonce({ tenantId, userId, provider: 'onedrive', expiresAt: new Date(Date.now() + OAUTH_STATE_TTL_MS) })

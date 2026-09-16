@@ -54,6 +54,11 @@ function safeDecrypt(stored: string, field: string, tenantId: number): string {
   }
 }
 
+/** Tenant subdomain only — used to derive the tenant's frontend origin for OAuth authorize redirects. */
+export function getTenantSubdomain(tenantId: number) {
+  return settingsRepo.getTenantSubdomain(tenantId)
+}
+
 // Secrets masked for display — safe to return to clients.
 export async function getSettings(tenantId: number) {
   const settings = await settingsRepo.getOrCreateSettings(tenantId)

@@ -177,6 +177,15 @@ export function countRoleUsage(roleId: number, tenantId: number) {
 }
 
 // ---------------------------------------------------------------------------
+// Permission catalogue (global, not tenant-scoped)
+// ---------------------------------------------------------------------------
+
+/** All permission codes in the system catalogue, used to populate the role editor UI. */
+export function listAllPermissions() {
+  return prisma.permission.findMany({ orderBy: { code: 'asc' } })
+}
+
+// ---------------------------------------------------------------------------
 // User-role assignment
 // ---------------------------------------------------------------------------
 

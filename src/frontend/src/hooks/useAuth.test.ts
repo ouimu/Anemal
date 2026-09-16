@@ -11,9 +11,19 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const navigateMock = vi.fn()
 const postMock = vi.fn()
+const getMock = vi.fn()
 
+// Phase 8 (2026-09-10 code-quality refactor): fetchMe moved from raw fetch()
+// to the shared axios client (utils/api.ts), so /auth/me is now called via
+// api.get, not globalThis.fetch. getMock replaces every `globalThis.fetch =
+// ...` stub below with an equivalent api.get mock — same response/rejection
+// shapes translated to axios's { data } resolve / { response: { status,
+// data } } | Error reject contract, same assertions throughout.
 vi.mock('../utils/api', () => ({
-  default: { post: (...args: unknown[]) => postMock(...args) },
+  default: {
+    post: (...args: unknown[]) => postMock(...args),
+    get: (...args: unknown[]) => getMock(...args),
+  },
 }))
 
 vi.mock('react-router-dom', () => ({
@@ -75,10 +85,9 @@ function wrapper({ children }: { children: React.ReactNode }) {
 describe('useLogin — remember-me username persistence', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ data: { userId: 1, tenantId: 1, branchId: 1, name: 'Alice', email: 'a@b.com', roleIds: [1], permissions: ['pets.view'] } }),
-    }) as unknown as typeof fetch
+    getMock.mockResolvedValue({
+      data: { data: { userId: 1, tenantId: 1, branchId: 1, name: 'Alice', email: 'a@b.com', roleIds: [1], permissions: ['pets.view'] } },
+    })
   })
 
   it('applyLogin calls setAuth with a single AuthData argument (no remember flag)', async () => {
@@ -136,10 +145,9 @@ describe('useLogin — atomic identity resolution (ADR-0024)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     sessionStorage.removeItem('vc_auth')
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ data: { userId: 1, tenantId: 1, branchId: 1, name: 'Alice', email: 'a@b.com', roleIds: [1], permissions: ['pets.view'] } }),
-    }) as unknown as typeof fetch
+    getMock.mockResolvedValue({
+      data: { data: { userId: 1, tenantId: 1, branchId: 1, name: 'Alice', email: 'a@b.com', roleIds: [1], permissions: ['pets.view'] } },
+    })
   })
 
   // T4/T3 — branch-select happy path: exactly one GET /auth/me, setAuth
@@ -155,7 +163,7 @@ describe('useLogin — atomic identity resolution (ADR-0024)', () => {
       await result.current.selectBranchMutation.mutateAsync({ pendingToken: 'pending-token', branchId: 1 })
     })
 
-    expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+    expect(getMock).toHaveBeenCalledTimes(1)
     expect(authState.setAuth).toHaveBeenCalledWith(expect.objectContaining({ permissionsLoaded: true }))
     const setAuthOrder  = authState.setAuth.mock.invocationCallOrder[0]
     const navigateOrder = navigateMock.mock.invocationCallOrder[0]
@@ -186,22 +194,28 @@ describe('useLogin — atomic identity resolution (ADR-0024)', () => {
   // T6 — /auth/select-branch succeeds, /auth/me fails: no setAuth, no persisted
   // session, no navigate, picker stays mounted, isError true, exactly one fetch (AC-9, AC-12)
   it.each([
-    ['fetch rejects',        () => Promise.reject(new Error('network down')), true],
-    ['401 response',         () => Promise.resolve({ ok: false, status: 401, json: async () => ({}) }), true],
-    ['404 response',         () => Promise.resolve({ ok: false, status: 404, json: async () => ({}) }), true],
-    ['500 response',         () => Promise.resolve({ ok: false, status: 500, json: async () => ({}) }), true],
-    // N-1: a 200 whose body isn't valid JSON must surface as IdentityLoadError
-    // with the SyntaxError attached via `cause` (useAuth.ts:69-74's
-    // try/catch around res.json()), not an unhandled rejection.
-    ['200 with malformed JSON body', () => Promise.resolve({ ok: true, status: 200, json: () => Promise.reject(new SyntaxError('bad json')) }), true],
-  ])('branch-select — /auth/me %s after select-branch succeeds: no setAuth/navigate, picker survives', async (_label, fetchImpl, expectIdentityError) => {
+    ['request rejects (network)', () => Promise.reject(new Error('network down')), true],
+    ['401 response',         () => Promise.reject({ response: { status: 401, data: {} } }), true],
+    ['404 response',         () => Promise.reject({ response: { status: 404, data: {} } }), true],
+    ['500 response',         () => Promise.reject({ response: { status: 500, data: {} } }), true],
+    // N-1: a 200 whose body isn't a JSON object must surface as
+    // IdentityLoadError, not silently flow through as a MeResponse. Unlike
+    // fetch().json(), axios does NOT throw on a malformed/non-JSON 200 body
+    // by default — it resolves with the raw string (e.g. an HTML fallback
+    // page from a misconfigured proxy). Mocking the resolved shape axios
+    // actually produces, not a rejected promise, is the point: this row
+    // exercises fetchMe's own `typeof json !== 'object'` guard, not the
+    // catch block the other rows exercise.
+    ['200 with a non-JSON-object body', () => Promise.resolve({ data: '<html>fallback page</html>' }), true],
+  ])('branch-select — /auth/me %s after select-branch succeeds: no setAuth/navigate, picker survives', async (_label, getImpl, expectIdentityError) => {
     postMock.mockResolvedValueOnce({ data: { data: step1Response } })
     const { result } = renderHook(() => useLogin(), { wrapper })
     act(() => { result.current.loginMutation.mutate({ subdomain: 'dev-clinic', username: 'alice', password: 'pw', remember: false }) })
     await waitFor(() => expect(result.current.branchSelection).not.toBeNull())
 
     postMock.mockResolvedValueOnce({ data: { data: step2Response } })
-    globalThis.fetch = vi.fn(fetchImpl) as unknown as typeof fetch
+    getMock.mockReset()
+    getMock.mockImplementationOnce(getImpl)
 
     act(() => {
       result.current.selectBranchMutation.mutate({ pendingToken: 'pending-token', branchId: 1 })
@@ -216,7 +230,7 @@ describe('useLogin — atomic identity resolution (ADR-0024)', () => {
     // AC-12 actually needs). Delete-only per Task 6.1 — no behavior lost.
     expect(navigateMock).not.toHaveBeenCalled()
     expect(result.current.branchSelection).not.toBeNull()
-    expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+    expect(getMock).toHaveBeenCalledTimes(1)
     // A non-ok response is reported as IdentityLoadError (so the UI can show a
     // specific message); a raw network throw propagates as its native error.
     expect(result.current.selectBranchMutation.error instanceof IdentityLoadError).toBe(expectIdentityError)
@@ -231,7 +245,8 @@ describe('useLogin — atomic identity resolution (ADR-0024)', () => {
     await waitFor(() => expect(result.current.branchSelection).not.toBeNull())
 
     postMock.mockResolvedValueOnce({ data: { data: step2Response } })
-    globalThis.fetch = vi.fn().mockRejectedValueOnce(new Error('network down'))
+    getMock.mockReset()
+    getMock.mockRejectedValueOnce(new Error('network down'))
     await act(async () => {
       try {
         await result.current.selectBranchMutation.mutateAsync({ pendingToken: 'pending-token', branchId: 1 })
@@ -240,11 +255,10 @@ describe('useLogin — atomic identity resolution (ADR-0024)', () => {
     expect(authState.setAuth).not.toHaveBeenCalled()
 
     postMock.mockResolvedValueOnce({ data: { data: step2Response } })
-    const retryFetch = vi.fn().mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: { userId: 1, tenantId: 1, branchId: 1, name: 'Alice', email: 'a@b.com', roleIds: [1], permissions: ['pets.view'] } }),
+    getMock.mockReset()
+    getMock.mockResolvedValueOnce({
+      data: { data: { userId: 1, tenantId: 1, branchId: 1, name: 'Alice', email: 'a@b.com', roleIds: [1], permissions: ['pets.view'] } },
     })
-    globalThis.fetch = retryFetch as unknown as typeof fetch
     await act(async () => {
       await result.current.selectBranchMutation.mutateAsync({ pendingToken: 'pending-token', branchId: 1 })
     })
@@ -252,7 +266,7 @@ describe('useLogin — atomic identity resolution (ADR-0024)', () => {
     expect(authState.setAuth).toHaveBeenCalledTimes(1)
     expect(navigateMock).toHaveBeenCalled()
     expect(postMock).toHaveBeenCalledTimes(3) // login + failed select + retried select
-    expect(retryFetch).toHaveBeenCalledTimes(1) // one /auth/me on the retry itself
+    expect(getMock).toHaveBeenCalledTimes(1) // one /auth/me on the retry itself
   })
 
   // T9 — direct/admin path: success unchanged, failure surfaces an error
@@ -264,14 +278,15 @@ describe('useLogin — atomic identity resolution (ADR-0024)', () => {
       await result.current.loginMutation.mutateAsync({ subdomain: 'dev-clinic', username: 'alice', password: 'pw', remember: false })
     })
 
-    expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+    expect(getMock).toHaveBeenCalledTimes(1)
     expect(authState.setAuth).toHaveBeenCalledWith(expect.objectContaining({ permissionsLoaded: true }))
     expect(navigateMock).toHaveBeenCalled()
   })
 
   it('direct-login — /auth/me failure surfaces isError, no setAuth/navigate, and a clean re-submit retry succeeds', async () => {
     postMock.mockResolvedValueOnce({ data: { data: step2Response } })
-    globalThis.fetch = vi.fn().mockRejectedValueOnce(new Error('network down'))
+    getMock.mockReset()
+    getMock.mockRejectedValueOnce(new Error('network down'))
     const { result } = renderHook(() => useLogin(), { wrapper })
 
     act(() => {
@@ -284,9 +299,9 @@ describe('useLogin — atomic identity resolution (ADR-0024)', () => {
     expect(navigateMock).not.toHaveBeenCalled()
 
     postMock.mockResolvedValueOnce({ data: { data: step2Response } })
-    globalThis.fetch = vi.fn().mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: { userId: 1, tenantId: 1, branchId: 1, name: 'Alice', email: 'a@b.com', roleIds: [1], permissions: ['pets.view'] } }),
+    getMock.mockReset()
+    getMock.mockResolvedValueOnce({
+      data: { data: { userId: 1, tenantId: 1, branchId: 1, name: 'Alice', email: 'a@b.com', roleIds: [1], permissions: ['pets.view'] } },
     })
     await act(async () => {
       await result.current.loginMutation.mutateAsync({ subdomain: 'dev-clinic', username: 'alice', password: 'pw', remember: false })
@@ -304,10 +319,10 @@ describe('useLogin — atomic identity resolution (ADR-0024)', () => {
     await waitFor(() => expect(result.current.branchSelection).not.toBeNull())
 
     postMock.mockResolvedValueOnce({ data: { data: step2Response } })
-    globalThis.fetch = vi.fn().mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: { userId: 1, tenantId: 1, branchId: 1, name: 'Alice', email: 'a@b.com', roleIds: [1], permissions: [] } }),
-    }) as unknown as typeof fetch
+    getMock.mockReset()
+    getMock.mockResolvedValueOnce({
+      data: { data: { userId: 1, tenantId: 1, branchId: 1, name: 'Alice', email: 'a@b.com', roleIds: [1], permissions: [] } },
+    })
 
     await act(async () => {
       await result.current.selectBranchMutation.mutateAsync({ pendingToken: 'pending-token', branchId: 1 })
@@ -360,7 +375,8 @@ describe('useLogin — AC-12 real-store proof (no mocked authStore)', () => {
     vi.resetModules()
     sessionStorage.removeItem('vc_auth')
     postMock.mockResolvedValueOnce({ data: { data: step2Response } })
-    globalThis.fetch = vi.fn().mockRejectedValueOnce(new Error('network down'))
+    getMock.mockReset()
+    getMock.mockRejectedValueOnce(new Error('network down'))
 
     const { useLogin: useLoginReal } = await import('./useAuth')
     const { result } = renderHook(() => useLoginReal(), { wrapper })

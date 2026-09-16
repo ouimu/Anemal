@@ -97,12 +97,60 @@ A refactor must make the codebase **smaller or flatter**. Same criteria, inverte
 
 | Check | Pass |
 |-------|------|
-| At least one of {file count, LOC, abstraction count, dependency count} goes **down** | required |
+| At least one of {file count, LOC, abstraction count, dependency count, largest-file LOC} goes **down** | required |
 | None of the others goes up | required |
 | Behaviour unchanged; test set identical before and after | required (evidence in the PR) |
 | Public contract unchanged (routes, envelope, permission codes) | required |
 
 Files/LOC/abstractions all increasing = a feature wearing a refactor's clothes. **REJECT**, and say so.
+
+**"Largest-file LOC" — 5th dimension (decided 2026-09-09, after a Phase-4
+god-file *split*, the first split this backlog attempted):** the original four
+dimensions were written for *collapsing duplicates* — file count naturally
+stays flat or falls when N copies become 1. A **split** (one oversized file
+that mixes unrelated concerns broken into two cohesive ones) is the inverse
+shape of the same underlying goal — less to hold in your head at once — but
+necessarily raises file count by definition. A literal reading rejects every
+legitimate god-file split on arrival, which the `gate` mode's own criterion
+#4 (`>500 LOC/file` is a rejection signal) contradicts: reverse mode would
+block the exact fix `gate` mode says the code needs.
+
+Count it as:
+- **down** — the largest file among those touched drops in LOC, and none of
+  the newly-created files exceed what the original was flagged for (the
+  split isn't just relocating the bloat)
+- **flat** — files were reorganized but no single file was actually oversized
+  to begin with (not a god-file fix, just a preference reshuffle — this
+  dimension doesn't apply, fall back to the other four)
+- **up** — LOC grew somewhere in the group beyond doc/comment overhead, or a
+  new file is itself already oversized — the split didn't reduce anything,
+  it just moved the same problem sideways
+
+A split passes reverse mode when: largest-file LOC counts as down per above,
+the move is verbatim (no logic changed in transit — diff the deleted lines
+against the added lines as an ordered sequence, not just structurally), and
+zero new abstractions were created (existing exports relocated, not
+multiplied). File count alone rising does not sink it.
+
+**"Abstraction count" — definition (decided 2026-09-09, after a Phase-1 disagreement
+with `@qa-agent` counting it the other way):** count **duplicated call sites / repeated
+logic**, not raw new exported symbols. A layering-conformance fix (moving an inline
+`prisma.*` call, or any other repeated block, into a named repository/service function)
+*always* adds new exports — that is not the signal to watch. The signal is whether a
+place that used to need the same fix applied N times now needs it applied once. Count it
+as:
+- **down** — N ≥ 2 duplicated inline blocks collapsed into 1 shared function (this is
+  the common case for a layering fix, and it counts as down even though the export
+  count went up)
+- **flat** — a single inline call moved to a named function 1:1, no duplication removed
+- **up** — a new abstraction introduced where none of the callers needed one (a genuine
+  premature abstraction — the case criterion #8 already targets in `gate` mode)
+
+Rationale: the reason duplication counts as complexity is that a future fix has to be
+repeated at every call site. Collapsing duplicates removes that cost even when it adds a
+function signature and an import line to read. A raw new-export count does not
+distinguish "real DRY-up" from "premature abstraction" — this refactor's own definition
+does, and is the one `@ponytail-agent` uses.
 
 ---
 

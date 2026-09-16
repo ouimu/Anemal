@@ -196,3 +196,14 @@ export async function deleteRole(tenantId: number, roleId: number): Promise<void
     throw err
   }
 }
+
+/** Permission codes grouped by module, for the role editor's permission toggle list. */
+export async function listPermissionsByModule(): Promise<Record<string, string[]>> {
+  const perms = await roleRepo.listAllPermissions()
+  const grouped: Record<string, string[]> = {}
+  for (const p of perms) {
+    if (!grouped[p.module]) grouped[p.module] = []
+    grouped[p.module].push(p.code)
+  }
+  return grouped
+}

@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client'
 import prisma from '../config/db'
 import { ConflictError, NotFoundError } from '../utils/errors'
 import { ownerSummarySelect } from './owner.repository'
+import { deductBranchStock } from './product.repository'
 
 export interface BuiltItem {
   description: string
@@ -75,13 +76,8 @@ export async function createInvoiceTx(tx: Prisma.TransactionClient, tenantId: nu
   // 1. Deduct branch stock for retail lines (conditional update prevents overselling).
   for (const item of data.items) {
     if (!item.productId) continue
-    const affected = await tx.$executeRaw`
-      UPDATE branch_inventory
-      SET "stockQty" = "stockQty" - ${item.qty}
-      WHERE "tenantId" = ${tenantId} AND "branchId" = ${data.branchId}
-        AND "productId" = ${item.productId} AND "stockQty" >= ${item.qty}
-    `
-    if (affected === 0) throw new ConflictError(`Insufficient stock for ${item.description}`, 'INSUFFICIENT_STOCK')
+    const ok = await deductBranchStock(tx, tenantId, data.branchId, item.productId, item.qty)
+    if (!ok) throw new ConflictError(`Insufficient stock for ${item.description}`, 'INSUFFICIENT_STOCK')
   }
 
   // 2. Per-tenant, per-month sequence → INV-YYYY-MM-NNNN.

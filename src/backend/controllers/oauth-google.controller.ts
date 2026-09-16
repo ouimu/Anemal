@@ -4,12 +4,9 @@
 // `state` param IS the trust boundary. Every failure path redirects; this
 // route never throws to the global error handler.
 import { Request, Response } from 'express'
-import prisma from '../config/db'
-import { verifyOAuthState } from '../utils/oauth-state'
-import { consumeNonce } from '../models/oauth-connect-nonce.repository'
+import { runOAuthCallbackGuard } from '../services/oauth-callback-guard.service'
 import * as tenantStorageConfigRepo from '../models/tenant-storage-config.repository'
 import * as auditRepo from '../models/settings-audit.repository'
-import { resolvePermissions } from '../services/permission.service'
 import { encryptField, decryptField } from '../utils/encryption'
 import { exchangeCodeForTokens, revokeGoogleToken, createGoogleDriveClient } from '../config/google-drive-client'
 import { bootstrapTenantFolders } from '../config/google-drive-driver'
@@ -31,48 +28,15 @@ export async function handleGoogleOAuthCallback(req: Request, res: Response): Pr
     res.redirect(`${DEFAULT_ERROR_ORIGIN}/settings/storage?error=google_consent_denied`)
     return
   }
-  if (!query.state) {
-    res.redirect(`${DEFAULT_ERROR_ORIGIN}/settings/storage?error=google_state_invalid`)
+  // Grill N-3/N-7/N-9, M-7: state signature, single-use provider-matched
+  // nonce, `code` present, and re-verified user/tenant entitlement — shared
+  // with the OneDrive callback via runOAuthCallbackGuard.
+  const guard = await runOAuthCallbackGuard(query, 'google', 'clinic.integrations.edit', DEFAULT_ERROR_ORIGIN)
+  if (!guard.ok) {
+    res.redirect(guard.redirectUrl)
     return
   }
-
-  // Grill N-7: on an invalid/expired signature the embedded origin cannot be
-  // trusted either (same reasoning as BA G-2a) — this branch NEVER reads out
-  // of `state`, always the fixed server-configured default.
-  const verified = verifyOAuthState(query.state)
-  if (!verified) {
-    res.redirect(`${DEFAULT_ERROR_ORIGIN}/settings/storage?error=google_state_invalid`)
-    return
-  }
-
-  // Grill N-3: atomic single-statement consume, BEFORE the code exchange.
-  // M-7: provider-matched — a 'onedrive'-minted nonce must not verify here.
-  const nonceOk = await consumeNonce(verified.nonce, 'google')
-  if (!nonceOk) {
-    res.redirect(`${verified.origin}/settings/storage?error=google_state_replayed`)
-    return
-  }
-
-  if (!query.code) {
-    res.redirect(`${verified.origin}/settings/storage?error=google_consent_denied`)
-    return
-  }
-
-  // Grill N-9: re-verify the initiating user/tenant are still active and the
-  // permission still held, immediately before persisting — the callback
-  // never passes through authMiddleware's normal checks (it has no JWT).
-  const [user, tenant] = await Promise.all([
-    prisma.user.findFirst({ where: { id: verified.userId, tenantId: verified.tenantId }, select: { isActive: true } }),
-    prisma.tenant.findUnique({ where: { id: verified.tenantId }, select: { isActive: true } }),
-  ])
-  const perms = user?.isActive !== false && tenant?.isActive !== false
-    ? await resolvePermissions(verified.userId, verified.tenantId)
-    : new Set<string>()
-  const stillEntitled = !!user && user.isActive !== false && !!tenant && tenant.isActive !== false && perms.has('clinic.integrations.edit')
-  if (!stillEntitled) {
-    res.redirect(`${verified.origin}/settings/storage?error=google_not_authorized`)
-    return
-  }
+  const { verified, code } = guard
 
   const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID
   const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET
@@ -82,7 +46,7 @@ export async function handleGoogleOAuthCallback(req: Request, res: Response): Pr
   }
 
   try {
-    const tokens = await exchangeCodeForTokens({ clientId, clientSecret, redirectUri: googleOAuthRedirectUri(), code: query.code })
+    const tokens = await exchangeCodeForTokens({ clientId, clientSecret, redirectUri: googleOAuthRedirectUri(), code })
 
     // Grill N-10: best-effort revoke of a PREVIOUS token before overwrite —
     // reconnecting without disconnecting first would otherwise leave a

@@ -1,6 +1,7 @@
 // Prescription repository — Prisma access incl. atomic per-branch stock deduction (Phase 4).
 import prisma from '../config/db'
 import { NotFoundError } from '../utils/errors'
+import { deductBranchStock } from './product.repository'
 import type { CreatePrescriptionInput } from '../services/prescription.service'
 import { ownerSummarySelect } from './owner.repository'
 
@@ -52,13 +53,8 @@ export function findPrescriptionWithDetails(tenantId: number, id: number) {
 // Atomic conditional deduction (branch_inventory) + create + 'out' movement. null when insufficient.
 export function deductStockAndCreate(tenantId: number, branchId: number, data: CreatePrescriptionInput) {
   return prisma.$transaction(async (tx) => {
-    const affected = await tx.$executeRaw`
-      UPDATE branch_inventory
-      SET "stockQty" = "stockQty" - ${data.quantity}
-      WHERE "tenantId" = ${tenantId} AND "branchId" = ${branchId}
-        AND "productId" = ${data.drugId} AND "stockQty" >= ${data.quantity}
-    `
-    if (affected === 0) return null
+    const ok = await deductBranchStock(tx, tenantId, branchId, data.drugId, data.quantity)
+    if (!ok) return null
     const prescription = await tx.prescription.create({ data: { ...data, tenantId, quantity: data.quantity } })
     await tx.stockMovement.create({
       data: {

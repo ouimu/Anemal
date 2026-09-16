@@ -62,6 +62,14 @@ export interface WorklistRow {
 
 // ponytail: raw SQL for latest-per-(pet, normalised vaccineName) dedup.
 // normalised = LOWER(TRIM(vaccineName)). NULL-branch pets appear in every branch list.
+// R2-HI-02 (@db-agent, Phase 5 code-quality refactor): every joined table in raw SQL
+// carries an explicit tenantId guard on its own ON clause — pets/owners have no FK
+// constraint tying their tenantId to vaccinations' (verified against
+// .claude/specs/database-schema.sql: no composite FK, no (id, tenantId) unique
+// target), so this cannot rely on FK integrity alone. With intact data every
+// surviving row already has p.tenantId = o.tenantId = v.tenantId, so these guards
+// are no-ops on correct data — defense-in-depth against a hypothetical corruption,
+// not a behavior change.
 export function findDueSoonWorklist(
   tenantId: number,
   branchId: number | null,
