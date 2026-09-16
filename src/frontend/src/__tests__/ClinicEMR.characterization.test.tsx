@@ -70,6 +70,10 @@ vi.mock('../store/authStore', () => ({
 import ClinicEMR from '../views/clinic/ClinicEMR'
 
 const pet = { id: 42, name: 'Rex', species: 'canine', owner: { firstName: 'Jane', lastName: 'Doe', phone: '0812345678' } }
+// A second pet used only by the R1 "reset together" pet-search-select tests below —
+// exercises the resetForm() call at ClinicEMR.tsx:525 (switching patients), distinct
+// from the resetForm() called from newRecord() at the "New EMR Record" button.
+const milo = { id: 99, name: 'Milo', species: 'feline', owner: { firstName: 'Ann', lastName: 'Lee', phone: '0899999999' } }
 
 interface FixtureRecord {
   id: number; petId: number; createdAt: string; assessment?: string
@@ -90,14 +94,31 @@ const baseRecord: FixtureRecord = {
 let recordsStore: Record<number, FixtureRecord> = {}
 let recordsList: { id: number; assessment?: string; createdAt: string }[] = []
 
+// Mirrors ClinicEMR.tsx's local (unexported) SearchResult shape.
+interface FixtureSearchResult { petId: number; petName: string; species: string; ownerName: string; phone: string }
+
+// Search directory backs /api/search for both fixture pets (Rex + Milo); filtered
+// by a case-insensitive substring match on petName, same as the real endpoint's
+// contract from ClinicEMR's point of view.
+const searchDirectory: FixtureSearchResult[] = [
+  { petId: 42, petName: 'Rex', species: 'canine', ownerName: 'Jane Doe', phone: '0812345678' },
+  { petId: 99, petName: 'Milo', species: 'feline', ownerName: 'Ann Lee', phone: '0899999999' },
+]
+
 function defaultGetImpl(url: string, config?: { params?: Record<string, unknown> }) {
   if (url === '/api/search') {
-    const q = config?.params?.q as string | undefined
-    if (q && q.length >= 2) return Promise.resolve({ data: { data: [{ petId: 42, petName: 'Rex', species: 'canine', ownerName: 'Jane Doe', phone: '0812345678' }] } })
-    return Promise.resolve({ data: { data: [] } })
+    const q = (config?.params?.q as string | undefined)?.toLowerCase()
+    if (!q || q.length < 2) return Promise.resolve({ data: { data: [] } })
+    return Promise.resolve({ data: { data: searchDirectory.filter(d => d.petName.toLowerCase().includes(q)) } })
   }
   if (url === '/api/pets/42') return Promise.resolve({ data: { data: pet } })
-  if (url === '/api/medical-records') return Promise.resolve({ data: { data: { records: recordsList } } })
+  if (url === '/api/pets/99') return Promise.resolve({ data: { data: milo } })
+  if (url === '/api/medical-records') {
+    // Only Rex (petId 42) has fixture records in this file; Milo (99) starts
+    // with none, which is what the R1 pet-switch tests below rely on.
+    const petId = config?.params?.petId
+    return Promise.resolve({ data: { data: { records: petId === 42 ? recordsList : [] } } })
+  }
   const m = url.match(/^\/api\/medical-records\/(\d+)$/)
   if (m) {
     const id = Number(m[1])
@@ -478,5 +499,161 @@ describe('ClinicEMR — conditional rendering (Gate 0)', () => {
 
     expect(await screen.findByText('Save the record before attaching files.')).toBeInTheDocument()
     expect(postMock).not.toHaveBeenCalledWith(expect.stringContaining('/attachments'), expect.anything(), expect.anything())
+  })
+})
+
+// ─── R1: "reset together" — resetForm() actually clears populated fields ──
+// docs/superpowers/plans/2026-09-16-phase7-god-components-arch-audit.md's structural
+// target names three properties of the 9 draft fields: written together, read
+// together, reset together. Every test above this point starts from a fresh,
+// unloaded mount when it exercises "New EMR Record", so nothing was ever
+// populated to reset. These tests load a populated record first, then trigger
+// resetForm() via both of its call sites and assert the fields actually clear.
+describe('ClinicEMR — reset together (Gate 0, R1)', () => {
+  it('clicking "New EMR Record" clears all four SOAP fields and all four vitals fields, and the next POST carries no leftover Visit A data', async () => {
+    renderEMR()
+    await selectRexAndOpenVisitA()
+    await screen.findByDisplayValue('Restless overnight') // Visit A is loaded and populated
+
+    await userEvent.click(screen.getByText(/new emr record/i))
+
+    // Subjective tab is active by default
+    expect((document.querySelector('textarea') as HTMLTextAreaElement).value).toBe('')
+
+    await userEvent.click(screen.getByText('Objective'))
+    expect((screen.getByLabelText('Weight (kg)') as HTMLInputElement).value).toBe('')
+    expect((screen.getByLabelText('Temperature (°C)') as HTMLInputElement).value).toBe('')
+    expect((screen.getByLabelText('Heart Rate') as HTMLInputElement).value).toBe('')
+    expect((screen.getByLabelText('Resp Rate') as HTMLInputElement).value).toBe('')
+    expect((document.querySelector('textarea') as HTMLTextAreaElement).value).toBe('') // Objective notes
+
+    await userEvent.click(screen.getByText('Assessment'))
+    expect((document.querySelector('textarea') as HTMLTextAreaElement).value).toBe('')
+
+    await userEvent.click(screen.getByText('Plan'))
+    expect((document.querySelector('textarea') as HTMLTextAreaElement).value).toBe('')
+
+    await userEvent.click(screen.getByText(/save record/i))
+    await screen.findByText('Saved')
+
+    expect(postMock).toHaveBeenCalledWith('/api/medical-records', {
+      petId: 42, doctorId: 1,
+      subjective: '', objective: '', assessment: '', plan: '',
+      weightKg: null, temperatureC: null, heartRateBpm: null, respRateRpm: null,
+      anatomyAnnotation: null,
+    })
+  })
+
+  it('switching to a different pet via the patient-search handler clears all four SOAP fields and all four vitals fields, and the next POST for that pet carries no leftover Visit A data', async () => {
+    renderEMR()
+    await selectRexAndOpenVisitA()
+    await screen.findByDisplayValue('Restless overnight') // Visit A is loaded and populated
+
+    // Switch patients via the search-select handler at ClinicEMR.tsx:525 (not the
+    // "New EMR Record" button) — this handler calls resetForm() independently.
+    await userEvent.type(screen.getByPlaceholderText(/pet or owner/i), 'Milo')
+    await userEvent.click(await screen.findByText('Milo'))
+
+    // The pet switch also clears the record selection, so the editor collapses
+    // back to the empty state — Milo has no fixture records in this file.
+    expect(screen.getByText('EMR Editor')).toBeInTheDocument()
+
+    // Create a fresh record for Milo and confirm nothing from Visit A survived.
+    await userEvent.click(screen.getByText(/new emr record/i))
+
+    expect((document.querySelector('textarea') as HTMLTextAreaElement).value).toBe('')
+    await userEvent.click(screen.getByText('Objective'))
+    expect((screen.getByLabelText('Weight (kg)') as HTMLInputElement).value).toBe('')
+    expect((screen.getByLabelText('Temperature (°C)') as HTMLInputElement).value).toBe('')
+    expect((screen.getByLabelText('Heart Rate') as HTMLInputElement).value).toBe('')
+    expect((screen.getByLabelText('Resp Rate') as HTMLInputElement).value).toBe('')
+    expect((document.querySelector('textarea') as HTMLTextAreaElement).value).toBe('')
+
+    await userEvent.click(screen.getByText('Assessment'))
+    expect((document.querySelector('textarea') as HTMLTextAreaElement).value).toBe('')
+    await userEvent.click(screen.getByText('Plan'))
+    expect((document.querySelector('textarea') as HTMLTextAreaElement).value).toBe('')
+
+    await userEvent.click(screen.getByText(/save record/i))
+    await screen.findByText('Saved')
+
+    expect(postMock).toHaveBeenCalledWith('/api/medical-records', {
+      petId: 99, doctorId: 1,
+      subjective: '', objective: '', assessment: '', plan: '',
+      weightKg: null, temperatureC: null, heartRateBpm: null, respRateRpm: null,
+      anatomyAnnotation: null,
+    })
+  })
+})
+
+// ─── R2: hydration-effect re-fetch does not clobber unsaved edits ─────────
+// The hydration useEffect at ClinicEMR.tsx:454-468 keys on [record?.id, isNewRecord]
+// (eslint-disabled) — that dependency array is the only thing preventing a
+// same-record refetch from clobbering unsaved edits, since the record query's
+// `data` reference changes on every refetch even when record.id is unchanged.
+describe('ClinicEMR — refetch does not clobber unsaved edits (Gate 0, R2)', () => {
+  it('an unsaved SOAP edit survives a same-record refetchRecord() triggered by adding a prescription', async () => {
+    renderEMR()
+    await selectRexAndOpenVisitA()
+    const textarea = await screen.findByDisplayValue('Restless overnight')
+    await userEvent.clear(textarea)
+    await userEvent.type(textarea, 'Unsaved during refetch')
+    expect(screen.getByDisplayValue('Unsaved during refetch')).toBeInTheDocument()
+
+    const getCallsBefore = getMock.mock.calls.filter(c => c[0] === '/api/medical-records/7').length
+
+    // Adding a prescription calls onRefresh -> refetchRecord() (ClinicEMR.tsx:757).
+    // record.id stays 7, so [record?.id, isNewRecord] does not change and the
+    // hydration effect must NOT re-run and clobber the unsaved edit above.
+    await userEvent.type(screen.getByPlaceholderText(/search drug/i), 'Amox')
+    await userEvent.click(await screen.findByText('Amoxicillin'))
+    await userEvent.click(screen.getByText('Add Prescription'))
+
+    await waitFor(() => expect(postMock).toHaveBeenCalledWith('/api/prescriptions', expect.objectContaining({ medicalRecordId: 7, drugId: 900 })))
+    await waitFor(() => {
+      const getCallsAfter = getMock.mock.calls.filter(c => c[0] === '/api/medical-records/7').length
+      expect(getCallsAfter).toBeGreaterThan(getCallsBefore)
+    })
+
+    expect(screen.getByDisplayValue('Unsaved during refetch')).toBeInTheDocument()
+  })
+})
+
+// ─── R3: anatomy hydration from the server round-trips unchanged ──────────
+// No existing fixture set a non-null anatomyAnnotation on a LOADED record —
+// every existing anatomy assertion is downstream of a fresh pointer-draw or a
+// Clear action. This pins hydration -> draft -> save for a server-provided value.
+describe('ClinicEMR — anatomy hydration from the server (Gate 0, R3)', () => {
+  it('hydrates a populated anatomyAnnotation from the server and round-trips it unchanged on save without touching the canvas', async () => {
+    recordsStore[7] = { ...baseRecord, anatomyAnnotation: { template: 'Feline - Lateral', imageData: 'data:image/png;base64,SERVERDATA' } }
+    renderEMR()
+    await selectRexAndOpenVisitA()
+    await screen.findByDisplayValue('Restless overnight')
+
+    await userEvent.click(screen.getByText(/save record/i))
+    await screen.findByText('Saved')
+
+    const body = putMock.mock.calls[0][1] as { anatomyAnnotation: unknown }
+    expect(body.anatomyAnnotation).toEqual({ template: 'Feline - Lateral', imageData: 'data:image/png;base64,SERVERDATA' })
+  })
+})
+
+// ─── R4: all four vitals keys round-trip in one save payload ──────────────
+// Only temperatureC and heartRateBpm were previously asserted from a real save
+// payload. This guards against a setField(k, v)-style collapse mis-mapping a key.
+describe('ClinicEMR — vitals inputs (Gate 0, R4)', () => {
+  it('a save with untouched vitals includes all four vitals keys with their hydrated values in one payload', async () => {
+    renderEMR()
+    await selectRexAndOpenVisitA()
+    await screen.findByDisplayValue('Restless overnight')
+
+    await userEvent.click(screen.getByText(/save record/i))
+    await screen.findByText('Saved')
+
+    const body = putMock.mock.calls[0][1] as Record<string, unknown>
+    expect(body.weightKg).toBe(4.5)
+    expect(body.temperatureC).toBe(38.2)
+    expect(body.heartRateBpm).toBe(110)
+    expect(body.respRateRpm).toBe(24)
   })
 })
