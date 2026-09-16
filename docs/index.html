@@ -4632,6 +4632,7 @@ cd ../frontend &amp;&amp; rm -rf node_modules &amp;&amp; npm install</code></pre
         <tr><td><span class="badge phase">Cross-tenant relation isolation</span></td><td>Closes PR #73's open hotfix debt structurally: no FK in the schema references <code>tenant_id</code>, so any relation traversal without its own tenant predicate could leak or corrupt cross-tenant data. One rule enforced in three dialects (Prisma to-one via root <code>where</code>, Prisma to-many via nested <code>where</code>, raw SQL via <code>ON</code>) across all 20 affected model files, backed by a new standing conformance test. Fixed 4 confirmed live leaks (incl. a financial-integrity defect in <code>invoice.repository.ts</code>'s <code>findMedicalRecord</code>). New operator script <code>scripts/tenant-integrity-scan.ts</code>. Full Lane A pipeline (BA sign-off → grill → arch rev 3 → ponytail APPROVE → QA APPROVE); <code>@db-agent</code>'s final review ran 4 rounds, 3 VETOs, each catching a real defect (PR #77)</td><td><span class="cl-status complete">Complete</span></td><td>1454 backend (+143 / +15 suites) / 410 frontend</td><td>2026-09-15</td></tr>
         <tr><td><span class="badge phase">Vitest testTimeout infra fix</span></td><td><code>ClinicInpatient</code> LC-4 and <code>AddOwnerModal</code> idCardType tests failed intermittently under full-suite parallel load due to CPU contention causing <code>userEvent</code> keystroke chains to exceed the default 5 s timeout. Fix: <code>testTimeout: 15000</code> in <code>src/frontend/vite.config.ts</code>. No product code changed. 3× full-suite 410/410 verified. (PR #76, Lane B)</td><td><span class="cl-status complete">Complete</span></td><td>1454 backend / 410 frontend (unchanged)</td><td>2026-09-16</td></tr>
         <tr><td><span class="badge phase">Modal consolidation</span></td><td>Consolidates 15 hand-rolled modal call sites (5 platform-plane + 10 clinic-plane) onto one shared, plane-neutral <code>Dialog</code> component driven by a single 2-branch <code>DismissalPolicy</code> contract (<code>'dismissible'</code>/<code>'blocking'</code>); <code>IdleLogoutModal</code> migrates onto it under <code>dismissal='blocking'</code>. QA (Step 7) fixed 2 real defects: idle-logout dismissal unmounting the dialog underneath it (data-loss risk) and a tablet drag-select-onto-backdrop misfire. Frontend-only. Known doc defect: its ADR (<code>docs/adr/0027-shared-modal-dismissal-policy-and-plane-neutrality.md</code>) collides with PR #77's ADR-0027 — tracked as backlog <code>ADR-DUP-1</code>, not yet renumbered. (PR #80, Lane A full pipeline)</td><td><span class="cl-status complete">Complete</span></td><td>1454 backend (unchanged) / 410 → 581 frontend (+171 tests / +11 files)</td><td>2026-09-16</td></tr>
+        <tr><td><span class="badge phase">Backend connection-leak fix</span></td><td>Resolves backlog <code>F4</code>: each jest test file's own <code>PrismaClient</code> pool now closes via a guarded <code>afterAll(() =&gt; prisma.$disconnect())</code> in <code>jest.setup-after-env.js</code>, so the full backend suite runs green <strong>unsharded</strong> for the first time (previously required 4-way <code>--shard</code> to avoid exhausting <code>max_connections=100</code>). No product code changed. (PR #81, test-infra fix, no Lane A gates)</td><td><span class="cl-status complete">Complete</span></td><td>1454 backend (unchanged, now verified unsharded)</td><td>2026-09-16</td></tr>
         <tr><td><span class="badge phase">Phase 10</span></td><td>Payment gateway + SaaS billing</td><td><span class="cl-status paused">Paused</span></td><td>—</td><td>Needs credentials</td></tr>
         <tr><td><span class="badge phase">Phase 11</span></td><td>LINE/SMS dispatch</td><td><span class="cl-status paused">Paused</span></td><td>—</td><td>Needs credentials</td></tr>
       </tbody>
@@ -4721,6 +4722,34 @@ cd ../frontend &amp;&amp; rm -rf node_modules &amp;&amp; npm install</code></pre
     </div>
   </div>
   <!-- /MODAL_CONSOLIDATION_BLOCK -->
+
+  <hr/>
+
+  <!-- BACKEND_CONNECTION_LEAK_FIX_BLOCK -->
+  <div class="cl-phase-block" id="cl-backend-connection-leak-fix" style="border-left:4px solid #16a34a">
+    <div class="cl-phase-header">
+      <div class="cl-phase-num">🔌</div>
+      <div>
+        <div class="cl-phase-title">Backend Connection-Leak Fix (F4)</div>
+        <div class="cl-phase-subtitle">PR #81 · test-infra fix, no product code changed · no Lane A pipeline gates apply</div>
+      </div>
+      <div class="cl-phase-meta">
+        <div class="cl-phase-date">2026-09-16</div>
+        <span class="cl-status complete">Complete</span>
+      </div>
+    </div>
+    <div class="cl-phase-body">
+      <p>Resolves backlog <code>F4</code>: each jest test <em>file</em> gets its own module registry, so every file importing <code>src/backend/config/db.ts</code> instantiated its own <code>PrismaClient</code> connection pool, and ~50 of the ~90 files touching Prisma never called <code>$disconnect()</code>. Under <code>--runInBand</code>, a shard runs dozens of files sequentially in one OS process, so leaked pools accumulated within that process across files until Postgres <code>max_connections=100</code> was exhausted (around suite 47 of an unsharded run). <code>forceExit: true</code> only killed the process at the very end, so it masked the accumulation instead of preventing it — a TODO comment already on <code>jest.config.js</code> said as much.</p>
+      <ul class="cl-deliverables">
+        <li><strong>Fix:</strong> added <code>setupFilesAfterEnv: ['./jest.setup-after-env.js']</code> with a single guarded <code>afterAll(() =&gt; prisma.$disconnect())</code> that runs once per test file regardless of whether that file remembers to disconnect itself. Needs its own file, wired via <code>setupFilesAfterEnv</code> rather than the existing <code>setupFiles</code>-loaded <code>jest.setup.js</code>, because <code>afterAll</code> doesn't exist until the test framework installs (after <code>setupFiles</code> run).</li>
+        <li><strong>Guarded for mocks:</strong> ~5 unit-test files <code>jest.mock</code> <code>config/db</code>/<code>@prisma/client</code> to avoid touching the database at all; the teardown checks <code>prisma &amp;&amp; typeof prisma.$disconnect === 'function'</code> so a mocked/undefined export doesn't throw and doesn't block every other suite's teardown.</li>
+        <li><strong>No product code changed</strong> — only <code>src/backend/jest.config.js</code>, <code>jest.setup.js</code>, and the new <code>jest.setup-after-env.js</code> touched.</li>
+        <li><strong>Practical effect:</strong> the full backend suite now runs green <strong>unsharded</strong> — the pre-existing 4-way <code>--shard=N/4 --runInBand --forceExit</code> workaround is no longer required to avoid connection exhaustion, though it remains a valid option for wall-clock parallelism.</li>
+      </ul>
+      <span class="cl-test-count">Backend 1454 passing / 0 failing / 109 suites (unchanged) — verified <strong>unsharded</strong> for the first time (single <code>npx jest --runInBand --forceExit</code> process, no <code>--shard</code>), ~153 s · <code>pg_stat_activity</code> 0 connections before and after · <code>tsc --noEmit</code> clean · backend eslint 0 errors / 1 pre-existing warning</span>
+    </div>
+  </div>
+  <!-- /BACKEND_CONNECTION_LEAK_FIX_BLOCK -->
 
   <hr/>
 
