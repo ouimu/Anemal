@@ -184,16 +184,30 @@ item**; they are separate candidates and neither is on the critical path.
 
 ### 2.4 ClinicBilling.tsx — a 415-line checkout with no seam
 **Problem.** The default export (L45-460) does pet search, cart assembly, discount, loyalty
-redemption, VAT computation, payment method, tender/change, PromptPay QR polling and invoice creation
-in one function body over 14 `useState`, with `api.post('/api/loyalty/redeem', …)` written twice
-(L165 and L185) with the same arguments.
+redemption, VAT computation, payment method, tender/change, a one-shot PromptPay QR fetch (**corrected
+2026-09-17, per QA's Gate 0 review: there is no polling** — `staleTime: Infinity`, no
+`refetchInterval`; "Payment Received" is a manual staff click) and invoice creation in one function
+body over 14 `useState`, with `api.post('/api/loyalty/redeem', …)` written twice (L165 and L185) with
+the same arguments.
 
 **Smallest fix.** Extract the *money* computation — subtotal → discount → loyalty redemption → `calcVat`
-→ total — into one pure function `computeTotals(cart, discount, redeemPts, vatMode, vatRate)` in the
-same file, testable with no DB, no network and no UI (`architecture-rules.md` §8.1). `calcVat` is
-already pure and already tested; this extends the same seam over the rest of the arithmetic. Then
-de-duplicate the two identical `/api/loyalty/redeem` call sites. Nothing else — no component split, no
-state collapse — until the characterization suite of §1 exists for this file.
+→ total — into one pure function in the same file, testable with no DB, no network and no UI
+(`architecture-rules.md` §8.1). `calcVat` is already pure and already tested; this extends the same
+seam over the rest of the arithmetic. **Corrected 2026-09-17, per QA's Gate 0 review: the signature
+below was wrong and could not reproduce current totals** —
+
+```
+computeTotals(cart, previewLines, discount, redeemPts, loyaltyMaxPts, vatMode, vatRate)
+```
+
+— must take `previewLines` (the prescription preview lines shown in the total but never sent in the
+invoice `items` payload — they're server-derived from `medicalRecordId`, see `invoice.service.ts`) as
+a subtotal input alongside `cart`, and `loyaltyMaxPts` (or equivalently the caller re-clamps
+`redeemPts` to the current cart's `maxRedeemable` before calling) so a cart shrunk after a Max-redeem
+doesn't overpay loyalty points against a smaller subtotal. The original 5-arg signature silently drops
+prescription-line totals from the extracted function — a real under-collection risk at the register,
+not a cosmetic gap. Then de-duplicate the two identical `/api/loyalty/redeem` call sites. Nothing else
+— no component split, no state collapse — until the characterization suite of §1 exists for this file.
 
 ---
 
