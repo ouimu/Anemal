@@ -544,7 +544,34 @@ describe('ClinicEMR — reset together (Gate 0, R1)', () => {
     })
   })
 
-  it('switching to a different pet via the patient-search handler clears all four SOAP fields and all four vitals fields, and the next POST for that pet carries no leftover Visit A data', async () => {
+  // MUTATION-TESTED (QA Gate 0). The pet-search handler's own resetForm() is only
+  // observable in ONE window: after a new record id is selected (so the editor
+  // renders again) but before its detail GET resolves (so the hydration effect has
+  // not yet overwritten the nine fields). Outside that window every route back into
+  // the editor masks it — "New EMR Record" calls resetForm() again, and opening a
+  // record hydrates all nine fields unconditionally. An earlier draft of this test
+  // clicked "New EMR Record" before asserting and therefore passed with
+  // ClinicEMR.tsx:525's resetForm() deleted. This version gates Milo's detail GET
+  // to hold that window open. Verified: deleting resetForm() from line 525 makes
+  // this test fail.
+  it('switching to a different pet via the patient-search handler clears the previous pet\'s SOAP and vitals values before the new record loads', async () => {
+    const miloRecord: FixtureRecord = {
+      id: 12, petId: 99, createdAt: '2026-08-02T00:00:00.000Z', assessment: 'Visit M',
+      subjective: 'Milo subjective', objective: 'Milo objective', plan: 'Milo plan',
+      weightKg: 3.1, temperatureC: 38, heartRateBpm: 150, respRateRpm: 30,
+      anatomyAnnotation: null, prescriptions: [], attachments: [],
+    }
+    let releaseMiloDetail: (() => void) | undefined
+    getMock.mockImplementation((url: string, config?: { params?: Record<string, unknown> }) => {
+      if (url === '/api/medical-records' && config?.params?.petId === 99) {
+        return Promise.resolve({ data: { data: { records: [{ id: 12, assessment: 'Visit M', createdAt: miloRecord.createdAt }] } } })
+      }
+      if (url === '/api/medical-records/12') {
+        return new Promise(resolve => { releaseMiloDetail = () => resolve({ data: { data: miloRecord } }) })
+      }
+      return defaultGetImpl(url, config)
+    })
+
     renderEMR()
     await selectRexAndOpenVisitA()
     await screen.findByDisplayValue('Restless overnight') // Visit A is loaded and populated
@@ -554,26 +581,43 @@ describe('ClinicEMR — reset together (Gate 0, R1)', () => {
     await userEvent.type(screen.getByPlaceholderText(/pet or owner/i), 'Milo')
     await userEvent.click(await screen.findByText('Milo'))
 
-    // The pet switch also clears the record selection, so the editor collapses
-    // back to the empty state — Milo has no fixture records in this file.
-    expect(screen.getByText('EMR Editor')).toBeInTheDocument()
+    // Open Milo's record. Its detail GET is held pending, so the editor re-renders
+    // with the draft state as the pet switch left it — nothing has hydrated yet.
+    await userEvent.click(await screen.findByText('Visit M'))
+    await screen.findByText('Prescriptions') // editor is mounted, detail still in flight
 
-    // Create a fresh record for Milo and confirm nothing from Visit A survived.
-    await userEvent.click(screen.getByText(/new emr record/i))
-
-    expect((document.querySelector('textarea') as HTMLTextAreaElement).value).toBe('')
+    expect((document.querySelector('textarea') as HTMLTextAreaElement).value).toBe('') // Subjective
     await userEvent.click(screen.getByText('Objective'))
     expect((screen.getByLabelText('Weight (kg)') as HTMLInputElement).value).toBe('')
     expect((screen.getByLabelText('Temperature (°C)') as HTMLInputElement).value).toBe('')
     expect((screen.getByLabelText('Heart Rate') as HTMLInputElement).value).toBe('')
     expect((screen.getByLabelText('Resp Rate') as HTMLInputElement).value).toBe('')
-    expect((document.querySelector('textarea') as HTMLTextAreaElement).value).toBe('')
+    expect((document.querySelector('textarea') as HTMLTextAreaElement).value).toBe('') // Objective notes
 
     await userEvent.click(screen.getByText('Assessment'))
     expect((document.querySelector('textarea') as HTMLTextAreaElement).value).toBe('')
     await userEvent.click(screen.getByText('Plan'))
     expect((document.querySelector('textarea') as HTMLTextAreaElement).value).toBe('')
 
+    // Releasing the detail GET hydrates Milo's own values, confirming the blanks
+    // above were the reset and not a permanently broken fixture.
+    await act(async () => { releaseMiloDetail!(); await Promise.resolve() })
+    expect(await screen.findByDisplayValue('Milo plan')).toBeInTheDocument()
+  })
+
+  it('a new record created for a freshly switched pet POSTs no leftover data from the previous pet', async () => {
+    renderEMR()
+    await selectRexAndOpenVisitA()
+    await screen.findByDisplayValue('Restless overnight')
+
+    await userEvent.type(screen.getByPlaceholderText(/pet or owner/i), 'Milo')
+    await userEvent.click(await screen.findByText('Milo'))
+
+    // The pet switch also clears the record selection, so the editor collapses
+    // back to the empty state — Milo has no fixture records in this file.
+    expect(screen.getByText('EMR Editor')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByText(/new emr record/i))
     await userEvent.click(screen.getByText(/save record/i))
     await screen.findByText('Saved')
 
@@ -588,19 +632,38 @@ describe('ClinicEMR — reset together (Gate 0, R1)', () => {
 
 // ─── R2: hydration-effect re-fetch does not clobber unsaved edits ─────────
 // The hydration useEffect at ClinicEMR.tsx:454-468 keys on [record?.id, isNewRecord]
-// (eslint-disabled) — that dependency array is the only thing preventing a
-// same-record refetch from clobbering unsaved edits, since the record query's
-// `data` reference changes on every refetch even when record.id is unchanged.
+// (eslint-disabled). That dependency array is the only thing stopping a
+// same-record refetch from overwriting unsaved edits with server values.
+//
+// MUTATION-TESTED (QA Gate 0). The guard only bites when the refetch actually
+// yields a NEW `record` object. @tanstack/react-query v5 applies structural
+// sharing (`replaceEqualDeep`) to every query result: if the refetched payload
+// is deeply equal to the cached one it hands back the *same* reference, so an
+// effect keyed on [record] would not re-run either and the test would pass
+// against a broken component. The fixture below therefore mutates the stored
+// record on the prescription POST, exactly as the real endpoint does, so the
+// refetch returns genuinely different data. Verified: reverting
+// ClinicEMR.tsx:468 to `[record, isNewRecord]` makes this test fail.
 describe('ClinicEMR — refetch does not clobber unsaved edits (Gate 0, R2)', () => {
   it('an unsaved SOAP edit survives a same-record refetchRecord() triggered by adding a prescription', async () => {
+    // Server-side effect of POST /api/prescriptions: the record now carries the
+    // new prescription, so the refetched object differs from the cached one.
+    postMock.mockImplementation((url: string) => {
+      if (url === '/api/prescriptions') {
+        recordsStore[7] = {
+          ...recordsStore[7],
+          prescriptions: [{ id: 301, quantity: 1, unit: 'tab', dosageInstruction: 'SERVER-ADDED', drug: { id: 900, name: 'Amoxicillin', unit: 'tab', stockQuantity: 40 } }],
+        }
+      }
+      return Promise.resolve({ data: { data: { id: 501 } } })
+    })
+
     renderEMR()
     await selectRexAndOpenVisitA()
     const textarea = await screen.findByDisplayValue('Restless overnight')
     await userEvent.clear(textarea)
     await userEvent.type(textarea, 'Unsaved during refetch')
     expect(screen.getByDisplayValue('Unsaved during refetch')).toBeInTheDocument()
-
-    const getCallsBefore = getMock.mock.calls.filter(c => c[0] === '/api/medical-records/7').length
 
     // Adding a prescription calls onRefresh -> refetchRecord() (ClinicEMR.tsx:757).
     // record.id stays 7, so [record?.id, isNewRecord] does not change and the
@@ -610,10 +673,11 @@ describe('ClinicEMR — refetch does not clobber unsaved edits (Gate 0, R2)', ()
     await userEvent.click(screen.getByText('Add Prescription'))
 
     await waitFor(() => expect(postMock).toHaveBeenCalledWith('/api/prescriptions', expect.objectContaining({ medicalRecordId: 7, drugId: 900 })))
-    await waitFor(() => {
-      const getCallsAfter = getMock.mock.calls.filter(c => c[0] === '/api/medical-records/7').length
-      expect(getCallsAfter).toBeGreaterThan(getCallsBefore)
-    })
+
+    // The refetched record reached the component as a NEW object — proven by the
+    // server-added prescription now rendering. This is what arms the assertion
+    // below: a [record]-keyed effect would have re-hydrated at this point.
+    await screen.findByText(/SERVER-ADDED/)
 
     expect(screen.getByDisplayValue('Unsaved during refetch')).toBeInTheDocument()
   })
