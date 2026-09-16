@@ -5,6 +5,7 @@ import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
 import AuthedPetImage from '../../components/AuthedPetImage'
 import { usePhotoUpload } from '../../hooks/usePhotoUpload'
+import { getErrorMessage } from '../../utils/errorMessage'
 import { useT } from '../../i18n'
 import Can from '../../components/Can'
 import { useAuthStore } from '../../store/authStore'
@@ -46,11 +47,6 @@ function maskIdCard(idCardNumber: string) {
 const fieldClass = 'bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary'
 
 // ─── Shared modal submit state ─────────────────────────────────────────────────
-/** Extracts a user-facing message from an Axios-style error — the expression every modal below used inline. */
-function extractErrorMessage(err: unknown): string {
-  return (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save'
-}
-
 /**
  * Centralizes the `form`/`error`/`saving` state triple and the
  * submit-try/catch/finally mechanics repeated across ClinicPets' five
@@ -64,7 +60,7 @@ function extractErrorMessage(err: unknown): string {
 function useModalSubmit(
   submitFn: () => Promise<void>,
   onSuccess: () => void,
-  formatError: (err: unknown) => string | null = extractErrorMessage,
+  formatError: (err: unknown) => string | null = (err) => getErrorMessage(err, 'Failed to save'),
 ) {
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -387,9 +383,18 @@ export function EditPetModal({ pet, onClose, onSuccess }: { pet: Pet; onClose: (
       qc.invalidateQueries({ queryKey: ['pet', pet.id] })
     },
     onSuccess,
-    // A failed photo upload already reports itself via usePhotoUpload's own
-    // uploadError, rendered alongside `error` below — don't double-report it.
-    (err) => (uploadError ? null : extractErrorMessage(err)),
+    // `uploadError` here is the value from the render that created this
+    // `submit` closure, not necessarily this attempt's outcome — it only
+    // goes truthy *after* a photo-upload failure has already re-rendered
+    // the component once. So this suppresses the generic PUT-failure
+    // message on the *next* submit after an earlier photo failure, even
+    // when that next failure is unrelated (e.g. a validation error from
+    // the PUT itself) or the photo now succeeds. When the retried upload
+    // also succeeds, `uploadError` clears too, so that next failure can
+    // end up showing no message at all — a genuine pre-existing bug
+    // (present before this refactor), pinned by a characterization test,
+    // not fixed here.
+    (err) => (uploadError ? null : getErrorMessage(err, 'Failed to save')),
   )
 
   const busy = saving || isUploading

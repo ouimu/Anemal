@@ -521,6 +521,52 @@ describe('ClinicPets — EditPetModal', () => {
     expect(await screen.findByText('Weight out of range')).toBeInTheDocument()
     expect(screen.getByText('Edit Pet')).toBeInTheDocument()
   })
+
+  // Drives the real `usePhotoUpload` hook (this file does not mock it —
+  // see the header comment), matching how QA's own probe exercised the
+  // formatError suppression branch useModalSubmit's `uploadError` param
+  // restructured. Zero coverage existed anywhere for this branch before
+  // (EditPetModal.test.tsx hard-mocks usePhotoUpload with uploadError: '').
+  it('photo-upload failure on save shows the upload error and does not call PUT', async () => {
+    globalThis.URL.createObjectURL = vi.fn().mockReturnValue('blob:mock-url')
+    await openEditPetModal()
+    const file = new File(['x'], 'new-photo.jpg', { type: 'image/jpeg' })
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+    await userEvent.upload(fileInput, file)
+
+    postMock.mockRejectedValueOnce({ response: { data: { error: 'Upload failed' } } })
+    await userEvent.click(screen.getByText('Save Changes'))
+
+    expect(await screen.findByText('Upload failed')).toBeInTheDocument()
+    expect(putMock).not.toHaveBeenCalled()
+    expect(screen.getByText('Edit Pet')).toBeInTheDocument()
+  })
+
+  it('current behaviour: after a photo-upload failure, a retried save whose PUT then fails shows no error message at all (pre-existing bug, pinned not fixed — see the formatError comment in ClinicPets.tsx)', async () => {
+    globalThis.URL.createObjectURL = vi.fn().mockReturnValue('blob:mock-url')
+    await openEditPetModal()
+    const file = new File(['x'], 'new-photo.jpg', { type: 'image/jpeg' })
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+    await userEvent.upload(fileInput, file)
+
+    // First attempt: photo upload fails, banner shows the upload-specific error.
+    postMock.mockRejectedValueOnce({ response: { data: { error: 'Upload failed' } } })
+    await userEvent.click(screen.getByText('Save Changes'))
+    expect(await screen.findByText('Upload failed')).toBeInTheDocument()
+
+    // Retry: photo upload now succeeds (so uploadError clears), but the PUT
+    // fails. formatError's `uploadError` check reflects the *previous*
+    // render (truthy, from the first failure), so it suppresses this
+    // attempt's message too — and since the successful re-upload clears
+    // uploadError, nothing at all ends up on screen.
+    putMock.mockRejectedValueOnce({ response: { data: { error: 'Weight out of range' } } })
+    await userEvent.click(screen.getByText('Save Changes'))
+
+    await waitFor(() => expect(putMock).toHaveBeenCalled())
+    expect(screen.queryByText('Weight out of range')).not.toBeInTheDocument()
+    expect(screen.queryByText('Upload failed')).not.toBeInTheDocument()
+    expect(screen.getByText('Edit Pet')).toBeInTheDocument()
+  })
 })
 
 // ─── AddVaccinationModal ────────────────────────────────────────────────────
