@@ -166,15 +166,21 @@ components changes the module's public surface that `ClinicPetsPhotoDisplay.test
 ### 2.3 ClinicEMR.tsx — one draft record smeared across eleven useState
 **Problem.** The record editor holds `subjective`, `objective`, `assessment`, `plan`, `weightKg`,
 `tempC`, `heartRate`, `respRate`, `anatomy`, plus `saving`/`saveMsg` as eleven independent `useState`
-(L379-389). They are written together (four `useEffect` hydrate them from the fetched record), read
-together (one `body` object at save, L490/494), and reset together. Eleven setters where the domain has
-one object; the four `useEffect` exist only to keep the eleven in sync with one query result.
+(L379-389). They are written together — **corrected 2026-09-17, per QA's Gate-0 review: exactly one
+`useEffect` (L454-468) hydrates them from the fetched record, not four.** The file's other three
+`useEffect`s belong to `AnatomyCanvas`'s own redraw, `PrescriptionPanel`'s own debounce, and the
+`?petId=` deep link — none touch the draft, consistent with this section's own instruction to leave
+those two sub-components alone. They are also read together (one `body` object at save, L490/494) and
+reset together (`resetForm()`, called from `newRecord()` and the pet-search-select handler). Eleven
+setters where the domain has one object; the one hydration `useEffect` exists only to keep the eleven
+in sync with one query result.
 
 **Smallest fix.** Collapse the nine field states into one `draft` object with a single
-`setField(k, v)` updater, so the four hydration effects become one `useEffect` that sets `draft` from
-the query result. Eleven `useState` → three; four `useEffect` → one. `saving`/`saveMsg` stay as they
-are. `AnatomyCanvas` and `PrescriptionPanel` are already extracted components with their own state —
-**leave both alone in this item**; they are separate candidates and neither is on the critical path.
+`setField(k, v)` updater; the single hydration effect keys on the same dependencies as today and sets
+`draft` from the query result. Eleven `useState` → three. The `useEffect` count stays one — there was
+never a 4→1 collapse to make. `saving`/`saveMsg` stay as they are. `AnatomyCanvas` and
+`PrescriptionPanel` are already extracted components with their own state — **leave both alone in this
+item**; they are separate candidates and neither is on the critical path.
 
 ### 2.4 ClinicBilling.tsx — a 415-line checkout with no seam
 **Problem.** The default export (L45-460) does pet search, cart assembly, discount, loyalty
