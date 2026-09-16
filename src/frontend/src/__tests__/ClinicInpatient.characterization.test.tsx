@@ -230,22 +230,23 @@ describe('AdmitModal — close paths (Gate 0, G1)', () => {
   })
 })
 
-// ─── G2 — mutual exclusion (recording actual current behaviour) ───────────
+// ─── G2 — mutual exclusion ──────────────────────────────────────────────
 describe('ClinicInpatient — modal mutual exclusion (Gate 0, G2)', () => {
-  it('current behaviour: opening Edit while the Care modal is open mounts BOTH modals simultaneously', async () => {
-    // careTarget/editTarget/historyTarget are three independent nullable
-    // states (L673-675). Nothing in the code clears one when another is set
-    // — the CageCard buttons stay in the DOM and clickable underneath the
-    // full-screen overlay. This is the exact gap arch-audit §2.1 names as the
-    // reason to collapse to one discriminated union: today two modals CAN be
-    // mounted at once, and only an incidental visual overlay hides it.
+  it('opening Edit while the Care modal is open closes Care and shows only Edit', async () => {
+    // Superseded by fix(frontend) e78b5d4, landed underneath this branch by
+    // rebase: careTarget/editTarget/historyTarget (three independent
+    // nullable states) collapsed into one activeModal discriminated union,
+    // so only one modal can be mounted at a time. This test originally
+    // recorded the pre-fix bug (both modals mounting simultaneously); that
+    // bug is now fixed and this assertion reflects the corrected behaviour,
+    // matching e78b5d4's own regression test.
     const { container } = await openCareModal()
     await userEvent.click(screen.getByLabelText('Edit admission'))
     await screen.findByText('Edit Admission — Rex')
 
-    expect(screen.getByText('Log Care — Rex')).toBeInTheDocument()
+    expect(screen.queryByText('Log Care — Rex')).not.toBeInTheDocument()
     expect(screen.getByText('Edit Admission — Rex')).toBeInTheDocument()
-    expect(container.querySelectorAll('.fixed.inset-0').length).toBe(2)
+    expect(container.querySelectorAll('.fixed.inset-0').length).toBe(1)
   })
 
   it('sequential open -> close -> open of a different modal leaves exactly one modal root at a time', async () => {
