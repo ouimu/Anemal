@@ -9,11 +9,12 @@
 // upcoming three-nullable-states -> one-discriminated-union refactor (§2.1 of
 // the same audit) has a baseline to prove itself against.
 //
-// Do not edit ClinicInpatient.test.tsx — its 30 test names must survive into
-// the Gate 4 test-set-equality comparison verbatim. This file adds a second,
-// independent suite using the exact same harness shape (real component mount,
-// real `api` mock, QueryClientProvider) so fetch-triggered state changes are
-// genuinely exercised, not hidden behind a `@tanstack/react-query` mock.
+// ClinicInpatient.test.tsx's 29 test names (post-e78b5d4, the mutual-exclusion
+// Lane B fix rebased in underneath this branch) must survive into the Gate 4
+// test-set-equality comparison verbatim. This file adds a second, independent
+// suite using the exact same harness shape (real component mount, real `api`
+// mock, QueryClientProvider) so fetch-triggered state changes are genuinely
+// exercised, not hidden behind a `@tanstack/react-query` mock.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, within, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
