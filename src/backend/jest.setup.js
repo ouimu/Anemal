@@ -22,3 +22,5 @@ Request.prototype.end = function patchedEnd (fn) {
 // Note: seedRbac is idempotent (uses upsert) and completes before any test suite runs.
 // Invocation happens via globalSetup (jest-global-setup.js), not here.
 // This setupFile only sets up the supertest agent patch above.
+// The F4 connection-pool teardown lives in jest.setup-after-env.js — this file runs
+// via `setupFiles`, before the test framework (afterAll/expect/etc.) is installed.

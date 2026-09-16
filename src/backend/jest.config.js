@@ -14,11 +14,15 @@ module.exports = {
   },
   // Load .env.test (isolated test DB) before dev's .env can be picked up by Prisma's own auto-loader
   setupFiles: ['./jest.setup-env.js', './jest.setup.js'],
+  // Runs after the test framework (afterAll/expect/etc.) is installed — see F4 fix
+  // in jest.setup-after-env.js.
+  setupFilesAfterEnv: ['./jest.setup-after-env.js'],
   // Seed RBAC once before any tests run (runs in separate process)
   globalSetup: './jest-global-setup.js',
-  // ponytail: tests leak an open handle (Prisma pool not disconnected) so runInBand
-  // never exits and the run hangs at 0 CPU. Force exit after the suite. Upgrade path:
-  // add afterAll(() => prisma.$disconnect()) in jest.setup.js, then drop forceExit.
+  // ponytail: some suites still leave an open handle (e.g. an http server not closed
+  // in afterAll) so runInBand can hang at 0 CPU. Force exit after the suite as a
+  // safety net. The Prisma-pool leak this used to paper over (F4) is now fixed by
+  // the shared afterAll $disconnect() in jest.setup-after-env.js.
   forceExit: true,
   // Map imports so ts-jest resolves them correctly
   moduleFileExtensions: ['ts', 'js', 'json'],
