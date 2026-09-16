@@ -351,3 +351,29 @@ in disguise (arch-agent SKILL.md §8) — stop and re-scope.
 edits** — and reports the §4.3 baseline. That is Lane D gate 0 + step 1 for item 1.
 
 Items 2-4 re-enter this document for their own Gate 0 plan when item 1 has merged.
+
+### 7.1 Re-scope, recorded 2026-09-16 — item 1's own state-collapse refactor never happened
+
+While Gate 0 (§4.2) was being written, `@dev-agent` found the §2.1 target type
+(`useState<{ kind; hospit } | null>`) structurally contradicted G2's own characterization
+test — a single-slot union can't reproduce the "both modals mount simultaneously" quirk
+that test correctly pinned as current behaviour. That contradiction meant the intended fix
+was itself an observable behaviour change, not a Lane D refactor — see the human decision
+captured in-conversation the same day: ship the mutual-exclusion fix as its own Lane B
+branch (`fix/inpatient-modal-mutual-exclusion`, commit `e78b5d4`, PR #84) instead.
+
+`e78b5d4` collapsed `careTarget`/`editTarget`/`historyTarget` into exactly the
+`activeModal: { kind; hospit } | null` shape §2.1 named — as a bug fix, not a refactor, with
+real behaviour change (mutual exclusion is now enforced) as its explicit point. It was
+rebased in underneath this Lane D branch so later items could build on the corrected base;
+commit `d2fe0f5` then updated the Gate 0 G2 assertion to match. **Net effect: item 1's
+structural target is fully delivered. There is no further Lane D refactor commit to write for
+`ClinicInpatient.tsx` — Gate 0's characterization tests stay as permanent regression coverage,
+and item 1 is closed by the Lane B PR's own merge, not by a commit on this branch.**
+
+Since item 1 needed no further branch-local work, and splitting item 2 onto a separate branch
+just to wait on an already-landed (if not yet merged) fix would gain no real revert-point
+independence, item 2 (§2.2, ClinicPets) proceeded on this same branch rather than waiting.
+This is a deliberate exception to §Scope-guard's "one item per branch" default, made because
+item 1 no longer has branch-local content to isolate — not a silent bundling of two live
+refactors. Items 3-4 (EMR, Billing) still get their own branches per the original guard.
