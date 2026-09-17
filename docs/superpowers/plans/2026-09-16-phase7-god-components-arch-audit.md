@@ -193,20 +193,27 @@ the same arguments.
 **Smallest fix.** Extract the *money* computation — subtotal → discount → loyalty redemption → `calcVat`
 → total — into one pure function in the same file, testable with no DB, no network and no UI
 (`architecture-rules.md` §8.1). `calcVat` is already pure and already tested; this extends the same
-seam over the rest of the arithmetic. **Corrected 2026-09-17, per QA's Gate 0 review: the signature
-below was wrong and could not reproduce current totals** —
+seam over the rest of the arithmetic. **Corrected 2026-09-17, per QA's Gate 0 review and the shipped
+implementation (`cf1f8e2`)** —
 
 ```
-computeTotals(cart, previewLines, discount, redeemPts, loyaltyMaxPts, vatMode, vatRate)
+computeTotals(cart, previewLines, loyaltyPoints, redeemPts, discount, vatMode, vatRate)
+  → { subtotal, maxRedeemable, redeemDiscount, discountNum, tax, total }
 ```
 
-— must take `previewLines` (the prescription preview lines shown in the total but never sent in the
+— takes `previewLines` (the prescription preview lines shown in the total but never sent in the
 invoice `items` payload — they're server-derived from `medicalRecordId`, see `invoice.service.ts`) as
-a subtotal input alongside `cart`, and `loyaltyMaxPts` (or equivalently the caller re-clamps
-`redeemPts` to the current cart's `maxRedeemable` before calling) so a cart shrunk after a Max-redeem
-doesn't overpay loyalty points against a smaller subtotal. The original 5-arg signature silently drops
+a subtotal input alongside `cart`, and `loyaltyPoints` (the owner's raw current balance) rather than a
+pre-clamped `loyaltyMaxPts` — passing a pre-computed max would be circular, since the cap itself
+depends on the subtotal this function computes. `maxRedeemable` is derived internally and **returned**,
+not left for the caller to recompute — the component has 4 separate consumers of it (a conditional
+branch, a `max` HTML attribute, an `onChange` clamp, a display label), and returning one shared value
+is what prevents them drifting out of sync. A 5-arg version omitting `previewLines` would silently drop
 prescription-line totals from the extracted function — a real under-collection risk at the register,
-not a cosmetic gap. Then de-duplicate the two identical `/api/loyalty/redeem` call sites. Nothing else
+not a cosmetic gap. Then de-duplicate the two identical `/api/loyalty/redeem` call sites, preserving
+`invoiceTotal: subtotal` (pre-discount, pre-VAT) exactly — and preserve the original guard's exact NaN
+semantics (`!(redeemDiscount > 0)`, not the De-Morgan-looking-but-different `redeemDiscount <= 0`,
+which diverges when `subtotal` is NaN — see `6b63c9a`). Nothing else
 — no component split, no state collapse — until the characterization suite of §1 exists for this file.
 
 ---
