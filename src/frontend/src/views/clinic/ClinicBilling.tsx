@@ -441,7 +441,7 @@ export default function ClinicBilling() {
 
             {err && <p className="text-body-sm text-error mb-sm">{err}</p>}
 
-            <button onClick={finalize} disabled={!hasLines || createInvoice.isPending || recordPayment.isPending}
+            <button onClick={finalize} disabled={!hasLines || pendingInvoiceId != null || createInvoice.isPending || recordPayment.isPending}
                     className="w-full min-h-[56px] rounded-lg bg-secondary text-secondary-on font-semibold text-body-md hover:bg-secondary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-sm">
               <MaterialIcon name="check_circle" size={20} />
               {createInvoice.isPending || recordPayment.isPending ? 'Processing…' : `Confirm Payment · ${baht(total)}`}
