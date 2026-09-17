@@ -443,6 +443,39 @@ describe('ClinicInpatient — Care History modal (LCV-1)', () => {
   })
 })
 
+describe('ClinicInpatient — modal mutual exclusivity (Lane B fix)', () => {
+  it('opening Edit while Care is open closes Care and shows only Edit', async () => {
+    stubGet([activeAdmission])
+    renderBoard()
+    await screen.findByText('Rex')
+
+    await userEvent.click(screen.getByText('Log Care'))
+    expect(await screen.findByText('Log Care — Rex')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByLabelText('Edit admission'))
+    expect(await screen.findByText('Edit Admission — Rex')).toBeInTheDocument()
+    expect(screen.queryByText('Log Care — Rex')).not.toBeInTheDocument()
+  })
+
+  it('opening History while Edit is open closes Edit and shows only History', async () => {
+    getMock.mockImplementation((url: string) => {
+      if (url === '/api/hospitalizations/active') return Promise.resolve({ data: { data: [activeAdmission] } })
+      if (url === '/api/appointments/doctors') return Promise.resolve({ data: { data: doctors } })
+      if (url === '/api/hospitalizations/500') return Promise.resolve({ data: { data: { ...activeAdmission, careLogs: [] } } })
+      return Promise.resolve({ data: { data: null } })
+    })
+    renderBoard()
+    await screen.findByText('Rex')
+
+    await userEvent.click(screen.getByLabelText('Edit admission'))
+    expect(await screen.findByText('Edit Admission — Rex')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByLabelText('View care history'))
+    expect(await screen.findByText('Care History')).toBeInTheDocument()
+    expect(screen.queryByText('Edit Admission — Rex')).not.toBeInTheDocument()
+  })
+})
+
 describe('AdmitModal — standalone (B4, AC5)', () => {
   it('submits POST /api/hospitalizations with the pre-filled petId', async () => {
     getMock.mockImplementation((url: string) => {
