@@ -713,3 +713,56 @@ describe('ClinicBilling — loading, error and empty states (Gate 0)', () => {
     expect(screen.getByRole('combobox')).toBeInTheDocument()
   })
 })
+
+// ─── 9. Loyalty-redeem guard: non-finite redeemDiscount (Gate 0 gap C) ───────
+// QA mutation testing on cf1f8e2 proved this behaviour was UNCOVERED: reverting
+// redeemLoyaltyIfNeeded's guard from `if (!pet?.ownerId || redeemDiscount <= 0)`
+// back to its pre-refactor form `if (!(pet?.ownerId && redeemDiscount > 0))`
+// left all 89 tests green, so nothing pinned the one input combination where the
+// two forms disagree.
+//
+// They are NOT De Morgan equivalents for NaN:
+//   pre-refactor:  NaN > 0   === false -> guard blocks  -> NO redeem POST
+//   post-refactor: NaN <= 0  === false -> guard passes  -> redeem POST fires
+// `redeemDiscount` is NaN whenever `subtotal` is NaN, because
+// maxRedeemable = Math.min(points, Math.floor(NaN * 0.2)) = NaN and
+// redeemDiscount = Math.min(redeemPts, NaN) = NaN — even when redeemPts is 0.
+// `subtotal` goes NaN from the untyped API boundary at ClinicBilling.tsx:152,
+// `qty: Number(rx.quantity)`, where a missing or non-numeric `quantity` yields
+// NaN (the `{ quantity: string }` annotation is a compile-time assertion over an
+// unvalidated `r.data.data` payload, not a runtime guarantee).
+//
+// Net effect of the regression: a prescription with a bad quantity makes every
+// cash and PromptPay sale fire an unrequested POST to the money-handling
+// /api/loyalty/redeem endpoint carrying `{points: null, invoiceTotal: null}`
+// (NaN serialises to null through JSON), for a customer who redeemed nothing —
+// and with maxRedeemable NaN the loyalty panel is not even rendered, so staff
+// never see a redemption they are nonetheless charged for.
+describe('ClinicBilling — loyalty-redeem guard rejects a non-finite redeemDiscount (Gate 0 gap C)', () => {
+  async function finalizeCashSaleWithNaNSubtotal() {
+    recordsForPet = [{ id: 77, assessment: 'Annual checkup', createdAt: '2026-08-01T00:00:00.000Z' }]
+    // Non-numeric quantity from the API -> Number('2 tabs') === NaN -> subtotal NaN.
+    recordDetails[77] = { prescriptions: [{ quantity: '2 tabs', drug: { name: 'Amoxicillin', unitPrice: '80.00' } }] }
+    renderBilling()
+    await selectMilo()
+    await userEvent.selectOptions(await screen.findByRole('combobox'), '77')
+    await screen.findByText('Amoxicillin')
+    await screen.findByText('500 pts') // owner has a balance, so ownerId is truthy
+    await userEvent.click(screen.getByText(/Confirm Payment/))
+    await screen.findByText('Payment Successful!')
+  }
+
+  it('does not call /api/loyalty/redeem when the subtotal (and therefore redeemDiscount) is NaN', async () => {
+    await finalizeCashSaleWithNaNSubtotal()
+    expect(postMock.mock.calls.filter((c) => c[0] === '/api/loyalty/redeem')).toHaveLength(0)
+  })
+
+  it('never sends a redeem payload whose points or invoiceTotal is non-finite', async () => {
+    await finalizeCashSaleWithNaNSubtotal()
+    for (const [, body] of postMock.mock.calls.filter((c) => c[0] === '/api/loyalty/redeem')) {
+      const { points, invoiceTotal } = body as { points: number; invoiceTotal: number }
+      expect(Number.isFinite(points)).toBe(true)
+      expect(Number.isFinite(invoiceTotal)).toBe(true)
+    }
+  })
+})

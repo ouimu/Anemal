@@ -182,7 +182,10 @@ export default function ClinicBilling() {
   // invoiceTotal is `subtotal` — pre-discount, pre-VAT — matching the backend
   // redeem endpoint's expected basis; do not change to post-discount/post-VAT.
   async function redeemLoyaltyIfNeeded() {
-    if (!pet?.ownerId || redeemDiscount <= 0) return
+    // `!(redeemDiscount > 0)`, NOT `redeemDiscount <= 0`: the two differ for NaN
+    // (NaN > 0 and NaN <= 0 are both false), and a NaN subtotal from a bad
+    // prescription quantity would otherwise fire a redeem POST carrying nulls.
+    if (!pet?.ownerId || !(redeemDiscount > 0)) return
     try {
       await api.post('/api/loyalty/redeem', { ownerId: pet.ownerId, points: redeemDiscount, invoiceTotal: subtotal })
       qc.invalidateQueries({ queryKey: ['loyalty', pet.ownerId] })
