@@ -208,19 +208,28 @@ describe('REAL App.tsx — loop freedom on every path in and out of 403', () => 
     expect(screen.getByText('menu.signOut')).toBeInTheDocument()
   })
 
-  it('ADMIN denied inside /clinic/* is relocated by ClinicLayout:31 and TERMINATES (no /clinic/403 -> dashboard cycle)', () => {
+  // F-3 (2026-09-11): ClinicLayout/AdminLayout's role-string gate is now
+  // permission-based (docs/superpowers/plans/2026-09-11-modal-consolidation-ba-signoff.md
+  // §5.3). Previously ANY role !== 'admin' entering ClinicLayout was fine and
+  // role === 'admin' was unconditionally bounced to /clinic-admin/dashboard
+  // regardless of permissions. Now the bounce only fires when the OTHER
+  // tree actually grants access; a role with zero permissions in BOTH trees
+  // renders in-shell and is denied in place by RequirePermission, instead of
+  // being relocated cross-tree. Still terminal — no loop — just denied on
+  // the tree it actually requested.
+  it('ADMIN with zero permissions in either tree is denied in-shell on /clinic/403, not relocated to AdminLayout', () => {
     setAuth({ role: 'admin', hasPermission: () => false })
     at('/clinic/billing')
-    // ClinicLayout relocates to /clinic-admin/dashboard, which denies -> /clinic-admin/403.
     expect(screen.getByText(FORBIDDEN)).toBeInTheDocument()
-    expect(screen.getByText('nav.adminPanel')).toBeInTheDocument()
+    expect(screen.queryByText('nav.adminPanel')).toBeNull()
+    expect(screen.getByText('menu.signOut')).toBeInTheDocument()
   })
 
-  it('ADMIN landing directly on /clinic/403 is relocated and TERMINATES', () => {
+  it('ADMIN with zero permissions in either tree landing directly on /clinic/403 terminates in-shell there', () => {
     setAuth({ role: 'admin', hasPermission: () => false })
     at('/clinic/403')
     expect(screen.getByText(FORBIDDEN)).toBeInTheDocument()
-    expect(screen.getByText('nav.adminPanel')).toBeInTheDocument()
+    expect(screen.queryByText('nav.adminPanel')).toBeNull()
   })
 
   it('ADMIN with clinic.profile.view landing on /clinic/403 is relocated to an ALLOWED dashboard, not a cycle', () => {
@@ -233,12 +242,15 @@ describe('REAL App.tsx — loop freedom on every path in and out of 403', () => 
     expect(document.querySelector('.animate-spin')).not.toBeNull()
   })
 
-  it('non-admin landing on /clinic-admin/403 is relocated by AdminLayout:36 and TERMINATES on /clinic/403', () => {
+  // F-3: doctor with zero permissions in either tree is no longer bounced
+  // out of AdminLayout by a role check — it renders in-shell and terminates
+  // on /clinic-admin/403 within AdminLayout's own chrome.
+  it('non-admin with zero permissions in either tree terminates in-shell on /clinic-admin/403', () => {
     setAuth({ role: 'doctor', hasPermission: () => false })
     at('/clinic-admin/403')
     expect(screen.getByText(FORBIDDEN)).toBeInTheDocument()
     expect(screen.getByText('menu.signOut')).toBeInTheDocument()
-    expect(screen.queryByText('nav.adminPanel')).toBeNull()
+    expect(screen.getByText('nav.adminPanel')).toBeInTheDocument()
   })
 
   it('stale bookmark to the DELETED absolute /403: catch-all -> /login -> authenticated bounce -> in-shell /clinic/403', () => {

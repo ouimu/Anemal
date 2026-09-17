@@ -7,6 +7,7 @@ import { useAdminSettings } from '../hooks/useAdmin'
 import { useT } from '../i18n'
 import MaterialIcon from '../components/MaterialIcon'
 import TopNav from '../components/TopNav'
+import { ADMIN_NAV_PERMS, CLINIC_NAV_PERMS } from './navAccess'
 
 const NAV = [
   { to: '/clinic-admin/dashboard',    icon: 'dashboard',    label: 'nav.overview',           perm: 'clinic.profile.view' },
@@ -25,7 +26,6 @@ const NAV = [
 ]
 
 export default function AdminLayout() {
-  const role          = useAuthStore(s => s.role)
   const name          = useAuthStore(s => s.name)
   const hasPermission = useAuthStore(s => s.hasPermission)
   const logout   = useLogout()
@@ -33,7 +33,16 @@ export default function AdminLayout() {
   const { sidebarOpen, toggleSidebar } = useUiStore()
   const { data } = useAdminSettings()
 
-  if (role !== 'admin') return <Navigate to="/clinic/dashboard" replace />
+  // RBAC-based entry (F-3): the legacy role==='admin' gate blocked any role
+  // without that exact string even when the RBAC matrix granted it an
+  // admin-tree permission (e.g. doctor/clinic_staff -> bloodbank.view).
+  // Only bounce away when the role holds NO admin-tree permission but does
+  // hold a clinic-tree one — otherwise render and let each route's
+  // RequirePermission decide (avoids a redirect loop when a role holds
+  // permissions in neither tree).
+  const hasAnyAdminPerm  = ADMIN_NAV_PERMS.some(hasPermission)
+  const hasAnyClinicPerm = CLINIC_NAV_PERMS.some(hasPermission)
+  if (!hasAnyAdminPerm && hasAnyClinicPerm) return <Navigate to="/clinic/dashboard" replace />
 
   const sidebarW  = sidebarOpen ? 'w-56' : 'w-14'
   const mainClass = sidebarOpen ? 'ml-56' : 'ml-14'
