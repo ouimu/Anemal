@@ -721,3 +721,53 @@ describe('ClinicEMR — vitals inputs (Gate 0, R4)', () => {
     expect(body.respRateRpm).toBe(24)
   })
 })
+
+// ─── R5: two draft fields updated in the same React batch both survive ────
+// setField is a single `useCallback(<K,>(key, value) => setDraft(prev => ({
+// ...prev, [key]: value })), [])` (ClinicEMR.tsx:408-410). The functional-
+// updater form is what lets two setField calls that land in the same React
+// batch compose instead of clobbering each other. A collapse to
+// `setField = (key, value) => setDraft({ ...draft, [key]: value })` (closing
+// over the render-scoped `draft` instead of `prev`, and dropping useCallback)
+// is behaviourally identical for a single call in isolation, and every other
+// test in this file drives one field at a time with an `await` between
+// interactions — giving React a chance to commit between updates — so
+// nothing else here would notice the collapse.
+//
+// MUTATION-TESTED (QA Gate 0, mutation M6 from the Phase 7 QA pass on commit
+// f8fd23d). Two different VitalStepper "+" buttons are clicked with
+// fireEvent (not userEvent) inside a single act() callback with no `await`
+// between them, so both onChange -> setField calls are queued in the same
+// React batch before ClinicEMR re-renders. Under the mutant, the second
+// setField call's `draft` closure still holds the pre-batch snapshot (missing
+// the first field's change), so its `setDraft({ ...draft, ... })` overwrites
+// the first update. Verified: replacing ClinicEMR.tsx:408-410 with the
+// closure-based `setField` above makes this test fail (weightKg silently
+// reverts to its pre-batch value in the save payload).
+describe('ClinicEMR — same-batch draft updates (Gate 0, R5)', () => {
+  it('two different vitals fields incremented in the same React batch both survive into the save payload', async () => {
+    renderEMR()
+    await selectRexAndOpenVisitA()
+    await userEvent.click(screen.getByText('Objective'))
+
+    const weightInput = await screen.findByLabelText('Weight (kg)')
+    const tempInput = screen.getByLabelText('Temperature (°C)')
+    const weightIncBtn = within(weightInput.parentElement!).getByText('+')
+    const tempIncBtn = within(tempInput.parentElement!).getByText('+')
+
+    act(() => {
+      fireEvent.click(weightIncBtn)
+      fireEvent.click(tempIncBtn)
+    })
+
+    expect(weightInput).toHaveValue(4.6)
+    expect(tempInput).toHaveValue(38.3)
+
+    await userEvent.click(screen.getByText(/save record/i))
+    await screen.findByText('Saved')
+
+    const body = putMock.mock.calls[0][1] as { weightKg: number; temperatureC: number }
+    expect(body.weightKg).toBe(4.6)
+    expect(body.temperatureC).toBe(38.3)
+  })
+})
