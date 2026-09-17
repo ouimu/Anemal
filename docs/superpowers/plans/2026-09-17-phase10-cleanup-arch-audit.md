@@ -2,7 +2,7 @@
 
 Date: 2026-09-17 · Lane: D (`/anemal-refactor`) · Agent: `@arch-agent` · Tier: Lane D target analysis
 (SKILL.md §8) · Branch: `refactor/phase10-cleanup` (worktree, cut from `main` @ `58492ce`)
-Source backlog entry: `.claude/roadmap/phase-history.md:67` (`LaneD-P10`)
+Source backlog entry: `.claude/roadmap/phase-history.md`, Backlog → Actionable (unscheduled), row `LaneD-P10`
 Status: **audit only — no source file modified**
 
 ---
@@ -51,7 +51,8 @@ subset to preserve. It is all eight, or none.
 A stray-file deletion is only zero-risk if nothing consumes it. Swept every `.ts/.tsx/.js/.cjs/.json/
 .yml/.yaml/.ps1/.sh/.md/.toml`, `Dockerfile`, `.gitignore` and `.dockerignore` in the tree:
 
-- **Zero references to `.gitkeep`** anywhere except the backlog entry in `phase-history.md:67` itself.
+- **Zero references to `.gitkeep`** anywhere except the `LaneD-P10` backlog row in `phase-history.md`
+  itself.
 - No `.github/workflows/` directory exists — nothing in CI globs or copies them.
 - Not referenced by `vercel.json`, `cleanup-remnants.ps1`, or either `package.json`.
 
@@ -313,7 +314,8 @@ in `reverse` mode, and that is exactly the Phase 9 outcome this audit exists to 
 
 ## 5. Backlog corrections to make (`@pm-agent` / `@scribe-agent`)
 
-`.claude/roadmap/phase-history.md:67` (`LaneD-P10`) currently reads *"5 stray `.gitkeep` files in
+The `LaneD-P10` row in `.claude/roadmap/phase-history.md`'s Backlog → Actionable (unscheduled) table
+currently reads *"5 stray `.gitkeep` files in
 populated dirs; 10 non-null assertions without guard comments (worst: `ClinicEMR.tsx:100,108,130`
 double-asserts canvas ref); split 717-line `i18n/index.ts` into per-feature files."* Three corrections:
 
