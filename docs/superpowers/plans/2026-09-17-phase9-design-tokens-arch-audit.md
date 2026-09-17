@@ -615,3 +615,38 @@ to a BLOCK and must clear it before anything else. Then `/grill-with-docs` (Step
 Phase 9 justify its own branch at all?) and §7(1) (is dropping the invariant test right?) as the two
 questions to press hardest — §4's lane fork is settled. Then `@pm-agent` for `/write-plan`, or the
 orchestrator closes Phase 9 into follow-up #1 if §8 lands on REJECT.
+
+---
+
+## 0b. Outcome, recorded 2026-09-17 — CLOSED, deferred to follow-up #1
+
+`@ponytail-agent` re-ran both modes against rev 2 and split them:
+
+- **`arch-precheck` — PASS.** The rev 2 shape (one local `const CHART` in `AdminDashboard.tsx`, zero
+  new files/imports/exports) clears all three flagged criteria. The BLOCK against rev 1 was correct and
+  is resolved, not argued away.
+- **`reverse` — REJECT (criterion 6).** Even crediting the strongest honest reading — two literals at
+  N=2 call sites collapsing to one named value each counts as a real "down" under this SKILL's own
+  duplicated-call-site rule — LOC still goes up by 1 and nothing else goes down. The gate requires a
+  down **and** nothing up; +1 LOC with a genuine abstraction-count down still fails "none of the others
+  rises" on the letter of the rule.
+
+Ponytail's reasoning for closing rather than shrinking further: the *arithmetic* is a tiebreak, not the
+deciding argument — the deciding argument is that a full Lane D branch (QA sign-off, PR, red-suite
+gate, five tracking-document updates, phase-history entry, HTML-updater) costs an order of magnitude
+more than the four-line diff it would ship, to fix something causing **zero present harm** (the five
+bare literals render byte-identical to the named version in both themes today). Meanwhile §4.1's
+dark-mode axis-label legibility defect is a live, already-broken UI issue whose fix must rewrite these
+same five lines anyway — Phase 9 would spend a branch to save that future fix four lines of editing.
+
+**Decision: Phase 9 is closed without implementation.** No source file was ever touched (confirmed:
+this branch's diff against `main` is docs-only, two commits, one file). This audit is the deliverable —
+its durable findings (§1 theme-awareness table, §3.2 two-charts-different-grid-tokens trap, §3.4
+`PEN_COLORS`-must-never-be-theme-bound reasoning, §2.4 `ClinicBilling` print-doc exclusion, §4.1's
+dark-mode legibility defect, the off-palette `#0369a1`, the stale `tokens.md`, the ADR-0027 numbering
+collision) carry forward as source material for whenever the dark-mode-charts Lane A work (follow-up
+#1) is picked up — at that point the same five call sites get named as a natural side effect of making
+them theme-reactive, at zero extra branch cost.
+
+Recorded in `.claude/roadmap/phase-history.md`'s backlog section rather than left only in this file, so
+the finding survives even if this branch and worktree are later cleaned up.
