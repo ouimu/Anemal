@@ -1,7 +1,7 @@
 ---
 name: ba-agent
 model: opus
-effort: max
+effort: high
 description: >
   Senior Business Analyst & Solution Consultant for Anemal. Use PROACTIVELY for requirement
   analysis, authorization/permission design (RBAC), the Platform Console / SaaS domain, and

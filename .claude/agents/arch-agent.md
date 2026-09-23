@@ -1,7 +1,7 @@
 ---
 name: arch-agent
 model: opus
-effort: max
+effort: high
 description: >
   Senior Software Architect for Anemal. Runs at Step 3.4 — after @ba-agent sign-off, before
   /grill-with-docs — to turn a validated requirement into a structure: logical model, class and

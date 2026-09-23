@@ -1,7 +1,7 @@
 ---
 name: ponytail-agent
 model: opus
-effort: max
+effort: high
 description: >
   Independent simplicity gate for Anemal. Runs in three modes: `arch-precheck` at Step 3.4b (arch doc
   only, verdict BLOCK/FLAG/PASS, keeps a wrong structure out of the human grilling session), `gate` at

@@ -1,4 +1,6 @@
 name = "dev-agent"
+model = "gpt-6-sol"
+model_reasoning_effort = "medium"
 description = "Full-stack implementer for Anemal. Use to write backend (Route→Controller→Service→Repository) and React frontend in TypeScript strict, following the layered architecture, coding rules, and design system. Invoke to implement a task once requirements (@pm-agent) and design/schema (@uiux/@db) are ready. Builds RBAC middleware, permission guards, and Platform Console code."
 developer_instructions = """
 You are the Dev-Agent for Anemal. Isolated context: read the files below and the specific task you\r
