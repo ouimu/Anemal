@@ -15,19 +15,27 @@ description: >
 
 Every `SELECT`, `INSERT`, `UPDATE`, `DELETE` on a tenant-scoped table **must** include:
 ```sql
-WHERE tenant_id = :currentTenantId
+WHERE "tenantId" = :currentTenantId
 ```
 
-Branch-scoped tables (`appointments`, `stock_movements`, `invoices`, `grooming_bookings`) **also** require:
+**Casing note:** the live DB uses quoted camelCase identifiers (`"tenantId"`, `"branchId"`), not
+snake_case — same convention as `.claude/specs/database-schema.sql`'s header note. Examples below
+use this casing; adapt to whatever quoting the query-building layer (Prisma / raw SQL) requires.
+
+There are 13 branch-scoped tables in the live schema. 4 have `"branchId"` **NOT NULL** — always
+filter on it: `branch_inventory`, `user_branches`, `doctor_shifts`, `payment_history`. 9 have
+`"branchId"` **nullable** (optional/primary-branch semantics — filter only when the feature is
+branch-scoped, and handle NULL explicitly): `users`, `pets`, `appointments`, `medical_records`,
+`stock_movements`, `invoices`, `hospitalizations`, `grooming_bookings`, `refresh_tokens`.
 ```sql
-AND branch_id = :currentBranchId
+AND "branchId" = :currentBranchId
 ```
 
 **In Prisma — correct vs forbidden:**
 ```typescript
 // CORRECT — always scoped
-await prisma.pet.findMany({ where: { tenant_id: tenantId } });
-await prisma.pet.update({ where: { id: petId, tenant_id: tenantId }, data });
+await prisma.pet.findMany({ where: { tenantId } });
+await prisma.pet.update({ where: { id: petId, tenantId }, data });
 
 // FORBIDDEN — cross-tenant data leak
 await prisma.pet.findUnique({ where: { id: petId } });
@@ -37,25 +45,28 @@ Return `404` (not `403`) when a cross-tenant ID is accessed — never confirm re
 
 ## Schema sections
 
+29 clinic-plane tables (the 14 authorization/platform tables are listed separately below).
+
 | Section | Tables |
 |---|---|
-| Core tenant & user | `tenants`, `branches`, `users`, `refresh_tokens` |
-| Pet & owner | `owners`, `pets`, `pet_allergies`, `vaccinations` |
-| Appointments | `appointments` |
-| EMR | `medical_records`, `prescriptions`, `prescription_items`, `lab_tests`, `lab_results` |
-| Inventory | `products`, `stock_movements` |
-| Billing | `invoices`, `invoice_items`, `payments` |
-| Inpatient | `inpatient_admissions`, `inpatient_care_logs` |
+| Core tenant & user | `tenants`, `branches`, `users`, `user_branches`, `refresh_tokens` |
+| Settings | `tenant_settings`, `tenant_storage_config`, `system_settings`, `settings_audit_log`, `oauth_connect_nonce`, `company_types` |
+| Pet & owner | `owners`, `pets`, `vaccinations`, `pet_reminders` |
+| Appointments | `appointments`, `doctor_shifts` |
+| EMR | `medical_records`, `prescriptions`, `attachments` |
+| Inventory | `inventory_items`, `branch_inventory`, `stock_movements` |
+| Billing | `invoices`, `invoice_items`, `payment_history` |
+| Inpatient | `hospitalizations`, `daily_inpatient_care` |
 | Grooming | `grooming_bookings` |
-| Blood bank | `blood_donors`, `blood_collections`, `blood_transfusions` |
-| Loyalty | `memberships`, `loyalty_transactions` |
+| Blood bank | `blood_donors`, `blood_donations`, `blood_transfusions` |
+| Loyalty | `loyalty_transactions` |
 | Audit | `audit_logs` |
 
 ## Migration rules
 
 - Every migration requires a `down` script
 - New indexes on live tables: `CREATE INDEX CONCURRENTLY` — no table lock
-- Composite indexes lead with `tenant_id`: e.g. `(tenant_id, created_at DESC)`
+- Composite indexes lead with `"tenantId"`: e.g. `("tenantId", "createdAt" DESC)`
 - Foreign keys require indexes — verify before adding any FK
 - Column renames: add new → dual-write → backfill → drop old (three separate migrations)
 - `SELECT *` is forbidden — name columns explicitly
@@ -65,7 +76,7 @@ Return `404` (not `403`) when a cross-tenant ID is accessed — never confirm re
 ```typescript
 it('returns 404 when tenant B accesses tenant A resource', async () => {
   const res = await request(app)
-    .get(`/api/v1/pets/${tenantAPetId}`)
+    .get(`/api/pets/${tenantAPetId}`)
     .set('Authorization', `Bearer ${tenantBToken}`);
   expect(res.status).toBe(404);
 });
@@ -79,11 +90,22 @@ after the two copies had drifted; `.claude/specs/` now holds the complete supers
 
 Read the schema before designing any new table or writing any migration.
 
-## Authorization & Platform tables (designed)
+## Authorization & Platform tables (live)
 
-Proposed in `.claude/specs/RBAC_Platform_Restructure_Spec.md` section 9 (not yet migrated):
-`permissions`, `roles`, `role_permissions`, `users.role_id`, `platform_users` (no `tenant_id`),
-`plans`, `tenants.plan_id`, `tenant_quotas`. Rules unchanged: tenant-scoped tables keep
-`WHERE tenant_id`; `roles` with `tenant_id = NULL` are system templates; `platform_users` is the
-ONLY non-tenant identity table. `@db-agent` writes these migrations with `down` scripts when
-this work is implemented. See skill `anemal-rbac-matrix` for the seed data.
+Migrated and live — `.claude/specs/RBAC_Platform_Restructure_Spec.md` is **historical** rationale
+only, not a pending-work list: `permissions`, `roles` (Prisma model `ClinicRole`), `role_permissions`,
+`user_roles`, `platform_users` (no `tenantId`), `plans`, `tenant_quotas`, `tenant_provisioning`,
+`platform_audit_logs`, `refresh_tokens`, `tenant_storage_config`, `oauth_connect_nonce`,
+`company_types`, `payment_history`.
+
+- `tenants."planId"` (not `plan_id`) FKs to `plans`.
+- `users."roleId"` is **NOT NULL** (FK to `roles`, set by ADR-0019) and still exists — it was never
+  dropped. What migration `20260721010000_drop_legacy_role_column` dropped is the separate legacy
+  `users.role` **string/enum** column (and its `Role` enum type). `roleId`/`roleRef` is a
+  display/fallback pointer kept in sync by `user.repository.ts`; **effective permissions are
+  resolved from the `user_roles` join table** (`permission.service.ts resolvePermissions`), not by
+  reading `roleRef` alone.
+- `roles` with `tenantId = NULL` are system templates; `platform_users` is the ONLY non-tenant
+  identity table.
+
+See skill `anemal-rbac-matrix` for the seed data and permission catalogue.
