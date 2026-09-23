@@ -32,19 +32,21 @@ function flatten<T extends ItemWithStock>(item: T, branchId: number | null) {
     return {
       ...rest,
       branchId,
-      stockQty:    bi ? Number(bi.stockQty) : 0,
-      minStockQty: bi ? Number(bi.minStockQty) : 0,
-      expiryDate:  bi?.expiryDate ?? null,
-      lotNo:       bi?.lotNo ?? null,
+      // API response contract predates the phase4 branch-split: frontend
+      // (useInventory.ts + every consuming view) reads stockQuantity/minStockLevel.
+      stockQuantity: bi ? Number(bi.stockQty) : 0,
+      minStockLevel: bi ? Number(bi.minStockQty) : 0,
+      expiryDate:    bi?.expiryDate ?? null,
+      lotNo:         bi?.lotNo ?? null,
     }
   }
   return {
     ...rest,
     branchId: null,
-    stockQty:    rows.reduce((sum, bi) => sum + Number(bi.stockQty), 0),
-    minStockQty: rows.reduce((sum, bi) => sum + Number(bi.minStockQty), 0),
-    expiryDate:  null,
-    lotNo:       null,
+    stockQuantity: rows.reduce((sum, bi) => sum + Number(bi.stockQty), 0),
+    minStockLevel: rows.reduce((sum, bi) => sum + Number(bi.minStockQty), 0),
+    expiryDate:    null,
+    lotNo:         null,
   }
 }
 
@@ -263,7 +265,7 @@ export function deactivateProduct(tenantId: number, id: number) {
 
 interface AlertRow {
   id: number; name: string; category: string | null; unit: string | null
-  stockQty: number; minStockQty: number; expiryDate: Date | null; unitPrice: number | null
+  stockQuantity: number; minStockLevel: number; expiryDate: Date | null; unitPrice: number | null
 }
 
 // R2-HI-02: the join predicate must tenant-scope BOTH tables, not just the outer WHERE —
@@ -271,7 +273,8 @@ interface AlertRow {
 // (matched purely on `productId`) leak into results if one ever exists.
 export function findLowStock(tenantId: number, branchId: number) {
   return prisma.$queryRaw<AlertRow[]>`
-    SELECT i.id, i.name, i.category, i.unit, bi."stockQty", bi."minStockQty", bi."expiryDate", i."unitPrice"
+    SELECT i.id, i.name, i.category, i.unit,
+      bi."stockQty" AS "stockQuantity", bi."minStockQty" AS "minStockLevel", bi."expiryDate", i."unitPrice"
     FROM branch_inventory bi
     JOIN inventory_items i ON i.id = bi."productId" AND i."tenantId" = ${tenantId}
     WHERE bi."tenantId" = ${tenantId} AND bi."branchId" = ${branchId} AND i."isActive" = TRUE
@@ -283,7 +286,8 @@ export function findLowStock(tenantId: number, branchId: number) {
 export function findExpiringSoon(tenantId: number, branchId: number, withinDays: number) {
   const cutoff = new Date(); cutoff.setDate(cutoff.getDate() + withinDays)
   return prisma.$queryRaw<AlertRow[]>`
-    SELECT i.id, i.name, i.category, i.unit, bi."stockQty", bi."minStockQty", bi."expiryDate", i."unitPrice"
+    SELECT i.id, i.name, i.category, i.unit,
+      bi."stockQty" AS "stockQuantity", bi."minStockQty" AS "minStockLevel", bi."expiryDate", i."unitPrice"
     FROM branch_inventory bi
     JOIN inventory_items i ON i.id = bi."productId" AND i."tenantId" = ${tenantId}
     WHERE bi."tenantId" = ${tenantId} AND bi."branchId" = ${branchId} AND i."isActive" = TRUE

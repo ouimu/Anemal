@@ -90,6 +90,20 @@ describe('inv-3.1 — Inventory CRUD + stock + alerts', () => {
     expect(moves.length).toBe(1)
   })
 
+  // Regression: frontend (useInventory.ts, ClinicInventory/Billing/EMR) has always
+  // read `stockQuantity`/`minStockLevel` off the product payload. The repository's
+  // flatten() emits `stockQty`/`minStockQty` instead, so every consumer computes
+  // Number(undefined) and renders "NaN" for on-hand/min-stock columns.
+  test('inv-04b: list exposes stockQuantity/minStockLevel (not NaN) matching branch stock', async () => {
+    const res = await request(server).get('/api/products').set(auth(tokenA)).expect(200)
+    const product = res.body.data.products.find((p: { id: number }) => p.id === productId)
+    expect(product).toBeTruthy()
+    expect(Number.isNaN(Number(product.stockQuantity))).toBe(false)
+    expect(Number(product.stockQuantity)).toBe(50)
+    expect(Number.isNaN(Number(product.minStockLevel))).toBe(false)
+    expect(Number(product.minStockLevel)).toBe(20)
+  })
+
   test('inv-05: alerts flag low stock (stock <= minStockLevel)', async () => {
     // Add a clearly low-stock item.
     const low = await request(server).post('/api/products').set(auth(tokenA))
