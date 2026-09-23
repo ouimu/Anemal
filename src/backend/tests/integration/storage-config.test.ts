@@ -141,6 +141,13 @@ describe('PUT /api/settings/clinic/storage-config', () => {
     expect(res.body.code).toBe('STORAGE_SWITCH_CONFIRMATION_REQUIRED')
   })
 
+  test('SC-05b: first switch-away with all SMB fields blank (frontend save-with-empty-form repro) → 400 or 409, never 500', async () => {
+    const res = await request(server).put('/api/settings/clinic/storage-config')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ provider: 'custom_path', smbHost: '', smbShare: '', smbUsername: '' })
+    expect([400, 409]).toContain(res.status)
+  })
+
   test('SC-06: format-invalid host (empty string) → 400, nothing persisted', async () => {
     await request(server).put('/api/settings/clinic/storage-config')
       .set('Authorization', `Bearer ${adminToken}`)
