@@ -8,16 +8,16 @@
 
 | Task | Agent | Model / Effort | Step |
 |------|-------|----------------|------|
-| Requirements, authorization design, gap analysis — **WHAT + WHO** | `@ba-agent` | opus / max | 3 |
-| Architecture: logical model, class/interface contract, patterns, transactions, test strategy — **HOW** | `@arch-agent` | opus / max | 3.4 |
-| Scope, task breakdown, AC, work-partition manifest | `@pm-agent` | sonnet / high | 1, 2, 4 |
+| Requirements, authorization design, gap analysis — **WHAT + WHO** | `@ba-agent` | opus / high | 3 |
+| Architecture: logical model, class/interface contract, patterns, transactions, test strategy — **HOW** | `@arch-agent` | opus / high | 3.4 |
+| Scope, task breakdown, AC, work-partition manifest | `@pm-agent` | sonnet / medium | 1, 2, 4 |
 | Screen/component design (**UIUX A**) | `@uiux-agent` | sonnet / low | 6 |
 | Physical schema, migration, query safety, tenant isolation **(veto)** (**DBA**) | `@db-agent` | opus / high | 6 |
 | Backend/frontend implementation (**Dev A** / **Dev B**) | `@dev-agent` | sonnet / high | 6 |
 | Design stress-test (MANDATORY) — `/grill-with-docs` | human-driven + `@ba-agent` | opus | 3.5 |
-| Simplicity gate — modes `arch-precheck` · `gate` · `reverse` | `@ponytail-agent` | opus / max | 3.4b, 5 |
-| Tests, edge cases, isolation/RBAC, arch conformance | `@qa-agent` | opus / max | 7 |
-| Git hygiene, PR compliance, reference integrity, docs, ship | `@scribe-agent` | sonnet / high | 4b, 8 |
+| Simplicity gate — modes `arch-precheck` · `gate` · `reverse` | `@ponytail-agent` | opus / high | 3.4b, 5 |
+| Tests, edge cases, isolation/RBAC, arch conformance | `@qa-agent` | opus / medium | 7 |
+| Git hygiene, PR compliance, reference integrity, docs, ship | `@scribe-agent` | sonnet / medium | 4b, 8 |
 
 **Orchestrator = this session**, not an agent. Every step: PRE (inputs exist?) → BRIEF (agent, task,
 skills, output path, file scope) → POST (output + gate verdict) → LOG (write the HANDOFF file).

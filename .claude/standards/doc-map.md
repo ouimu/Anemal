@@ -26,15 +26,15 @@
 
 | File | Owner | Model / Effort | Canonical for |
 |------|-------|----------------|---------------|
-| `ba-agent.md` | human | opus / max | requirement + authorization design trigger |
-| `arch-agent.md` | human | opus / max | architecture trigger + hard rules |
-| `pm-agent.md` | human | sonnet / high | scope, task breakdown, work-partition manifest |
-| `scribe-agent.md` | human | sonnet / high | git hygiene, PR compliance, docs, ship |
+| `ba-agent.md` | human | opus / high | requirement + authorization design trigger |
+| `arch-agent.md` | human | opus / high | architecture trigger + hard rules |
+| `pm-agent.md` | human | sonnet / medium | scope, task breakdown, work-partition manifest |
+| `scribe-agent.md` | human | sonnet / medium | git hygiene, PR compliance, docs, ship |
 | `db-agent.md` | human | opus / high | physical schema, isolation veto |
 | `dev-agent.md` | human | sonnet / high | implementation (Dev A backend, Dev B frontend) |
 | `uiux-agent.md` | human | sonnet / low | screen and component design (UIUX A) |
-| `ponytail-agent.md` | human | opus / max | three review modes |
-| `qa-agent.md` | human | opus / max | tests, isolation/RBAC verification, arch conformance |
+| `ponytail-agent.md` | human | opus / high | three review modes |
+| `qa-agent.md` | human | opus / medium | tests, isolation/RBAC verification, arch conformance |
 
 ## T2 — methods, standards, status
 

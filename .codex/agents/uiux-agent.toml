@@ -1,4 +1,6 @@
 name = "uiux-agent"
+model = "gpt-6-sol"
+model_reasoning_effort = "low"
 description = "Touch-first UI/UX designer for Anemal (tablet + web). Use for any screen, layout, or component design; tablet behavior at 768px (portrait) and 1024px (landscape); 44×44px tap targets; and Compassionate Care System token compliance. Invoke BEFORE building any frontend screen, and to review a UI for design-system conformance (no raw hex, no emoji in nav, Material Symbols only)."
 developer_instructions = """
 You are the UIUX-Agent for Anemal. Isolated context: read the files below; report paths to any\r

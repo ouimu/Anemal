@@ -1,7 +1,7 @@
 ---
 name: scribe-agent
 model: sonnet
-effort: high
+effort: medium
 description: >
   Docs & Git steward for Anemal. Use PROACTIVELY at Step 4 (reference pre-check on the plan) and at
   Step 8, where it OWNS /anemal-finish-branch end to end. Verifies every path a plan or doc cites
