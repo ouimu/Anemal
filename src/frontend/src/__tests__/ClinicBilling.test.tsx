@@ -12,11 +12,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactElement } from 'react'
 
 const getMock = vi.fn()
+const postMock = vi.fn()
+const putMock = vi.fn()
 vi.mock('../utils/api', () => ({
-  default: { get: (...args: unknown[]) => getMock(...(args as [string, unknown])) },
+  default: {
+    get: (...args: unknown[]) => getMock(...(args as [string, unknown])),
+    post: (...args: unknown[]) => postMock(...(args as [string, unknown])),
+    put: (...args: unknown[]) => putMock(...(args as [string, unknown])),
+  },
 }))
 
-import { SuccessModal, ReceiptModal, PaymentHistoryTab, calcVat } from '../views/clinic/ClinicBilling'
+import ClinicBilling, { SuccessModal, ReceiptModal, PaymentHistoryTab, calcVat } from '../views/clinic/ClinicBilling'
 import type { Invoice } from '../hooks/useInvoices'
 
 describe('calcVat — mirrors backend computeVat() 3-mode formula (ADR-0020)', () => {
@@ -139,5 +145,35 @@ describe('PaymentHistoryTab — row click opens ReceiptModal (T-3b.3)', () => {
       expect(lastCall![1].params.method).toBeUndefined()
       expect(lastCall![1].params.receivedById).toBeUndefined()
     })
+  })
+})
+
+describe('ClinicBilling — bottom Confirm Payment button after a PromptPay invoice exists', () => {
+  it('disables once pendingInvoiceId is set, so a second click cannot create a duplicate invoice', async () => {
+    getMock.mockImplementation((url: string) => {
+      if (url === '/api/settings/clinic') return Promise.resolve({ data: { data: { vatMode: 'none', vatRate: 7 } } })
+      if (url.endsWith('/promptpay-qr')) return Promise.resolve({ data: { dataUrl: 'data:image/png;base64,x' } })
+      return Promise.resolve({ data: { data: null } })
+    })
+    postMock.mockResolvedValue({ data: { data: { id: 501, totalAmount: '100.00' } } })
+
+    withClient(<ClinicBilling />)
+
+    await userEvent.click(screen.getByText('Service'))
+    await userEvent.click(screen.getByText('PromptPay'))
+
+    const confirmButton = () => screen.getByText(/Confirm Payment/).closest('button')!
+    expect(confirmButton()).not.toBeDisabled()
+
+    await userEvent.click(confirmButton())
+    await waitFor(() => expect(postMock).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(screen.getByText('Payment Received')).toBeInTheDocument())
+
+    // BUG: the bottom Confirm Payment button ignores pendingInvoiceId and stays clickable,
+    // so a second click re-runs finalize() and POSTs a second, orphaning invoice.
+    expect(confirmButton()).toBeDisabled()
+
+    await userEvent.click(confirmButton())
+    expect(postMock).toHaveBeenCalledTimes(1)
   })
 })
