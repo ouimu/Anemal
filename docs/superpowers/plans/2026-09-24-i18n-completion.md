@@ -243,8 +243,14 @@ Description: Verify no Thai string (20-40% longer than English) causes truncatio
 Acceptance Criteria:
   - [ ] At 768×1024 portrait, 1024×768 landscape, and 1280 desktop, all Thai-rendered labels/buttons
         are fully visible, no unintended clipping, no horizontal page scroll
-  - [ ] All buttons/tap targets remain ≥44×44px after Thai text substitution
+  - [x] All buttons/tap targets remain ≥44×44px after Thai text substitution
+        (orchestrator 2026-09-24: 32/32 controls on list + BookingModal ≥44, none overflow)
   - [ ] One screenshot per surface per viewport in Thai, attached to the PR (main list + BookingModal)
+        (browser-pane pass done 2026-09-24; PR screenshot files must be captured by the human —
+        the pane cannot save images to disk)
+        **Open:** dev DB has 0 grooming bookings, so BookingCard (the `nowrap` status/service row risk)
+        was not seen rendered. List empty state + BookingModal pass at all 3 viewports; TopNav title
+        wraps to 2 lines at 768 only (TopNav is outside this task's file scope; backlog candidate).
   - [ ] English viewport behaviour unaffected
 Permission(s): n/a (visual QA, no authz surface)
 Verification: manual screenshot pass (no dev server automation exists for this repo's frontend yet;
@@ -347,11 +353,14 @@ Description: Same method as I18N-3, applied to ClinicInpatient.tsx. Watch item p
   "log only" item any more (A-14 removes that exemption) — I18N-15 is the fix, verify it renders
   correctly at every viewport, don't just note it.
 Acceptance Criteria:
-  - [ ] 768×1024 portrait and 1024×768 landscape and 1280 desktop all pass, no clipping/overflow
+  - [x] 768×1024 portrait and 1024×768 landscape and 1280 desktop all pass, no clipping/overflow
         (3-column vitals grid specifically checked)
-  - [ ] All tap targets remain ≥44×44px
-  - [ ] Screenshots attached to PR per A-12
-  - [ ] Date/duration formatting (I18N-15 output) verified correct at every viewport — no unresolved
+        (orchestrator 2026-09-24: two defects found and fixed: card Log Care/Discharge labels broke
+        mid-word at all 3 viewports → `7ea819b`; vitals steppers overflowed their tiles at every
+        viewport in both languages → grid stacked to 1 column, `aacb4b3`. Re-verified clean.)
+  - [x] All tap targets remain ≥44×44px
+  - [ ] Screenshots attached to PR per A-12 (human capture; see I18N-3 note)
+  - [x] Date/duration formatting (I18N-15 output) verified correct at every viewport — no unresolved
         "flag for BA" item; if something is still wrong, it's a defect in I18N-15, fixed here, not
         deferred (A-14)
 Permission(s): n/a
