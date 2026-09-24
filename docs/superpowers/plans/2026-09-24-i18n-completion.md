@@ -120,16 +120,16 @@ Description: Extend the existing src/frontend/src/__tests__/i18n.coverage.test.t
   th-differs-from-en checks on namespaces that don't exist yet; the literal-key-exists check is
   already green app-wide per BA §2 Q4.7 and must stay green throughout).
 Acceptance Criteria:
-  - [ ] Two-way key parity: every `th` key exists in `en` (today only en→th is checked; add the
+  - [x] Two-way key parity: every `th` key exists in `en` (today only en→th is checked; add the
         reverse direction)
-  - [ ] Every literal `t('…')` key found in `src/**/*.{ts,tsx}` (excluding `*.test.*` and
+  - [x] Every literal `t('…')` key found in `src/**/*.{ts,tsx}` (excluding `*.test.*` and
         `i18n/index.ts` itself) exists in `en` — confirm this stays green (it is true on `main` today)
-  - [ ] Every key's `en` and `th` values contain the same `{token}` set (R-3)
-  - [ ] For keys under `clinic.grooming.*`, `clinic.inpatient.*`, and any key ADDED to
+  - [x] Every key's `en` and `th` values contain the same `{token}` set (R-3)
+  - [x] For keys under `clinic.grooming.*`, `clinic.inpatient.*`, and any key ADDED to
         `clinic.emr.*` / `clinic.pets.*` in this branch: `th !== en`, unless the key is on an explicit
         allow-list (One/Other plural pairs are compared against each other, not against `en` — R-4)
-  - [ ] The 4 in-scope view files contain no template-literal `t(\`…\`)` call anywhere (R-5)
-  - [ ] tsc --noEmit clean; `npm run test` (vitest run) green for this file in isolation
+  - [x] The 4 in-scope view files contain no template-literal `t(\`…\`)` call anywhere (R-5)
+  - [x] tsc --noEmit clean; `npm run test` (vitest run) green for this file in isolation
 Permission(s): n/a
 Verification: `cd src/frontend && npm run test -- i18n.coverage.test.ts`
 ```
@@ -152,19 +152,19 @@ Description: Create src/frontend/src/i18n/dateFormat.ts — one shared language�
   abbreviations, Gregorian year (ค.ศ., grill G-1), 24-hour time. Do not implement Buddhist Era (backlog
   §1). Do not touch ClinicDashboard.tsx (BA F-7 — it is not a valid reference and is out of scope).
 Acceptance Criteria:
-  - [ ] One shared mapping; no `toLocale*` call anywhere in the 4 view files passes a hardcoded
+  - [x] One shared mapping; no `toLocale*` call anywhere in the 4 view files passes a hardcoded
         locale string or omits the locale argument after this task's screens land (checked
         incrementally as each screen converts, closed by I18N-13)
-  - [ ] English: given a fixed reference date, Grooming's `formatShortDate` output and Inpatient's
+  - [x] English: given a fixed reference date, Grooming's `formatShortDate` output and Inpatient's
         `formatDate`/`formatDateTime` output are byte-identical to today's `'en-GB'` literal calls —
         unit-tested with a fixed date, not a live clock
-  - [ ] Thai: the same fixed date renders with a Thai month abbreviation and the Gregorian year
+  - [x] Thai: the same fixed date renders with a Thai month abbreviation and the Gregorian year
         (e.g. `21 ก.ย. 2026`), not Buddhist Era
-  - [ ] The rendered string does not depend on `navigator.language` / browser locale — test runs the
+  - [x] The rendered string does not depend on `navigator.language` / browser locale — test runs the
         assertion under two different `navigator.language` stub values and gets the same result both
         times
-  - [ ] New file: src/frontend/src/i18n/dateFormat.test.ts
-  - [ ] tsc --noEmit clean
+  - [x] New file: src/frontend/src/i18n/dateFormat.test.ts
+  - [x] tsc --noEmit clean
 Permission(s): n/a
 Verification: `cd src/frontend && npm run test -- dateFormat.test.ts`
 ```
@@ -182,17 +182,17 @@ Description: Enumerate every hardcoded string literal in ClinicGrooming.tsx JSX 
   placeholder. Reuse `common.*` keys per R-6 where the English string is already covered
   (`save`, `cancel`, `close`, `delete`, `edit`, `loading`, `saving`) rather than adding a duplicate.
 Acceptance Criteria:
-  - [ ] Every string identified in the sweep has a corresponding `clinic.grooming.*` key in both `en`
+  - [x] Every string identified in the sweep has a corresponding `clinic.grooming.*` key in both `en`
         and `th` blocks, OR is satisfied by an existing `common.*` key (R-6) — no unnecessary
         duplication
-  - [ ] `en` values are byte-identical to the literals they replace (A-2)
-  - [ ] Thai values are authored from BA §5 glossary; `grep -r TODO-BA-WORDING src/` returns 0 (A-1)
-  - [ ] Keys satisfy R-3 (token parity between en/th), R-4 (One/Other plural pairs where English
+  - [x] `en` values are byte-identical to the literals they replace (A-2)
+  - [x] Thai values are authored from BA §5 glossary; `grep -r TODO-BA-WORDING src/` returns 0 (A-1)
+  - [x] Keys satisfy R-3 (token parity between en/th), R-4 (One/Other plural pairs where English
         inflects — glossary #24), R-5 (no dynamic/template-literal keys), R-6 (common.* reused, no
         screen-local copy of a `common.*` string)
-  - [ ] No duplicate keys; no reuse of a `clinic.pets.*`/`clinic.emr.*` key for a grooming-specific
+  - [x] No duplicate keys; no reuse of a `clinic.pets.*`/`clinic.emr.*` key for a grooming-specific
         string
-  - [ ] `en` and `th` blocks have identical key sets for the new namespace (I18N-14's two-way-parity
+  - [x] `en` and `th` blocks have identical key sets for the new namespace (I18N-14's two-way-parity
         check passes for this namespace)
 Permission(s): none (static asset, no runtime authz)
 Verification: `cd src/frontend && npm run test -- i18n.coverage.test.ts` (parity + token checks green
@@ -210,21 +210,21 @@ Description: Replace every hardcoded JSX string in ClinicGrooming.tsx with `t('c
   through BA §5.3's value→label maps (R-1) — the POSTed/stored value (`serviceType` etc.) does not
   change. No other logic change.
 Acceptance Criteria:
-  - [ ] Latin-residue test (A-4/A-10 method): with Thai active and Thai fixture data, no visible text,
+  - [x] Latin-residue test (A-4/A-10 method): with Thai active and Thai fixture data, no visible text,
         `placeholder`, `title`, or `aria-label` on this screen matches `/[A-Za-z]{2,}/` after excluding
         BA §7 E-3/E-4 exempt strings and E-2 free-text/name content
       — no raw i18n key (pattern `/\bclinic\.[a-z]+\.[A-Za-z]+/`) ever renders as visible text
-  - [ ] Switching to English renders output byte-identical to today (A-2), including the date format
+  - [x] Switching to English renders output byte-identical to today (A-2), including the date format
         (I18N-15 guarantees this)
-  - [ ] R-1: submitting a booking in Thai mode POSTs the same English `serviceType` value as English
+  - [x] R-1: submitting a booking in Thai mode POSTs the same English `serviceType` value as English
         mode (asserted on the mocked POST body); an unknown/legacy stored value (e.g. `'bath'`) renders
         raw, no crash, no key string (X-1)
-  - [ ] R-2: every date/time on the screen renders per the active language (I18N-15); English output
+  - [x] R-2: every date/time on the screen renders per the active language (I18N-15); English output
         for this screen is unchanged from today
-  - [ ] AZ-1: the diff adds, removes, or alters no `perm=`/`hasPermission(` token; existing guard/`<Can>`
+  - [x] AZ-1: the diff adds, removes, or alters no `perm=`/`hasPermission(` token; existing guard/`<Can>`
         tests pass unmodified. A role lacking `grooming.view` still gets the forbidden view / 403 —
         not 404 (A-8)
-  - [ ] All existing tests for this screen (`ClinicGrooming.test.tsx`,
+  - [x] All existing tests for this screen (`ClinicGrooming.test.tsx`,
         `ClinicGrooming.bookingModal.test.tsx`) pass **unmodified** (A-9); any exception needs a
         written reason in the PR
 Permission(s): unchanged — `grooming.view` (screen), `grooming.manage` (write). This task does not
@@ -249,6 +249,19 @@ Acceptance Criteria:
 Permission(s): n/a (visual QA, no authz surface)
 Verification: manual screenshot pass (no dev server automation exists for this repo's frontend yet;
   attach screenshots to PR per A-12)
+
+**Dev A code-level pass (2026-09-24) — screenshots still pending an orchestrator browser check:**
+Service chips sit in a `flex flex-wrap` container inside the `max-w-md` dialog, each button sized by
+content with `min-h-[44px]` and no fixed width, so a longer Thai label wraps the chip row onto more
+lines rather than clipping. The date-nav label carries `min-w-[160px]` as a *minimum*, not a cap, so a
+wider Thai string ("จ. 21 ก.ย.", 10 chars) — in fact shorter than the English "Mon 21 Sept" (11 chars)
+in this case — has no truncation risk. One risk worth a human look on tablet: `BookingCard`'s status
+pill + service-type row (`<div className="flex items-center gap-xs mb-xs">`) is a nowrap flex row with
+no `truncate`/`flex-shrink-0`; the longest Thai pair (`กำลังดำเนินการ` + `แปรงฟันทำความสะอาด`, ~34
+chars) is meaningfully longer than any English pair ever was, so at 768px portrait with a narrow card
+this row could wrap or overflow before the outer timeline's `overflow-hidden` clips it — this is a
+pre-existing layout pattern (not introduced by I18N-2) that Thai text length newly stresses. Flagging
+for the orchestrator's live-device pass rather than changing layout unprompted.
 ```
 
 ```
@@ -260,13 +273,15 @@ Description: Create src/frontend/src/__tests__/ClinicGrooming.i18n.test.tsx (F-3
   existing uiStore mock pattern (see ClinicPets.i18n.test.tsx for the house pattern). Cover every
   surface: main queue view + BookingModal.
 Acceptance Criteria:
-  - [ ] (a) Key Thai strings present when rendered with Thai active
-  - [ ] (b) Latin-residue: collect visible text + placeholder + title + aria-label + <option> text,
+  - [x] (a) Key Thai strings present when rendered with Thai active
+  - [x] (b) Latin-residue: collect visible text + placeholder + title + aria-label + <option> text,
         drop E-3/E-4 exempt strings, assert no `/[A-Za-z]{2,}/` remains (A-10 method)
-  - [ ] (c) No `/\bclinic\.[a-z]+\.[A-Za-z]+/` pattern rendered as visible text (raw-key leakage)
-  - [ ] (d) `window.confirm` (if used on this screen) receives the Thai message via spy
-  - [ ] Test fails against pre-I18N-2 `main`, passes after I18N-2 lands (proves it's meaningful)
-  - [ ] Full frontend suite stays green
+  - [x] (c) No `/\bclinic\.[a-z]+\.[A-Za-z]+/` pattern rendered as visible text (raw-key leakage)
+  - [x] (d) `window.confirm` (if used on this screen) receives the Thai message via spy — N/A:
+        ClinicGrooming has no `window.confirm` call
+  - [x] Test fails against pre-I18N-2 `main`, passes after I18N-2 lands (proves it's meaningful) —
+        verified by stashing the I18N-2 diff and re-running: all 5 tests fail, then pass again restored
+  - [x] Full frontend suite stays green
 Permission(s): n/a
 Verification: `cd src/frontend && npm run test -- ClinicGrooming.i18n.test.tsx`
 ```
