@@ -112,6 +112,7 @@ const en: Dict = {
   'common.active': 'Active',
   'common.inactive': 'Inactive',
   'common.noResults': 'No results found.',
+  'common.today': 'Today',
 
   // Login page
   'login.title': 'Welcome back',
@@ -215,6 +216,38 @@ const en: Dict = {
   'clinic.emr.weight': 'Weight (kg)',
   'clinic.emr.temperature': 'Temperature (°C)',
   'clinic.emr.saveRecord': 'Save Record',
+
+  // Clinic grooming (I18N-1/I18N-2, BA sign-off §5.2 Grooming rows #21-38 and
+  // §5.3 Grooming status/service enum maps). `doctor` never reaches this
+  // screen (route guard `grooming.view` is `clinic_admin`/`clinic_staff` only,
+  // A-15) — the actor list is documentation here, not an authz change.
+  'clinic.grooming.queueTitle': 'Grooming Queue',
+  'clinic.grooming.bookingsTodayOne': '{n} booking today',
+  'clinic.grooming.bookingsTodayOther': '{n} bookings today',
+  'clinic.grooming.newBooking': 'New Booking',
+  'clinic.grooming.addBooking': 'Add booking',
+  'clinic.grooming.failedToLoad': 'Failed to load grooming schedule.',
+  'clinic.grooming.advanceToStatus': 'Advance to {status}',
+  'clinic.grooming.statusScheduled': 'Scheduled',
+  'clinic.grooming.statusInProgress': 'In Progress',
+  'clinic.grooming.statusCompleted': 'Completed',
+  'clinic.grooming.statusCancelled': 'Cancelled',
+  'clinic.grooming.serviceBathDry': 'Bath & Dry',
+  'clinic.grooming.serviceFullGroom': 'Full Groom',
+  'clinic.grooming.serviceTrimTidy': 'Trim & Tidy',
+  'clinic.grooming.serviceNailTrim': 'Nail Trim',
+  'clinic.grooming.serviceTeethCleaning': 'Teeth Cleaning',
+  'clinic.grooming.newGroomingBooking': 'New Grooming Booking',
+  'clinic.grooming.bookingEllipsis': 'Booking…',
+  'clinic.grooming.bookAppointment': 'Book Appointment',
+  'clinic.grooming.patientLabel': 'Patient',
+  'clinic.grooming.searchPetOwnerPhone': 'Search by pet name, owner name, or phone…',
+  'clinic.grooming.service': 'Service',
+  'clinic.grooming.groomerOptional': 'Groomer (optional)',
+  'clinic.grooming.anyAvailableGroomer': 'Any available groomer',
+  'clinic.grooming.timeSlot': 'Time slot',
+  'clinic.grooming.specialInstructionsOptional': 'Special instructions (optional)',
+  'clinic.grooming.allergiesTemperamentNotes': 'Allergies, temperament notes…',
 
   // Clinic inventory
   'clinic.inventory.productName': 'Product name',
@@ -452,6 +485,7 @@ const th: Dict = {
   'common.active': 'ใช้งานอยู่',
   'common.inactive': 'ไม่ได้ใช้งาน',
   'common.noResults': 'ไม่พบข้อมูล',
+  'common.today': 'วันนี้',
 
   // Login page
   'login.title': 'ยินดีต้อนรับกลับ',
@@ -555,6 +589,35 @@ const th: Dict = {
   'clinic.emr.weight': 'น้ำหนัก (กก.)',
   'clinic.emr.temperature': 'อุณหภูมิ (°C)',
   'clinic.emr.saveRecord': 'บันทึกข้อมูล',
+
+  // Clinic grooming
+  'clinic.grooming.queueTitle': 'คิวอาบน้ำตัดขน',
+  'clinic.grooming.bookingsTodayOne': 'วันนี้มี {n} คิว',
+  'clinic.grooming.bookingsTodayOther': 'วันนี้มี {n} คิว',
+  'clinic.grooming.newBooking': 'จองคิวใหม่',
+  'clinic.grooming.addBooking': 'เพิ่มการจอง',
+  'clinic.grooming.failedToLoad': 'โหลดตารางอาบน้ำตัดขนไม่สำเร็จ',
+  'clinic.grooming.advanceToStatus': 'เปลี่ยนสถานะเป็น "{status}"',
+  'clinic.grooming.statusScheduled': 'นัดไว้แล้ว',
+  'clinic.grooming.statusInProgress': 'กำลังดำเนินการ',
+  'clinic.grooming.statusCompleted': 'เสร็จแล้ว',
+  'clinic.grooming.statusCancelled': 'ยกเลิกแล้ว',
+  'clinic.grooming.serviceBathDry': 'อาบน้ำ-เป่าขน',
+  'clinic.grooming.serviceFullGroom': 'อาบน้ำตัดขนครบชุด',
+  'clinic.grooming.serviceTrimTidy': 'เล็มขนแต่งทรง',
+  'clinic.grooming.serviceNailTrim': 'ตัดเล็บ',
+  'clinic.grooming.serviceTeethCleaning': 'แปรงฟันทำความสะอาด',
+  'clinic.grooming.newGroomingBooking': 'จองคิวอาบน้ำตัดขน',
+  'clinic.grooming.bookingEllipsis': 'กำลังจอง…',
+  'clinic.grooming.bookAppointment': 'ยืนยันการจอง',
+  'clinic.grooming.patientLabel': 'สัตว์เลี้ยง',
+  'clinic.grooming.searchPetOwnerPhone': 'ค้นหาด้วยชื่อสัตว์เลี้ยง ชื่อเจ้าของ หรือเบอร์โทร…',
+  'clinic.grooming.service': 'บริการ',
+  'clinic.grooming.groomerOptional': 'ช่างตัดขน (ไม่จำเป็น)',
+  'clinic.grooming.anyAvailableGroomer': 'ช่างคนใดก็ได้ที่ว่าง',
+  'clinic.grooming.timeSlot': 'ช่วงเวลา',
+  'clinic.grooming.specialInstructionsOptional': 'ข้อควรระวังพิเศษ (ไม่จำเป็น)',
+  'clinic.grooming.allergiesTemperamentNotes': 'ภูมิแพ้ นิสัยหรืออารมณ์ของสัตว์…',
 
   // Clinic inventory
   'clinic.inventory.productName': 'ชื่อสินค้า',
