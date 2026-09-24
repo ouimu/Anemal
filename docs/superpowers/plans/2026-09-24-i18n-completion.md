@@ -298,14 +298,14 @@ Description: Same method as I18N-1, applied to ClinicInpatient.tsx (806 lines, l
   จำหน่าย/"sell" ambiguity — I18N-16 is where BA re-confirms this in the actual diff) and #66 (Care
   Notes must NOT reuse the #56 Log Care key — they collide in English but differ in Thai).
 Acceptance Criteria:
-  - [ ] Every string identified has a corresponding `clinic.inpatient.*` key in both `en`/`th`, or is
+  - [x] Every string identified has a corresponding `clinic.inpatient.*` key in both `en`/`th`, or is
         satisfied by an existing `common.*` key
-  - [ ] `en` values byte-identical to today's literals (A-2)
-  - [ ] Thai values authored from §5 glossary; 0 TODO markers (A-1)
-  - [ ] R-3/R-4/R-5/R-6 satisfied (token parity, plurals, no dynamic keys, common.* reuse)
-  - [ ] No duplicate keys; #56 (Log Care) and #66 (Care Notes) are distinct keys with distinct Thai
+  - [x] `en` values byte-identical to today's literals (A-2)
+  - [x] Thai values authored from §5 glossary; 0 TODO markers (A-1)
+  - [x] R-3/R-4/R-5/R-6 satisfied (token parity, plurals, no dynamic keys, common.* reuse)
+  - [x] No duplicate keys; #56 (Log Care) and #66 (Care Notes) are distinct keys with distinct Thai
         values, not collapsed into one
-  - [ ] `en`/`th` key sets identical for the new namespace
+  - [x] `en`/`th` key sets identical for the new namespace
 Permission(s): none
 Verification: `cd src/frontend && npm run test -- i18n.coverage.test.ts`
 ```
@@ -321,18 +321,18 @@ Description: Same method as I18N-2, applied to ClinicInpatient.tsx. Replace the 
   status badge map. Cage number and admission-reason strings use R-3 tokens (`{no}`, `{name}`), never
   string concatenation (glossary #46, #51 — Thai word order differs from English).
 Acceptance Criteria:
-  - [ ] Latin-residue test passes across every surface: board view, CareModal steps 1-3, Edit
+  - [x] Latin-residue test passes across every surface: board view, CareModal steps 1-3, Edit
         Admission, Care History, AdmitModal (this task's own entry point — the Pets entry point is
         I18N-12/13's job)
-  - [ ] English output byte-identical to today, including dates (I18N-15 guarantees it)
-  - [ ] R-1: submitting a care record or admission in Thai mode POSTs the same English `feedingStatus`
+  - [x] English output byte-identical to today, including dates (I18N-15 guarantees it)
+  - [x] R-1: submitting a care record or admission in Thai mode POSTs the same English `feedingStatus`
         value as English mode (mocked POST body assertion); unknown/free-text "Other" entries render
         as typed (X-1, E-2)
-  - [ ] R-2: dates/times follow the active language; English unchanged
-  - [ ] R-3: no string built by concatenation for cage number / admission text — token substitution only
-  - [ ] AZ-1: no `perm=`/`hasPermission(` token added, removed, or altered; a role lacking
+  - [x] R-2: dates/times follow the active language; English unchanged
+  - [x] R-3: no string built by concatenation for cage number / admission text — token substitution only
+  - [x] AZ-1: no `perm=`/`hasPermission(` token added, removed, or altered; a role lacking
         `inpatient.view` gets forbidden/403, not 404 (A-8)
-  - [ ] All existing tests (`ClinicInpatient.test.tsx`, `ClinicInpatient.characterization.test.tsx`)
+  - [x] All existing tests (`ClinicInpatient.test.tsx`, `ClinicInpatient.characterization.test.tsx`)
         pass unmodified (A-9, corrects F-1's false claim of "no test file")
 Permission(s): unchanged — `inpatient.view` (screen), `inpatient.manage` (write, held by all three)
 Verification: `cd src/frontend && npm run test -- ClinicInpatient` && `npx tsc --noEmit`
@@ -356,6 +356,27 @@ Acceptance Criteria:
         deferred (A-14)
 Permission(s): n/a
 Verification: manual screenshot pass
+
+**Dev A code-level pass (2026-09-24) — screenshots still pending an orchestrator browser check:**
+3-column vitals grid: `grid grid-cols-1 sm:grid-cols-3 gap-md` inside a `max-w-xl` (576px) modal — the
+3 `VitalStepper` columns (each `min-w-[90px]`) total well under 576px even with gaps, so there's no
+horizontal overflow. The Heart Rate label (`อัตราการเต้นของหัวใจ`, ~19 chars vs "Heart Rate" 10) and
+Resp Rate label (`อัตราการหายใจ`, ~13 chars vs "Resp Rate" 9) are meaningfully longer, and `VitalStepper`
+puts no `truncate`/fixed-width on the label span (`flex flex-col items-center`), so a long label wraps
+to two lines rather than clipping — this makes that column's box taller, which is a layout shift worth
+a human eye on 768px portrait but not a defect (no clipping, no lost content, tap targets unaffected
+since the ±/input row sits below the label independently). Status badges, the Cage badge, and the
+action-button row all use auto-width/`flex-wrap` containers with no fixed width or truncate, so longer
+Thai text (e.g. `ต้องเฝ้าระวัง` for "Needs Attention") grows the badge/wraps the row instead of
+clipping. `AdmitModal`/`EditModal`'s `<select>` "Doctor in charge (optional)" placeholder-option text
+is longer in Thai (~26 chars); native `<select>` rendering of overflow is browser/OS-controlled, not
+something this component's CSS constrains either way — flagging for the live-device pass since it's
+outside code-level verification.
+**Date/duration formatting (A-14):** `formatDate`/`formatDateTime` (I18N-15) are unit-tested against a
+fixed reference date for both languages (`dateFormat.test.ts`) and produce comparable lengths in both
+languages (`21 Sept 2026, 14:30` vs `21 ก.ย. 2026 14:30`, 20 vs 19 chars) — the History modal's date
+span carries no `truncate`, so no overflow risk at any of the 3 viewports. No defect found; nothing
+deferred.
 ```
 
 ```
@@ -367,12 +388,14 @@ Description: Create src/frontend/src/__tests__/ClinicInpatient.i18n.test.tsx (F-
   `.characterization.test.tsx` already exist and are the no-regression net per A-9; this is a NEW,
   separate i18n-only file, sibling to those, not a replacement or a block inside them).
 Acceptance Criteria:
-  - [ ] Covers every surface: board view, CareModal steps 1-3, Edit Admission, Care History,
+  - [x] Covers every surface: board view, CareModal steps 1-3, Edit Admission, Care History,
         AdmitModal (entered from Inpatient itself)
-  - [ ] (a)/(b)/(c)/(d) per the A-10 method (Thai strings present, Latin-residue, no raw-key leakage,
+  - [x] (a)/(b)/(c)/(d) per the A-10 method (Thai strings present, Latin-residue, no raw-key leakage,
         window.confirm spy for the delete-admission and discharge confirmations — S-2, S-3)
-  - [ ] Test fails pre-I18N-6, passes post-I18N-6
-  - [ ] Full suite stays green
+  - [x] Test fails pre-I18N-6, passes post-I18N-6 — verified by checking out the pre-I18N-6 commit's
+        file and re-running: 16/17 fail (the 17th, an untranslated `pet.species` passthrough, is
+        language-independent so it trivially passes either way), then all 17 pass again restored
+  - [x] Full suite stays green
 Permission(s): n/a
 Verification: `cd src/frontend && npm run test -- ClinicInpatient.i18n.test.tsx`
 ```
