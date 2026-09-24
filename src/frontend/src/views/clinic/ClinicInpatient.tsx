@@ -646,14 +646,14 @@ function CageCard({ hospit, doctors, onCare, onDischarge, onEdit, onDelete, onHi
       <div className="flex flex-wrap gap-sm mt-xs">
         <button
           onClick={onCare}
-          className="flex-1 min-h-[44px] flex items-center justify-center gap-xs rounded-xl bg-primary text-primary-on text-body-sm font-medium hover:opacity-90 transition-opacity"
+          className="flex-1 min-h-[44px] px-sm whitespace-nowrap flex items-center justify-center gap-xs rounded-xl bg-primary text-primary-on text-body-sm font-medium hover:opacity-90 transition-opacity"
         >
           <MaterialIcon name="medical_services" size={16} />
           {t('clinic.inpatient.logCare')}
         </button>
         <button
           onClick={onDischarge}
-          className="flex-1 min-h-[44px] flex items-center justify-center gap-xs rounded-xl border border-outline-variant bg-surface text-on-surface text-body-sm font-medium hover:bg-surface-container transition-colors"
+          className="flex-1 min-h-[44px] px-sm whitespace-nowrap flex items-center justify-center gap-xs rounded-xl border border-outline-variant bg-surface text-on-surface text-body-sm font-medium hover:bg-surface-container transition-colors"
         >
           <MaterialIcon name="logout" size={16} />
           {t('clinic.inpatient.discharge')}
