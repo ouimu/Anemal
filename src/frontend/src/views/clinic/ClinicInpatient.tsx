@@ -208,7 +208,7 @@ function CareModal({ hospit, onClose, onSaved }: {
 
   function step2() {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
+      <div className="grid grid-cols-1 gap-md">
         <VitalStepper
           label={t('clinic.inpatient.temperature')} unit="°C" value={entry.temperatureC}
           onChange={v => setEntry(e => ({ ...e, temperatureC: v }))}
