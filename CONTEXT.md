@@ -32,3 +32,20 @@ _Avoid_: conflating with "clinic staff" generally — platform's write access is
 **Atomic conditional UPDATE pattern**:
 The codebase's convention for atomic writes under concurrency: a single raw SQL `UPDATE` (optionally with a subquery or a guard condition) run via `tx.$executeRaw` inside `prisma.$transaction`, instead of a read-then-write with an explicit row lock (`SELECT ... FOR UPDATE`). Established by `prescription.repository.ts` `deductStockAndCreate` (guarded decrement, checks `affected === 0`); reused by the weight-sync recompute (subquery form). See ADR-0008.
 _Avoid_: introducing `SELECT ... FOR UPDATE` for new conditional-write logic without checking whether a single-statement form covers it first.
+
+### Localisation (i18n)
+
+The binding English → Thai translation glossary (96 terms, 7 value → label maps, 15 safety-critical sentences, 14 wording rules) is **not** copied here. It lives in `docs/superpowers/plans/2026-09-23-i18n-completion-ba-signoff.md` §5 and is owned by `@ba-agent`. The entries below pin down only the concepts.
+
+**App language**:
+The language the user selected in Anemal (`uiStore.language`, `en` | `th`), set from the Profile menu or the Preferences page and persisted per browser in `localStorage`, not per user account. It is the only input for UI text and for date display; in Thai mode dates use Thai month names with the Gregorian year (ค.ศ.), never the Buddhist Era, and every language is day-first (ADR-0029). Applies to the clinic plane only; the Platform plane is English-only (ADR-0031).
+_Avoid_: "locale" or "browser language" as a synonym — the browser locale (`navigator.language`, a bare `toLocaleDateString()`) is never an input.
+
+**Stored value vs display label**:
+A *stored value* is a string the system persists, sends in a request body, or branches on (e.g. Grooming `serviceType` `'Bath & Dry'`, Inpatient `feedingStatus` `'Ate all'`, Pets species `canine`, SOAP tab keys); it stays English and byte-identical in every app language. A *display label* is its translated rendering, looked up through a value → label map; a value with no label renders raw (ADR-0030).
+_Avoid_: "translating the value", "Thai data" — only labels are ever translated, and logic never compares against a label.
+
+**Discharge** (Inpatient):
+Ending an inpatient admission: the admission moves to status `discharged` and the billing invoice is generated.
+_Thai term_: **PENDING** — `@ba-agent` decides at task I18N-16. The BA glossary currently uses the formal hospital term "จำหน่าย" (glossary #55, the `discharged` status label, safety sentences S-2 and S-12), but in a clinic that also sells goods "จำหน่าย" can read as "sell" (grill G-5); a less ambiguous alternative such as "ให้กลับบ้าน" is under consideration. Whichever term is chosen is used in all four places.
+_Avoid_: "release", "check out" — code and schema use "discharge".
