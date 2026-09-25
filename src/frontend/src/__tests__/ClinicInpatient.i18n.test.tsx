@@ -126,7 +126,7 @@ describe('ClinicInpatient — Thai i18n (I18N-8): board view', () => {
     )
     expect(await screen.findByText('กระดานผู้ป่วยใน')).toBeInTheDocument() // boardTitle
     await screen.findByText('มะลิ')
-    expect(screen.getByText('รับเข้ารักษา')).toBeInTheDocument() // statusAdmitted
+    expect(screen.getByText('รับเข้ารักษาแล้ว')).toBeInTheDocument() // statusAdmitted
     expect(screen.getByText('กรง B-2')).toBeInTheDocument() // cageNo
     expect(screen.getByText('หมอสมชาย')).toBeInTheDocument() // doctor name (data, untranslated)
     expect(screen.getByText('บันทึกการดูแล')).toBeInTheDocument() // logCare button
@@ -335,7 +335,7 @@ describe('ClinicInpatient — Thai i18n (I18N-8): window.confirm messages (S-2, 
     await screen.findByText('มะลิ')
 
     await userEvent.click(screen.getByText('จำหน่ายผู้ป่วย'))
-    expect(confirmSpy).toHaveBeenCalledWith('จำหน่าย มะลิ ใช่หรือไม่? ระบบจะออกใบแจ้งหนี้ค่ารักษา')
+    expect(confirmSpy).toHaveBeenCalledWith('จำหน่ายผู้ป่วย มะลิ ใช่หรือไม่? ระบบจะออกใบแจ้งหนี้ค่ารักษา')
     confirmSpy.mockRestore()
   })
 

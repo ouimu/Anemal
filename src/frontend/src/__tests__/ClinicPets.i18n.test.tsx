@@ -211,7 +211,7 @@ describe('ClinicPets — Thai i18n (I18N-12): owner list board states', () => {
     renderPets()
     await screen.findByText('สมหญิง ใจดี')
     expect(screen.getByText('เลือกเจ้าของ')).toBeInTheDocument()
-    expect(screen.getByText('เลือกเจ้าของจากรายการเพื่อดูสัตว์เลี้ยงของเขา')).toBeInTheDocument()
+    expect(screen.getByText('เลือกเจ้าของจากรายการเพื่อดูข้อมูลสัตว์เลี้ยง')).toBeInTheDocument()
   })
 
   it('(a) shows the Thai pet-count label ("N ตัว") for owners with and without pets', async () => {
