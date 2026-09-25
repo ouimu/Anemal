@@ -566,11 +566,11 @@ describe('ClinicBilling — PromptPay QR flow (Gate 0)', () => {
     expect(callsAfter).toBe(callsBefore)
   })
 
-  // Pinned finding (risk for the upcoming refactor): the bottom "Confirm Payment"
-  // button's disabled condition (ClinicBilling.tsx:444) never checks
-  // pendingInvoiceId. Clicking it again after a QR is already showing re-runs
-  // finalize() and creates a SECOND invoice, silently orphaning the first.
-  it('clicking Confirm Payment again after a QR is already pending creates a second invoice (no double-submit guard)', async () => {
+  // Formerly a pinned bug: the bottom "Confirm Payment" button ignored
+  // pendingInvoiceId, so a second click after the QR appeared re-ran finalize()
+  // and created a SECOND invoice, orphaning the first. PR #92 gated the button
+  // on pendingInvoiceId; this now pins the guard.
+  it('disables Confirm Payment once a QR is pending, so a second click cannot create a second invoice', async () => {
     let nextId = 900
     postMock.mockImplementation((url: string) => {
       if (url === '/api/invoices') return Promise.resolve({ data: { data: makeInvoice({ id: nextId++ }) } })
@@ -583,9 +583,11 @@ describe('ClinicBilling — PromptPay QR flow (Gate 0)', () => {
     await screen.findByAltText('PromptPay QR')
     expect(postMock.mock.calls.filter((c) => c[0] === '/api/invoices')).toHaveLength(1)
 
-    await userEvent.click(screen.getByText(/Confirm Payment/))
-    await waitFor(() => expect(postMock.mock.calls.filter((c) => c[0] === '/api/invoices')).toHaveLength(2))
-    expect(getMock).toHaveBeenCalledWith('/api/invoices/901/promptpay-qr')
+    const confirmButton = screen.getByText(/Confirm Payment/).closest('button')!
+    expect(confirmButton).toBeDisabled()
+    await userEvent.click(confirmButton)
+    expect(postMock.mock.calls.filter((c) => c[0] === '/api/invoices')).toHaveLength(1)
+    expect(getMock).not.toHaveBeenCalledWith('/api/invoices/901/promptpay-qr')
   })
 })
 
