@@ -6,7 +6,9 @@ import MaterialIcon from '../../components/MaterialIcon'
 import AuthedPetImage from '../../components/AuthedPetImage'
 import { VitalStepper } from '../../components/VitalStepper'
 import { useAuthStore } from '../../store/authStore'
+import { useUiStore } from '../../store/uiStore'
 import { useT } from '../../i18n'
+import { formatDate } from '../../i18n/dateFormat'
 import { useEmrAttachmentUpload } from '../../hooks/useEmrAttachmentUpload'
 import Can from '../../components/Can'
 
@@ -44,8 +46,9 @@ const CLIENT_ATTACHMENT_TYPES = new Set([
 const CLIENT_MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024
 // Soft OS-picker filter (not the security boundary). Derived from the allow-list.
 const ATTACHMENT_ACCEPT = Array.from(CLIENT_ATTACHMENT_TYPES).join(',')
-// Human-readable supported-types hint shown under the Upload control.
-const ATTACHMENT_TYPES_LABEL = 'JPG, PNG, GIF, WebP, PDF, Word, Excel · max 25 MB'
+// Human-readable supported-types hint shown under the Upload control — rendered
+// via t('clinic.emr.attachmentTypesHint') in JSX (needs the translator, so it
+// can't be a module-level constant like the allow-list above).
 
 function formatFileSize(bytes?: number): string {
   if (!bytes) return ''
@@ -55,13 +58,27 @@ function formatFileSize(bytes?: number): string {
 }
 
 // ─── Anatomy Canvas ───────────────────────────────────────────────────────────
+// R-1 (ADR-0030): `template` is stored inside the annotation JSON and stays this
+// raw English value everywhere (state, AnatomyAnnotation payload). Only the
+// displayed chip/instruction label is translated, via `anatomyTemplateLabel()`
+// below — mirrors ClinicInpatient's statusLabel()/feedingLabel() pattern.
 const TEMPLATES = ['Canine - Lateral', 'Canine - Dorsal', 'Feline - Lateral']
+const ANATOMY_TEMPLATE_LABEL_KEYS: Record<string, string> = {
+  'Canine - Lateral': 'clinic.emr.anatomyCanineLateral',
+  'Canine - Dorsal':  'clinic.emr.anatomyCanineDorsal',
+  'Feline - Lateral': 'clinic.emr.anatomyFelineLateral',
+}
+function anatomyTemplateLabel(t: (key: string) => string, template: string): string {
+  const key = ANATOMY_TEMPLATE_LABEL_KEYS[template]
+  return key ? t(key) : template
+}
 
 // Canvas drawing requires literal color values (ctx.strokeStyle / inline swatch),
 // so these mirror the error / on-surface / info token hexes from tailwind.config.js.
 const PEN_COLORS = ['#EF4444', '#191c1e', '#0EA5E9'] as const
 
 function AnatomyCanvas({ value, onChange }: { value: AnatomyAnnotation | null; onChange: (v: AnatomyAnnotation | null) => void }) {
+  const t = useT()
   const canvasRef  = useRef<HTMLCanvasElement>(null)
   const drawing    = useRef(false)
   const [tool, setTool]     = useState<'pen' | 'eraser'>('pen')
@@ -135,10 +152,10 @@ function AnatomyCanvas({ value, onChange }: { value: AnatomyAnnotation | null; o
     <div className="flex flex-col gap-sm">
       {/* Template selector */}
       <div className="flex gap-sm flex-wrap">
-        {TEMPLATES.map(t => (
-          <button key={t} type="button" onClick={() => setTemplate(t)}
-            className={`px-md py-xs rounded-full text-label-md font-medium transition-colors min-h-[36px] ${template === t ? 'bg-primary text-primary-on' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}>
-            {t}
+        {TEMPLATES.map(tpl => (
+          <button key={tpl} type="button" onClick={() => setTemplate(tpl)}
+            className={`px-md py-xs rounded-full text-label-md font-medium transition-colors min-h-[36px] ${template === tpl ? 'bg-primary text-primary-on' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}>
+            {anatomyTemplateLabel(t, tpl)}
           </button>
         ))}
       </div>
@@ -152,16 +169,16 @@ function AnatomyCanvas({ value, onChange }: { value: AnatomyAnnotation | null; o
         ))}
         <button type="button" onClick={() => setTool('eraser')}
           className={`px-md py-xs rounded-lg text-label-md min-h-[36px] transition-colors ${tool === 'eraser' ? 'bg-primary text-primary-on' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}>
-          <MaterialIcon name="ink_eraser" size={16} className="inline mr-xs" />Eraser
+          <MaterialIcon name="ink_eraser" size={16} className="inline mr-xs" />{t('clinic.emr.eraserTool')}
         </button>
         <button type="button" onClick={clearCanvas} className="px-md py-xs rounded-lg text-label-md bg-surface-container text-on-surface-variant hover:bg-surface-container-high min-h-[36px] transition-colors">
-          Clear
+          {t('clinic.emr.clearCanvas')}
         </button>
       </div>
 
       {/* Canvas */}
       <div className="bg-surface-container-low rounded-xl overflow-hidden border border-outline-variant">
-        <div className="p-md text-center text-label-md text-on-surface-variant border-b border-outline-variant">{template} — Use stylus or finger to annotate</div>
+        <div className="p-md text-center text-label-md text-on-surface-variant border-b border-outline-variant">{t('clinic.emr.anatomyInstruction').replace('{template}', anatomyTemplateLabel(t, template))}</div>
         <canvas
           ref={canvasRef}
           width={400}
@@ -188,6 +205,7 @@ function PrescriptionPanel({ recordId, prescriptions, onRefresh }: {
   prescriptions: Prescription[]
   onRefresh: () => void
 }) {
+  const t = useT()
   const [drugSearch, setDrugSearch]     = useState('')
   const [debouncedSearch, setDebounced] = useState('')
   const [selectedDrug, setDrug]         = useState<Drug | null>(null)
@@ -236,7 +254,7 @@ function PrescriptionPanel({ recordId, prescriptions, onRefresh }: {
       setInstruction('')
       onRefresh()
     } catch (err) {
-      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to add')
+      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? t('clinic.emr.failedToAdd'))
     } finally { setSaving(false) }
   }
 
@@ -249,7 +267,7 @@ function PrescriptionPanel({ recordId, prescriptions, onRefresh }: {
 
   return (
     <div>
-      <h4 className="text-body-sm font-semibold text-on-surface-variant mb-md">Prescriptions</h4>
+      <h4 className="text-body-sm font-semibold text-on-surface-variant mb-md">{t('clinic.emr.prescriptions')}</h4>
 
       {/* Existing prescriptions */}
       {prescriptions.map(p => (
@@ -272,11 +290,11 @@ function PrescriptionPanel({ recordId, prescriptions, onRefresh }: {
             <MaterialIcon name="medication" size={16} className="text-secondary" />
             <span className="flex-1 text-body-sm font-medium truncate">{selectedDrug.name}</span>
             <span className={`text-label-md font-medium px-sm py-xs rounded-full ${Number(selectedDrug.stockQuantity) > 0 ? 'bg-success/10 text-success' : 'bg-error-container text-error'}`}>
-              Stock: {Number(selectedDrug.stockQuantity)} {selectedDrug.unit}
+              {t('clinic.emr.stockLabel').replace('{qty}', String(Number(selectedDrug.stockQuantity))).replace('{unit}', selectedDrug.unit ?? '')}
             </span>
             <button
               type="button"
-              aria-label="Clear selected drug"
+              aria-label={t('clinic.emr.clearSelectedDrugAria')}
               onClick={() => { setDrug(null); setDrugSearch(''); setDebounced('') }}
               className="min-h-[32px] min-w-[32px] flex items-center justify-center text-on-surface-variant"
             >
@@ -287,7 +305,7 @@ function PrescriptionPanel({ recordId, prescriptions, onRefresh }: {
           <div className="relative">
             <input
               className="w-full bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-sm border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Search drug by name or barcode…"
+              placeholder={t('clinic.emr.searchDrugPlaceholder')}
               value={drugSearch}
               onChange={e => handleDrugSearchChange(e.target.value)}
               onFocus={() => drugSearch.length >= DRUG_SEARCH_MIN_CHARS && setShowDropdown(true)}
@@ -298,7 +316,7 @@ function PrescriptionPanel({ recordId, prescriptions, onRefresh }: {
               <div className="absolute left-0 right-0 top-full mt-xs z-10 bg-surface shadow-lvl2 rounded-md border border-outline-variant max-h-48 overflow-y-auto">
                 {searchingDrugs ? (
                   <div className="flex items-center justify-center min-h-[44px] text-body-sm text-on-surface-variant">
-                    Searching…
+                    {t('clinic.emr.searching')}
                   </div>
                 ) : drugResults && drugResults.length > 0 ? (
                   drugResults.map((drug: Drug) => (
@@ -321,7 +339,7 @@ function PrescriptionPanel({ recordId, prescriptions, onRefresh }: {
                   ))
                 ) : (
                   <div className="flex items-center justify-center min-h-[44px] text-body-sm text-on-surface-variant">
-                    No results
+                    {t('clinic.emr.noResults')}
                   </div>
                 )}
               </div>
@@ -338,9 +356,9 @@ function PrescriptionPanel({ recordId, prescriptions, onRefresh }: {
               <span className="text-body-sm text-on-surface-variant">{selectedDrug.unit}</span>
             </div>
             <input className="bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-sm border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Dosage instructions…" value={instruction} onChange={e => setInstruction(e.target.value)} />
+              placeholder={t('clinic.emr.dosageInstructionsPlaceholder')} value={instruction} onChange={e => setInstruction(e.target.value)} />
             <button onClick={addPrescription} disabled={saving} className="w-full min-h-[44px] bg-secondary text-secondary-on rounded-lg text-body-sm font-semibold hover:bg-secondary/90 transition-colors disabled:opacity-50">
-              {saving ? 'Adding…' : 'Add Prescription'}
+              {saving ? t('clinic.emr.addingEllipsis') : t('clinic.emr.addPrescription')}
             </button>
           </>
         )}
@@ -350,8 +368,20 @@ function PrescriptionPanel({ recordId, prescriptions, onRefresh }: {
 }
 
 // ─── SOAP Tabs ────────────────────────────────────────────────────────────────
+// R-1 (ADR-0030): `soapTab` state stays this raw English value (the tab-content
+// switch below branches on it); only the tab bar's displayed label translates,
+// via `soapTabLabel()` — same map-lookup pattern as `anatomyTemplateLabel()`.
 const SOAP_TABS = ['Subjective', 'Objective', 'Assessment', 'Plan'] as const
 type SoapTab = typeof SOAP_TABS[number]
+const SOAP_TAB_LABEL_KEYS: Record<SoapTab, string> = {
+  Subjective: 'clinic.emr.soapSubjective',
+  Objective:  'clinic.emr.soapObjective',
+  Assessment: 'clinic.emr.soapAssessment',
+  Plan:       'clinic.emr.soapPlan',
+}
+function soapTabLabel(t: (key: string) => string, tab: SoapTab): string {
+  return t(SOAP_TAB_LABEL_KEYS[tab])
+}
 
 // ─── Draft record ─────────────────────────────────────────────────────────────
 /**
@@ -380,6 +410,7 @@ const EMPTY_DRAFT: EmrDraft = {
 // ─── Main View ────────────────────────────────────────────────────────────────
 export default function ClinicEMR() {
   const t = useT()
+  const language = useUiStore(s => s.language)
   const { userId } = useAuthStore()
   const queryClient = useQueryClient()
   const { uploadAttachment, downloadAttachment, isUploading, uploadError, clearUploadError } = useEmrAttachmentUpload()
@@ -403,6 +434,10 @@ export default function ClinicEMR() {
   const [draft, setDraft]     = useState<EmrDraft>(EMPTY_DRAFT)
   const [saving, setSaving]   = useState(false)
   const [saveMsg, setSaveMsg] = useState('')
+  // C-1 (ADR-0030): success/error styling must never be inferred from the
+  // translated `saveMsg` display text — a dedicated status flag drives the
+  // colour, `saveMsg` is display-only.
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle')
 
   /** Update a single draft field, keeping the rest of the draft object intact. */
   const setField = useCallback(<K extends keyof EmrDraft>(key: K, value: EmrDraft[K]) => {
@@ -450,16 +485,16 @@ export default function ClinicEMR() {
     clearUploadError()
 
     if (!selectedRecordId) {
-      setAttachmentUiError('Save the record before attaching files.')
+      setAttachmentUiError(t('clinic.emr.saveBeforeAttaching'))
       return
     }
 
     if (file.size > CLIENT_MAX_ATTACHMENT_BYTES) {
-      setAttachmentUiError('File is too large — the limit is 25 MB.')
+      setAttachmentUiError(t('clinic.emr.fileTooLarge'))
       return
     }
     if (!CLIENT_ATTACHMENT_TYPES.has(file.type)) {
-      setAttachmentUiError('This file type is not supported.')
+      setAttachmentUiError(t('clinic.emr.unsupportedFileType'))
       return
     }
 
@@ -505,6 +540,7 @@ export default function ClinicEMR() {
     if (!selectedPetId || !pet) return
     setSaving(true)
     setSaveMsg('')
+    setSaveStatus('idle')
     try {
       const body = {
         petId: selectedPetId, doctorId: userId,
@@ -524,10 +560,12 @@ export default function ClinicEMR() {
       refetchRecords()
       queryClient.invalidateQueries({ queryKey: ['pet-emr', selectedPetId] })
       queryClient.invalidateQueries({ queryKey: ['pet', selectedPetId] })
-      setSaveMsg('Saved')
-      setTimeout(() => setSaveMsg(''), 2000)
+      setSaveMsg(t('clinic.emr.saved'))
+      setSaveStatus('success')
+      setTimeout(() => { setSaveMsg(''); setSaveStatus('idle') }, 2000)
     } catch (err) {
-      setSaveMsg((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save')
+      setSaveMsg((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? t('clinic.emr.failedToSave'))
+      setSaveStatus('error')
     } finally { setSaving(false) }
   }
 
@@ -536,12 +574,12 @@ export default function ClinicEMR() {
       {/* ── Left sidebar: patient selection ── */}
       <div className="w-56 flex-shrink-0 border-r border-outline-variant bg-surface flex flex-col overflow-hidden">
         <div className="p-md border-b border-outline-variant">
-          <p className="text-body-sm font-semibold text-on-surface-variant mb-sm">Find Patient</p>
+          <p className="text-body-sm font-semibold text-on-surface-variant mb-sm">{t('clinic.emr.findPatient')}</p>
           <div className="relative">
             <MaterialIcon name="search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
             <input
               className="w-full bg-surface-container-low rounded-lg py-sm pl-9 pr-md min-h-[44px] text-body-sm border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Pet or owner…"
+              placeholder={t('clinic.emr.petOrOwnerPlaceholder')}
               value={patientSearch}
               onChange={e => setPatientSearch(e.target.value)}
             />
@@ -582,8 +620,8 @@ export default function ClinicEMR() {
           {records.map(r => (
             <button key={r.id} onClick={() => { setSelectedRecordId(r.id); setIsNewRecord(false) }}
               className={`w-full text-left px-md py-sm min-h-[52px] border-b border-outline-variant/50 transition-colors ${selectedRecordId === r.id ? 'bg-surface-container-low border-l-4 border-primary' : 'hover:bg-surface-container-low border-l-4 border-transparent'}`}>
-              <p className="text-body-sm font-medium truncate">{r.assessment ?? 'Visit'}</p>
-              <p className="text-label-md text-on-surface-variant">{new Date(r.createdAt).toLocaleDateString()}</p>
+              <p className="text-body-sm font-medium truncate">{r.assessment ?? t('clinic.emr.visitFallback')}</p>
+              <p className="text-label-md text-on-surface-variant">{formatDate(r.createdAt, language)}</p>
             </button>
           ))}
         </div>
@@ -601,7 +639,7 @@ export default function ClinicEMR() {
               {pet.owner?.phone && <><span className="text-on-surface-variant">·</span><p className="text-body-sm text-on-surface-variant">{pet.owner.phone}</p></>}
               {pet.allergies && (
                 <span className="ml-auto px-md py-xs rounded-full bg-error-container text-error text-label-md font-medium">
-                  <MaterialIcon name="warning" size={14} className="inline mr-xs" />Allergy: {pet.allergies}
+                  <MaterialIcon name="warning" size={14} className="inline mr-xs" />{t('clinic.emr.allergyLabel').replace('{allergies}', pet.allergies)}
                 </span>
               )}
             </div>
@@ -609,10 +647,10 @@ export default function ClinicEMR() {
 
           {/* SOAP Tab bar */}
           <div className="flex border-b border-outline-variant bg-surface flex-shrink-0">
-            {SOAP_TABS.map(t => (
-              <button key={t} onClick={() => setSoapTab(t)}
-                className={`px-lg py-sm text-body-sm font-semibold min-h-[44px] transition-colors ${soapTab === t ? 'border-b-2 border-primary text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
-                {t}
+            {SOAP_TABS.map(tab => (
+              <button key={tab} onClick={() => setSoapTab(tab)}
+                className={`px-lg py-sm text-body-sm font-semibold min-h-[44px] transition-colors ${soapTab === tab ? 'border-b-2 border-primary text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
+                {soapTabLabel(t, tab)}
               </button>
             ))}
           </div>
@@ -632,21 +670,21 @@ export default function ClinicEMR() {
               <div className="flex flex-col gap-lg">
                 {/* Vital signs */}
                 <div>
-                  <p className="text-body-sm font-semibold text-on-surface-variant mb-md">Vital Signs</p>
+                  <p className="text-body-sm font-semibold text-on-surface-variant mb-md">{t('clinic.emr.vitalSigns')}</p>
                   <div className="flex flex-wrap gap-md">
                     <VitalStepper label={t('clinic.emr.weight')} unit="kg" value={draft.weightKg} onChange={v => setField('weightKg', v)} step={0.1} max={999.99} />
                     <VitalStepper label={t('clinic.emr.temperature')} unit="°C" value={draft.tempC} onChange={v => setField('tempC', v)} step={0.1} max={999.9} />
-                    <VitalStepper label="Heart Rate" unit="bpm" value={draft.heartRate} onChange={v => setField('heartRate', v)} step={1} min={1} max={3000} />
-                    <VitalStepper label="Resp Rate" unit="rpm" value={draft.respRate} onChange={v => setField('respRate', v)} step={1} min={1} max={3000} />
+                    <VitalStepper label={t('clinic.emr.heartRate')} unit={t('clinic.emr.unitBpm')} value={draft.heartRate} onChange={v => setField('heartRate', v)} step={1} min={1} max={3000} />
+                    <VitalStepper label={t('clinic.emr.respRate')} unit={t('clinic.emr.unitRpm')} value={draft.respRate} onChange={v => setField('respRate', v)} step={1} min={1} max={3000} />
                   </div>
                 </div>
 
                 {/* Objective notes */}
                 <div>
-                  <p className="text-body-sm font-semibold text-on-surface-variant mb-md">Physical Examination Notes</p>
+                  <p className="text-body-sm font-semibold text-on-surface-variant mb-md">{t('clinic.emr.physicalExamNotes')}</p>
                   <textarea
                     className="w-full bg-surface-container-low rounded-xl px-lg py-md text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary min-h-[120px] resize-none"
-                    placeholder="Physical findings, auscultation, palpation…"
+                    placeholder={t('clinic.emr.physicalFindingsPlaceholder')}
                     value={draft.objective}
                     onChange={e => setField('objective', e.target.value)}
                   />
@@ -654,7 +692,7 @@ export default function ClinicEMR() {
 
                 {/* Anatomy canvas */}
                 <div>
-                  <p className="text-body-sm font-semibold text-on-surface-variant mb-md">Anatomy Annotation</p>
+                  <p className="text-body-sm font-semibold text-on-surface-variant mb-md">{t('clinic.emr.anatomyAnnotation')}</p>
                   <AnatomyCanvas value={draft.anatomy} onChange={v => setField('anatomy', v)} />
                 </div>
               </div>
@@ -681,20 +719,20 @@ export default function ClinicEMR() {
 
           {/* Sticky save bar */}
           <div className="border-t border-outline-variant bg-surface px-lg py-md flex items-center gap-md flex-shrink-0">
-            {saveMsg && <span className={`text-body-sm font-medium ${saveMsg === 'Saved' ? 'text-success' : 'text-error'}`}>{saveMsg}</span>}
+            {saveMsg && <span className={`text-body-sm font-medium ${saveStatus === 'success' ? 'text-success' : 'text-error'}`}>{saveMsg}</span>}
             <div className="flex-1" />
             <button onClick={saveRecord} disabled={saving}
               className="min-h-[44px] px-xl bg-primary text-primary-on rounded-lg text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-sm">
               <MaterialIcon name="save" size={18} />
-              {saving ? 'Saving…' : t('clinic.emr.saveRecord')}
+              {saving ? t('common.saving') : t('clinic.emr.saveRecord')}
             </button>
           </div>
         </div>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-xl text-on-surface-variant">
           <MaterialIcon name="medical_services" size={64} className="mb-lg opacity-20" />
-          <p className="text-headline-sm font-headline font-bold mb-sm">EMR Editor</p>
-          <p className="text-body-md">Search for a patient to start or continue a medical record.</p>
+          <p className="text-headline-sm font-headline font-bold mb-sm">{t('clinic.emr.emptyStateTitle')}</p>
+          <p className="text-body-md">{t('clinic.emr.emptyStateBody')}</p>
         </div>
       )}
 
@@ -704,11 +742,11 @@ export default function ClinicEMR() {
           {/* Attachments */}
           <div className="p-lg border-b border-outline-variant">
             <div className="flex items-center justify-between mb-md">
-              <h4 className="text-body-sm font-semibold text-on-surface-variant">Attachments</h4>
+              <h4 className="text-body-sm font-semibold text-on-surface-variant">{t('clinic.emr.attachments')}</h4>
               <Can perm="emr.attach">
                 <label className="min-h-[36px] px-md flex items-center gap-xs rounded-lg bg-surface-container text-label-md font-medium text-on-surface-variant hover:bg-surface-container-high cursor-pointer transition-colors">
                   <MaterialIcon name="upload_file" size={16} />
-                  {isUploading ? 'Uploading…' : 'Upload'}
+                  {isUploading ? t('clinic.emr.uploading') : t('clinic.emr.upload')}
                   <input
                     type="file"
                     data-testid="emr-attachment-file-input"
@@ -722,7 +760,7 @@ export default function ClinicEMR() {
             </div>
 
             <Can perm="emr.attach">
-              <p className="text-label-md text-on-surface-variant mb-sm">{ATTACHMENT_TYPES_LABEL}</p>
+              <p className="text-label-md text-on-surface-variant mb-sm">{t('clinic.emr.attachmentTypesHint')}</p>
             </Can>
 
             {(attachmentUiError || uploadError) && (
@@ -754,16 +792,17 @@ export default function ClinicEMR() {
                 <Can perm="emr.attach">
                   <button
                     type="button"
-                    aria-label="Delete attachment"
+                    aria-label={t('clinic.emr.deleteAttachmentAria')}
                     onClick={async () => {
-                      if (!window.confirm(`Delete "${a.fileName}"? This cannot be undone.`)) return
+                      const confirmMsg = t('clinic.emr.confirmDeleteAttachment').replace('{file}', a.fileName)
+                      if (!window.confirm(confirmMsg)) return
                       try {
                         await api.delete(`/api/medical-records/${selectedRecordId}/attachments/${a.id}`)
                         setAttachmentUiError(null)
                         refetchRecord()
                       } catch (err) {
                         const message = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-                        setAttachmentUiError(message ?? 'Failed to delete attachment.')
+                        setAttachmentUiError(message ?? t('clinic.emr.failedToDeleteAttachment'))
                       }
                     }}
                     className="w-[36px] h-[36px] flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-error/10 hover:text-error transition-colors flex-shrink-0"
@@ -772,7 +811,7 @@ export default function ClinicEMR() {
                   </button>
                 </Can>
               </div>
-            )) : <p className="text-label-md text-on-surface-variant">No attachments yet.</p>}
+            )) : <p className="text-label-md text-on-surface-variant">{t('clinic.emr.noAttachmentsYet')}</p>}
           </div>
 
           {/* Prescriptions */}
@@ -784,7 +823,7 @@ export default function ClinicEMR() {
                 onRefresh={() => refetchRecord()}
               />
             ) : (
-              <p className="text-label-md text-on-surface-variant">Save the EMR first to add prescriptions.</p>
+              <p className="text-label-md text-on-surface-variant">{t('clinic.emr.saveFirstForPrescriptions')}</p>
             )}
           </div>
         </div>
