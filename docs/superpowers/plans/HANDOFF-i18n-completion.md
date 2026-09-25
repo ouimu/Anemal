@@ -17,7 +17,7 @@
 | W3 | integration checkpoint (tsc + suite) | ✅ 2026-09-24: tsc clean, 775/776, the one failure is the known pre-existing ClinicBilling failure |
 | W4 | EMR I18N-9, 10 | ✅ code `0b57d53` `1fa56fb` `03df946`, plus the browser-QA fix `304b6ac`. Browser QA done 2026-09-25 (768 blocked by the pre-existing layout bug, see backlog). Dev flagged 3 items for W6: `pet.species` chip is still English (feline/canine); 8 new Thai strings were not in the glossary; weight shows "kg" untranslated next to the translated vitals units |
 | W5 | Pets I18N-11, 12 | ✅ code `5d24902` `0533ce2` `7ffd2e7` `b81096f`, plus `2cebfe8`: PetOverview.test updated. That is a **human-approved exception to A-9**, because the test locked in the raw canine/male bug; the PR body must say so. Suite 823/824 (only the known ClinicBilling failure), tsc clean. Browser QA done 2026-09-25. For W6: 3 new Thai strings are not in the glossary. The species→Thai map lives only in ClinicPets.tsx, so the EMR sidebar still shows raw species; that needs a shared map (cross-file, BA decision) |
-| W6 | I18N-16 `@ba-agent` Thai wording review (incl. discharge word) | ❌ |
+| W6 | I18N-16 `@ba-agent` Thai wording review (incl. discharge word) | ✅ `9a749b1`: **APPROVE WITH DEV TASKS**, 11 Thai values changed. The discharge word is always written in full as "จำหน่ายผู้ป่วย". See signoff §9. ▶ Dev tasks T1 (3 stale test assertions, blocking), T2 (EMR `kg` → `t('clinic.pets.kgUnit')`) and T3 (shared species-label helper with dog/cat aliases, used in Pets, EMR and Inpatient) are with `@dev-agent` (2026-09-26) |
 | W7 | I18N-13 manual EN↔TH cross-check, mid-modal language switch, AdmitModal from Pets | ❌ |
 
 Then STEP 7 `@qa-agent` `/code-review` + sign-off, then STEP 8 `@scribe-agent` `/anemal-finish-branch`.
@@ -46,12 +46,18 @@ Then STEP 7 `@qa-agent` `/code-review` + sign-off, then STEP 8 `@scribe-agent` `
 - **The Pets layout doesn't stay within the screen height (pre-existing).** The `h-full` container grows with the owner list (about 4000px), so the details panel content is centered far below the screen. Lane B bug.
 - Pets: the "show inactive" checkbox row is 38px tall, and the owner header's edit/delete icon buttons are under 44px (pre-existing, same in both languages).
 
+- `blood-bank.service.ts:40`: the 30-day donation interval only applies when species starts with "cat", so a cat created in the Pets form (stored as `feline`) gets the 56-day interval. Found by BA in W6. Lane B.
+- Data cleanup: non-canonical species values (`Cat`/`Dog`). The seed script writes them and the backend accepts any string (BA §9.6).
+- **Step 8 doc task for `@scribe-agent`:** `CONTEXT.md` still marks the Thai discharge word as PENDING. Update it with the ruling from BA §9.4 item 3.
+
 ## Browser QA 2026-09-25 (one login)
 - Grooming BookingCard (test booking #7, Muffin, "Teeth Cleaning", in_progress, 2026-09-25 10:00): fits at all 3 sizes, no overflow, no horizontal scroll. **I18N-3 closed.** Test booking #7 is safe to delete.
 - EMR: Thai strings fine. One defect was caused by this branch: the SOAP tab labels broke mid-word and the 4th tab was clipped at 1024. Fixed in `304b6ac` (tabs stay whole and wrap to a second row). 1024/1280 are clean. 768 is blocked by the pre-existing layout bug above.
 - Pets: no Thai-caused overflow at 768/1024/1280. The species chip shows "Cat" because the dev DB has non-canonical stored species values (`Cat`/`cat`/`Dog`/`dog`, 13 rows) that the canonical map (canine/feline/avian/other) doesn't cover. Decision for W6: add aliases, or clean the data.
 
 ## Next action
+0a. 2026-09-26: **The billing red test is fixed on main by PR #96 (`8b370c0`, merged by someone else).** Our duplicate Lane B branch was discarded; it was never pushed. `origin/main` is now 1 commit ahead of this branch's base (`57ca371`). At Step 8, `@scribe-agent` must bring main into this branch first, and then the ClinicBilling failure disappears.
+0. 2026-09-26: W6 `@ba-agent` has been running in the background. In parallel, a Lane B `@dev-agent` is fixing the stale ClinicBilling characterization test in an isolated worktree, on branch `fix/billing-characterization-double-submit-test` from main. It doesn't push; shipping goes through `@scribe-agent`.
 1. W6: `@ba-agent` runs I18N-16, the Thai wording review. Inputs: the W4 flags (8 new EMR strings, the "kg" unit, the EMR species chip needing a shared map), the W5 flags (3 new Pets strings), the Cat/Dog alias question, and the discharge word.
 2. W7: I18N-13, the manual EN↔TH cross-check.
 3. Before the PR: the human captures the Thai screenshots (the browser pane can't save images to disk).
