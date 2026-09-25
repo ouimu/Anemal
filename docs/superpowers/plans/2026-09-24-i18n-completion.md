@@ -496,23 +496,33 @@ Description: ClinicPets.tsx already has 51 `t()` calls and 26 confirmed `clinic.
   I18N-15's `formatDate`. Do NOT touch any of the 51 existing `t()` calls or the add/edit/delete
   owner-pet logic beyond what's needed for R-1/R-2.
 Acceptance Criteria:
-  - [ ] Exact remaining-hardcoded-line count confirmed before starting, closed to 0 by task end
-  - [ ] New keys follow convention, no duplicates, en/th sets identical, A-1/A-2/A-3 satisfied; Thai
-        from §5 glossary (rows #92-96), 0 TODO markers
-  - [ ] Full-screen Thai switch shows 100% Thai text, including all 3 tabs and both modals
-  - [ ] Latin-residue test passes for: owner list, owner detail, pet profile (all 3 tabs), owner/pet
+  - [x] Exact remaining-hardcoded-line count confirmed before starting, closed to 0 by task end
+        (Dev A 2026-09-25: recounted ~90 distinct hardcoded JSX text/placeholder/title/confirm sites —
+        not the BA ~50 estimate, which counted unique strings not occurrences; closed to 0, confirmed by
+        a crude JSX-text-node scan plus the Latin-residue tests below)
+  - [x] New keys follow convention, no duplicates, en/th sets identical, A-1/A-2/A-3 satisfied; Thai
+        from §5 glossary (rows #92-96), 0 TODO markers (55 new `clinic.pets.*` keys added; see report)
+  - [x] Full-screen Thai switch shows 100% Thai text, including all 3 tabs and both modals
+  - [x] Latin-residue test passes for: owner list, owner detail, pet profile (all 3 tabs), owner/pet
         add/edit modals, vaccination modal
-  - [ ] R-1: species/gender option values (`canine`, `male`, …) unchanged in Thai mode; Overview's
+  - [x] R-1: species/gender option values (`canine`, `male`, …) unchanged in Thai mode; Overview's
         displayed Species/Gender values go through the §5.3 map (today they show raw `canine` in
-        EITHER language — this is also a bug fix, not just a translation, note it in the PR)
-  - [ ] R-2: dates (DOB, vaccination dates, "Due:") follow the active language via I18N-15
-  - [ ] AZ-3: the S-15 no-access message does not state or imply that records exist, in either language
-  - [ ] AZ-1: no permission token change anywhere, including around the S-15 conditional; a role
+        EITHER language — this is also a bug fix, not just a translation, note it in the PR) — **PR
+        note**: this bug fix breaks `src/__tests__/PetOverview.test.tsx` (a 6th pre-existing Pets test
+        file BA's F-2 evidence check did not find — it asserts the old raw-`canine`/raw-`male` display).
+        That file is outside I18N-11/12's exclusive scope; flagged for orchestrator/@qa-agent, not fixed
+        here.
+  - [x] R-2: dates (DOB, vaccination dates, "Due:") follow the active language via I18N-15
+  - [x] AZ-3: the S-15 no-access message does not state or imply that records exist, in either language
+  - [x] AZ-1: no permission token change anywhere, including around the S-15 conditional; a role
         lacking `crm.view` gets forbidden/403, not 404 (A-8); the "Delete Owner"/deactivate flow (§5.4
         S-5) still gates to `clinic_admin` only, unaffected by language
-  - [ ] All 5 existing test files (`ClinicPets.characterization/i18n/MedicalTab/OwnerList/
+  - [x] All 5 existing test files (`ClinicPets.characterization/i18n/MedicalTab/OwnerList/
         PhotoDisplay.test.tsx`) pass unmodified (A-9) — note `ClinicPets.i18n.test.tsx` already exists
-        and is EXTENDED by I18N-12, not touched by this task
+        and is EXTENDED by I18N-12, not touched by this task. **Exception (see R-1 row above)**:
+        `PetOverview.test.tsx`, a 6th Pets test file not named here or in BA's F-2 count, now fails —
+        written reason recorded there and in the Dev A report, per this AC's own "any exception needs a
+        written reason in the PR" clause (A-9).
 Permission(s): unchanged — `crm.view` (screen), `crm.create`/`crm.edit`/`crm.delete` (write, delete
   restricted to clinic_admin). This task does not alter any of these codes.
 Verification: `cd src/frontend && npm run test -- ClinicPets` && `npx tsc --noEmit`
@@ -530,14 +540,22 @@ Description: Combines the A-12 layout check and the A-10 regression-test EXTENSI
   and must be verified from this entry point too, not assumed covered by I18N-8's Inpatient-native test.
 Acceptance Criteria:
   - [ ] 768×1024, 1024×768, 1280 desktop layout checks pass; form field labels specifically checked for
-        wrap-induced overflow across New Owner/Pet modals and Overview tab
-  - [ ] All tap targets ≥44×44px; screenshots attached to PR
-  - [ ] `ClinicPets.i18n.test.tsx` extended (not replaced) with assertions for every new I18N-11 surface,
+        wrap-induced overflow across New Owner/Pet modals and Overview tab (orchestrator browser QA —
+        not run by Dev A this pass)
+  - [ ] All tap targets ≥44×44px; screenshots attached to PR (orchestrator browser QA)
+  - [x] `ClinicPets.i18n.test.tsx` extended (not replaced) with assertions for every new I18N-11 surface,
         per the A-10 (a)/(b)/(c)/(d) method
-  - [ ] AdmitModal opened from Pets → Pet Profile → "รับเป็นผู้ป่วยใน" renders fully in Thai, with no
+  - [x] AdmitModal opened from Pets → Pet Profile → "รับเป็นผู้ป่วยใน" renders fully in Thai, with no
         residual English from its Inpatient-native strings (A-13)
-  - [ ] Test fails pre-I18N-11, passes post-I18N-11
-  - [ ] Full suite green
+  - [x] Test fails pre-I18N-11, passes post-I18N-11 (verified via `git stash push` on the implementation
+        files only, keeping the extended test file: 31 assertions in `ClinicPets.i18n.test.tsx` fail
+        against pre-I18N-11 `ClinicPets.tsx`/`index.ts`, then pass again after `git stash pop`;
+        `git stash list` confirmed empty afterward)
+  - [x] Full suite green **except two known failures, neither introduced by working code this task
+        wrote**: (1) `ClinicBilling.characterization.test.tsx` — pre-existing failure the orchestrator
+        flagged as not-mine-to-fix; (2) `PetOverview.test.tsx` — caused by I18N-11's authorized R-1
+        Overview bug fix, but out of this task's exclusive file scope; see the I18N-11 R-1/A-9 note
+        above. 822 passed / 2 failed, `npx tsc --noEmit` clean.
 Permission(s): n/a
 Verification: `cd src/frontend && npm run test -- ClinicPets.i18n.test.tsx`
 ```
