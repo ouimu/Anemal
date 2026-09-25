@@ -23,6 +23,7 @@ vi.mock('../store/authStore', () => ({
 }))
 
 import { PetDetail } from '../views/clinic/ClinicPets'
+import { formatDate } from '../i18n/dateFormat'
 
 // Overview row labels ('Species', 'Breed', etc.) are unique in the DOM, but
 // several values (species, breed, gender, microchipId) also render in the
@@ -39,10 +40,12 @@ function renderPetDetail() {
 describe('PetDetail — Overview tab', () => {
   it('shows species, breed, gender, weight, microchipId, allergies, and underlyingConditions', () => {
     renderPetDetail()
-    rowContains('Species', 'canine')
+    // I18N-11 fixed the Overview showing raw stored values: species/gender now
+    // render as labels, dates via the app-language formatter (ADR-0029/0030).
+    rowContains('Species', 'Canine')
     rowContains('Breed', 'Labrador')
-    rowContains('Gender', 'male')
-    rowContains('Date of birth', new Date(mockPet.birthDate).toLocaleDateString())
+    rowContains('Gender', 'Male')
+    rowContains('Date of birth', formatDate(mockPet.birthDate, 'en'))
     rowContains('Weight', '22.4 kg')
     rowContains('Color', 'Golden')
     rowContains('Microchip ID', 'CHIP123')
