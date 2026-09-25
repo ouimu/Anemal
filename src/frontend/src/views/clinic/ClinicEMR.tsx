@@ -9,6 +9,7 @@ import { useAuthStore } from '../../store/authStore'
 import { useUiStore } from '../../store/uiStore'
 import { useT } from '../../i18n'
 import { formatDate } from '../../i18n/dateFormat'
+import { speciesLabel } from '../../i18n/speciesLabel'
 import { useEmrAttachmentUpload } from '../../hooks/useEmrAttachmentUpload'
 import Can from '../../components/Can'
 
@@ -606,7 +607,7 @@ export default function ClinicEMR() {
               }
               <div>
                 <p className="text-body-sm font-bold">{pet.name}</p>
-                <p className="text-label-md text-on-surface-variant capitalize">{pet.species}</p>
+                <p className="text-label-md text-on-surface-variant capitalize">{speciesLabel(t, pet.species)}</p>
               </div>
             </div>
             <button onClick={newRecord} className="w-full min-h-[44px] flex items-center justify-center gap-sm bg-primary text-primary-on rounded-lg text-body-sm font-semibold hover:bg-primary/90 transition-colors">

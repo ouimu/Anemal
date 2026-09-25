@@ -60,10 +60,10 @@ vi.mock('../utils/api', () => ({
 
 import ClinicEMR from '../views/clinic/ClinicEMR'
 
-// R-1: `species` ('feline') is EMR's out-of-scope raw sidebar value (the
-// species -> Thai label map is I18N-11's Pets Overview map; this screen's
-// sidebar chip is not in I18N-9's enumerated surface list). `tab`/`Amoxicillin`
-// are drug unit/name data content (E-2).
+// `species` ('feline') now renders through the shared `speciesLabel()` helper
+// (I18N-16 T3) on the sidebar chip, so it is Thai ('แมว') in these tests, not
+// a Latin-residue exemption. `tab`/`Amoxicillin` are drug unit/name data
+// content (E-2).
 const pet = {
   id: 42, name: 'มะลิ', species: 'feline', allergies: 'เพนนิซิลลิน',
   owner: { firstName: 'สมหญิง', lastName: 'ใจดี', phone: '0812345678' },
@@ -131,7 +131,7 @@ async function selectPetAndOpenRecord() {
  *  wording — only "max" is translated to "สูงสุด". `formatFileSize`'s KB/MB
  *  unit suffix is an existing, out-of-scope helper (not part of I18N-9). */
 const EXEMPT_STRINGS = new Set<string>([
-  'feline', 'tab', 'Amoxicillin',
+  'tab', 'Amoxicillin',
   'JPG, PNG, GIF, WebP, PDF, Word, Excel · สูงสุด 25 MB',
   'ผลตรวจเลือด.pdf', '2.0 KB', 'lab',
 ])
@@ -189,6 +189,7 @@ describe('ClinicEMR — Thai i18n (I18N-10): SOAP editor and all 4 tabs', () => 
   it('(a) tab bar renders all 4 Thai SOAP labels and the recent-visit row uses formatDate (R-2)', async () => {
     renderEMR()
     await selectPetAndOpenRecord()
+    expect(screen.getByText('แมว')).toBeInTheDocument() // sidebar species chip (I18N-16 T3, speciesLabel)
     expect(screen.getByText('ประวัติและอาการ (S)')).toBeInTheDocument()
     expect(screen.getByText('ผลการตรวจ (O)')).toBeInTheDocument()
     expect(screen.getByText('การประเมิน (A)')).toBeInTheDocument()

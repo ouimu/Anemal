@@ -9,6 +9,7 @@ import { getErrorMessage } from '../../utils/errorMessage'
 import { useT } from '../../i18n'
 import { useUiStore } from '../../store/uiStore'
 import { formatDate } from '../../i18n/dateFormat'
+import { speciesLabel } from '../../i18n/speciesLabel'
 import Can from '../../components/Can'
 import { useAuthStore } from '../../store/authStore'
 import { AdmitModal } from './ClinicInpatient'
@@ -31,19 +32,9 @@ function speciesChip(s: string) {
 
 // R-1 (ADR-0030): `pet.species`/`pet.gender` stay these raw English stored values
 // everywhere (speciesChip's color lookup, form submit payloads) — only the
-// *display* label is translated, via `speciesLabel()`/`genderLabel()` below.
-// A value with no key (X-1: e.g. a future species) renders raw, no crash.
-const SPECIES_LABEL_KEYS: Record<string, string> = {
-  canine: 'clinic.pets.speciesCanine',
-  feline: 'clinic.pets.speciesFeline',
-  avian: 'clinic.pets.speciesAvian',
-  other: 'common.other',
-}
-function speciesLabel(t: (key: string) => string, species: string): string {
-  const key = SPECIES_LABEL_KEYS[species.toLowerCase()]
-  return key ? t(key) : species
-}
-
+// *display* label is translated, via the shared `speciesLabel()` (i18n/speciesLabel.ts)
+// and `genderLabel()` below. A value with no key (X-1: e.g. a future species/gender)
+// renders raw, no crash.
 const GENDER_LABEL_KEYS: Record<string, string> = {
   male: 'clinic.pets.genderMale',
   female: 'clinic.pets.genderFemale',

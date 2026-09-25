@@ -71,10 +71,10 @@ function renderBoard() {
 }
 
 /** Exemptions: E-4 keeps NPO in Latin after the Thai term (glossary §5.3
- *  feeding map). `feline` is `hospit.pet.species`, an unmapped raw backend
- *  value CageCard has always displayed as-is — species/gender translation is
- *  R-1's Pets Overview map (I18N-11), not in this screen's scope. */
-const EXEMPT_STRINGS = new Set<string>(['งดน้ำงดอาหาร (NPO)', 'feline'])
+ *  feeding map). `hospit.pet.species` ('feline') now renders through the
+ *  shared `speciesLabel()` helper (I18N-16 T3) on the CageCard chip, so it
+ *  is Thai ('แมว') in these tests, not a Latin-residue exemption. */
+const EXEMPT_STRINGS = new Set<string>(['งดน้ำงดอาหาร (NPO)'])
 
 function collectResidueStrings(container: HTMLElement): string[] {
   const out: string[] = []
@@ -126,6 +126,7 @@ describe('ClinicInpatient — Thai i18n (I18N-8): board view', () => {
     )
     expect(await screen.findByText('กระดานผู้ป่วยใน')).toBeInTheDocument() // boardTitle
     await screen.findByText('มะลิ')
+    expect(screen.getByText('แมว')).toBeInTheDocument() // CageCard species chip (I18N-16 T3, speciesLabel)
     expect(screen.getByText('รับเข้ารักษาแล้ว')).toBeInTheDocument() // statusAdmitted
     expect(screen.getByText('กรง B-2')).toBeInTheDocument() // cageNo
     expect(screen.getByText('หมอสมชาย')).toBeInTheDocument() // doctor name (data, untranslated)

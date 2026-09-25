@@ -6,6 +6,7 @@ import { VitalStepper } from '../../components/VitalStepper'
 import { useT } from '../../i18n'
 import { useUiStore } from '../../store/uiStore'
 import { formatDate, formatDateTime } from '../../i18n/dateFormat'
+import { speciesLabel } from '../../i18n/speciesLabel'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 // Field names match the real backend response shape (hospitalization.repository.ts
@@ -619,7 +620,7 @@ function CageCard({ hospit, doctors, onCare, onDischarge, onEdit, onDelete, onHi
         </div>
         <div className="min-w-0">
           <p className="text-body-lg font-semibold text-on-surface truncate">{hospit.pet.name}</p>
-          <p className="text-label-md text-on-surface-variant capitalize">{hospit.pet.species}</p>
+          <p className="text-label-md text-on-surface-variant capitalize">{speciesLabel(t, hospit.pet.species)}</p>
         </div>
       </div>
 
