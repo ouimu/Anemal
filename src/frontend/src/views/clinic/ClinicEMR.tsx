@@ -646,10 +646,10 @@ export default function ClinicEMR() {
           )}
 
           {/* SOAP Tab bar */}
-          <div className="flex border-b border-outline-variant bg-surface flex-shrink-0">
+          <div className="flex flex-wrap border-b border-outline-variant bg-surface flex-shrink-0">
             {SOAP_TABS.map(tab => (
               <button key={tab} onClick={() => setSoapTab(tab)}
-                className={`px-lg py-sm text-body-sm font-semibold min-h-[44px] transition-colors ${soapTab === tab ? 'border-b-2 border-primary text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
+                className={`px-lg py-sm text-body-sm font-semibold min-h-[44px] whitespace-nowrap flex-shrink-0 transition-colors ${soapTab === tab ? 'border-b-2 border-primary text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
                 {soapTabLabel(t, tab)}
               </button>
             ))}
