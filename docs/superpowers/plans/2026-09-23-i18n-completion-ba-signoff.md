@@ -404,3 +404,158 @@ Fold A-1..A-17 and I18N-14..16 into the plan and work-partition manifest. Record
 - **G-4** Server error text stays English in Thai mode (E-1). Accept it for this branch?
 - **G-5** BA as the sole Thai authority (§7.3 top risk). Confirm the residual risk is accepted, and that post-release wording fixes go through Lane B.
 - **G-6** Record human decision §6.2 (Platform plane English-only) as an ADR so it stops appearing as an i18n gap.
+
+---
+
+## 9. I18N-16 Thai wording review
+
+**Date:** 2026-09-26 · **Reviewer:** @ba-agent (sole Thai authority, human decision STEP 1 §6.3, grill G-5)
+**Step / wave:** STEP 6, W6 (plan `2026-09-24-i18n-completion.md`, task I18N-16)
+**Reviewed:** every `th` value in `src/frontend/src/i18n/index.ts` for `clinic.grooming.*` (27), `clinic.inpatient.*` (67), `clinic.emr.*` (55), `clinic.pets.*` (88), plus the 13 `common.*` keys the four screens call (`back cancel close delete edit loading next other refresh save saving staffNumber today`), with `common.noResults` read for comparison. The complete set was reviewed, not a sample. Evidence base: branch `feature/i18n-completion` after `1815083`. I also read the four views, `i18n.coverage.test.ts`, the four `*.i18n.test.tsx` files, `pet.service.ts`, `blood-bank.service.ts` and `prisma/seed.ts`.
+
+### 9.1 Verdict: **APPROVE WITH DEV TASKS**
+
+The Thai wording is approved as it stands after this review's 11 value edits. Three dev tasks remain (§9.5). **T-1 blocks the W6 integration checkpoint**, because three test assertions pin the old wording and a BA may not edit tests. T-2 and T-3 are Must items for this branch and have to land before I18N-13 (W7) and STEP 7.
+
+### 9.2 Conformance to §5
+
+| Check | Result |
+|---|---|
+| §5.4 safety sentences S-1..S-15 | 13 match the canonical Thai word for word. **S-2 and S-12 carry an explicit BA substitution** because of the discharge ruling (§9.4 item 3). The meaning is unchanged. See the table in §9.3 |
+| §5.3 enum maps | Grooming status, grooming service, feeding, SOAP, anatomy, species/gender and the Pets tabs are used exactly as specified. The inpatient status map has **two explicit BA substitutions**: `admitted` and `discharged` (§9.3) |
+| §5.2 glossary (96 terms) | No drift in any of the four namespaces. Terms are consistent across screens: ผู้ป่วยใน, รับเข้ารักษา, สัญญาณชีพ, อัตราการเต้นของหัวใจ/อัตราการหายใจ, ครั้ง/นาที, การตรวจรักษา, ภูมิแพ้, ประวัติการรักษา, เวชระเบียน vs บันทึกการรักษา (rule 11), and สัตว์เลี้ยง vs ผู้ป่วย (rule 10) |
+| Wording rules 1–14 | No ครับ/ค่ะ, and กรุณา appears only in instructions. `(ไม่จำเป็น)` is used throughout. Numerals are Arabic, and `…` is attached without a space. Confirmations follow `…ใช่หรือไม่?`, and failures follow `…ไม่สำเร็จ`. Findings against rules 1, 6, 7 and 14 are fixed in §9.3 (register, badge vs verb, em-dash in a sentence) |
+| `{placeholder}` tokens | Unchanged in every edited value (`{name}` in S-2 kept). `i18n.coverage.test.ts` token-parity check passes |
+| Structure | Values only, all inside the `th` block (9 hunks). No key added, removed or renamed, and no `en` value touched |
+
+### 9.3 Values changed (11)
+
+| Key | Before | After | Reason |
+|---|---|---|---|
+| `clinic.inpatient.discharge` | จำหน่ายผู้ป่วย | *(unchanged, confirmed)* | Discharge ruling, §9.4 item 3 |
+| `clinic.inpatient.confirmDischarge` (**S-2**) | จำหน่าย {name} ใช่หรือไม่? ระบบจะออกใบแจ้งหนี้ค่ารักษา | จำหน่ายผู้ป่วย {name} ใช่หรือไม่? ระบบจะออกใบแจ้งหนี้ค่ารักษา | With a pet name directly after it, bare "จำหน่าย มะลิ" reads as "sell Mali", and the invoice clause that follows reinforces that reading. The substitution keeps S-2's meaning |
+| `clinic.inpatient.allDischargedOrNoneToday` (**S-12**) | ผู้ป่วยทุกรายจำหน่ายแล้ว หรือ… | จำหน่ายผู้ป่วยครบทุกรายแล้ว หรือวันนี้ยังไม่มีการรับเข้ารักษา | Same rule: "จำหน่าย" always takes ผู้ป่วย as its object. Meaning unchanged |
+| `clinic.inpatient.statusDischarged` (§5.3) | จำหน่ายแล้ว | จำหน่ายผู้ป่วยแล้ว | A bare "จำหน่ายแล้ว" badge is the retail phrase for "sold (out)". This is the worst case of the ambiguity |
+| `clinic.inpatient.statusAdmitted` (§5.3) | รับเข้ารักษา | รับเข้ารักษาแล้ว | The status was identical to the `admitPatient` submit button, so a state read like an action. It now matches the other completed-state labels (นัดไว้แล้ว, เสร็จแล้ว, ยกเลิกแล้ว, จำหน่ายผู้ป่วยแล้ว) |
+| `clinic.inpatient.noActiveAdmissions` (#76) | ไม่มีผู้ป่วยในขณะนี้ | ไม่มีผู้ป่วยในที่รักษาอยู่ | "ผู้ป่วยในขณะนี้" splits two ways ("no inpatients now" or "no patients at the moment"). §7.4 item 4 already flagged the same phrase on the Dashboard. The new value mirrors `activeAdmissionsOther` (ผู้ป่วยในที่รักษาอยู่ {n} ราย). This is the one change to a glossary term, and it is recorded here |
+| `clinic.emr.fileTooLarge` | ไฟล์มีขนาดใหญ่เกินไป — ขนาดสูงสุดคือ 25 MB | ไฟล์มีขนาดใหญ่เกินไป (สูงสุด 25 MB) | An em-dash joining two clauses is not Thai sentence style. The new value reuses the exact limit phrase from `attachmentTypesHint` (สูงสุด 25 MB) |
+| `clinic.emr.noResults` | ไม่พบผลลัพธ์ | ไม่พบข้อมูล | Same concept, same word: `common.noResults` is ไม่พบข้อมูล |
+| `clinic.pets.selectOwnerHint` | เลือกเจ้าของจากรายการเพื่อดูสัตว์เลี้ยงของเขา | เลือกเจ้าของจากรายการเพื่อดูข้อมูลสัตว์เลี้ยง | "ของเขา" is conversational (rule 1 register). The new value matches `petProfileHeading` ข้อมูลสัตว์เลี้ยง |
+| `clinic.pets.inactiveBadge` | ปิดใช้งาน | ปิดใช้งานแล้ว | As a badge it read as the "Deactivate" action. It is a state, so it takes แล้ว |
+| `clinic.pets.deleteBlockedActivePets` | …เจ้าของมีสัตว์เลี้ยงที่ยังใช้งานอยู่ | ไม่สามารถลบได้: เจ้าของยังมีสัตว์เลี้ยงที่เปิดใช้งานอยู่ | "สัตว์เลี้ยงที่ยังใช้งานอยู่" means "pets still in use", which is wrong for animals. The new value uses the screen's own vocabulary (ปิดใช้งาน / เปิดใช้งาน) |
+| `clinic.pets.deleteOwner` | ลบเจ้าของ | ลบข้อมูลเจ้าของ | "Delete the owner" becomes "delete the owner's record". It is now parallel to `editOwner` แก้ไขข้อมูลเจ้าของ |
+
+**Deliberately not changed:** `clinic.emr.anatomyInstruction` (…ใช้ปากกาสไตลัสหรือนิ้วในการวาด). It is slightly stiff but correct, and `ClinicEMR.i18n.test.tsx:240` pins it, so changing it isn't worth a test edit. `clinic.pets.weightOptional` (น้ำหนัก กก. (ไม่จำเป็น)) stays because the alternative stacks two parentheses. `clinic.emr.saveRecord` (บันทึกข้อมูล) stays because "บันทึกบันทึกการรักษา" would be worse.
+
+### 9.4 Rulings on the flagged items
+
+**Item 1: EMR (W4) strings not in the glossary.** All 8 are ruled as follows and are now part of the glossary.
+| Key | Final Thai | Ruling |
+|---|---|---|
+| `attachmentTypesHint` | JPG, PNG, GIF, WebP, PDF, Word, Excel · สูงสุด 25 MB | **Keep.** File-format and product names fall under the rule 14 brand/product exemption. The commas stay because these are Latin tokens, not a Thai phrase (rule 5 does not apply). **`MB` is added to E-4** as a Latin technical unit ("เมกะไบต์" is longer and less recognisable to users) |
+| `stockLabel` | คงเหลือ: {qty} {unit} | **Keep.** คงเหลือ ("remaining on hand") is the pharmacy counter term. `{unit}` is data (E-2) |
+| `noResults` | ไม่พบข้อมูล | **Changed** (§9.3) to match `common.noResults` |
+| `searching` | กำลังค้นหา… | **Keep.** Follows the กำลัง…… pattern (#18, #19) and rule 4 |
+| `saveBeforeAttaching` | กรุณาบันทึกเวชระเบียนก่อนแนบไฟล์ | **Keep.** Deliberately parallel to S-6 (กรุณาบันทึกเวชระเบียนก่อนเพิ่มรายการยา). Rule 11 would give "บันทึกการรักษา", but "กรุณาบันทึกบันทึกการรักษา…" doubles the verb. กรุณา is allowed because the sentence asks the user to act |
+| `fileTooLarge` | ไฟล์มีขนาดใหญ่เกินไป (สูงสุด 25 MB) | **Changed** (§9.3). `ClinicEMR.i18n.test.tsx:357` matches `/ขนาดใหญ่เกินไป/` and still passes |
+| `unsupportedFileType` | ไม่รองรับไฟล์ประเภทนี้ | **Keep** |
+| `failedToDeleteAttachment` | ลบไฟล์แนบไม่สำเร็จ | **Keep.** Rule 7 + #16 + #91 |
+
+**Item 2: Pets (W5) strings not in the glossary.**
+| Key | Final Thai | Ruling |
+|---|---|---|
+| `noPetsYet` | ยังไม่มีสัตว์เลี้ยง เพิ่มได้จากด้านบน | **Keep.** Follows the ยังไม่มี… empty-state pattern, with a space between the clauses |
+| `noVaccinationRecords` | ยังไม่มีประวัติการฉีดวัคซีน | **Keep.** Parallel to `noMedicalRecords` (ยังไม่มีประวัติการรักษา) |
+| `selectOwnerHint` | เลือกเจ้าของจากรายการเพื่อดูข้อมูลสัตว์เลี้ยง | **Changed** (§9.3). Needs a test update (T-1) |
+
+**Item 3: the discharge word. Ruling: keep "จำหน่าย", with a binding rule that it always takes ผู้ป่วย as its object.**
+- Options weighed:
+  - **"ให้กลับบ้าน / กลับบ้านแล้ว"** is clear, but it is **wrong for every non-home outcome**. In this system `discharged` also closes admissions that end in death, transfer or discharge against advice, because the invoice is generated either way. "กลับบ้านแล้ว" on a deceased patient's record is factually wrong and distressing for staff and owners. Rejected.
+  - **"ออกจากโรงพยาบาล"** is neutral, but it is too long for a tablet button (rule 13), and many tenants are clinics, not hospitals. Rejected.
+  - **"จำหน่ายออก"** is the accounting phrase for writing off stock or assets, so it adds a second ambiguity. Rejected.
+  - **"จำหน่าย"** is the Thai medical-record term for discharge. It is outcome-neutral, the natural counterpart of รับเข้ารักษา, and short. The grill's risk (G-5) is real, but it appears **only when the word stands alone or sits directly before an animal's name**: "จำหน่าย มะลิ" reads as "sell Mali", and a bare "จำหน่ายแล้ว" badge reads as "sold". With ผู้ป่วย as the object ("จำหน่ายผู้ป่วย") it is a fixed clinical phrase that no one reads as selling.
+- **Binding rule (added to §5.1 as rule 15):** "จำหน่าย" is never used bare and never directly before a pet name. It is always **จำหน่ายผู้ป่วย**.
+- Applied in all four places: the action button `discharge` = จำหน่ายผู้ป่วย (confirmed), `statusDischarged` = จำหน่ายผู้ป่วยแล้ว, S-2 = จำหน่ายผู้ป่วย {name} ใช่หรือไม่? …, and S-12 = จำหน่ายผู้ป่วยครบทุกรายแล้ว…
+- The sell-ambiguity is noted and mitigated by construction, not accepted as a residual risk. If staff still misread it after release, the fallback is a Lane B wording fix to "สิ้นสุดการรักษาใน…" (not "กลับบ้าน", for the outcome reason above).
+
+**Item 4: EMR weight unit `kg` untranslated. Ruling: not acceptable, fix in this branch (Must).** It breaks rule 8 (kg → กก.) and rule 14. R-7 lists `VitalStepper` `unit` props as an in-scope surface. On screen, Thai mode shows the label "น้ำหนัก (กก.)" next to the unit "kg", two scripts for one unit, while ครั้ง/นาที in the same vitals block is translated. The fix is a one-line change that adds no key, because `clinic.pets.kgUnit` (kg / กก.) already exists and R-6 says to reuse it. → **T-2.**
+
+**Item 5: EMR sidebar species chip shows raw `feline`/`canine`. Ruling: fix in this branch (Must), as a small shared map.** `canine`/`feline`/`avian`/`other` are *known* values with a §5.3 label, so they are not an E-2 "unknown enum value" exemption. Showing them raw breaks R-1 and the DoR objective ("no English fallback"). **The review found a second instance that QA did not flag: `ClinicInpatient.tsx:622` also renders `{hospit.pet.species}` raw on an in-scope screen.** Copying the map into two more views would make three copies of one value→label table, so it becomes one shared helper used by Pets, EMR and Inpatient. Module placement follows `.claude/standards/architecture-rules.md` and is Dev A's call. Blast radius: 1 new file and 3 view edits, all display-only. → **T-3.** `ClinicVaccinationsDue.tsx:80` has the same defect but is outside this branch's four screens, so it goes to the backlog (§9.6).
+
+**Item 6: non-canonical stored species `Cat`/`cat`/`Dog`/`dog`. Ruling: add display aliases in the shared map now (in T-3), AND backlog the vocabulary cleanup. Do not accept it as it is.**
+- Why not "accept": the values are not stray dev-DB rows. **`prisma/seed.ts` writes `'Dog'`/`'Cat'` (5 pets), and `pet.service.ts:10` accepts any string (`z.string().min(1).max(50)`)**, so every fresh environment, and any production row created through the API outside the Pets form, shows raw English in Thai mode.
+- Why aliases are R-1/ADR-0030 compliant: an alias is a lookup on the *display* path only (`dog` → `clinic.pets.speciesCanine` label, `cat` → `clinic.pets.speciesFeline` label). The stored value stays byte-identical, no row is rewritten, and no payload changes. `speciesLabel()` already lower-cases, so `Cat`/`cat` both resolve.
+- Why cleanup is backlog rather than this branch: rewriting stored values is a data migration (@db-agent veto scope), and the split vocabulary has a **behavioural consequence outside i18n** (§9.6 item 1). That needs its own Lane A/B item, not a presentation branch.
+
+### 9.5 Dev tasks for the orchestrator to route (Dev A, sequential)
+
+```
+Task ID: I18N-16-T1   (BLOCKING: the W6 integration checkpoint is red until this lands)
+Objective: Re-align 3 test assertions with the BA-approved Thai wording from §9.3
+File scope: src/frontend/src/__tests__/ClinicInpatient.i18n.test.tsx,
+            src/frontend/src/__tests__/ClinicPets.i18n.test.tsx   (test files only, no source change)
+Exact change:
+  - ClinicInpatient.i18n.test.tsx:129  getByText('รับเข้ารักษา')  → getByText('รับเข้ารักษาแล้ว')   // statusAdmitted
+  - ClinicInpatient.i18n.test.tsx:338  toHaveBeenCalledWith('จำหน่าย มะลิ ใช่หรือไม่? ระบบจะออกใบแจ้งหนี้ค่ารักษา')
+                                       → toHaveBeenCalledWith('จำหน่ายผู้ป่วย มะลิ ใช่หรือไม่? ระบบจะออกใบแจ้งหนี้ค่ารักษา')  // S-2
+  - ClinicPets.i18n.test.tsx:214       'เลือกเจ้าของจากรายการเพื่อดูสัตว์เลี้ยงของเขา' → 'เลือกเจ้าของจากรายการเพื่อดูข้อมูลสัตว์เลี้ยง'
+Note: this is a wording re-alignment, not an A-9 exception. The tests keep their intent; only the pinned
+  literal changes, because the BA owns the wording (I18N-16 AC "finding fixed before @qa-agent sign-off").
+AC:
+  Scenario: the i18n suites are green after the BA wording review
+    Given the §9.3 Thai values are in i18n/index.ts
+    When `npx vitest run src/__tests__/i18n.coverage.test.ts src/__tests__/Clinic{Grooming,Inpatient,EMR,Pets}.i18n.test.tsx` runs
+    Then all tests pass (84/84), and no other test file is modified
+```
+
+```
+Task ID: I18N-16-T2   (Must, rule 8, R-7)
+Objective: The EMR weight stepper shows the Thai unit in Thai mode
+File scope: src/frontend/src/views/clinic/ClinicEMR.tsx, src/frontend/src/__tests__/ClinicEMR.i18n.test.tsx
+Exact change: ClinicEMR.tsx:675  <VitalStepper … unit="kg" …>  → unit={t('clinic.pets.kgUnit')}
+  (reuse the existing key per R-6. No new i18n key, no i18n/index.ts change. `t` is already the
+  translator on this line: it renders `clinic.emr.weight`)
+AC:
+  Scenario: weight unit follows the app language
+    Given the app language is "th" and a patient's EMR is open
+    When the Vital Signs block renders
+    Then the weight stepper unit reads "กก." and no "kg" text node is rendered in the vitals block
+  Scenario: English is unchanged
+    Given the app language is "en"
+    Then the weight stepper unit reads "kg"
+```
+
+```
+Task ID: I18N-16-T3   (Must, R-1, §5.3 species map, flagged items 5 + 6)
+Objective: Species shows its Thai label on every in-scope screen, including legacy capitalised/short stored values
+File scope: NEW shared species-label helper (placement per architecture-rules.md, e.g. src/frontend/src/utils/),
+            src/frontend/src/views/clinic/ClinicPets.tsx (remove the local SPECIES_LABEL_KEYS/speciesLabel, import the shared one),
+            src/frontend/src/views/clinic/ClinicEMR.tsx:609 (`{pet.species}` → shared label),
+            src/frontend/src/views/clinic/ClinicInpatient.tsx:622 (`{hospit.pet.species}` → shared label),
+            a unit test for the helper, plus one assertion each in ClinicEMR.i18n.test.tsx and ClinicInpatient.i18n.test.tsx
+Exact change:
+  - One value→label table, literal keys only (R-5): canine→clinic.pets.speciesCanine, feline→clinic.pets.speciesFeline,
+    avian→clinic.pets.speciesAvian, other→common.other, PLUS display aliases dog→clinic.pets.speciesCanine,
+    cat→clinic.pets.speciesFeline. Lookup is on the lower-cased value. An unmapped value renders raw (X-1).
+  - Display path only. `pet.species` is never rewritten, and every form payload and the speciesChip colour lookup keep the
+    stored value (R-1 / ADR-0030). Dev A decides whether speciesChip's colour lookup reuses the alias normaliser
+    (a UX nicety, not required).
+  - No i18n/index.ts change (every key already exists).
+AC:
+  Scenario Outline: stored species renders its label, stored value untouched
+    Given the app language is "th" and a pet whose stored species is "<stored>"
+    When the Pets profile, the EMR sidebar and the Inpatient card render that pet
+    Then each shows "<label>"
+    And any update request payload built from that pet still carries species "<stored>"
+    Examples: canine→สุนัข · feline→แมว · avian→นก · other→อื่นๆ · Dog→สุนัข · dog→สุนัข · Cat→แมว · cat→แมว · ferret→ferret (raw, X-1)
+  Scenario: every key in the shared table exists in both dictionaries
+    Then the helper's unit test resolves each mapped key in `en` and `th` (the coverage scan only sees literal t('…') calls)
+```
+
+**Documentation follow-up (not a dev task, route to @scribe-agent at STEP 8, or to the orchestrator now):** `CONTEXT.md` § Localisation still says the Discharge Thai term is **PENDING**. Replace it with the §9.4 item 3 ruling: "จำหน่าย, always as จำหน่ายผู้ป่วย, never bare or directly before a pet name". This review's file scope does not include `CONTEXT.md`. Where §5.1–§5.4 disagree with §9, **§9 supersedes them**: #55, #76, the §5.3 inpatient `admitted`/`discharged` labels, S-2, S-12, the new rule 15, and `MB` added to E-4.
+
+### 9.6 Backlog items raised by this review (for @pm-agent to record)
+1. **Blood bank species check misses the canonical value (Lane B, clinical logic).** `blood-bank.service.ts:40` gives a 30-day donation interval only when the species starts with `'cat'`. A cat created through the Pets form is stored as `feline` and silently gets the 56-day canine interval. It is the same split vocabulary as item 6, with a behavioural effect.
+2. **Species vocabulary canonicalisation (Lane A, @db-agent).** `seed.ts` writes `Dog`/`Cat`, the UI writes `canine`/`feline`, and `pet.service.ts` accepts any string. Decide on one vocabulary, add validation, and migrate the existing rows. After that the T-3 aliases can be removed.
+3. `ClinicVaccinationsDue.tsx:80` renders `row.species` raw. It should adopt the T-3 shared helper.
+4. `common.inactive` (ไม่ได้ใช้งาน) vs `clinic.pets.inactiveBadge` (ปิดใช้งานแล้ว) are two Thai words for one state. Align `common.inactive` to ปิดใช้งานแล้ว in an app-wide wording pass. It is outside this branch because `common.inactive` is not used by the four screens.
