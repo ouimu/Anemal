@@ -672,7 +672,7 @@ export default function ClinicEMR() {
                 <div>
                   <p className="text-body-sm font-semibold text-on-surface-variant mb-md">{t('clinic.emr.vitalSigns')}</p>
                   <div className="flex flex-wrap gap-md">
-                    <VitalStepper label={t('clinic.emr.weight')} unit="kg" value={draft.weightKg} onChange={v => setField('weightKg', v)} step={0.1} max={999.99} />
+                    <VitalStepper label={t('clinic.emr.weight')} unit={t('clinic.pets.kgUnit')} value={draft.weightKg} onChange={v => setField('weightKg', v)} step={0.1} max={999.99} />
                     <VitalStepper label={t('clinic.emr.temperature')} unit="°C" value={draft.tempC} onChange={v => setField('tempC', v)} step={0.1} max={999.9} />
                     <VitalStepper label={t('clinic.emr.heartRate')} unit={t('clinic.emr.unitBpm')} value={draft.heartRate} onChange={v => setField('heartRate', v)} step={1} min={1} max={3000} />
                     <VitalStepper label={t('clinic.emr.respRate')} unit={t('clinic.emr.unitRpm')} value={draft.respRate} onChange={v => setField('respRate', v)} step={1} min={1} max={3000} />

@@ -134,11 +134,6 @@ const EXEMPT_STRINGS = new Set<string>([
   'feline', 'tab', 'Amoxicillin',
   'JPG, PNG, GIF, WebP, PDF, Word, Excel · สูงสุด 25 MB',
   'ผลตรวจเลือด.pdf', '2.0 KB', 'lab',
-  // Weight VitalStepper's `unit="kg"` prop is one of the pre-existing 7
-  // already-converted calls (frozen — AC forbids touching it); its Thai
-  // counterpart (heartRate/respRate's unit) was translated since those two
-  // ARE new I18N-9 conversions, not part of the frozen set.
-  'kg',
 ])
 
 function collectResidueStrings(container: HTMLElement): string[] {
@@ -223,6 +218,7 @@ describe('ClinicEMR — Thai i18n (I18N-10): SOAP editor and all 4 tabs', () => 
     await userEvent.click(screen.getByText('ผลการตรวจ (O)'))
 
     expect(screen.getByText('สัญญาณชีพ')).toBeInTheDocument() // vitalSigns
+    expect(screen.getByText('กก.')).toBeInTheDocument() // weight VitalStepper unit (I18N-16 T2, kgUnit)
     expect(screen.getByLabelText('อัตราการเต้นของหัวใจ')).toHaveValue(110) // heartRate
     expect(screen.getByLabelText('อัตราการหายใจ')).toHaveValue(24) // respRate
     expect(screen.getAllByText('ครั้ง/นาที')).toHaveLength(2) // unitBpm + unitRpm
