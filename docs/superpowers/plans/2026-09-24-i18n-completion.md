@@ -432,25 +432,26 @@ Description: ClinicEMR.tsx already has 7 `t()` calls and a partial `clinic.emr.*
   Fix the unlocalized `new Date(r.createdAt).toLocaleDateString()` at `:586` (no locale passed) with
   I18N-15's `formatDate`.
 Acceptance Criteria:
-  - [ ] Exact remaining-hardcoded-line count confirmed (not assumed) before starting, closed to 0 by
+  - [x] Exact remaining-hardcoded-line count confirmed (not assumed) before starting, closed to 0 by
         task end — full-screen Thai switch shows 100% Thai (not just the pre-existing 7 calls)
-  - [ ] New `clinic.emr.*` keys follow convention, no duplicates, en/th sets identical, A-1/A-2/A-3
+        (counted ~42 hardcoded literal/loop-display locations before starting; grep-confirmed 0 after)
+  - [x] New `clinic.emr.*` keys follow convention, no duplicates, en/th sets identical, A-1/A-2/A-3
         satisfied; Thai values from §5 glossary, 0 TODO markers
-  - [ ] Latin-residue test passes for: empty state, all 4 SOAP tabs, prescriptions, attachments
-  - [ ] C-1 fixed: save success/error colour is correct in both languages — verified by a test that
+  - [x] Latin-residue test passes for: empty state, all 4 SOAP tabs, prescriptions, attachments
+  - [x] C-1 fixed: save success/error colour is correct in both languages — verified by a test that
         triggers both a save-success and save-failure path with Thai active and asserts the correct
         style class, not the correct string
-  - [ ] C-2 fixed: no `t` shadowing inside any `.map` callback that also calls the translator; grep
+  - [x] C-2 fixed: no `t` shadowing inside any `.map` callback that also calls the translator; grep
         confirms no `.map(t =>` remains in this file where `t(` is also called inside that callback
-  - [ ] R-1: the EMR anatomy `template` stored value is unchanged in Thai mode; only the chip label
+  - [x] R-1: the EMR anatomy `template` stored value is unchanged in Thai mode; only the chip label
         translates
-  - [ ] R-2: EMR dates follow the active language via I18N-15; this is the one screen where English
+  - [x] R-2: EMR dates follow the active language via I18N-15; this is the one screen where English
         output visibly changes from today's browser-default to `en-GB` (deliberate, grill G-2) —
         document this in the PR description so reviewers don't flag it as a regression
-  - [ ] No functional change to the 7 already-converted calls or to any EMR business logic beyond
+  - [x] No functional change to the 7 already-converted calls or to any EMR business logic beyond
         C-1/C-2's required fix
-  - [ ] AZ-1: no permission token change; a role lacking `emr.view` gets forbidden/403, not 404 (A-8)
-  - [ ] All 5 existing test files (`ClinicEMR.attachments/characterization/petAvatar/petIdParam/
+  - [x] AZ-1: no permission token change; a role lacking `emr.view` gets forbidden/403, not 404 (A-8)
+  - [x] All 5 existing test files (`ClinicEMR.attachments/characterization/petAvatar/petIdParam/
         weightSync.test.tsx`) pass unmodified (A-9, corrects F-2's "check for one" hedge — they exist,
         confirmed)
 Permission(s): unchanged — `emr.view` (screen), `emr.create`/`emr.edit`/`emr.attach`/`prescriptions.*`
@@ -467,13 +468,14 @@ Description: Combines the A-12 layout check and the A-10 regression-test extensi
   S/O/A/P are longer than the single-letter English tabs).
 Acceptance Criteria:
   - [ ] 768×1024, 1024×768, 1280 desktop layout checks pass — SOAP tab bar specifically checked for
-        wrap/overflow with all 4 Thai labels visible simultaneously
-  - [ ] Tap targets ≥44×44px; screenshots attached to PR
-  - [ ] New file src/frontend/src/__tests__/ClinicEMR.i18n.test.tsx (F-3/A-10 — sibling to the 5
+        wrap/overflow with all 4 Thai labels visible simultaneously (orchestrator browser QA — not run
+        by Dev A this pass)
+  - [ ] Tap targets ≥44×44px; screenshots attached to PR (orchestrator browser QA)
+  - [x] New file src/frontend/src/__tests__/ClinicEMR.i18n.test.tsx (F-3/A-10 — sibling to the 5
         existing EMR test files, not a new block inside one of them) covering empty state, all 4 SOAP
         tabs, prescriptions, attachments per the A-10 (a)/(b)/(c)/(d) method
-  - [ ] Test fails pre-I18N-9, passes post-I18N-9
-  - [ ] Full suite green
+  - [x] Test fails pre-I18N-9, passes post-I18N-9
+  - [x] Full suite green
 Permission(s): n/a
 Verification: `cd src/frontend && npm run test -- ClinicEMR.i18n.test.tsx`
 ```
