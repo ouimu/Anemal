@@ -47,5 +47,5 @@ _Avoid_: "translating the value", "Thai data" — only labels are ever translate
 
 **Discharge** (Inpatient):
 Ending an inpatient admission: the admission moves to status `discharged` and the billing invoice is generated.
-_Thai term_: **PENDING** — `@ba-agent` decides at task I18N-16. The BA glossary currently uses the formal hospital term "จำหน่าย" (glossary #55, the `discharged` status label, safety sentences S-2 and S-12), but in a clinic that also sells goods "จำหน่าย" can read as "sell" (grill G-5); a less ambiguous alternative such as "ให้กลับบ้าน" is under consideration. Whichever term is chosen is used in all four places.
-_Avoid_: "release", "check out" — code and schema use "discharge".
+_Thai term_: **จำหน่ายผู้ป่วย** — ruled by `@ba-agent` at task I18N-16 (BA sign-off §9.4 item 3). "จำหน่าย" alone can read as "sell" in a clinic that also sells goods (grill G-5), so the binding rule (glossary rule 15) is that it is never used bare and never directly before a pet name — always **จำหน่ายผู้ป่วย**. Applied in all four places: the action button (จำหน่ายผู้ป่วย), the `discharged` status label (จำหน่ายผู้ป่วยแล้ว), S-2 (จำหน่ายผู้ป่วย {name} ใช่หรือไม่?…), and S-12 (จำหน่ายผู้ป่วยครบทุกรายแล้ว…).
+_Avoid_: "release", "check out" — code and schema use "discharge". Also avoid a bare "จำหน่าย" or "จำหน่ายแล้ว" with no ผู้ป่วย object — that is the ambiguous/retail reading.
