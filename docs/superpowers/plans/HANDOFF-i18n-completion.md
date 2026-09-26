@@ -18,7 +18,7 @@
 | W4 | EMR I18N-9, 10 | ✅ code `0b57d53` `1fa56fb` `03df946`, plus the browser-QA fix `304b6ac`. Browser QA done 2026-09-25 (768 blocked by the pre-existing layout bug, see backlog). Dev flagged 3 items for W6: `pet.species` chip is still English (feline/canine); 8 new Thai strings were not in the glossary; weight shows "kg" untranslated next to the translated vitals units |
 | W5 | Pets I18N-11, 12 | ✅ code `5d24902` `0533ce2` `7ffd2e7` `b81096f`, plus `2cebfe8`: PetOverview.test updated. That is a **human-approved exception to A-9**, because the test locked in the raw canine/male bug; the PR body must say so. Suite 823/824 (only the known ClinicBilling failure), tsc clean. Browser QA done 2026-09-25. For W6: 3 new Thai strings are not in the glossary. The species→Thai map lives only in ClinicPets.tsx, so the EMR sidebar still shows raw species; that needs a shared map (cross-file, BA decision) |
 | W6 | I18N-16 `@ba-agent` Thai wording review (incl. discharge word) | ✅ `9a749b1`: **APPROVE WITH DEV TASKS**, 11 Thai values changed. The discharge word is always written in full as "จำหน่ายผู้ป่วย". See signoff §9. ▶ Dev tasks T1 (3 stale test assertions, blocking), T2 (EMR `kg` → `t('clinic.pets.kgUnit')`) and T3 (shared species-label helper with dog/cat aliases, used in Pets, EMR and Inpatient) are with `@dev-agent` (2026-09-26) |
-| W7 | I18N-13 manual EN↔TH cross-check, mid-modal language switch, AdmitModal from Pets | ❌ |
+| W7 | I18N-13 manual EN↔TH cross-check, mid-modal language switch, AdmitModal from Pets | ✅ 2026-09-26: all 4 screens clean and A-16 passes on 5 modals (see plan note). **STEP 6 COMPLETE.** |
 
 Then STEP 7 `@qa-agent` `/code-review` + sign-off, then STEP 8 `@scribe-agent` `/anemal-finish-branch`.
 
@@ -48,6 +48,9 @@ Then STEP 7 `@qa-agent` `/code-review` + sign-off, then STEP 8 `@scribe-agent` `
 
 - `blood-bank.service.ts:40`: the 30-day donation interval only applies when species starts with "cat", so a cat created in the Pets form (stored as `feline`) gets the 56-day interval. Found by BA in W6. Lane B.
 - Data cleanup: non-canonical species values (`Cat`/`Dog`). The seed script writes them and the backend accepts any string (BA §9.6).
+- **BranchSwitcher (pre-existing, found in W7):** `handleSwitch(null, allBranchesLabel)` stores the *translated* "All Branches" label into `authStore.branchName`, so the sidebar subtitle stays in whatever language was active when the user switched branch. It should store null/a sentinel and translate at render time. Lane B.
+- **Backend integration tests write into the dev DB (`vetclinic_dev`)**: the overnight run left dozens of `Tester…`/`Glyph Test…` owners in it, and the shared DB may also explain the hook timeouts. Point the tests at a separate test DB. Lane B/infra.
+- A-16 can't be reached through the UI: the modal overlay blocks the profile menu, so there's no user path to switch language mid-modal today. Fine as is; noted for UX.
 - **Step 8 doc task for `@scribe-agent`:** `CONTEXT.md` still marks the Thai discharge word as PENDING. Update it with the ruling from BA §9.4 item 3.
 
 ## Browser QA 2026-09-25 (one login)
@@ -56,6 +59,7 @@ Then STEP 7 `@qa-agent` `/code-review` + sign-off, then STEP 8 `@scribe-agent` `
 - Pets: no Thai-caused overflow at 768/1024/1280. The species chip shows "Cat" because the dev DB has non-canonical stored species values (`Cat`/`cat`/`Dog`/`dog`, 13 rows) that the canonical map (canine/feline/avian/other) doesn't cover. Decision for W6: add aliases, or clean the data.
 
 ## Next action
+000. **2026-09-26: STEP 6 is done (W0–W7 ✅). Next is STEP 7: `@qa-agent` runs `/code-review` + sign-off on `feature/i18n-completion` vs `origin/main`. In parallel, the human captures the PR screenshots.**
 00. **Status 2026-09-26: `origin/main` is merged into the branch (`202fb41`). The frontend is fully green: 831/831 tests, tsc clean. T1–T3 are done (`52fa3a6` `16c4eb5` `3d5eb65`).** Backend (no backend diff on this branch): the full run gave 1439/1488. All 49 failures were `beforeAll` 5s hook timeouts under full-parallel load on this machine. Re-running those 5 suites with `--testTimeout=60000` gave **76/76 green**. The backend suite is not red on code. At Step 8 the red-suite gate should re-run with a longer timeout or `--runInBand`. Backlog: raise the integration hook timeouts. What remains needs the human: W7 (login) → PR screenshots → Step 7 `@qa-agent` → Step 8 `@scribe-agent` (merge needs human approval).
 0a. 2026-09-26: **The billing red test is fixed on main by PR #96 (`8b370c0`, merged by someone else).** Our duplicate Lane B branch was discarded; it was never pushed. `origin/main` is now 1 commit ahead of this branch's base (`57ca371`). At Step 8, `@scribe-agent` must bring main into this branch first, and then the ClinicBilling failure disappears.
 0. 2026-09-26: W6 `@ba-agent` has been running in the background. In parallel, a Lane B `@dev-agent` is fixing the stale ClinicBilling characterization test in an isolated worktree, on branch `fix/billing-characterization-double-submit-test` from main. It doesn't push; shipping goes through `@scribe-agent`.

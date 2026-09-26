@@ -595,21 +595,22 @@ Description: After every task above lands and BA has reviewed the wording, run o
   strings that a single-screen task might have missed, and the mid-modal language-switch case (A-16).
   This is the manual end-to-end pass; I18N-14 already owns the automatable static checks (A-11 split).
 Acceptance Criteria:
-  - [ ] All four screens (Grooming, Inpatient, EMR, Pets) show 100% Thai on toggle, 100% correct
+  - [x] All four screens (Grooming, Inpatient, EMR, Pets) show 100% Thai on toggle, 100% correct
         English on toggle back — including the shared `AdmitModal` from BOTH its entry points
         (Inpatient board and Pets pet-profile, A-13)
-  - [ ] Zero raw key leakage anywhere across the four screens (spot-check beyond the automated
+  - [x] Zero raw key leakage anywhere across the four screens (spot-check beyond the automated
         Latin-residue tests — a human pass, not a re-run of I18N-4/8/10/12)
-  - [ ] Switching language on an open modal re-renders it with no stale language and no lost form input
+  - [x] Switching language on an open modal re-renders it with no stale language and no lost form input
         (A-16) — checked on at least: Grooming BookingModal, Inpatient CareModal, EMR SOAP-note edit,
         Pets New Pet modal
-  - [ ] Full frontend test suite green (`npm run test`)
-  - [ ] `i18n/index.ts` has no orphaned/duplicate keys introduced across the four namespaces
+  - [x] Full frontend test suite green (`npm run test`)
+  - [x] `i18n/index.ts` has no orphaned/duplicate keys introduced across the four namespaces
         (`clinic.grooming.*`, `clinic.inpatient.*`, `clinic.emr.*`, `clinic.pets.*`) — confirmed by
         I18N-14's static suite, re-run here as final proof
-  - [ ] `npx tsc --noEmit` clean for the whole frontend
+  - [x] `npx tsc --noEmit` clean for the whole frontend
 Permission(s): n/a (verification task)
 Verification: `cd src/frontend && npm ci && npm run test && npx tsc --noEmit` (full suite + typecheck)
+  **Orchestrator W7 pass 2026-09-26:** all 4 screens EN<->TH clean (residual Latin = data only; `MB`/file-type names allowed by BA §9); A-16 verified on Grooming BookingModal, Inpatient CareModal, EMR SOAP note, Pets AdmitModal, Pets New Pet — labels switch, input kept. Language switched via the uiStore (the UI overlay blocks the profile menu while a modal is open, so A-16 is only reachable programmatically/cross-state). Suite 831/831, tsc clean after merging main.
 ```
 
 **Preflight task (Step 6, before I18N-14):** `src/frontend/node_modules` may be incomplete (vite
