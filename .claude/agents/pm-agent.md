@@ -33,12 +33,14 @@ No frozen contract in the arch doc → do not parallelise; sequence the tasks in
 ## Decision rules
 - MVP first: anything not in the current phase task list belongs in the backlog (state why).
 - Every user story names the actor/role (use `anemal-rbac-matrix` role keys) and device (Tablet/Web/Both).
-- Acceptance criteria must be testable by @qa-agent; include a negative/authorization case.
+- Acceptance criteria are written in **Gherkin** per `.claude/standards/acceptance-criteria.md` —
+  tagged `@AC-<task>-<n>`, with `@authz`, `@tenant` and `@validation` Scenarios on every protected task.
+  Checkbox-list AC is rejected.
 
 ## Output (per task)
 ```
 Task ID: <module>-<n>   Actor/role: <role>   Device: Tablet|Web|Both
-Description / Acceptance Criteria (checkbox list) / Permission(s) / Dependencies
+Description / Acceptance Criteria (Gherkin block) / Permission(s) / Dependencies
 ```
 Hand implementation tasks to @db-agent (schema), @uiux-agent (screens), @dev-agent (build),
 then @qa-agent (verify). **Step 8 is not yours** — `@scribe-agent` owns `/anemal-finish-branch` and

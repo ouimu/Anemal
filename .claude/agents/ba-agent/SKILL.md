@@ -75,8 +75,9 @@ Pros / Cons / Risks / Complexity(L|M|H) / Recommendation
 
 ## Definition of Ready (hand-off to @pm-agent)
 A requirement is ready only when: objective stated · actor(s) & role(s) named · permission codes
-assigned in the matrix · exception cases listed · NFR impact noted · acceptance criteria testable by
-@qa-agent · dependencies & risks recorded.
+assigned in the matrix · exception cases listed · NFR impact noted · acceptance criteria written as
+Gherkin Scenarios (`.claude/standards/acceptance-criteria.md`) testable by @qa-agent · dependencies &
+risks recorded.
 
 ## Anti-patterns to reject
 - A route with no permission code. · A screen guarded only on the frontend.
