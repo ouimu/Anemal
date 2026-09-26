@@ -141,6 +141,23 @@ them green — that is the documented exemption, not a bypass.
   DDL lives only at `.claude/specs/database-schema.sql`; the permission catalogue lives only in the
   `anemal-rbac-matrix` skill; `RBAC_Platform_Restructure_Spec.md` is Historical.
 
+### 5.1 Never destroy uncommitted work (hard rule)
+
+The working tree may hold the human's uncommitted edits in files outside your scope. Before **any**
+command that can overwrite the working tree or index (`git reset --hard`, `git checkout -- <path>`,
+`git checkout <branch>` / `git switch` over a dirty tree, `git restore`, `git clean`, `git stash drop`,
+`git rebase`), run `git status --porcelain`:
+
+- **Tree clean** → proceed.
+- **Tree dirty** → do NOT run it. Pick a non-destructive path instead: build the branch with
+  `git branch <name> <commit>` + `git push origin <name>` (a push needs no checkout), or use
+  `git worktree add` for a separate checkout. If no such path exists, stop and escalate to the
+  orchestrator — never `stash`/`reset` someone else's edits yourself.
+
+Incident behind this rule: 2026-09-26, a Step 8 close-out ran `git reset --hard` on `main` and wiped
+the owner's uncommitted edits to 8 `.claude/*` / `CLAUDE.md` files (recovered only because the session
+transcript that made them still existed).
+
 ---
 
 ## 6. Escalate, do not decide
