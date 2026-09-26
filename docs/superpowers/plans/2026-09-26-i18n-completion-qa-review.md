@@ -5,7 +5,10 @@
 **Architecture reference:** `arch: skipped (below threshold)`. Conformance is checked against the plan
 (`2026-09-24-i18n-completion.md`), the BA sign-off incl. §9, and ADR-0029/0030/0031.
 
-## Verdict: **REQUEST CHANGES** (test-only; no production-code change requested)
+> **Final verdict after the re-check (see the "Re-check" section at the end): APPROVE.** M-1 and M-2 were
+> closed by `b2afca3`. The initial verdict below is kept for the record.
+
+## Initial verdict: **REQUEST CHANGES** (test-only; no production-code change requested)
 
 Production code is correct by inspection on every check below. Sign-off is blocked by one binding
 acceptance criterion: BA amendment **A-5** (R-1 payload assertion). The plan ticks it `[x]`, but it has
@@ -187,4 +190,35 @@ the §9.6.2 data cleanup.
 - **To `@scribe-agent` (Step 8):** the PR body must note the A-9 exception (`2cebfe8`) and the deliberate
   EMR/Pets English date-format change (grill G-2).
 
-QA-Agent Approval: ❌ (REQUEST CHANGES, test-only: M-1, M-2)
+Initial verdict (superseded by the re-check below): ❌ REQUEST CHANGES, test-only: M-1, M-2
+
+## Re-check: 2026-09-26 (`@dev-agent` fix `b2afca3`)
+
+**Scope:** `git diff 3616189..HEAD --stat` shows one commit (`b2afca3`) touching exactly
+`src/frontend/src/__tests__/ClinicGrooming.i18n.test.tsx` (+19/−1) and
+`src/frontend/src/__tests__/ClinicEMR.i18n.test.tsx` (+21). **No production file changed** since the
+initial review.
+
+| Finding | New test | Assessment | Status |
+|---|---|---|---|
+| M-1 | `ClinicGrooming.i18n.test.tsx` › `R-1 (A-5): Thai-mode booking POSTs the English serviceType` | Thai `uiStore` mock. Opens the modal via the Thai "จองคิวใหม่" and picks pet มะลิ. Clicks the **non-default** Thai chip "อาบน้ำตัดขนครบชุด", so a test that only saw the default value could not pass. Submits via "ยืนยันการจอง" and asserts `postMock` was called with `('/api/grooming/bookings', objectContaining({ serviceType: 'Full Groom' }))`. `post` is now routed through a named `postMock`; `get`/`put` are unchanged | ✅ closed |
+| M-2 | `ClinicEMR.i18n.test.tsx` › `R-1 (A-5): Thai-mode save keeps the English anatomy template` | Hydrates record 7 with `anatomyAnnotation.template = 'Feline - Lateral'` (not the default template), saves via the Thai "บันทึกข้อมูล", waits for "บันทึกแล้ว", and asserts the PUT body `anatomyAnnotation` contains `template: 'Feline - Lateral'`. `recordsStore` and `putMock` are reset in `beforeEach` (`:102-108`), so there's no cross-test leak | ✅ closed |
+
+**Independent mutation check (by QA, reverted, nothing committed):** I changed Grooming to
+`setServiceType(serviceLabel(t, s))` and EMR to send `anatomyTemplateLabel(t, template)` in the save
+payload. Result: **both new tests failed and the other 23 in the two files passed.** After
+`git checkout` of both view files, `git status -- src/` was clean. The tests really detect the R-1
+regression they were written for.
+
+**Re-run (from `src/frontend`, clean tree):**
+- `npx tsc --noEmit -p .`: **clean** (exit 0)
+- `npx vitest run --maxWorkers=4`: **80 files passed (80) / 833 tests passed (833)**, 0 errors,
+  exit 0 (= 831 + the 2 new tests)
+
+**A-5 traceability, updated:** Grooming ✅ (M-1 test) · Inpatient ✅ · EMR template ✅ (M-2 test) · Pets ✅.
+All AC rows in the traceability table are now ✅. L-1, L-2 and I-1..I-5 are unchanged; they don't block
+and go to the backlog as listed. Isolation/RBAC: still no backend diff and no guard change.
+
+## Final verdict: **APPROVE**
+
+QA-Agent Approval: ✅
