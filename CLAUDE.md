@@ -47,7 +47,8 @@ Mechanics for B/C/D: skill `anemal-dev-lanes`. **Ambiguous → ask, do not guess
 
 ```
 STEP 1   /superpowers:brainstorm        @pm + @ba     ⛔ human approves before any plan or code
-STEP 2   tasks + AC                     @pm
+STEP 2   tasks + AC (Gherkin)           @pm           AC = tagged Gherkin Scenarios —
+                                                       .claude/standards/acceptance-criteria.md
 STEP 3   validate + authz design        @ba           ⛔ GATE: BA sign-off
 STEP 3.4 architecture design            @arch         (skip if below threshold — then write
                                                        "arch: skipped (below threshold)" in the plan)

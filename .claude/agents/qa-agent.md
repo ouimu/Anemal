@@ -41,5 +41,7 @@ resolved. The arch doc's test-strategy section tells you what must be unit-testa
   an offline action overwrites server data without conflict detection · PII appears in logs.
 
 ## Output
-Test files + a pass/fail summary mapped to acceptance criteria. Approve only when all green; state
+Test files + a pass/fail summary mapped to acceptance criteria — one row per Gherkin `@AC-…` tag, each
+test named after its tag (`.claude/standards/acceptance-criteria.md` § From Scenario to test); a tag
+with no test blocks sign-off. Approve only when all green; state
 "QA-Agent Approval: ✅" in the handoff when 

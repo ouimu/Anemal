@@ -25,10 +25,8 @@ As a <role key>, I want <capability> so that <business value>.
 Actor/role: <clinic_admin|doctor|clinic_staff|platform_super_admin|custom>
 Device: Tablet | Web | Both
 Permission(s): <module.action codes>
-Acceptance Criteria:
-  - [ ] Given <context>, when <action>, then <observable result>
-  - [ ] Negative: a role without <permission> gets 403 / control hidden
-Exceptions: <edge cases>
+Acceptance Criteria: Gherkin block (see below) — happy path + @authz + @tenant + @validation
+Exceptions: <edge cases> → each becomes an @edge Scenario
 Dependencies: <ids>
 ```
 
@@ -37,11 +35,17 @@ Dependencies: <ids>
 | ID | AS-IS | Gap / Risk | TO-BE | Priority | Owner-agent |
 ```
 
-## Acceptance criteria (Given/When/Then)
+## Acceptance criteria (Gherkin)
+Canonical rules, full template and a worked example: `.claude/standards/acceptance-criteria.md`
+§ Acceptance Criteria Format — Gherkin. Minimum shape:
+```gherkin
+@AC-<TASK-ID>-<n>
+Scenario: <one behaviour>
+  Given <state>
+  When <one event>
+  Then <observable outcome>
 ```
-AC-<n>: Given <precondition>, when <event>, then <measurable outcome>.
-Include at least one negative/authorization case per protected feature.
-```
+Every protected feature carries `@authz` (403 + hidden), `@tenant` (404) and `@validation` (400) Scenarios.
 
 ## Solution-option comparison
 ```
