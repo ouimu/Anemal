@@ -286,6 +286,27 @@ describe('ClinicEMR — Thai i18n (I18N-10): C-1 regression — save status driv
   })
 })
 
+describe('ClinicEMR — Thai i18n (I18N-10): A-5/R-1 anatomy template payload', () => {
+  it('R-1 (A-5): Thai-mode save keeps the English anatomy template', async () => {
+    // No canvas interaction (jsdom can't draw): hydrate from a fixture record
+    // that already has a populated anatomyAnnotation, mirroring
+    // ClinicEMR.characterization.test.tsx's server-hydration round-trip test.
+    recordsStore[7] = {
+      ...baseRecord,
+      anatomyAnnotation: { template: 'Feline - Lateral', imageData: 'data:image/png;base64,SERVERDATA' },
+    }
+    renderEMR()
+    await selectPetAndOpenRecord()
+    await userEvent.click(screen.getByText('บันทึกข้อมูล')) // saveRecord
+    await screen.findByText('บันทึกแล้ว') // saved
+
+    const body = putMock.mock.calls[0][1] as { anatomyAnnotation: { template: string } }
+    expect(body.anatomyAnnotation).toEqual(
+      expect.objectContaining({ template: 'Feline - Lateral' })
+    )
+  })
+})
+
 describe('ClinicEMR — Thai i18n (I18N-10): Prescriptions panel', () => {
   it('(a) renders the Thai heading, search placeholder, and "save first" fallback for an unsaved new record', async () => {
     renderEMR()

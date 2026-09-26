@@ -34,10 +34,14 @@ const searchResults = [
 
 const staff = [{ id: 2, name: 'สมชาย', role: { key: 'clinic_staff' } }]
 
+// Named so the A-5/R-1 payload test below can assert on it directly — same
+// convention as ClinicInpatient.i18n.test.tsx / ClinicPets.i18n.test.tsx.
+const postMock = vi.fn((..._args: unknown[]) => Promise.resolve({ data: { success: true } }))
+
 vi.mock('../utils/api', () => ({
   default: {
     get: vi.fn(() => Promise.resolve({ data: { data: [] } })),
-    post: vi.fn(() => Promise.resolve({ data: { success: true } })),
+    post: (...args: unknown[]) => postMock(...args),
     put: vi.fn(() => Promise.resolve({ data: { success: true } })),
   },
 }))
@@ -143,5 +147,18 @@ describe('ClinicGrooming — Thai i18n (I18N-4)', () => {
   it('R-1: the raw serviceType value is never rendered as visible text (only its Thai label is)', () => {
     render(<ClinicGrooming />)
     expect(screen.queryByText('Bath & Dry')).toBeNull()
+  })
+
+  it('R-1 (A-5): Thai-mode booking POSTs the English serviceType', () => {
+    render(<ClinicGrooming />)
+    fireEvent.click(screen.getByText('จองคิวใหม่')) // newBooking
+    fireEvent.click(screen.getByText('มะลิ')) // select searched pet (petId 9)
+    fireEvent.click(screen.getByText('อาบน้ำตัดขนครบชุด')) // serviceFullGroom chip -> 'Full Groom'
+    fireEvent.click(screen.getByText('ยืนยันการจอง')) // bookAppointment
+
+    expect(postMock).toHaveBeenCalledWith(
+      '/api/grooming/bookings',
+      expect.objectContaining({ serviceType: 'Full Groom' })
+    )
   })
 })
