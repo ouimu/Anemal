@@ -3,6 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
 import Dialog from '../../components/Dialog'
+import { useT } from '../../i18n'
+import { useUiStore } from '../../store/uiStore'
+import { formatShortDate } from '../../i18n/dateFormat'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface GroomingBooking {
@@ -38,21 +41,41 @@ const STATUS_NEXT: Record<string, string> = {
   in_progress: 'completed',
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  scheduled:   'Scheduled',
-  in_progress: 'In Progress',
-  completed:   'Completed',
-  cancelled:   'Cancelled',
+// R-1: `booking.status` stays this raw English value everywhere (STATUS_NEXT,
+// STATUS_COLORS, the PUT payload) — only the *display* label is translated,
+// via `statusLabel()` below. A status with no key (X-1: a future/unknown
+// status) renders raw, exactly as it did before this task.
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  scheduled:   'clinic.grooming.statusScheduled',
+  in_progress: 'clinic.grooming.statusInProgress',
+  completed:   'clinic.grooming.statusCompleted',
+  cancelled:   'clinic.grooming.statusCancelled',
+}
+function statusLabel(t: (key: string) => string, status: string): string {
+  const key = STATUS_LABEL_KEYS[status]
+  return key ? t(key) : status
 }
 
+// R-1: `serviceType` (state, and the POSTed booking field) stays this raw
+// English value — only the chip/card display label is translated. A legacy
+// value with no key (e.g. test fixture `'bath'`) renders raw (X-1).
 const SERVICE_TYPES = ['Bath & Dry', 'Full Groom', 'Trim & Tidy', 'Nail Trim', 'Teeth Cleaning']
+const SERVICE_LABEL_KEYS: Record<string, string> = {
+  'Bath & Dry':      'clinic.grooming.serviceBathDry',
+  'Full Groom':      'clinic.grooming.serviceFullGroom',
+  'Trim & Tidy':     'clinic.grooming.serviceTrimTidy',
+  'Nail Trim':       'clinic.grooming.serviceNailTrim',
+  'Teeth Cleaning':  'clinic.grooming.serviceTeethCleaning',
+}
+function serviceLabel(t: (key: string) => string, serviceType: string): string {
+  const key = SERVICE_LABEL_KEYS[serviceType]
+  return key ? t(key) : serviceType
+}
+
 const HOURS = Array.from({ length: 11 }, (_, i) => i + 8) // 08–18
 
 function dateStr(d: Date) { return d.toISOString().split('T')[0] }
 function addDays(d: Date, n: number) { const r = new Date(d); r.setDate(r.getDate() + n); return r }
-function formatDateLabel(d: Date) {
-  return d.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' })
-}
 function bookingHour(iso: string) { return new Date(iso).getHours() }
 
 // ─── Booking Modal ────────────────────────────────────────────────────────────
@@ -61,6 +84,7 @@ function BookingModal({ date, onClose, onSaved }: {
   onClose: () => void
   onSaved: () => void
 }) {
+  const t = useT()
   const [petSearch, setPetSearch] = useState('')
   const [selectedPet, setSelectedPet] = useState<SearchResult | null>(null)
   const [serviceType, setServiceType] = useState(SERVICE_TYPES[0])
@@ -99,21 +123,21 @@ function BookingModal({ date, onClose, onSaved }: {
 
   return (
     <Dialog
-      title="New Grooming Booking"
+      title={t('clinic.grooming.newGroomingBooking')}
       open
       onClose={onClose}
       width="max-w-md"
       footer={
         <div className="flex gap-sm">
           <button onClick={onClose} className="flex-1 min-h-[44px] rounded-xl border border-outline-variant bg-surface text-on-surface hover:bg-surface-container text-body-md font-medium transition-colors">
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={submit}
             disabled={!selectedPet || mut.isPending}
             className="flex-1 min-h-[44px] rounded-xl bg-primary text-primary-on text-body-md font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {mut.isPending ? 'Booking…' : 'Book Appointment'}
+            {mut.isPending ? t('clinic.grooming.bookingEllipsis') : t('clinic.grooming.bookAppointment')}
           </button>
         </div>
       }
@@ -121,7 +145,7 @@ function BookingModal({ date, onClose, onSaved }: {
       <div className="flex flex-col gap-lg">
         {/* Pet search */}
         <div className="flex flex-col gap-xs">
-          <label className="text-label-lg text-on-surface-variant">Patient</label>
+          <label className="text-label-lg text-on-surface-variant">{t('clinic.grooming.patientLabel')}</label>
           {selectedPet ? (
             <div className="flex items-center justify-between bg-surface-container-low rounded-xl px-lg py-md">
               <div>
@@ -138,7 +162,7 @@ function BookingModal({ date, onClose, onSaved }: {
                 type="text"
                 value={petSearch}
                 onChange={e => setPetSearch(e.target.value)}
-                placeholder="Search by pet name, owner name, or phone…"
+                placeholder={t('clinic.grooming.searchPetOwnerPhone')}
                 className="w-full rounded-xl border border-outline-variant bg-surface px-lg py-md text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors"
               />
               {searchResults.length > 0 && (
@@ -161,7 +185,7 @@ function BookingModal({ date, onClose, onSaved }: {
 
         {/* Service type */}
         <div className="flex flex-col gap-xs">
-          <label className="text-label-lg text-on-surface-variant">Service</label>
+          <label className="text-label-lg text-on-surface-variant">{t('clinic.grooming.service')}</label>
           <div className="flex flex-wrap gap-xs">
             {SERVICE_TYPES.map(s => (
               <button
@@ -172,7 +196,7 @@ function BookingModal({ date, onClose, onSaved }: {
                     ? 'border-primary bg-primary-fixed text-primary font-bold'
                     : 'border-outline-variant bg-surface text-on-surface hover:bg-surface-container'}`}
               >
-                {s}
+                {serviceLabel(t, s)}
               </button>
             ))}
           </div>
@@ -180,20 +204,20 @@ function BookingModal({ date, onClose, onSaved }: {
 
         {/* Groomer */}
         <div className="flex flex-col gap-xs">
-          <label className="text-label-lg text-on-surface-variant">Groomer (optional)</label>
+          <label className="text-label-lg text-on-surface-variant">{t('clinic.grooming.groomerOptional')}</label>
           <select
             value={groomerId}
             onChange={e => setGroomerId(e.target.value ? Number(e.target.value) : '')}
             className="w-full rounded-xl border border-outline-variant bg-surface px-lg py-md text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors min-h-[44px]"
           >
-            <option value="">Any available groomer</option>
+            <option value="">{t('clinic.grooming.anyAvailableGroomer')}</option>
             {staff.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
         </div>
 
         {/* Time slot */}
         <div className="flex flex-col gap-xs">
-          <label className="text-label-lg text-on-surface-variant">Time slot</label>
+          <label className="text-label-lg text-on-surface-variant">{t('clinic.grooming.timeSlot')}</label>
           <select
             value={hour}
             onChange={e => setHour(Number(e.target.value))}
@@ -207,12 +231,12 @@ function BookingModal({ date, onClose, onSaved }: {
 
         {/* Special instructions */}
         <div className="flex flex-col gap-xs">
-          <label className="text-label-lg text-on-surface-variant">Special instructions (optional)</label>
+          <label className="text-label-lg text-on-surface-variant">{t('clinic.grooming.specialInstructionsOptional')}</label>
           <textarea
             value={instructions}
             onChange={e => setInstructions(e.target.value)}
             rows={2}
-            placeholder="Allergies, temperament notes…"
+            placeholder={t('clinic.grooming.allergiesTemperamentNotes')}
             className="w-full rounded-xl border border-outline-variant bg-surface px-lg py-md text-body-md text-on-surface placeholder:text-on-surface-variant resize-none focus:outline-none focus:border-primary transition-colors"
           />
         </div>
@@ -226,6 +250,7 @@ function BookingCard({ booking, onStatusChange }: {
   booking: GroomingBooking
   onStatusChange: (id: number, status: string) => void
 }) {
+  const t = useT()
   const nextStatus = STATUS_NEXT[booking.status]
   const statusColor = STATUS_COLORS[booking.status] ?? STATUS_COLORS.scheduled
 
@@ -234,9 +259,9 @@ function BookingCard({ booking, onStatusChange }: {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-xs mb-xs">
           <span className={`px-sm py-xs rounded-full text-label-sm font-medium ${statusColor}`}>
-            {STATUS_LABELS[booking.status] ?? booking.status}
+            {statusLabel(t, booking.status)}
           </span>
-          <span className="text-label-md text-on-surface-variant">{booking.serviceType}</span>
+          <span className="text-label-md text-on-surface-variant">{serviceLabel(t, booking.serviceType)}</span>
         </div>
         <p className="text-body-md font-semibold text-on-surface truncate">{booking.pet.name}</p>
         {booking.groomer && (
@@ -247,7 +272,7 @@ function BookingCard({ booking, onStatusChange }: {
         <button
           onClick={() => onStatusChange(booking.id, nextStatus)}
           className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-primary text-primary-on hover:opacity-90 transition-opacity flex-shrink-0"
-          title={`Advance to ${STATUS_LABELS[nextStatus]}`}
+          title={t('clinic.grooming.advanceToStatus').replace('{status}', statusLabel(t, nextStatus))}
         >
           <MaterialIcon name="play_arrow" size={18} />
         </button>
@@ -258,6 +283,8 @@ function BookingCard({ booking, onStatusChange }: {
 
 // ─── Main view ────────────────────────────────────────────────────────────────
 export default function ClinicGrooming() {
+  const t = useT()
+  const language = useUiStore(s => s.language)
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [showModal, setShowModal] = useState(false)
   const qc = useQueryClient()
@@ -282,15 +309,19 @@ export default function ClinicGrooming() {
   }
 
   const totalToday = data?.length ?? 0
+  const bookingsTodayText = (totalToday === 1
+    ? t('clinic.grooming.bookingsTodayOne')
+    : t('clinic.grooming.bookingsTodayOther')
+  ).replace('{n}', String(totalToday))
 
   return (
     <div className="p-lg flex flex-col gap-lg">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-sm">
         <div>
-          <h1 className="text-headline-md font-headline font-bold text-on-surface">Grooming Queue</h1>
+          <h1 className="text-headline-md font-headline font-bold text-on-surface">{t('clinic.grooming.queueTitle')}</h1>
           <p className="text-body-md text-on-surface-variant">
-            {isLoading ? 'Loading…' : `${totalToday} booking${totalToday !== 1 ? 's' : ''} today`}
+            {isLoading ? t('common.loading') : bookingsTodayText}
           </p>
         </div>
         <button
@@ -298,7 +329,7 @@ export default function ClinicGrooming() {
           className="min-h-[44px] flex items-center gap-xs px-lg rounded-xl bg-primary text-primary-on text-body-sm font-medium hover:opacity-90 transition-opacity"
         >
           <MaterialIcon name="add" size={18} />
-          New Booking
+          {t('clinic.grooming.newBooking')}
         </button>
       </div>
 
@@ -311,7 +342,7 @@ export default function ClinicGrooming() {
           <MaterialIcon name="chevron_left" size={22} />
         </button>
         <span className="text-body-lg font-semibold text-on-surface min-w-[160px] text-center select-none">
-          {formatDateLabel(selectedDate)}
+          {formatShortDate(selectedDate.toISOString(), language)}
         </span>
         <button
           onClick={() => setSelectedDate(d => addDays(d, 1))}
@@ -323,7 +354,7 @@ export default function ClinicGrooming() {
           <button
             onClick={() => setSelectedDate(new Date())}
             className="min-h-[44px] px-md rounded-xl border border-outline-variant bg-surface text-body-sm text-on-surface-variant hover:bg-surface-container transition-colors"
-          >Today</button>
+          >{t('common.today')}</button>
         )}
       </div>
 
@@ -336,7 +367,7 @@ export default function ClinicGrooming() {
       {isError && (
         <div className="bg-error-container text-error rounded-xl p-lg text-body-md flex items-center gap-sm">
           <MaterialIcon name="error" size={20} />
-          Failed to load grooming schedule.
+          {t('clinic.grooming.failedToLoad')}
         </div>
       )}
 
@@ -368,7 +399,7 @@ export default function ClinicGrooming() {
                       className="w-full min-h-[44px] flex items-center justify-center gap-xs rounded-xl border border-dashed border-outline-variant text-on-surface-variant hover:bg-surface-container-low transition-colors text-body-sm"
                     >
                       <MaterialIcon name="add" size={16} />
-                      <span>Add booking</span>
+                      <span>{t('clinic.grooming.addBooking')}</span>
                     </button>
                   )}
                 </div>

@@ -7,6 +7,9 @@ import AuthedPetImage from '../../components/AuthedPetImage'
 import { usePhotoUpload } from '../../hooks/usePhotoUpload'
 import { getErrorMessage } from '../../utils/errorMessage'
 import { useT } from '../../i18n'
+import { useUiStore } from '../../store/uiStore'
+import { formatDate } from '../../i18n/dateFormat'
+import { speciesLabel } from '../../i18n/speciesLabel'
 import Can from '../../components/Can'
 import { useAuthStore } from '../../store/authStore'
 import { AdmitModal } from './ClinicInpatient'
@@ -27,10 +30,27 @@ function speciesChip(s: string) {
   return speciesColor[key] ?? 'bg-surface-container-high text-on-surface-variant'
 }
 
-function ageFromDate(d?: string) {
+// R-1 (ADR-0030): `pet.species`/`pet.gender` stay these raw English stored values
+// everywhere (speciesChip's color lookup, form submit payloads) — only the
+// *display* label is translated, via the shared `speciesLabel()` (i18n/speciesLabel.ts)
+// and `genderLabel()` below. A value with no key (X-1: e.g. a future species/gender)
+// renders raw, no crash.
+const GENDER_LABEL_KEYS: Record<string, string> = {
+  male: 'clinic.pets.genderMale',
+  female: 'clinic.pets.genderFemale',
+  unknown: 'clinic.pets.genderUnknown',
+}
+function genderLabel(t: (key: string) => string, gender: string): string {
+  const key = GENDER_LABEL_KEYS[gender]
+  return key ? t(key) : gender
+}
+
+function ageFromDate(d: string | undefined, t: (key: string) => string): string | null {
   if (!d) return null
   const years = Math.floor((Date.now() - new Date(d).getTime()) / (1000 * 60 * 60 * 24 * 365.25))
-  return years < 1 ? '< 1 yr' : `${years} yr${years > 1 ? 's' : ''}`
+  if (years < 1) return t('clinic.pets.ageUnderOneYear')
+  const key = years === 1 ? 'clinic.pets.ageYearsOne' : 'clinic.pets.ageYearsOther'
+  return t(key).replace('{n}', String(years))
 }
 
 function initials(firstName: string, lastName: string) {
@@ -110,7 +130,7 @@ function AddOwnerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-lg">
       <div className="bg-surface rounded-xl shadow-lg w-full max-w-md p-xl">
-        <h3 className="text-headline-sm font-headline font-bold text-primary mb-lg">New Owner</h3>
+        <h3 className="text-headline-sm font-headline font-bold text-primary mb-lg">{t('clinic.pets.newOwner')}</h3>
         {error && <p className="text-error text-body-sm mb-md">{error}</p>}
         <form onSubmit={submit} className="flex flex-col gap-md">
           <div className="flex gap-md">
@@ -146,8 +166,8 @@ function AddOwnerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
             />
           )}
           <div className="flex gap-md pt-sm">
-            <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? 'Saving…' : 'Save Owner'}</button>
+            <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">{t('common.cancel')}</button>
+            <button type="submit" disabled={saving} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? t('common.saving') : t('clinic.pets.saveOwner')}</button>
           </div>
         </form>
       </div>
@@ -222,8 +242,8 @@ export function EditOwnerModal({ owner, onClose, onSuccess }: { owner: Owner; on
             />
           )}
           <div className="flex gap-md pt-sm">
-            <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? 'Saving…' : t('clinic.pets.saveChanges')}</button>
+            <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">{t('common.cancel')}</button>
+            <button type="submit" disabled={saving} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? t('common.saving') : t('clinic.pets.saveChanges')}</button>
           </div>
         </form>
       </div>
@@ -278,8 +298,8 @@ export function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerI
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-lg">
       <div className="bg-surface rounded-xl shadow-lg w-full max-w-md p-xl overflow-y-auto max-h-[90vh]">
-        <h3 className="text-headline-sm font-headline font-bold text-primary mb-xs">New Pet</h3>
-        <p className="text-body-sm text-on-surface-variant mb-lg">Owner: {ownerName}</p>
+        <h3 className="text-headline-sm font-headline font-bold text-primary mb-xs">{t('clinic.pets.newPet')}</h3>
+        <p className="text-body-sm text-on-surface-variant mb-lg">{t('clinic.pets.ownerPrefix').replace('{name}', ownerName)}</p>
         {(error || uploadError) && <p className="text-error text-body-sm mb-md">{error || uploadError}</p>}
         <form onSubmit={submit} className="flex flex-col gap-md">
           {/* Photo upload */}
@@ -304,25 +324,25 @@ export function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerI
                 className="flex items-center gap-sm bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm min-h-[44px] text-body-sm font-medium hover:bg-surface-container transition-colors"
               >
                 <MaterialIcon name="photo_camera" size={18} className="text-on-surface-variant" />
-                {photoFile ? 'Change photo' : 'Add photo (optional)'}
+                {photoFile ? t('clinic.pets.changePhoto') : t('clinic.pets.addPhotoOptional')}
               </button>
-              {isUploading && <p className="text-body-sm text-on-surface-variant">Uploading…</p>}
+              {isUploading && <p className="text-body-sm text-on-surface-variant">{t('clinic.pets.uploading')}</p>}
             </div>
           </div>
 
           <input required className={fieldClass} placeholder={t('clinic.pets.petName')} value={form.name} onChange={set('name')} />
           <div className="flex gap-md">
             <select className={`flex-1 ${fieldClass}`} value={form.species} onChange={set('species')}>
-              <option value="canine">Canine</option>
-              <option value="feline">Feline</option>
-              <option value="avian">Avian</option>
-              <option value="other">Other</option>
+              <option value="canine">{t('clinic.pets.speciesCanine')}</option>
+              <option value="feline">{t('clinic.pets.speciesFeline')}</option>
+              <option value="avian">{t('clinic.pets.speciesAvian')}</option>
+              <option value="other">{t('common.other')}</option>
             </select>
             <select className={`flex-1 ${fieldClass}`} value={form.gender} onChange={set('gender')}>
-              <option value="">Gender</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="unknown">Unknown</option>
+              <option value="">{t('clinic.pets.genderLabel')}</option>
+              <option value="male">{t('clinic.pets.genderMale')}</option>
+              <option value="female">{t('clinic.pets.genderFemale')}</option>
+              <option value="unknown">{t('clinic.pets.genderUnknown')}</option>
             </select>
           </div>
           <div className="flex gap-md">
@@ -335,8 +355,8 @@ export function AddPetModal({ ownerId, ownerName, onClose, onSuccess }: { ownerI
           <textarea className="bg-surface-container-low rounded-lg px-md py-sm min-h-[80px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary resize-none" placeholder={t('clinic.pets.allergiesOptional')} value={form.allergies} onChange={set('allergies')} />
           <textarea className="bg-surface-container-low rounded-lg px-md py-sm min-h-[80px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary resize-none" placeholder={t('clinic.pets.conditionsOptional')} value={form.underlyingConditions} onChange={set('underlyingConditions')} />
           <div className="flex gap-md pt-sm">
-            <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
-            <button type="submit" disabled={busy} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{busy ? 'Saving…' : 'Save Pet'}</button>
+            <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">{t('common.cancel')}</button>
+            <button type="submit" disabled={busy} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{busy ? t('common.saving') : t('clinic.pets.savePet')}</button>
           </div>
         </form>
       </div>
@@ -432,25 +452,25 @@ export function EditPetModal({ pet, onClose, onSuccess }: { pet: Pet; onClose: (
                 className="flex items-center gap-sm bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm min-h-[44px] text-body-sm font-medium hover:bg-surface-container transition-colors"
               >
                 <MaterialIcon name="photo_camera" size={18} className="text-on-surface-variant" />
-                {photoFile ? 'Change photo' : 'Add photo (optional)'}
+                {photoFile ? t('clinic.pets.changePhoto') : t('clinic.pets.addPhotoOptional')}
               </button>
-              {isUploading && <p className="text-body-sm text-on-surface-variant">Uploading…</p>}
+              {isUploading && <p className="text-body-sm text-on-surface-variant">{t('clinic.pets.uploading')}</p>}
             </div>
           </div>
 
           <input required className={fieldClass} placeholder={t('clinic.pets.petName')} value={form.name} onChange={set('name')} />
           <div className="flex gap-md">
             <select className={`flex-1 ${fieldClass}`} value={form.species} onChange={set('species')}>
-              <option value="canine">Canine</option>
-              <option value="feline">Feline</option>
-              <option value="avian">Avian</option>
-              <option value="other">Other</option>
+              <option value="canine">{t('clinic.pets.speciesCanine')}</option>
+              <option value="feline">{t('clinic.pets.speciesFeline')}</option>
+              <option value="avian">{t('clinic.pets.speciesAvian')}</option>
+              <option value="other">{t('common.other')}</option>
             </select>
             <select className={`flex-1 ${fieldClass}`} value={form.gender} onChange={set('gender')}>
-              <option value="">Gender</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="unknown">Unknown</option>
+              <option value="">{t('clinic.pets.genderLabel')}</option>
+              <option value="male">{t('clinic.pets.genderMale')}</option>
+              <option value="female">{t('clinic.pets.genderFemale')}</option>
+              <option value="unknown">{t('clinic.pets.genderUnknown')}</option>
             </select>
           </div>
           <div className="flex gap-md">
@@ -463,8 +483,8 @@ export function EditPetModal({ pet, onClose, onSuccess }: { pet: Pet; onClose: (
           <textarea className="bg-surface-container-low rounded-lg px-md py-sm min-h-[80px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary resize-none" placeholder={t('clinic.pets.allergiesOptional')} value={form.allergies} onChange={set('allergies')} />
           <textarea className="bg-surface-container-low rounded-lg px-md py-sm min-h-[80px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary resize-none" placeholder={t('clinic.pets.conditionsOptional')} value={form.underlyingConditions} onChange={set('underlyingConditions')} />
           <div className="flex gap-md pt-sm">
-            <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
-            <button type="submit" disabled={busy} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{busy ? 'Saving…' : t('clinic.pets.saveChanges')}</button>
+            <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">{t('common.cancel')}</button>
+            <button type="submit" disabled={busy} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{busy ? t('common.saving') : t('clinic.pets.saveChanges')}</button>
           </div>
         </form>
       </div>
@@ -487,18 +507,18 @@ function AddVaccinationModal({ petId, onClose, onSuccess }: { petId: number; onC
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-lg">
       <div className="bg-surface rounded-xl shadow-lg w-full max-w-md p-xl">
-        <h3 className="text-headline-sm font-headline font-bold text-primary mb-lg">Record Vaccination</h3>
+        <h3 className="text-headline-sm font-headline font-bold text-primary mb-lg">{t('clinic.pets.recordVaccination')}</h3>
         {error && <p className="text-error text-body-sm mb-md">{error}</p>}
         <form onSubmit={submit} className="flex flex-col gap-md">
           <input required className={fieldClass} placeholder={t('clinic.pets.vaccineName')} value={form.vaccineName} onChange={set('vaccineName')} />
-          <label className="text-body-sm text-on-surface-variant">Date administered</label>
+          <label className="text-body-sm text-on-surface-variant">{t('clinic.pets.dateAdministered')}</label>
           <input required type="date" className={fieldClass} value={form.administeredAt} onChange={set('administeredAt')} />
-          <label className="text-body-sm text-on-surface-variant">Next due date (optional)</label>
+          <label className="text-body-sm text-on-surface-variant">{t('clinic.pets.nextDueDateOptional')}</label>
           <input type="date" className={fieldClass} value={form.nextDueAt} onChange={set('nextDueAt')} />
           <input className={fieldClass} placeholder={t('clinic.pets.batchOptional')} value={form.batchNo} onChange={set('batchNo')} />
           <div className="flex gap-md pt-sm">
-            <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? 'Saving…' : 'Save'}</button>
+            <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-lg border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">{t('common.cancel')}</button>
+            <button type="submit" disabled={saving} className="flex-1 min-h-[44px] rounded-lg bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{saving ? t('common.saving') : t('common.save')}</button>
           </div>
         </form>
       </div>
@@ -510,8 +530,18 @@ function AddVaccinationModal({ petId, onClose, onSuccess }: { petId: number; onC
 const TABS = ['Overview', 'Medical', 'Vaccinations'] as const
 type Tab = typeof TABS[number]
 
+// R-1: `tab` state stays these English keys — only the tab bar's displayed
+// label is translated, via this map. Note: the loop variable below is named
+// `tabName`, not `t`, so it does not shadow the `t` translator (C-2 trap).
+const TAB_LABEL_KEYS: Record<Tab, string> = {
+  Overview: 'clinic.pets.tabOverview',
+  Medical: 'clinic.pets.tabMedical',
+  Vaccinations: 'clinic.pets.tabVaccinations',
+}
+
 export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVaccination: () => void }) {
   const t = useT()
+  const language = useUiStore(s => s.language)
   const navigate = useNavigate()
   const hasPermission = useAuthStore(s => s.hasPermission)
   const [tab, setTab] = useState<Tab>('Overview')
@@ -524,7 +554,7 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
   })
 
   const pet = data?.data
-  if (isLoading) return <div className="flex-1 flex items-center justify-center text-on-surface-variant">Loading…</div>
+  if (isLoading) return <div className="flex-1 flex items-center justify-center text-on-surface-variant">{t('common.loading')}</div>
   if (!pet) return null
 
   const owner = pet.owner
@@ -557,15 +587,15 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
                 className="flex items-center gap-xs rounded-lg border border-outline-variant px-md py-xs min-h-[44px] text-body-sm font-medium text-on-surface hover:bg-surface-container-low transition-colors"
               >
                 <MaterialIcon name="local_hospital" size={18} />
-                Admit to Inpatient
+                {t('clinic.pets.admitToInpatient')}
               </button>
             </Can>
           </div>
           <div className="flex flex-wrap gap-sm mt-sm">
-            <span className={`px-sm py-xs rounded-full text-label-md font-medium ${speciesChip(pet.species)}`}>{pet.species}</span>
+            <span className={`px-sm py-xs rounded-full text-label-md font-medium ${speciesChip(pet.species)}`}>{speciesLabel(t, pet.species)}</span>
             {pet.breed && <span className="px-sm py-xs rounded-full bg-surface-container text-on-surface-variant text-label-md">{pet.breed}</span>}
-            {ageFromDate(pet.birthDate) && <span className="px-sm py-xs rounded-full bg-surface-container text-on-surface-variant text-label-md">{ageFromDate(pet.birthDate)}</span>}
-            {pet.gender && <span className="px-sm py-xs rounded-full bg-surface-container text-on-surface-variant text-label-md capitalize">{pet.gender}</span>}
+            {ageFromDate(pet.birthDate, t) && <span className="px-sm py-xs rounded-full bg-surface-container text-on-surface-variant text-label-md">{ageFromDate(pet.birthDate, t)}</span>}
+            {pet.gender && <span className="px-sm py-xs rounded-full bg-surface-container text-on-surface-variant text-label-md capitalize">{genderLabel(t, pet.gender)}</span>}
           </div>
           {pet.microchipId && <p className="text-body-sm text-on-surface-variant mt-sm"><MaterialIcon name="qr_code_scanner" size={14} className="inline mr-xs" />{pet.microchipId}</p>}
         </div>
@@ -590,15 +620,15 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
       {/* Alerts */}
       {(pet.allergies || pet.underlyingConditions) && (
         <div className="bg-error-container rounded-xl p-lg border border-error/30">
-          {pet.allergies && <p className="text-body-sm font-semibold text-error"><MaterialIcon name="warning" size={16} className="inline mr-xs" />Allergies: {pet.allergies}</p>}
-          {pet.underlyingConditions && <p className="text-body-sm text-error mt-xs"><MaterialIcon name="medical_information" size={16} className="inline mr-xs" />Conditions: {pet.underlyingConditions}</p>}
+          {pet.allergies && <p className="text-body-sm font-semibold text-error"><MaterialIcon name="warning" size={16} className="inline mr-xs" />{t('clinic.pets.allergiesAlert').replace('{value}', pet.allergies)}</p>}
+          {pet.underlyingConditions && <p className="text-body-sm text-error mt-xs"><MaterialIcon name="medical_information" size={16} className="inline mr-xs" />{t('clinic.pets.conditionsAlert').replace('{value}', pet.underlyingConditions)}</p>}
         </div>
       )}
 
       {/* Tab bar */}
       <div className="flex border-b border-outline-variant">
-        {TABS.map(t => (
-          <button key={t} onClick={() => setTab(t)} className={`px-lg py-sm text-body-sm font-semibold min-h-[44px] transition-colors ${tab === t ? 'border-b-2 border-primary text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>{t}</button>
+        {TABS.map(tabName => (
+          <button key={tabName} onClick={() => setTab(tabName)} className={`px-lg py-sm text-body-sm font-semibold min-h-[44px] transition-colors ${tab === tabName ? 'border-b-2 border-primary text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>{t(TAB_LABEL_KEYS[tabName])}</button>
         ))}
       </div>
 
@@ -606,15 +636,15 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
       {tab === 'Overview' && (
         <div className="flex flex-col gap-md">
           {[
-            { label: 'Species', value: pet.species ?? '—' },
-            { label: 'Breed', value: pet.breed ?? '—' },
-            { label: 'Gender', value: pet.gender ?? '—' },
-            { label: 'Date of birth', value: pet.birthDate ? new Date(pet.birthDate).toLocaleDateString() : '—' },
-            { label: 'Weight', value: pet.weightKg ? `${pet.weightKg} kg` : '—' },
-            { label: 'Color', value: pet.color ?? '—' },
-            { label: 'Microchip ID', value: pet.microchipId ?? '—' },
-            { label: 'Allergies', value: pet.allergies ?? '—' },
-            { label: 'Underlying conditions', value: pet.underlyingConditions ?? '—' },
+            { label: t('clinic.pets.speciesLabel'), value: pet.species ? speciesLabel(t, pet.species) : '—' },
+            { label: t('clinic.pets.breedLabel'), value: pet.breed ?? '—' },
+            { label: t('clinic.pets.genderLabel'), value: pet.gender ? genderLabel(t, pet.gender) : '—' },
+            { label: t('clinic.pets.dobLabel'), value: pet.birthDate ? formatDate(pet.birthDate, language) : '—' },
+            { label: t('clinic.pets.weightLabel'), value: pet.weightKg ? `${pet.weightKg} ${t('clinic.pets.kgUnit')}` : '—' },
+            { label: t('clinic.pets.colorLabel'), value: pet.color ?? '—' },
+            { label: t('clinic.pets.microchipLabel'), value: pet.microchipId ?? '—' },
+            { label: t('clinic.pets.allergiesLabel'), value: pet.allergies ?? '—' },
+            { label: t('clinic.pets.conditionsLabel'), value: pet.underlyingConditions ?? '—' },
           ].map(r => (
             <div key={r.label} className="flex justify-between items-center min-h-[48px] border-b border-outline-variant/50 py-sm">
               <span className="text-body-sm text-on-surface-variant">{r.label}</span>
@@ -630,8 +660,8 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
             <>
               {pet.medicalRecords.map(r => (
                 <div key={r.id} className="flex justify-between items-center min-h-[48px] border-b border-outline-variant/50 py-sm">
-                  <span className="text-body-sm">{r.assessment ?? 'Visit'}</span>
-                  <span className="text-body-sm text-on-surface-variant">{new Date(r.createdAt).toLocaleDateString()}</span>
+                  <span className="text-body-sm">{r.assessment ?? t('clinic.pets.visitFallback')}</span>
+                  <span className="text-body-sm text-on-surface-variant">{formatDate(r.createdAt, language)}</span>
                 </div>
               ))}
               <Can perm="emr.view">
@@ -640,13 +670,13 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
                   onClick={() => navigate(`/clinic/emr?petId=${pet.id}`)}
                   className="mt-md text-body-sm font-semibold text-primary hover:underline"
                 >
-                  View all in EMR
+                  {t('clinic.pets.viewAllInEmr')}
                 </button>
               </Can>
             </>
           ) : (
             <p className="text-body-sm text-on-surface-variant py-lg">
-              {hasPermission('emr.view') ? 'No medical records yet.' : "You don't have access to clinical records."}
+              {hasPermission('emr.view') ? t('clinic.pets.noMedicalRecords') : t('clinic.pets.noClinicalAccess')}
             </p>
           )}
         </div>
@@ -658,7 +688,7 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
             <div className="flex justify-end mb-md">
               <Can perm="vaccination.create">
                 <button onClick={onAddVaccination} className="flex items-center gap-sm bg-primary text-primary-on rounded-lg px-md py-sm min-h-[44px] text-body-sm font-semibold hover:bg-primary/90 transition-colors">
-                  <MaterialIcon name="add" size={18} />Add Vaccination
+                  <MaterialIcon name="add" size={18} />{t('clinic.pets.addVaccination')}
                 </button>
               </Can>
             </div>
@@ -667,13 +697,13 @@ export function PetDetail({ petId, onAddVaccination }: { petId: number; onAddVac
             <div key={v.id} className="flex justify-between items-center min-h-[48px] border-b border-outline-variant/50 py-sm">
               <div>
                 <p className="text-body-sm font-medium">{v.vaccineName}</p>
-                {v.nextDueAt && <p className="text-label-md text-on-surface-variant">Due: {new Date(v.nextDueAt).toLocaleDateString()}</p>}
+                {v.nextDueAt && <p className="text-label-md text-on-surface-variant">{t('clinic.pets.dueDate').replace('{date}', formatDate(v.nextDueAt, language))}</p>}
               </div>
-              <span className="text-body-sm text-on-surface-variant">{new Date(v.administeredAt).toLocaleDateString()}</span>
+              <span className="text-body-sm text-on-surface-variant">{formatDate(v.administeredAt, language)}</span>
             </div>
           )) : (
             <p className="text-body-sm text-on-surface-variant py-lg">
-              {hasPermission('emr.view') ? 'No vaccination records yet.' : "You don't have access to clinical records."}
+              {hasPermission('emr.view') ? t('clinic.pets.noVaccinationRecords') : t('clinic.pets.noClinicalAccess')}
             </p>
           )}
         </div>
@@ -702,7 +732,7 @@ export function OwnerPanel({ ownerId, onSelectPet, onAddPet, onDeleted }: { owne
     queryFn: () => api.get(`/api/owners/${ownerId}`).then(r => r.data),
   })
   const owner = data?.data
-  if (isLoading) return <div className="flex-1 flex items-center justify-center text-on-surface-variant text-body-sm">Loading…</div>
+  if (isLoading) return <div className="flex-1 flex items-center justify-center text-on-surface-variant text-body-sm">{t('common.loading')}</div>
   if (!owner) return null
 
   const refresh = () => {
@@ -712,13 +742,13 @@ export function OwnerPanel({ ownerId, onSelectPet, onAddPet, onDeleted }: { owne
 
   const handleDelete = async () => {
     setActionError('')
-    if (!confirm(`Deactivate ${owner.firstName} ${owner.lastName}?`)) return
+    if (!confirm(t('clinic.pets.deactivateConfirm').replace('{name}', `${owner.firstName} ${owner.lastName}`))) return
     try {
       await api.delete(`/api/owners/${owner.id}`)
       refresh()
       onDeleted?.()
     } catch (err) {
-      setActionError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to delete')
+      setActionError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? t('clinic.pets.failedToDelete'))
     }
   }
 
@@ -728,7 +758,7 @@ export function OwnerPanel({ ownerId, onSelectPet, onAddPet, onDeleted }: { owne
       await api.put(`/api/owners/${owner.id}`, { isActive: true })
       refresh()
     } catch (err) {
-      setActionError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to reactivate')
+      setActionError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? t('clinic.pets.failedToReactivate'))
     }
   }
 
@@ -751,12 +781,12 @@ export function OwnerPanel({ ownerId, onSelectPet, onAddPet, onDeleted }: { owne
         {owner.isActive ? (
           <div className="flex gap-xs flex-shrink-0">
             <Can perm="crm.edit">
-              <button title="Edit" onClick={() => setEditing(true)} className="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-surface-container-low transition-colors">
+              <button title={t('common.edit')} onClick={() => setEditing(true)} className="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-surface-container-low transition-colors">
                 <MaterialIcon name="edit" size={18} />
               </button>
             </Can>
             <Can perm="crm.delete">
-              <button title="Delete" onClick={handleDelete} className="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-error-container transition-colors">
+              <button title={t('common.delete')} onClick={handleDelete} className="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-error-container transition-colors">
                 <MaterialIcon name="delete" size={18} className="text-error" />
               </button>
             </Can>
@@ -774,9 +804,9 @@ export function OwnerPanel({ ownerId, onSelectPet, onAddPet, onDeleted }: { owne
       {/* Pet cards */}
       <div>
         <div className="flex items-center justify-between mb-md">
-          <h4 className="text-label-md font-semibold text-on-surface-variant uppercase tracking-wider">Pets ({owner.pets?.length ?? 0})</h4>
+          <h4 className="text-label-md font-semibold text-on-surface-variant uppercase tracking-wider">{t('clinic.pets.petsHeading').replace('{n}', String(owner.pets?.length ?? 0))}</h4>
           <button onClick={onAddPet} className="flex items-center gap-xs bg-primary text-primary-on rounded-lg px-md py-sm min-h-[44px] text-body-sm font-semibold hover:bg-primary/90 transition-colors">
-            <MaterialIcon name="add" size={18} /> Add Pet
+            <MaterialIcon name="add" size={18} /> {t('clinic.pets.addPetButton')}
           </button>
         </div>
         {owner.pets?.length ? (
@@ -791,14 +821,14 @@ export function OwnerPanel({ ownerId, onSelectPet, onAddPet, onDeleted }: { owne
                     </div>
                 }
                 <span className="text-body-sm font-semibold text-on-surface">{pet.name}</span>
-                <span className={`px-sm py-xs rounded-full text-label-md capitalize ${speciesChip(pet.species)}`}>{pet.species}</span>
+                <span className={`px-sm py-xs rounded-full text-label-md capitalize ${speciesChip(pet.species)}`}>{speciesLabel(t, pet.species)}</span>
               </button>
             ))}
           </div>
         ) : (
           <div className="text-center py-xl text-on-surface-variant">
             <MaterialIcon name="pets" size={40} className="mb-sm opacity-30 block mx-auto" />
-            <p className="text-body-sm">No pets yet. Add one above.</p>
+            <p className="text-body-sm">{t('clinic.pets.noPetsYet')}</p>
           </div>
         )}
       </div>
@@ -854,7 +884,7 @@ export default function ClinicPets() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="w-full bg-surface-container-low rounded-full py-sm pl-10 pr-md text-body-sm border-none focus:outline-none focus:ring-2 focus:ring-primary min-h-[44px]"
-              placeholder="Search owners, phone…"
+              placeholder={t('clinic.pets.searchOwnersPlaceholder')}
             />
           </div>
         </div>
@@ -873,8 +903,8 @@ export default function ClinicPets() {
         )}
 
         <div className="flex-1 overflow-y-auto">
-          {isLoading && <div className="p-lg text-body-sm text-on-surface-variant">Loading…</div>}
-          {!isLoading && owners.length === 0 && <div className="p-lg text-body-sm text-on-surface-variant">No owners found.</div>}
+          {isLoading && <div className="p-lg text-body-sm text-on-surface-variant">{t('common.loading')}</div>}
+          {!isLoading && owners.length === 0 && <div className="p-lg text-body-sm text-on-surface-variant">{t('clinic.pets.noOwnersFound')}</div>}
           {owners.map(owner => (
             <button
               key={owner.id}
@@ -890,7 +920,7 @@ export default function ClinicPets() {
                   {owner.isActive === false && <span className="px-sm py-xs rounded-full bg-surface-container-high text-on-surface-variant text-label-md flex-shrink-0">{t('clinic.pets.inactiveBadge')}</span>}
                 </div>
                 <p className="text-body-sm text-on-surface-variant truncate">{owner.phone}</p>
-                <p className="text-label-md text-on-surface-variant">{owner.pets?.length ?? 0} pet{owner.pets?.length !== 1 ? 's' : ''}</p>
+                <p className="text-label-md text-on-surface-variant">{t(owner.pets?.length === 1 ? 'clinic.pets.petCountOne' : 'clinic.pets.petCountOther').replace('{n}', String(owner.pets?.length ?? 0))}</p>
               </div>
             </button>
           ))}
@@ -904,9 +934,9 @@ export default function ClinicPets() {
             <div className="flex items-center px-lg py-md border-b border-outline-variant bg-surface flex-shrink-0 gap-md">
               <button onClick={() => setSelectedPetId(null)} className="flex items-center gap-xs text-on-surface-variant hover:text-on-surface min-h-[44px] transition-colors">
                 <MaterialIcon name="arrow_back" size={18} />
-                <span className="text-body-sm">Back</span>
+                <span className="text-body-sm">{t('common.back')}</span>
               </button>
-              <h2 className="text-headline-sm font-headline font-bold text-primary">Pet Profile</h2>
+              <h2 className="text-headline-sm font-headline font-bold text-primary">{t('clinic.pets.petProfileHeading')}</h2>
             </div>
             <PetDetail petId={selectedPetId} onAddVaccination={() => setModal('addVaccination')} />
           </>
@@ -920,8 +950,8 @@ export default function ClinicPets() {
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-xl text-on-surface-variant">
             <MaterialIcon name="group" size={64} className="mb-lg opacity-20" />
-            <p className="text-headline-sm font-headline font-bold mb-sm">Select an owner</p>
-            <p className="text-body-md">Choose an owner from the list to see their pets.</p>
+            <p className="text-headline-sm font-headline font-bold mb-sm">{t('clinic.pets.selectOwnerHeading')}</p>
+            <p className="text-body-md">{t('clinic.pets.selectOwnerHint')}</p>
           </div>
         )}
       </div>

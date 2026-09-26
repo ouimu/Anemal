@@ -3,6 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../utils/api'
 import MaterialIcon from '../../components/MaterialIcon'
 import { VitalStepper } from '../../components/VitalStepper'
+import { useT } from '../../i18n'
+import { useUiStore } from '../../store/uiStore'
+import { formatDate, formatDateTime } from '../../i18n/dateFormat'
+import { speciesLabel } from '../../i18n/speciesLabel'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 // Field names match the real backend response shape (hospitalization.repository.ts
@@ -75,12 +79,20 @@ const STATUS_COLORS: Record<string, string> = {
   discharged:  'bg-surface-container-high text-on-surface-variant',
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  admitted:   'Admitted',
-  stable:     'Stable',
-  attention:  'Needs Attention',
-  critical:   'Critical',
-  discharged: 'Discharged',
+// R-1: `hospit.status` stays this raw English value everywhere (STATUS_COLORS,
+// the isAdmitted/canDelete checks, the discharge/delete payloads) — only the
+// *display* label is translated, via `statusLabel()` below. A status with no
+// key (X-1: a future/unknown status) renders raw, exactly as before.
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  admitted:   'clinic.inpatient.statusAdmitted',
+  stable:     'clinic.inpatient.statusStable',
+  attention:  'clinic.inpatient.statusAttention',
+  critical:   'clinic.inpatient.statusCritical',
+  discharged: 'clinic.inpatient.statusDischarged',
+}
+function statusLabel(t: (key: string) => string, status: string): string {
+  const key = STATUS_LABEL_KEYS[status]
+  return key ? t(key) : status
 }
 
 const TIME_SLOTS = ['08:00', '12:00', '16:00', '20:00']
@@ -88,29 +100,28 @@ const TIME_SLOTS = ['08:00', '12:00', '16:00', '20:00']
 // Controlled feeding-status vocabulary (BA D1). '__other__' is a UI-only sentinel —
 // never sent as a literal feedingStatus value; see buildPayload/step3 for the
 // draft-preserving "Other" text-input handling (grill finding F1).
-const FEEDING_OPTIONS = [
-  { value: '', label: 'Not assessed' },
-  { value: 'Ate all', label: 'Ate all' },
-  { value: 'Ate some', label: 'Ate some' },
-  { value: 'Refused', label: 'Refused' },
-  { value: 'NPO', label: 'NPO' },
-  { value: 'Assisted feeding', label: 'Assisted feeding' },
-  { value: '__other__', label: 'Other' },
-] as const
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+// R-1: `feedingStatus` (state, the POSTed care-record field, and the Care
+// History "Feeding:" line) stays this raw English value — only the select's
+// display label is translated, via `feedingLabel()` below. A legacy/free-text
+// value with no key (e.g. history fixture `'Ate well'`) renders raw (X-1).
+const FEEDING_OPTIONS = ['', 'Ate all', 'Ate some', 'Refused', 'NPO', 'Assisted feeding', '__other__'] as const
+const FEEDING_LABEL_KEYS: Record<string, string> = {
+  '':                 'clinic.inpatient.feedingNotAssessed',
+  'Ate all':          'clinic.inpatient.feedingAteAll',
+  'Ate some':         'clinic.inpatient.feedingAteSome',
+  'Refused':          'clinic.inpatient.feedingRefused',
+  'NPO':              'clinic.inpatient.feedingNpo',
+  'Assisted feeding': 'clinic.inpatient.feedingAssisted',
+  '__other__':        'common.other',
+}
+function feedingLabel(t: (key: string) => string, value: string): string {
+  const key = FEEDING_LABEL_KEYS[value]
+  return key ? t(key) : value
 }
 
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString('en-GB', {
-    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
-  })
-}
-
-function doctorName(doctors: Doctor[], id: number | null): string {
-  if (id == null) return 'Unassigned'
-  return doctors.find(d => d.id === id)?.name ?? 'Unassigned'
+function doctorName(doctors: Doctor[], id: number | null, t: (key: string) => string): string {
+  if (id == null) return t('clinic.inpatient.unassignedDoctor')
+  return doctors.find(d => d.id === id)?.name ?? t('clinic.inpatient.unassignedDoctor')
 }
 
 const inputCls = 'bg-surface-container-low rounded-lg px-md py-sm min-h-[44px] text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary'
@@ -137,6 +148,7 @@ function CareModal({ hospit, onClose, onSaved }: {
   onClose: () => void
   onSaved: () => void
 }) {
+  const t = useT()
   const [step, setStep] = useState(1)
   const [entry, setEntry] = useState<CareEntry>({
     timeSlot: TIME_SLOTS[0],
@@ -164,7 +176,7 @@ function CareModal({ hospit, onClose, onSaved }: {
       onSaved()
     },
     onError: (err: unknown) => {
-      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save care record')
+      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? t('clinic.inpatient.failedSaveCareRecord'))
     },
   })
 
@@ -176,7 +188,7 @@ function CareModal({ hospit, onClose, onSaved }: {
   function step1() {
     return (
       <div className="flex flex-col gap-md">
-        <p className="text-body-md text-on-surface-variant mb-sm">Select the care time slot:</p>
+        <p className="text-body-md text-on-surface-variant mb-sm">{t('clinic.inpatient.selectCareTimeSlot')}</p>
         <div className="grid grid-cols-2 gap-sm">
           {TIME_SLOTS.map(slot => (
             <button
@@ -197,19 +209,19 @@ function CareModal({ hospit, onClose, onSaved }: {
 
   function step2() {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
+      <div className="grid grid-cols-1 gap-md">
         <VitalStepper
-          label="Temperature" unit="°C" value={entry.temperatureC}
+          label={t('clinic.inpatient.temperature')} unit="°C" value={entry.temperatureC}
           onChange={v => setEntry(e => ({ ...e, temperatureC: v }))}
           step={0.1} max={999.9}
         />
         <VitalStepper
-          label="Heart Rate" unit="bpm" value={entry.heartRateBpm}
+          label={t('clinic.inpatient.heartRate')} unit={t('clinic.inpatient.unitBpm')} value={entry.heartRateBpm}
           onChange={v => setEntry(e => ({ ...e, heartRateBpm: v }))}
           step={1} min={1} max={3000}
         />
         <VitalStepper
-          label="Resp Rate" unit="rpm" value={entry.respRateRpm}
+          label={t('clinic.inpatient.respRate')} unit={t('clinic.inpatient.unitRpm')} value={entry.respRateRpm}
           onChange={v => setEntry(e => ({ ...e, respRateRpm: v }))}
           step={1} min={1} max={3000}
         />
@@ -223,7 +235,7 @@ function CareModal({ hospit, onClose, onSaved }: {
     return (
       <div className="flex flex-col gap-lg">
         <div className="flex flex-col gap-xs">
-          <label htmlFor="feeding-status" className="text-label-md text-on-surface-variant">Feeding status</label>
+          <label htmlFor="feeding-status" className="text-label-md text-on-surface-variant">{t('clinic.inpatient.feedingStatusLabel')}</label>
           <select
             id="feeding-status"
             className={inputCls}
@@ -239,7 +251,7 @@ function CareModal({ hospit, onClose, onSaved }: {
               }
             }}
           >
-            {FEEDING_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            {FEEDING_OPTIONS.map(v => <option key={v} value={v}>{feedingLabel(t, v)}</option>)}
           </select>
           {feedingOtherMode && (
             <input
@@ -250,34 +262,34 @@ function CareModal({ hospit, onClose, onSaved }: {
                 setFeedingOther(e.target.value)
                 setEntry(en => ({ ...en, feedingStatus: e.target.value || null }))
               }}
-              placeholder="Describe feeding status"
-              aria-label="Describe feeding status"
+              placeholder={t('clinic.inpatient.describeFeedingStatus')}
+              aria-label={t('clinic.inpatient.describeFeedingStatus')}
               className={inputCls}
             />
           )}
         </div>
 
         <div className="flex flex-col gap-xs">
-          <label htmlFor="medication-given" className="text-label-md text-on-surface-variant">Medication / treatment note (optional)</label>
-          <p className="text-label-md text-on-surface-variant">Documentation note only — not a verified medication administration record.</p>
+          <label htmlFor="medication-given" className="text-label-md text-on-surface-variant">{t('clinic.inpatient.medicationNoteOptional')}</label>
+          <p className="text-label-md text-on-surface-variant">{t('clinic.inpatient.medicationDisclaimer')}</p>
           <textarea
             id="medication-given"
             value={entry.medicationGiven ?? ''}
             onChange={e => setEntry(en => ({ ...en, medicationGiven: e.target.value }))}
             rows={3}
-            placeholder="Medication/treatment name, dose, route, or note"
+            placeholder={t('clinic.inpatient.medicationPlaceholder')}
             className={textareaCls}
           />
         </div>
 
         <div className="flex flex-col gap-xs">
-          <label htmlFor="care-notes" className="text-label-md text-on-surface-variant">Care notes (optional)</label>
+          <label htmlFor="care-notes" className="text-label-md text-on-surface-variant">{t('clinic.inpatient.careNotesOptional')}</label>
           <textarea
             id="care-notes"
             value={entry.notes ?? ''}
             onChange={e => setEntry(en => ({ ...en, notes: e.target.value }))}
             rows={3}
-            placeholder="Observations, instructions…"
+            placeholder={t('clinic.inpatient.careNotesPlaceholder')}
             className={textareaCls}
           />
         </div>
@@ -288,7 +300,11 @@ function CareModal({ hospit, onClose, onSaved }: {
   }
 
   const steps = [step1, step2, step3]
-  const titles = ['Select Time Slot', 'Record Vitals', 'Care Notes']
+  const titles = [
+    t('clinic.inpatient.stepSelectTimeSlot'),
+    t('clinic.inpatient.stepRecordVitals'),
+    t('clinic.inpatient.stepCareNotes'),
+  ]
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-md" onClick={onClose}>
@@ -299,7 +315,7 @@ function CareModal({ hospit, onClose, onSaved }: {
         {/* Header */}
         <div className="flex items-center justify-between px-xl pt-xl pb-md border-b border-outline-variant">
           <div>
-            <p className="text-label-md text-on-surface-variant">Log Care — {hospit.pet.name}</p>
+            <p className="text-label-md text-on-surface-variant">{t('clinic.inpatient.logCareRecordTitle').replace('{name}', hospit.pet.name)}</p>
             <p className="text-headline-sm font-headline font-bold text-on-surface">{titles[step - 1]}</p>
           </div>
           <button onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-surface-container text-on-surface-variant transition-colors">
@@ -325,19 +341,19 @@ function CareModal({ hospit, onClose, onSaved }: {
             <button
               onClick={() => setStep(s => s - 1)}
               className="flex-1 min-h-[44px] rounded-xl border border-outline-variant bg-surface text-on-surface hover:bg-surface-container text-body-md font-medium transition-colors"
-            >Back</button>
+            >{t('common.back')}</button>
           )}
           {step < 3 ? (
             <button
               onClick={() => setStep(s => s + 1)}
               className="flex-1 min-h-[44px] rounded-xl bg-primary text-primary-on text-body-md font-medium hover:opacity-90 transition-opacity"
-            >Next</button>
+            >{t('common.next')}</button>
           ) : (
             <button
               onClick={handleSave}
               disabled={mut.isPending}
               className="flex-1 min-h-[44px] rounded-xl bg-primary text-primary-on text-body-md font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-            >{mut.isPending ? 'Saving…' : 'Save Care Record'}</button>
+            >{mut.isPending ? t('common.saving') : t('clinic.inpatient.saveCareRecord')}</button>
           )}
         </div>
       </div>
@@ -353,6 +369,7 @@ export function AdmitModal({ petId, onClose, onSaved }: {
   onClose: () => void
   onSaved: () => void
 }) {
+  const t = useT()
   const [form, setForm] = useState<AdmitEditForm>({
     reason: '', cageNo: '', doctorInCharge: '', dailyRate: '0', notes: '',
   })
@@ -376,7 +393,7 @@ export function AdmitModal({ petId, onClose, onSaved }: {
     }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['inpatient-active'] }); onSaved() },
     onError: (err: unknown) => {
-      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to admit patient')
+      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? t('clinic.inpatient.failedAdmitPatient'))
     },
   })
 
@@ -393,24 +410,24 @@ export function AdmitModal({ petId, onClose, onSaved }: {
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-md" onClick={onClose}>
       <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md p-xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-lg">
-          <h3 className="text-headline-sm font-headline font-bold text-on-surface">Admit to Inpatient</h3>
+          <h3 className="text-headline-sm font-headline font-bold text-on-surface">{t('clinic.inpatient.admitToInpatient')}</h3>
           <button onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-surface-container text-on-surface-variant transition-colors">
             <MaterialIcon name="close" size={20} />
           </button>
         </div>
         {error && <p className="text-error text-body-sm mb-md">{error}</p>}
         <form onSubmit={submit} className="flex flex-col gap-md">
-          <input required className={inputCls} placeholder="Reason for admission" value={form.reason} onChange={set('reason')} />
-          <input className={inputCls} placeholder="Cage number (optional)" value={form.cageNo} onChange={set('cageNo')} />
+          <input required className={inputCls} placeholder={t('clinic.inpatient.reasonForAdmission')} value={form.reason} onChange={set('reason')} />
+          <input className={inputCls} placeholder={t('clinic.inpatient.cageNumberOptional')} value={form.cageNo} onChange={set('cageNo')} />
           <select className={inputCls} value={form.doctorInCharge} onChange={set('doctorInCharge')}>
-            <option value="">Doctor in charge (optional)</option>
+            <option value="">{t('clinic.inpatient.doctorInChargeOptional')}</option>
             {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
-          <input type="number" step="0.01" min="0" max="99999999.99" className={inputCls} placeholder="Daily rate" value={form.dailyRate} onChange={set('dailyRate')} />
-          <textarea className={textareaCls} placeholder="Notes (optional)" value={form.notes} onChange={set('notes')} rows={3} />
+          <input type="number" step="0.01" min="0" max="99999999.99" className={inputCls} placeholder={t('clinic.inpatient.dailyRate')} value={form.dailyRate} onChange={set('dailyRate')} />
+          <textarea className={textareaCls} placeholder={t('clinic.inpatient.notesOptional')} value={form.notes} onChange={set('notes')} rows={3} />
           <div className="flex gap-md pt-sm">
-            <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-xl border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
-            <button type="submit" disabled={mut.isPending || !form.reason.trim()} className="flex-1 min-h-[44px] rounded-xl bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{mut.isPending ? 'Admitting…' : 'Admit Patient'}</button>
+            <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-xl border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">{t('common.cancel')}</button>
+            <button type="submit" disabled={mut.isPending || !form.reason.trim()} className="flex-1 min-h-[44px] rounded-xl bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{mut.isPending ? t('clinic.inpatient.admittingEllipsis') : t('clinic.inpatient.admitPatient')}</button>
           </div>
         </form>
       </div>
@@ -426,6 +443,7 @@ function EditModal({ hospit, doctors, onClose, onSaved }: {
   onClose: () => void
   onSaved: () => void
 }) {
+  const t = useT()
   const [form, setForm] = useState<AdmitEditForm>({
     reason: hospit.reason,
     cageNo: hospit.cageNo ?? '',
@@ -446,7 +464,7 @@ function EditModal({ hospit, doctors, onClose, onSaved }: {
     }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['inpatient-active'] }); onSaved() },
     onError: (err: unknown) => {
-      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save changes')
+      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? t('clinic.inpatient.failedSaveChanges'))
     },
   })
 
@@ -463,24 +481,24 @@ function EditModal({ hospit, doctors, onClose, onSaved }: {
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-md" onClick={onClose}>
       <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md p-xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-lg">
-          <h3 className="text-headline-sm font-headline font-bold text-on-surface">Edit Admission — {hospit.pet.name}</h3>
+          <h3 className="text-headline-sm font-headline font-bold text-on-surface">{t('clinic.inpatient.editAdmissionTitle').replace('{name}', hospit.pet.name)}</h3>
           <button onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-surface-container text-on-surface-variant transition-colors">
             <MaterialIcon name="close" size={20} />
           </button>
         </div>
         {error && <p className="text-error text-body-sm mb-md">{error}</p>}
         <form onSubmit={submit} className="flex flex-col gap-md">
-          <input required className={inputCls} placeholder="Reason for admission" value={form.reason} onChange={set('reason')} />
-          <input className={inputCls} placeholder="Cage number (optional)" value={form.cageNo} onChange={set('cageNo')} />
+          <input required className={inputCls} placeholder={t('clinic.inpatient.reasonForAdmission')} value={form.reason} onChange={set('reason')} />
+          <input className={inputCls} placeholder={t('clinic.inpatient.cageNumberOptional')} value={form.cageNo} onChange={set('cageNo')} />
           <select className={inputCls} value={form.doctorInCharge} onChange={set('doctorInCharge')}>
-            <option value="">Doctor in charge (optional)</option>
+            <option value="">{t('clinic.inpatient.doctorInChargeOptional')}</option>
             {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
-          <input type="number" step="0.01" min="0" max="99999999.99" className={inputCls} placeholder="Daily rate" value={form.dailyRate} onChange={set('dailyRate')} />
-          <textarea className={textareaCls} placeholder="Notes (optional)" value={form.notes} onChange={set('notes')} rows={3} />
+          <input type="number" step="0.01" min="0" max="99999999.99" className={inputCls} placeholder={t('clinic.inpatient.dailyRate')} value={form.dailyRate} onChange={set('dailyRate')} />
+          <textarea className={textareaCls} placeholder={t('clinic.inpatient.notesOptional')} value={form.notes} onChange={set('notes')} rows={3} />
           <div className="flex gap-md pt-sm">
-            <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-xl border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
-            <button type="submit" disabled={mut.isPending} className="flex-1 min-h-[44px] rounded-xl bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{mut.isPending ? 'Saving…' : 'Save Changes'}</button>
+            <button type="button" onClick={onClose} className="flex-1 min-h-[44px] rounded-xl border border-outline-variant text-body-sm font-semibold hover:bg-surface-container-low transition-colors">{t('common.cancel')}</button>
+            <button type="submit" disabled={mut.isPending} className="flex-1 min-h-[44px] rounded-xl bg-primary text-primary-on text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">{mut.isPending ? t('common.saving') : t('clinic.inpatient.saveChanges')}</button>
           </div>
         </form>
       </div>
@@ -493,6 +511,8 @@ function EditModal({ hospit, doctors, onClose, onSaved }: {
 // already sorted newest-first server-side) via `GET /api/hospitalizations/:id`.
 // Mirrors CareModal's overlay/dialog chrome and header structure.
 function CareHistoryModal({ hospit, onClose }: { hospit: Hospitalization; onClose: () => void }) {
+  const t = useT()
+  const language = useUiStore(s => s.language)
   const { data, isLoading, isError } = useQuery<Hospitalization & { careLogs: CareLog[] }>({
     queryKey: ['hospitalization', hospit.id],
     queryFn: () => api.get(`/api/hospitalizations/${hospit.id}`).then(r => r.data.data),
@@ -509,7 +529,7 @@ function CareHistoryModal({ hospit, onClose }: { hospit: Hospitalization; onClos
         <div className="flex items-center justify-between px-xl pt-xl pb-md border-b border-outline-variant">
           <div>
             <p className="text-label-md text-on-surface-variant">{hospit.pet.name}</p>
-            <p className="text-headline-sm font-headline font-bold text-on-surface">Care History</p>
+            <p className="text-headline-sm font-headline font-bold text-on-surface">{t('clinic.inpatient.careHistory')}</p>
           </div>
           <button onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-surface-container text-on-surface-variant transition-colors">
             <MaterialIcon name="close" size={20} />
@@ -526,30 +546,30 @@ function CareHistoryModal({ hospit, onClose }: { hospit: Hospitalization; onClos
           {isError && (
             <div className="bg-error-container text-error rounded-xl p-lg text-body-md flex items-center gap-sm">
               <MaterialIcon name="error" size={20} />
-              Failed to load care history.
+              {t('clinic.inpatient.failedLoadCareHistory')}
             </div>
           )}
           {!isLoading && !isError && logs.length === 0 && (
-            <p className="text-body-md text-on-surface-variant text-center py-xl">No care history recorded yet</p>
+            <p className="text-body-md text-on-surface-variant text-center py-xl">{t('clinic.inpatient.noCareHistoryYet')}</p>
           )}
           {!isLoading && !isError && logs.length > 0 && (
             <div className="flex flex-col gap-sm">
               {logs.map(log => (
                 <div key={log.id} className="rounded-xl border border-outline-variant p-md flex flex-col gap-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-label-md font-semibold text-on-surface">{formatDateTime(log.recordedAt)}</span>
+                    <span className="text-label-md font-semibold text-on-surface">{formatDateTime(log.recordedAt, language)}</span>
                     <span className="px-sm py-xs rounded-full bg-surface-container-low text-label-sm text-on-surface-variant">{log.timeSlot}</span>
                   </div>
                   <div className="grid grid-cols-3 gap-sm text-body-sm text-on-surface-variant">
-                    <span>Temp: {log.temperatureC != null ? `${Number(log.temperatureC).toFixed(1)}°C` : '—'}</span>
-                    <span>HR: {log.heartRateBpm != null ? `${log.heartRateBpm} bpm` : '—'}</span>
-                    <span>Resp: {log.respRateRpm != null ? `${log.respRateRpm} rpm` : '—'}</span>
+                    <span>{t('clinic.inpatient.tempShort')} {log.temperatureC != null ? `${Number(log.temperatureC).toFixed(1)}°C` : '—'}</span>
+                    <span>{t('clinic.inpatient.hrShort')} {log.heartRateBpm != null ? `${log.heartRateBpm} ${t('clinic.inpatient.unitBpm')}` : '—'}</span>
+                    <span>{t('clinic.inpatient.respShort')} {log.respRateRpm != null ? `${log.respRateRpm} ${t('clinic.inpatient.unitRpm')}` : '—'}</span>
                   </div>
-                  <p className="text-body-sm text-on-surface-variant">Feeding: {log.feedingStatus || '—'}</p>
-                  <p className="text-body-sm text-on-surface-variant">Medication: {log.medicationGiven || '—'}</p>
+                  <p className="text-body-sm text-on-surface-variant">{t('clinic.inpatient.feedingShort')} {log.feedingStatus ? feedingLabel(t, log.feedingStatus) : '—'}</p>
+                  <p className="text-body-sm text-on-surface-variant">{t('clinic.inpatient.medicationShort')} {log.medicationGiven || '—'}</p>
                   <p className="text-body-sm text-on-surface">{log.notes || '—'}</p>
                   <p className="text-label-sm text-on-surface-variant">
-                    By: {log.performedByUser?.name ?? (log.performedBy != null ? `Staff #${log.performedBy}` : '—')}
+                    {t('clinic.inpatient.byPrefix')} {log.performedByUser?.name ?? (log.performedBy != null ? t('common.staffNumber').replace('{id}', String(log.performedBy)) : '—')}
                   </p>
                 </div>
               ))}
@@ -562,7 +582,7 @@ function CareHistoryModal({ hospit, onClose }: { hospit: Hospitalization; onClos
           <button
             onClick={onClose}
             className="w-full min-h-[44px] rounded-xl border border-outline-variant bg-surface text-on-surface hover:bg-surface-container text-body-md font-medium transition-colors"
-          >Close</button>
+          >{t('common.close')}</button>
         </div>
       </div>
     </div>
@@ -579,8 +599,9 @@ function CageCard({ hospit, doctors, onCare, onDischarge, onEdit, onDelete, onHi
   onDelete: () => void
   onHistory: () => void
 }) {
+  const t = useT()
+  const language = useUiStore(s => s.language)
   const statusColor = STATUS_COLORS[hospit.status] ?? STATUS_COLORS.admitted
-  const statusLabel = STATUS_LABELS[hospit.status] ?? hospit.status
   const isAdmitted = hospit.status === 'admitted'
   const canDelete = isAdmitted && hospit._count.careLogs === 0
 
@@ -588,8 +609,8 @@ function CageCard({ hospit, doctors, onCare, onDischarge, onEdit, onDelete, onHi
     <div className="bg-surface rounded-2xl border border-outline-variant shadow-sm flex flex-col gap-sm p-lg hover:shadow-md transition-shadow">
       {/* Status badge + cage number */}
       <div className="flex items-center justify-between">
-        <span className={`px-sm py-xs rounded-full text-label-md font-medium ${statusColor}`}>{statusLabel}</span>
-        <span className="text-label-md text-on-surface-variant font-mono">Cage {hospit.cageNo ?? '—'}</span>
+        <span className={`px-sm py-xs rounded-full text-label-md font-medium ${statusColor}`}>{statusLabel(t, hospit.status)}</span>
+        <span className="text-label-md text-on-surface-variant font-mono">{t('clinic.inpatient.cageNo').replace('{no}', hospit.cageNo ?? '—')}</span>
       </div>
 
       {/* Pet info */}
@@ -599,7 +620,7 @@ function CageCard({ hospit, doctors, onCare, onDischarge, onEdit, onDelete, onHi
         </div>
         <div className="min-w-0">
           <p className="text-body-lg font-semibold text-on-surface truncate">{hospit.pet.name}</p>
-          <p className="text-label-md text-on-surface-variant capitalize">{hospit.pet.species}</p>
+          <p className="text-label-md text-on-surface-variant capitalize">{speciesLabel(t, hospit.pet.species)}</p>
         </div>
       </div>
 
@@ -607,11 +628,11 @@ function CageCard({ hospit, doctors, onCare, onDischarge, onEdit, onDelete, onHi
       <div className="flex flex-col gap-xs text-label-md text-on-surface-variant">
         <div className="flex items-center gap-xs">
           <MaterialIcon name="stethoscope" size={14} />
-          <span>{doctorName(doctors, hospit.doctorInCharge)}</span>
+          <span>{doctorName(doctors, hospit.doctorInCharge, t)}</span>
         </div>
         <div className="flex items-center gap-xs">
           <MaterialIcon name="calendar_today" size={14} />
-          <span>Admitted {formatDate(hospit.admittedAt)}</span>
+          <span>{t('clinic.inpatient.admittedDate').replace('{date}', formatDate(hospit.admittedAt, language))}</span>
         </div>
       </div>
 
@@ -626,21 +647,21 @@ function CageCard({ hospit, doctors, onCare, onDischarge, onEdit, onDelete, onHi
       <div className="flex flex-wrap gap-sm mt-xs">
         <button
           onClick={onCare}
-          className="flex-1 min-h-[44px] flex items-center justify-center gap-xs rounded-xl bg-primary text-primary-on text-body-sm font-medium hover:opacity-90 transition-opacity"
+          className="flex-1 min-h-[44px] px-sm whitespace-nowrap flex items-center justify-center gap-xs rounded-xl bg-primary text-primary-on text-body-sm font-medium hover:opacity-90 transition-opacity"
         >
           <MaterialIcon name="medical_services" size={16} />
-          Log Care
+          {t('clinic.inpatient.logCare')}
         </button>
         <button
           onClick={onDischarge}
-          className="flex-1 min-h-[44px] flex items-center justify-center gap-xs rounded-xl border border-outline-variant bg-surface text-on-surface text-body-sm font-medium hover:bg-surface-container transition-colors"
+          className="flex-1 min-h-[44px] px-sm whitespace-nowrap flex items-center justify-center gap-xs rounded-xl border border-outline-variant bg-surface text-on-surface text-body-sm font-medium hover:bg-surface-container transition-colors"
         >
           <MaterialIcon name="logout" size={16} />
-          Discharge
+          {t('clinic.inpatient.discharge')}
         </button>
         <button
           onClick={onHistory}
-          aria-label="View care history"
+          aria-label={t('clinic.inpatient.viewCareHistoryAria')}
           className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl border border-outline-variant bg-surface text-on-surface hover:bg-surface-container transition-colors"
         >
           <MaterialIcon name="history" size={16} />
@@ -648,7 +669,7 @@ function CageCard({ hospit, doctors, onCare, onDischarge, onEdit, onDelete, onHi
         {isAdmitted && (
           <button
             onClick={onEdit}
-            aria-label="Edit admission"
+            aria-label={t('clinic.inpatient.editAdmissionAria')}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl border border-outline-variant bg-surface text-on-surface-variant hover:bg-surface-container transition-colors"
           >
             <MaterialIcon name="edit" size={16} />
@@ -657,7 +678,7 @@ function CageCard({ hospit, doctors, onCare, onDischarge, onEdit, onDelete, onHi
         {canDelete && (
           <button
             onClick={onDelete}
-            aria-label="Delete admission"
+            aria-label={t('clinic.inpatient.deleteAdmissionAria')}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl border border-outline-variant bg-surface text-error hover:bg-error-container transition-colors"
           >
             <MaterialIcon name="delete" size={16} />
@@ -679,6 +700,7 @@ type InpatientModalState =
   | { kind: 'history'; hospit: Hospitalization }
 
 export default function ClinicInpatient() {
+  const t = useT()
   const [activeModal, setActiveModal] = useState<InpatientModalState | null>(null)
   const qc = useQueryClient()
 
@@ -705,31 +727,35 @@ export default function ClinicInpatient() {
   })
 
   function handleDischarge(hospit: Hospitalization) {
-    if (!window.confirm(`Discharge ${hospit.pet.name}? This will generate the billing invoice.`)) return
+    if (!window.confirm(t('clinic.inpatient.confirmDischarge').replace('{name}', hospit.pet.name))) return
     discharge.mutate(hospit.id)
   }
 
   function handleDelete(hospit: Hospitalization) {
-    if (!window.confirm(`Delete this admission for ${hospit.pet.name}? This cannot be undone.`)) return
+    if (!window.confirm(t('clinic.inpatient.confirmDeleteAdmission').replace('{name}', hospit.pet.name))) return
     remove.mutate(hospit.id)
   }
 
   const list = data ?? []
+  const activeAdmissionsText = (list.length === 1
+    ? t('clinic.inpatient.activeAdmissionsOne')
+    : t('clinic.inpatient.activeAdmissionsOther')
+  ).replace('{n}', String(list.length))
 
   return (
     <div className="p-lg flex flex-col gap-lg">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-headline-md font-headline font-bold text-on-surface">Inpatient Board</h1>
+          <h1 className="text-headline-md font-headline font-bold text-on-surface">{t('clinic.inpatient.boardTitle')}</h1>
           <p className="text-body-md text-on-surface-variant">
-            {isLoading ? 'Loading…' : `${list.length} active admission${list.length !== 1 ? 's' : ''}`}
+            {isLoading ? t('common.loading') : activeAdmissionsText}
           </p>
         </div>
         <button
           onClick={() => refetch()}
           className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl border border-outline-variant bg-surface hover:bg-surface-container text-on-surface-variant transition-colors"
-          title="Refresh"
+          title={t('common.refresh')}
         >
           <MaterialIcon name="refresh" size={20} />
         </button>
@@ -744,7 +770,7 @@ export default function ClinicInpatient() {
       {isError && (
         <div className="bg-error-container text-error rounded-xl p-lg text-body-md flex items-center gap-sm">
           <MaterialIcon name="error" size={20} />
-          Failed to load inpatient data. Please refresh.
+          {t('clinic.inpatient.failedLoadInpatientData')}
         </div>
       )}
 
@@ -752,8 +778,8 @@ export default function ClinicInpatient() {
       {!isLoading && !isError && list.length === 0 && (
         <div className="flex flex-col items-center justify-center py-xl gap-md text-on-surface-variant">
           <MaterialIcon name="local_hospital" size={48} className="text-outline" />
-          <p className="text-body-lg font-medium text-on-surface">No active admissions</p>
-          <p className="text-body-md">All patients have been discharged or no admissions today.</p>
+          <p className="text-body-lg font-medium text-on-surface">{t('clinic.inpatient.noActiveAdmissions')}</p>
+          <p className="text-body-md">{t('clinic.inpatient.allDischargedOrNoneToday')}</p>
         </div>
       )}
 
