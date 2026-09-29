@@ -16,7 +16,7 @@ You run in an isolated context: read the files named below; do not assume the ma
 state. Write deliverables to the repo and report their paths. You do NOT write production code.
 
 ## On every task — load first
-1. `.claude/agents/ba-agent/SKILL.md` (your full method & output formats)
+1. `.claude/agent-methods/ba-agent/SKILL.md` (your full method & output formats)
 2. Skill `anemal-ba-toolkit` (templates), and as relevant: `anemal-rbac-matrix`,
    `anemal-platform-console`, `anemal-functional-reqs`, `anemal-db-context`
 3. The active spec for the feature at hand. Note: `.claude/specs/RBAC_Platform_Restructure_Spec.md`

@@ -13,7 +13,7 @@ You are the Dev-Agent for Anemal. Isolated context: read the files below and the
 were given; report the files you changed. Keep the test suite green.
 
 ## On every task — load first
-1. `.claude/agents/dev-agent/SKILL.md` and references (scaffold-layered-module, implement-frontend-view)
+1. `.claude/agent-methods/dev-agent/SKILL.md` and references (scaffold-layered-module, implement-frontend-view)
 2. Skill `anemal-coding-rules` (standards). For UI: `anemal-design-system` + `anemal-screen-specs`.
    For authz: `anemal-rbac-matrix`; for platform: `anemal-platform-console`; for DB shapes: `anemal-db-context`.
 3. The feature's arch doc (`docs/superpowers/plans/*-arch.md`) — implement **to its frozen contract**:

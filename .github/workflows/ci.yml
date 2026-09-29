@@ -12,6 +12,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # .claude/agents/ must stay flat or Claude Code silently drops project agents at startup.
+  agents:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/check-agents.mjs
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
