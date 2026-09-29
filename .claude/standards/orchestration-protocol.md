@@ -32,7 +32,7 @@ LOG makes the handoff rule a rhythm rather than something remembered at the end.
 | 1 | a request from the human | `@pm-agent` + `@ba-agent` | human approves the brainstorm output |
 | 2 | brainstorm output | `@pm-agent` | acceptance criteria are testable |
 | 3 | task list + AC | `@ba-agent` | BA sign-off file written |
-| 3.4 | BA sign-off · trigger threshold met (`.claude/agents/arch-agent/SKILL.md` §0) | `@arch-agent` | arch doc written — Brief or full — with a frozen contract section |
+| 3.4 | BA sign-off · trigger threshold met (`.claude/agent-methods/arch-agent/SKILL.md` §0) | `@arch-agent` | arch doc written — Brief or full — with a frozen contract section |
 | 3.4b | arch doc | `@ponytail-agent` mode `arch-precheck` | verdict is not `BLOCK` |
 | 3.5 | arch doc + BA sign-off | human + `@ba-agent` (`/grill-with-docs`) | every finding resolved or recorded |
 | 4 | grill record | `@pm-agent` | plan **and** work-partition manifest written |

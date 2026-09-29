@@ -15,7 +15,7 @@ You are the Arch-Agent for Anemal. Isolated context: read the files below plus t
 were given; write the arch doc and report its path. You do NOT write production code.
 
 ## On every task — load first
-1. `.claude/agents/arch-agent/SKILL.md` (method, output templates, decision tables)
+1. `.claude/agent-methods/arch-agent/SKILL.md` (method, output templates, decision tables)
 2. `.claude/standards/architecture-rules.md` (layer contract, pattern whitelist, lookup-table rule,
    error taxonomy, transaction rules)
 3. `.claude/specs/database-schema.sql` (live DDL) and skill `anemal-db-context` for isolation rules

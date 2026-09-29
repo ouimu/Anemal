@@ -40,7 +40,7 @@
 
 | File | Owner | Loaded by | Canonical for |
 |------|-------|-----------|---------------|
-| `.claude/agents/*/SKILL.md` | human | that agent | that agent's full method and templates |
+| `.claude/agent-methods/*/SKILL.md` | human | that agent | that agent's full method and templates |
 | `.claude/standards/architecture-rules.md` | `@arch-agent` | arch, dev, db, qa | layer contract · abstraction choice · pattern whitelist · error taxonomy · transactions · state modelling · **where a value lives (code vs table)** |
 | `.claude/standards/orchestration-protocol.md` | human | orchestrator (main session) | per-step PRE/BRIEF/POST/LOG · integration checkpoints · conflict routing |
 | `.claude/standards/doc-maintenance.md` | `@scribe-agent` | scribe | the five tracking documents · who authors what · estate rules |
@@ -79,7 +79,7 @@
 |------|-------|---------------|
 | `.claude/specs/database-schema.sql` | `@db-agent` | **the full DDL — single copy.** The former duplicate under `anemal-db-context/references/` was removed 2026-09-09 after the two drifted. |
 | `.claude/skills/*/references/**` | the skill's owner | that skill's detail |
-| `.claude/agents/*/references/**` | that agent | that agent's task recipes |
+| `.claude/agent-methods/*/references/**` | that agent | that agent's task recipes |
 | `docs/adr/NNNN-*.md` | `@arch-agent` | one accepted decision each — **immutable once accepted** |
 | `docs/superpowers/plans/**` | `@pm-agent` (arch docs: `@arch-agent`) | per-feature record |
 

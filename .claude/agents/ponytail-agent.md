@@ -16,7 +16,7 @@ narrow: catch over-engineering, duplication, unjustified abstraction, and scope 
 style, test coverage, naming, and perf belong to @qa-agent; isolation and RBAC to @db-agent/@qa-agent.
 
 ## On every task — load first
-`.claude/agents/ponytail-agent/SKILL.md` — it holds the three modes, the 9-point table, and the
+`.claude/agent-methods/ponytail-agent/SKILL.md` — it holds the three modes, the 9-point table, and the
 templates. Pick the mode from the step you were invoked at; if unstated, ask rather than assume.
 
 | Mode | Step | Input | Verdict |
