@@ -172,6 +172,9 @@ Run the QA protocol at the end of every task: `.claude/roadmap/qa-protocols.md`.
   suite is green and which turns those failing tests green (or deletes them with a recorded
   deleted-coverage justification) may merge while `main` is red, and its PR body must say so.
   Mechanic: `anemal-finish-branch` SKILL.md §1.5.
+- **CI merge gate (every lane):** never merge a PR unless its `frontend` and `backend` CI checks are
+  green on the current head — even when told "merge". GitHub does not enforce this (private repo, free
+  plan), so the agent is the gate. Mechanic: `anemal-finish-branch` SKILL.md §3.5.
 
 ---
 

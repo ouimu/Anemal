@@ -65,11 +65,32 @@ template in this environment's instructions.
 
 Never push --force, never skip hooks, never merge without being asked.
 
+## 3.5 Merge gate — CI must be green
+
+GitHub does **not** enforce this: the repo is private on the free plan, so
+rulesets and branch protection are not applied and the merge button stays
+clickable on a red PR. This gate is the only thing that holds the line.
+
+Before merging — even when the user says "merge" — read the PR's check runs
+on its **current head commit**:
+1. `frontend` and `backend` (from `.github/workflows/ci.yml`) must both be
+   `completed` / `success`.
+2. Still running → wait for them; do not merge on a pending check.
+3. Any red → do NOT merge. Report the failing job and step, and fix it
+   first (Lane B). Only exception: the self-fix branch exemption in §1.5,
+   and then only if CI's remaining failures are exactly the tests that
+   branch fixes — say so in the PR body.
+4. A new push after the checks passed resets this — re-read on the new head.
+
+(Rule added 2026-09-29 with the CI workflow, after PR #92 merged with a red
+test and left `main` red until PR #96.)
+
 ## 4. After merge — verify main
 
 Once the user confirms the PR is merged (or merges it themselves):
 1. `git checkout main && git pull`
-2. Re-run the test suite on `main`. If anything is red, report it
+2. Check the CI run that the merge triggered on `main` (or re-run the test
+   suite locally if CI is unavailable). If anything is red, report it
    immediately — do not silently start a new feature on top of a broken
    main branch. (Past incident: a merge left 22 failing test files
    undetected until the next feature's plan cycle.)
