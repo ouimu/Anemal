@@ -70,7 +70,7 @@ Anemal/
 |---|---|
 | Frontend | React 18.3 + TypeScript + Tailwind CSS 3.4 |
 | State Management | Zustand 4.5 |
-| Build tool | Vite 5.2 |
+| Build tool | Vite 8 |
 | Backend | Node.js + Express 4.19 |
 | Database | PostgreSQL 15+ + Prisma 5.13 |
 | Auth | JWT (`tenant_id`/`branch_id` embedded) — username-based clinic login, email-based platform login |
