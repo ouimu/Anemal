@@ -162,7 +162,7 @@ describe('PlatformLayout — @AC-RESP-5-8 idle warning is above the drawer (clas
     shellState = shellFor('drawer')
     idleState.warning = true
     render(<PlatformLayout />)
-    const panel = screen.getByRole('complementary', { name: 'Anemal' })
+    const panel = screen.getByRole('dialog', { name: 'Anemal' })
     expect(panel.className).toContain('z-[45]')
     const backdrop = document.querySelector('[data-testid="sidebar-backdrop"]') as HTMLElement
     expect(backdrop.className).toContain('z-[45]')
@@ -180,6 +180,25 @@ describe('PlatformLayout — @AC-RESP-5-8 idle warning is above the drawer (clas
     idleState.warning = true
     render(<PlatformLayout />)
     fireEvent.click(screen.getByRole('button', { name: 'Stay logged in' }))
+    expect(stayLoggedIn).toHaveBeenCalledTimes(1)
+  })
+
+  // RESP-8 extra Step 7 QA test (gate A-5 / A-8, extends @AC-RESP-5-8; ADR-0027 decision 1:
+  // a blocking Dialog never closes on Escape). The drawer's own state behind the warning is
+  // deliberately NOT asserted (plan RESP-8); "usable" = the control is clickable, not focused.
+  it('@AC-RESP-5-8 (RESP-8, A-5) one Escape with the drawer open leaves the blocking idle warning open and "stay signed in" clickable', () => {
+    shellState = shellFor('drawer')
+    idleState.warning = true
+    render(<PlatformLayout />)
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+    expect(screen.getByText('Session expiring')).toBeInTheDocument()
+    const stay = screen.getByRole('button', { name: 'Stay logged in' })
+    expect(stay).toBeEnabled()
+    fireEvent.click(stay)
     expect(stayLoggedIn).toHaveBeenCalledTimes(1)
   })
 })

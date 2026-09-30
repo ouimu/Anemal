@@ -94,6 +94,7 @@ describe('ResponsiveSidebar — drawer mode', () => {
   it('@AC-RESP-2-3 closed: nothing in flow, no sidebar node in the accessibility tree', () => {
     const { container } = renderSidebar(drawer({ drawerOpen: false }))
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
     expect(container.querySelector('aside')).toBeNull()
   })
@@ -103,7 +104,7 @@ describe('ResponsiveSidebar — drawer mode', () => {
     renderSidebar(
       drawer({ footer: { name: 'Alice', roleLabel: 'doctor', initial: 'A', signOutLabel: 'Sign out', onSignOut } }),
     )
-    const panel = screen.getByRole('complementary')
+    const panel = screen.getByRole('dialog')
     expect(within(panel).getByText('Dashboard')).toBeInTheDocument()
     expect(within(panel).getByText('Acme Clinic')).toBeInTheDocument()
     expect(within(panel).getByText('Alice')).toBeInTheDocument()
@@ -235,7 +236,7 @@ describe('ResponsiveSidebar — parity, tap targets, z-order', () => {
     expect(screen.getByRole('complementary').className).toContain('z-[45]')
     inline.unmount()
     renderSidebar(baseProps({ mode: 'drawer', expanded: false, drawerOpen: true }))
-    expect(screen.getByRole('complementary').className).toContain('z-[45]')
+    expect(screen.getByRole('dialog').className).toContain('z-[45]')
     expect((document.querySelector('[data-testid="sidebar-backdrop"]') as HTMLElement).className).toContain('z-[45]')
   })
 

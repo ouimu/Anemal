@@ -11,10 +11,12 @@
  * above the top bar (z-40) and below Dialog / IdleLogoutModal (z-50).
  * Rail-band expansion stays inline and pushes content; there is no overlay variant.
  *
- * The drawer is a navigation panel (a labelled aside that takes focus, closes on Escape,
- * backdrop tap or navigation), not a Dialog: it has no dismissal policy of its own, so it
- * deliberately carries no dialog role and is not one of the modal roots counted by the
- * MODAL-13 census.
+ * The drawer is a modal navigation panel: `role="dialog" aria-modal="true"` labelled by the
+ * header title, with a full-screen backdrop. It takes focus on open, closes on Escape, backdrop
+ * tap or navigation, and returns focus to the opener. It is not a shared Dialog consumer (no
+ * title bar, footer or dismissal policy, and no focus trap, matching Dialog), so it is recorded
+ * in the MODAL-13 census allowlist (KNOWN_BESPOKE_MODALS) instead. The inline sidebar stays a
+ * plain complementary aside.
  */
 import { useEffect, useRef } from 'react'
 import { NavLink, Link } from 'react-router-dom'
@@ -191,7 +193,7 @@ const ASIDE_BASE = 'fixed left-0 top-0 h-screen z-[45] bg-surface shadow-sm flex
  */
 function DrawerPanel(props: ResponsiveSidebarProps): JSX.Element {
   const { onCloseDrawer } = props
-  const panelRef = useRef<HTMLElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
@@ -212,16 +214,18 @@ function DrawerPanel(props: ResponsiveSidebarProps): JSX.Element {
         data-testid="sidebar-backdrop"
         aria-hidden="true"
         onClick={onCloseDrawer}
-        className="fixed left-0 top-0 h-screen w-screen z-[45] bg-primary/30"
+        className="fixed inset-0 z-[45] bg-primary/30"
       />
-      <aside
+      <div
         ref={panelRef}
+        role="dialog"
+        aria-modal="true"
         aria-label={props.header.title}
         tabIndex={-1}
         className={`${ASIDE_BASE} w-56 outline-none`}
       >
         <SidebarBody {...props} labeled showToggle={false} onNavigate={onCloseDrawer} />
-      </aside>
+      </div>
     </>
   )
 }

@@ -65,6 +65,12 @@ const KNOWN_BESPOKE_MODALS: Record<string, BespokeModalEntry> = {
       'Main user-edit modal (sticky-footer/local-Modal conflict, excluded by Step 1 sign-off) + ' +
       'self-demotion confirm (out of scope per human decision D-2, arch brief §10) — both stay bespoke.',
   },
+  'components/ResponsiveSidebar.tsx': {
+    count: 2,
+    reason:
+      'Responsive sidebar drawer (ADR-0033): backdrop + dialog panel, no title/footer/dismissal policy of a ' +
+      'Dialog consumer; no focus trap, matching Dialog.',
+  },
 }
 
 /** Strips /* ... *\/ block comments (including JSDoc) before signature scanning.
