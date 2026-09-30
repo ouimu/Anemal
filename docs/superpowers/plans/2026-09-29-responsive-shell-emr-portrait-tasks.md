@@ -1,6 +1,6 @@
 # Tasks + Acceptance Criteria: Responsive Shell + EMR Portrait
 
-**Lane:** A · **Step:** 2 (tasks + AC) · **Status:** Step 3 BA verdict READY-WITH-FIXES (2026-09-29) — N3 Examples reconciled in place; remaining edits listed in `2026-09-29-responsive-shell-emr-portrait-ba-signoff.md` §7
+**Lane:** A · **Step:** 2 (tasks + AC) · **Status:** Step 3 BA verdict READY-WITH-FIXES (2026-09-29) — N3 Examples reconciled in place; sign-off §7 edits E1-E12 applied 2026-09-30 (human: Q1 = drop hand mode, backlog RESP-BL-4; Q2 = accept ~288px editor at 1024 when sidebar manually expanded, R13). Ready for Step 3.4
 **Author:** @pm-agent · **Date:** 2026-09-29
 **Inputs:** `2026-09-28-responsive-shell-emr-portrait-brainstorm.md`; `HANDOFF-responsive-shell-emr-portrait.md` ("Step 1 gate — APPROVED", 7 binding decisions); `anemal-design-system/references/sidebar-spec.md` §5-§7 (behaviour authority).
 **Feature slug:** `responsive-shell-emr-portrait`
@@ -24,7 +24,7 @@
 - **Actors:** every signed-in shell user. Clinic plane: `clinic_admin`, `doctor`, `clinic_staff`. Platform plane: platform users (`PlatformLayout`). Primary persona for the defect: `doctor` charting on a tablet held in portrait.
 - **Device:** Tablet (768 portrait, 1024 landscape) and Web (>=1280). Touch-first: every tap target >=44x44px.
 - **Frontend-only change.** No table, no API, no permission code, no new route. Consequence for `@authz`/`@tenant`/`@validation` Scenarios: see section 5 ("Protected-task rule: not applicable, with one regression guard").
-- **Out of scope (explicit):** Pets `h-full` overflow bug (separate pre-existing item); RESP-BL-1; RESP-BL-2; any change to sidebar nav items, role gating, or sidebar visual design (widths stay at the values the layouts use today, `w-56` expanded / `w-14` collapsed; the sidebar-spec's `w-64`/`w-16` numbers are a pre-existing spec-vs-code drift and are NOT altered by this feature).
+- **Out of scope (explicit):** Pets `h-full` overflow bug (separate pre-existing item); RESP-BL-1; RESP-BL-2; hand mode / right-hand sidebar (RESP-BL-4, human decision Q1); converting `SettingsLayout`'s role filter to permission codes (RESP-BL-6); EMR UI gating on `emr.create`/`emr.edit`/`prescriptions.create` (RESP-BL-5); any change to sidebar nav items, role gating, or sidebar visual design (widths stay at the values the layouts use today, `w-56` expanded / `w-14` collapsed; the sidebar-spec's `w-64`/`w-16` numbers are a pre-existing spec-vs-code drift and are NOT altered by this feature).
 
 ## 2. Breakpoint contract (proposed, for BA to confirm)
 
@@ -49,8 +49,8 @@ Legend: **Must** = ships or the origin defect (EMR unusable at 768) is not fixed
 | RESP-1 | Viewport-mode hook and shared breakpoint constant (with live `resize`) | Must | Dev A | none | new `src/frontend/src/hooks/useViewportMode.ts` (+ test); new shared breakpoint constant (location per arch/plan); reads only, may add non-persisted state to `store/uiStore.ts` if needed |
 | RESP-2 | Shared responsive sidebar (`expanded`/`rail`/`drawer`) with hamburger, backdrop, auto-close on navigation | Must | Dev A | RESP-1 | new shared sidebar component under `src/frontend/src/components/` (+ test); `store/uiStore.ts` if a drawer-open flag is needed |
 | RESP-3 | Adopt shared sidebar in `ClinicLayout` | Must | Dev A | RESP-2 | `layouts/ClinicLayout.tsx`, `layouts/__tests__/ClinicLayout.test.tsx` |
-| RESP-4 | Adopt shared sidebar in `AdminLayout`; remove mount-only `LAYOUT-04` workaround from `SettingsLayout` when adopting there | Should (D4) | Dev A | RESP-2 | `layouts/AdminLayout.tsx`, `layouts/__tests__/AdminLayout.test.tsx` |
-| RESP-5 | Adopt shared sidebar in `SettingsLayout` and `PlatformLayout` | Should (D4) | Dev A | RESP-2 | `layouts/SettingsLayout.tsx`, `layouts/PlatformLayout.tsx` (+ tests) |
+| RESP-4 | Adopt shared sidebar in `AdminLayout` | Should (D4) | Dev A | RESP-2 | `layouts/AdminLayout.tsx`, `layouts/__tests__/AdminLayout.test.tsx` |
+| RESP-5 | Adopt shared sidebar in `SettingsLayout` (and remove its mount-only `LAYOUT-04` workaround) and `PlatformLayout` | Should (D4) | Dev A | RESP-2 | `layouts/SettingsLayout.tsx`, `layouts/PlatformLayout.tsx` (+ tests) |
 | RESP-6 | EMR portrait layout: tabs (`Patient` / `SOAP` / `Attachments & Rx`) below the drawer breakpoint | Must | UIUX A (design) then Dev B (build) | RESP-1 (constant only) | `src/frontend/src/views/clinic/ClinicEMR.tsx` (+ test). UIUX A output: tab design note, may refine D5 |
 | RESP-7 | EMR portrait: header, allergy chip and save bar stay visible on every tab; state preserved across tab switches; anatomy canvas fits | Must | Dev B | RESP-6 | `views/clinic/ClinicEMR.tsx` (same owner and file as RESP-6, sequenced not parallel) |
 | RESP-8 | Cross-screen regression sweep at 768 / 1024 / 1280 (Dashboard, Appointments, Pets, EMR, Inventory, Billing, Inpatient + Settings, Admin, Platform shells) | Must | QA | RESP-3 to RESP-7 | tests only |
@@ -180,12 +180,6 @@ Feature: One sidebar that adapts to the device
     Then the drawer state is discarded
     And the sidebar is shown inline and expanded
 
-  @AC-RESP-2-10
-  Scenario: Right-hand mode mirrors the drawer
-    Given hand mode is "right" and my viewport is 768px wide
-    When I tap the hamburger button
-    Then the drawer opens from the right edge
-
   @AC-RESP-2-11
   Scenario Outline: Tap targets are at least 44x44px
     Given my viewport is <width>px wide
@@ -220,6 +214,19 @@ Feature: One sidebar that adapts to the device
       | doctor       | 768   | EMR      | emr.view       | shown      |
       | clinic_staff | 768   | Billing  | billing.create | shown      |
       | clinic_staff | 768   | Grooming | grooming.view  | shown      |
+
+  @AC-RESP-2-14 @edge
+  Scenario Outline: Sign out is reachable in drawer mode in every shell
+    Given I am signed in and on a <shell> screen and my viewport is 768px wide
+    When I open the drawer
+    Then a "Sign out" control is shown in the drawer and is at least 44x44px
+
+    Examples:
+      | shell    |
+      | clinic   |
+      | admin    |
+      | settings |
+      | platform |
 ```
 
 Reconciled at Step 3 (BA, 2026-09-29) to `ClinicLayout.tsx` `NAV` (per-item `perm`) and `anemal-rbac-matrix` §2. The earlier `Settings` row was removed: `ClinicLayout` has no Settings item for any role, so the row could not fail. The only clinic-shell items that differ between the three system roles are Billing (`billing.create`: `clinic_admin` E, `doctor` -, `clinic_staff` E) and Grooming (`grooming.view`: `clinic_admin` V, `doctor` -, `clinic_staff` V); every other item is held by all three. The 1280/1024/768 rows for `doctor`/Billing are the mode-parity guard: one filtered list feeds all three modes.
@@ -308,6 +315,22 @@ Feature: Clinic admin shell fits every supported device
       | clinic_staff | /clinic-admin/audit | audit.view | the 403 page (/clinic-admin/403) | not shown |
       | doctor       | /clinic-admin/roles | roles.view | the 403 page (/clinic-admin/403) | not shown |
       | clinic_admin | /clinic-admin/users | staff.view | the Users screen              | shown     |
+
+  @AC-RESP-4-4 @authz
+  Scenario Outline: The admin sidebar shows the same role-gated items in every mode
+    Given I am signed in to "Clinic A" as "<role>" instead and my viewport is <width>px wide
+    When the admin shell sidebar is displayed on "/clinic-admin/dashboard" (opened as a drawer below 1024px)
+    Then the item "<item>" is <visibility>
+
+    Examples:
+      | role         | width | item       | permission     | visibility |
+      | clinic_admin | 768   | Users      | staff.view     | shown      |
+      | clinic_admin | 1024  | Roles      | roles.view     | shown      |
+      | clinic_staff | 1280  | Users      | staff.view     | not shown  |
+      | clinic_staff | 768   | Users      | staff.view     | not shown  |
+      | clinic_staff | 768   | Audit log  | audit.view     | not shown  |
+      | doctor       | 768   | Roles      | roles.view     | not shown  |
+      | doctor       | 768   | Blood Bank | bloodbank.view | shown      |
 ```
 
 Reconciled at Step 3 (BA, 2026-09-29) to `App.tsx` (`RequirePermission` per `/clinic-admin/*` route) and `anemal-rbac-matrix` §2. "An admin screen" was ambiguous and would have passed or failed depending on the screen picked: `doctor` and `clinic_staff` both hold `clinic.profile.view`, so `/clinic-admin/dashboard`, `/usage`, `/settings` and `/subscription` legitimately render for them today (this is the current matrix, not a defect of this feature). The rows use only screens whose code those roles do not hold. The frontend outcome is the `/clinic-admin/403` page (`RequirePermission` redirects; it does not render an HTTP status). The server boundary (`GET /users` → 403 for `staff.view`-less roles, `GET /clinic/roles` → 403) is unchanged and is already covered by the existing backend suites (`roleEditor-t5f01.test.ts`, `rbac-regression.test.ts`), which must stay green.
@@ -365,6 +388,48 @@ Feature: Settings and platform shells follow the same responsive rules
       | clinic_admin | admin    | 768   |
       | clinic_admin | settings | 768   |
       | clinic_admin | admin    | 1024  |
+
+  @AC-RESP-5-5 @authz
+  Scenario: A clinic session cannot open the platform shell at any width
+    Given I am signed in to the clinic plane as "clinic_admin", I have no platform session, and my viewport is 768px wide
+    When I open "/platform/customers" directly by address
+    Then I am sent to "/platform/login"
+    And no platform sidebar, drawer or hamburger is rendered
+
+  @AC-RESP-5-6 @authz
+  Scenario Outline: The settings sidebar keeps today's role filter in every mode
+    Given I am signed in to "Clinic A" as "<role>" and my viewport is <width>px wide
+    When the settings shell sidebar is displayed (opened as a drawer below 1024px)
+    Then the item "<item>" is <visibility>
+
+    Examples:
+      | role         | width | item              | visibility |
+      | clinic_admin | 1280  | Operating Hours   | shown      |
+      | clinic_admin | 768   | Operating Hours   | shown      |
+      | clinic_admin | 768   | Branches          | shown      |
+      | doctor       | 1280  | Clinic Profile    | not shown  |
+      | doctor       | 768   | Clinic Profile    | not shown  |
+      | clinic_staff | 768   | Branches          | not shown  |
+      | doctor       | 768   | Back to Dashboard | shown      |
+
+  @AC-RESP-5-7
+  Scenario Outline: Back to Dashboard from the settings drawer goes to the role's home
+    Given I am signed in as "<role>", I am on "/settings/clinic-profile" at 768px, and the drawer is open
+    When I tap "Back to Dashboard"
+    Then I am on "<home>"
+    And the drawer is closed
+
+    Examples:
+      | role         | home                    |
+      | clinic_admin | /clinic-admin/dashboard |
+      | doctor       | /clinic/dashboard       |
+
+  @AC-RESP-5-8 @edge
+  Scenario: The idle-logout warning is not hidden behind the drawer
+    Given I am signed in as a platform user at 768px and the drawer is open
+    When the idle-logout warning is raised
+    Then the warning is shown above the drawer and backdrop
+    And its "stay signed in" control can be tapped
 ```
 
 Reconciled at Step 3 (BA, 2026-09-29). Platform items are not permission-coded in the clinic catalogue: `PlatformLayout` `NAV` is a static list gated only by the platform-plane session (`platformAuthStore.isAuthenticated()`), and `/platform/*` routes are guarded server-side by `requirePlane('platform')` + `requirePlatformPermission`. The guard therefore asserts plane separation (no platform item ever reaches a clinic shell's item list) rather than a role row. `clinic_admin` is used because it is the broadest clinic role; if it sees no platform item, no clinic role does. See the sign-off doc for the companion "clinic session opens `/platform/*` directly" Scenario.
@@ -465,6 +530,18 @@ Feature: EMR usable in tablet portrait
     Given my viewport is 768px wide
     When the EMR tab bar is rendered
     Then every tab is at least 44px high and 44px wide
+
+  @AC-RESP-6-12
+  Scenario: Portrait EMR loads the same data as the three-column layout
+    Given the requests made when "Mochi"'s record is opened at 1280px are recorded
+    When I open the same record at 768px
+    Then the same endpoints are requested with the same parameters
+
+  @AC-RESP-6-13
+  Scenario: Portrait EMR saves the same payload as the three-column layout
+    Given the save payload sent for a SOAP note on "Mochi"'s record at 1280px is recorded
+    When I save the same SOAP text on the same record at 768px from the "SOAP" tab
+    Then the save request has the same endpoint, fields and values
 ```
 
 Reconciled at Step 3 (BA, 2026-09-29) to `ClinicEMR.tsx` and `anemal-rbac-matrix` §2. The only UI permission gate in `ClinicEMR.tsx` today is `<Can perm="emr.attach">` (three places, attachments panel). SOAP fields, the save button and "add prescription" are **not** gated on `emr.create`/`emr.edit`/`prescriptions.create` in the UI, so the earlier `clinic_staff | read-only` row would have failed against unchanged code; that is the pre-existing gap filed as `RESP-BL-5` (see sign-off doc), not fixed here. All three system roles hold `emr.attach` (`clinic_admin` E, `doctor` E, `clinic_staff` V), so the negative row needs a custom role (precedent: `pet-medical-degradation.test.ts` clones `clinic_staff` and toggles EMR codes off). The server boundary for SOAP writes is unchanged and already covered: `clinic_staff` → 403 on `POST /api/medical-records` (`vaccination-create-permission.test.ts`), `clinic_admin` → 403 (`codex-review-regression.test.ts`); those suites must stay green.
@@ -597,8 +674,8 @@ Feature: Nothing regresses across supported widths
   @AC-RESP-8-3
   Scenario: Existing shell behaviours still work
     Given my viewport is 1280px wide
-    When I toggle the collapse control, swap the hand mode and reload the page
-    Then the hand mode persists across the reload
+    When I toggle the collapse control and reload the page
+    Then the collapse choice made at 1280px is still applied after the reload
     And role-gated navigation items are unchanged
 
   @AC-RESP-8-4
@@ -617,7 +694,9 @@ Feature: Nothing regresses across supported widths
 
 ---
 
-## 5. Protected-task rule: not applicable, with one regression guard
+## 5. Protected-task rule: not applicable, with regression guards
+
+Exemption confirmed by BA with conditions C1-C3, see sign-off §4 (`2026-09-29-responsive-shell-emr-portrait-ba-signoff.md`).
 
 `acceptance-criteria.md` requires `@authz`, `@tenant`, `@validation` Scenarios for protected tasks. This feature adds no route, permission, query or input, so the standard triple is not applicable:
 
@@ -625,7 +704,7 @@ Feature: Nothing regresses across supported widths
 - `@authz`: no new permission. Regression guards exist where the shell shows or hides items by role (`@AC-RESP-2-13`, `@AC-RESP-4-3`, `@AC-RESP-5-4`, `@AC-RESP-6-9`).
 - `@validation`: no new input. The brainstorm's placeholder `@validation` tag on the anatomy canvas was dropped (it is a layout check, not input validation); it is `@AC-RESP-7-5`.
 
-`@ba-agent` should confirm this reading at Step 3, since it is the BA's call whether a Definition-of-Ready exemption is valid.
+Regression guards also added by the sign-off: `@AC-RESP-2-14`, `@AC-RESP-4-4`, `@AC-RESP-5-5` to `-5-8`, `@AC-RESP-6-12`, `@AC-RESP-6-13`. Confirmed by @ba-agent at Step 3.
 
 ## 6. Backlog (out of scope, filed per scope guard)
 
@@ -633,6 +712,9 @@ Feature: Nothing regresses across supported widths
 |----|------|--------------|----------|
 | RESP-BL-1 | `ClinicPets.tsx` fixed `w-72` pet-list panel at 768 | Same defect shape, not the reported defect, single-file follow-up (D6). Separate from the pre-existing Pets `h-full` overflow bug. | brainstorm 1.3, `ClinicPets.tsx:879` |
 | RESP-BL-2 | `ClinicAppointments.tsx` fixed `w-80` detail drawer with 7-column calendar at 768 | Same (D6). | brainstorm 1.3, `ClinicAppointments.tsx:124` |
+| RESP-BL-4 | Hand mode (right-hand sidebar): `uiStore.handMode` and `sidebar-spec.md` §7 exist, but no layout consumes it and there is no toggle UI. Human decision Q1 (2026-09-30): dropped from this feature. | Spec-vs-code drift like RESP-BL-3, not part of the portrait defect; mirroring only the drawer would leave the app half left-handed. | grep: `handMode` appears only in `uiStore.ts`; sign-off G-7 |
+| RESP-BL-5 | `ClinicEMR.tsx` shows editable SOAP fields, save and "add prescription" to roles without `emr.create`/`emr.edit`/`prescriptions.create`. Server returns 403 on save (no escalation) but the UX misleads. | Pre-existing UI-gating gap; separate authz UX fix. | sign-off §10 |
+| RESP-BL-6 | `SettingsLayout` filters nav by legacy `role === 'admin'` instead of permission codes. | Changing it changes visibility for `doctor`/`clinic_staff` (G-3); needs its own BA decision. | sign-off G-3, §10 |
 | RESP-BL-3 (proposed) | Sidebar width drift: `sidebar-spec.md` says `w-64`/`w-16`, code uses `w-56`/`w-14` | Pre-existing spec-vs-code drift, unrelated to responsiveness; resolve in one place (spec or code) separately. | sidebar-spec §5/§8 vs the four layouts |
 
 ## 7. Architecture threshold call (Step 3.4)
@@ -644,7 +726,7 @@ Below-threshold reasons: no table, no service or API, no integration, no state m
 The condition (raised in brainstorm section 6, and confirmed by this breakdown): RESP-2 introduces one new shared component that four layouts consume, and RESP-1's breakpoint constant is consumed by both the shell and EMR. If Step 6 is run in parallel waves (Dev A on layouts, Dev B on EMR), the manifest rule "Step 6 parallelism is legal only when `@arch-agent` froze the contract at 3.4" applies. Two ways to satisfy it, both cheap:
 
 1. **Sequence instead of parallelise.** Wave order RESP-1 then RESP-2 then RESP-3/4/5, with Dev B's RESP-6/7 depending only on the RESP-1 constant. No arch pass needed; Step 4 records `arch: skipped (below threshold)` and marks the manifest sequential where the seam is shared.
-2. **Brief arch pass** to freeze exactly two things: (a) the `useViewportMode` return shape and the location and name of the breakpoint constant; (b) the shared sidebar component's props (mode, open state, side/hand mode, nav items source, on-navigate callback). Nothing else.
+2. **Brief arch pass** to freeze exactly two things: (a) the `useViewportMode` return shape and the location and name of the breakpoint constant; (b) the shared sidebar component's props (mode, open state, nav items source, on-navigate callback; no hand-mode/side prop, RESP-BL-4). Nothing else.
 
 PM preference: option 1, because the shared surface is two small files and the human has not asked for parallel speed. `@ba-agent` / human decide at Step 3; this document does not assume either. The choice is recorded here so 3.4 is not skipped reflexively.
 
@@ -655,8 +737,8 @@ PM preference: option 1, because the shared surface is two small files and the h
 | R1 | Breakpoint gap: spec is silent for 769-1023 and 1024-1279 (section 2 proposes a rule) | A tester and a developer read the spec differently; 800px would be "drawer" or "rail" | BA confirms section 2 at Step 3; the values live in one constant so a change is one edit |
 | R2 | D1 semantics (override discarded on band change) needs `uiStore.sidebarOpen` to stop being the only source of truth | Persisted preference and derived mode can disagree after a reload | Define once in RESP-2: derived mode wins on band change; persisted value applies only within the same band; add `@AC-RESP-2-7/-8` as the executable definition |
 | R3 | Sidebar and TopNav offsets (`ml-*`, `left-*`) are duplicated in all 4 layouts (`PlatformLayout` also offsets TopNav via `left-56`/`left-14`) | Shell fix misses one offset and content is covered | RESP-3/4/5 each carry a "no covered controls" AC; RESP-8 sweeps all shells |
-| R4 | Existing tests: `layouts/__tests__/ClinicLayout.test.tsx`, `AdminLayout.test.tsx` assert current markup | Tests fail for the right reason after RESP-3/4 | Dev A updates them in-task; QA verifies each `@AC-` tag has a named test |
-| R5 | Right-hand mode (`handMode`) exists in the store and spec §7 | Drawer opens on the wrong side, or backdrop/offset mirror is missed | `@AC-RESP-2-10` |
+| R4 | Existing tests: `layouts/__tests__/ClinicLayout.test.tsx`, `AdminLayout.test.tsx` assert current markup | Tests fail for the right reason after RESP-3/4 | Dev A may change selectors in `ClinicLayout.test.tsx`/`AdminLayout.test.tsx`, but may not delete or loosen any hidden/shown or redirect-target assertion. The 10 existing tests keep their intent. @qa-agent diffs the test files at Step 7. |
+| R5 | Hand mode (`uiStore.handMode`, spec §7) is not implemented in any layout and has no toggle UI | Not built here; a half-mirrored drawer would be inconsistent (Q1: dropped by human) | Hand mode not implemented; RESP-BL-4. `@AC-RESP-2-10` removed |
 | R6 | EMR state model: `isNewRecord` and the current record id must survive a re-layout (brainstorm 3, rec. for Tabs) | Data loss or a duplicate record on tab switch or rotation | Panels stay mounted (hidden, not unmounted); `@AC-RESP-6-7`, `@AC-RESP-7-3/-4/-6` |
 | R7 | Rotation between 1024 and 768 flips EMR between 3-column and tabs | Unsaved input is lost | `@AC-RESP-6-7`; same component tree, layout differs only by CSS/mode |
 | R8 | Soft keyboard viewport shrink (`@AC-RESP-7-7`) is hard to test in jsdom | Automation gap | QA may classify as manual/browser check at Step 7; PM accepts this |
@@ -664,6 +746,8 @@ PM preference: option 1, because the shared surface is two small files and the h
 | R10 | Scope creep into Pets and Appointments | Branch grows past one reviewable PR | Backlog (section 6); `@AC-RESP-8-2` is only a no-worse guard |
 | R11 | i18n: Thai labels are longer than English | Tabs or drawer labels clip at 768 | `@AC-RESP-8-4`; keys go through the existing i18n files (no hardcoded strings) |
 | R12 | Sequencing: RESP-6 depends on the RESP-1 constant only, so EMR is not blocked on the sidebar work | Enables W1 parallelism only if arch freezes the seam (section 7) | Decide at Step 3 / 4 |
+| R13 | Known limitation (G-8, human Q2 accepted 2026-09-30): at 1024px in EMR, if the user manually expands the sidebar the SOAP editor is about 288px (1024 - 224 - 224 - 288), below the D7 320px minimum, which binds 768 only. Opt-in; the default rail gives about 456px; no worse than today's default. | Narrow editor by user choice, reversible | Accepted, no AC. UIUX A may choose overlay expansion in the rail band. |
+| R14 | Pressure to normalise nav filters or to read an auth store inside the shared sidebar (G-3, G-4) | Silent visibility change, or plane fusion (platform shell filtered by clinic permissions) | BR-2 (no filter changes semantics) and BR-4 (shared sidebar never imports an auth store); guarded by `@AC-RESP-5-4`, `-5-5`, `-5-6` |
 
 **Definition-of-Done items that apply (from `acceptance-criteria.md`):** TypeScript strict, no raw hex (tokens only), Material Symbols (no emoji) for the hamburger, touch targets >=44px, responsive tested at 768 and 1280 (this feature adds 1024), keyboard navigation, every `@AC-` tag has a passing test named after it. Backend and DB items (migrations, Zod, tenant tests) are not applicable.
 
@@ -681,12 +765,12 @@ Brainstorm section 5 questions, all closed by the Step 1 gate:
 | Q6 | Pets and Appointments fixed panels? | Backlog, out of scope | D6 -> RESP-BL-1/2 |
 | Q7 | Minimum SOAP-editor width at 768? | 320px | D7 -> `@AC-RESP-6-1` |
 
-## 10. Questions still open (for `@ba-agent` at Step 3 / the human)
+## 10. Questions (status after Step 3)
 
-| # | Question | Default assumed here | Needed by |
-|---|----------|----------------------|-----------|
-| N1 | Confirm the breakpoint table in section 2 (in particular: drawer below 1024 and rail at 1024-1279; `sidebar-spec.md` §6 is silent on 769-1023). | As written in section 2 | Step 3 |
-| N2 | Step 3.4 choice: skip arch and sequence Step 6 (PM preference), or brief arch pass to freeze the two shared seams. | Sequence, arch skipped | Step 3 |
-| N3 | Reconcile the role Examples in `@AC-RESP-2-13`, `@AC-RESP-4-3`, `@AC-RESP-5-4`, `@AC-RESP-6-9` to `navAccess.ts` and `anemal-rbac-matrix` (Definition of Ready requires permission codes; PM has not re-derived them). | Illustrative rows | Step 3 |
-| N4 | Confirm the Definition-of-Ready exemption for `@tenant` / `@validation` (section 5). | Not applicable, with regression guards | Step 3 |
+| # | Question | Status | Needed by |
+|---|----------|--------|-----------|
+| N1 | Confirm the breakpoint table in section 2 (drawer below 1024, rail at 1024-1279). | ANSWERED: see `HANDOFF-responsive-shell-emr-portrait.md` | Step 3 |
+| N2 | Step 3.4 choice: skip arch and sequence Step 6, or brief arch pass to freeze the two shared seams. | ANSWERED: see `HANDOFF-responsive-shell-emr-portrait.md` | Step 3 |
+| N3 | Reconcile the role Examples in `@AC-RESP-2-13`, `@AC-RESP-4-3`, `@AC-RESP-5-4`, `@AC-RESP-6-9`. | RESOLVED by BA in place (see reconciliation notes and `2026-09-29-responsive-shell-emr-portrait-ba-signoff.md` section 3) | Step 3 |
+| N4 | Confirm the Definition-of-Ready exemption for `@tenant` / `@validation`. | RESOLVED: confirmed with conditions C1-C3 (sign-off section 4) | Step 3 |
 | N5 | File RESP-BL-3 (sidebar width drift `w-56` vs spec `w-64`) as a backlog item, or ignore. | File it | Step 8 / scribe |
