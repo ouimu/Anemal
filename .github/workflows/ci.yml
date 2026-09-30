@@ -1,0 +1,83 @@
+# CI — runs the same checks a contributor runs locally, on every PR and on main.
+# Frontend and backend run as separate jobs so one red side is visible on its own.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # .claude/agents/ must stay flat or Claude Code silently drops project agents at startup.
+  agents:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/check-agents.mjs
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+      # The lockfile is written by npm 11; npm 10 (bundled with Node 22) rejects it in `npm ci`.
+      - run: npm install -g npm@11
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: vetclinic_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    # Test-only values. .env.test is gitignored, so jest's dotenv load is a no-op here
+    # and these win. None of them is a real secret.
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/vetclinic_test
+      JWT_SECRET: ci-test-jwt-secret
+      SETTINGS_ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
+      CRON_SECRET: ci-test-cron-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/backend/package-lock.json
+      - run: npm install -g npm@11
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx prisma migrate deploy
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: npm test

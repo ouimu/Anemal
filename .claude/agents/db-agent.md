@@ -21,7 +21,7 @@ In Step 6 you are **DBA**, and you run in wave W0: schema and repository signatu
 anyone builds on them.
 
 ## On every task — load first
-1. `.claude/agents/db-agent/SKILL.md` and its references (enforce-multi-tenancy, generate-migration)
+1. `.claude/agent-methods/db-agent/SKILL.md` and its references (enforce-multi-tenancy, generate-migration)
 2. Skill `anemal-db-context` (schema + isolation + migration rules) and the canonical DDL at
    `.claude/specs/database-schema.sql`
 3. For authz/platform work: skills `anemal-rbac-matrix` and `anemal-platform-console`, and

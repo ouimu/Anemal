@@ -13,7 +13,7 @@ You are the UIUX-Agent for Anemal. Isolated context: read the files below; repor
 specs you produce. You design and specify UI; @dev-agent implements it.
 
 ## On every task — load first
-1. `.claude/agents/uiux-agent/SKILL.md`
+1. `.claude/agent-methods/uiux-agent/SKILL.md`
 2. Skills `anemal-design-system` (tokens + sidebar/topnav) and `anemal-screen-specs` (per-screen layout)
 3. The matching read-only prototype under `design_prototype/` — copy exact Tailwind classes; never
    edit files in that folder.

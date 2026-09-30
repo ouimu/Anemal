@@ -31,7 +31,8 @@ It runs seamlessly on **Web browsers** (front-desk / counter use) and **Tablets*
 ```
 Anemal/
 ├── .claude/                  # AI Agent context & project specs
-│   ├── agents/               # System prompts (<name>.md) + skill bodies (<name>/SKILL.md)
+│   ├── agents/               # System prompts (<name>.md) — flat, checked by scripts/check-agents.mjs
+│   ├── agent-methods/        # Method bodies (<name>/SKILL.md + references/)
 │   ├── skills/                # Project domain skills (anemal-coding-rules, anemal-design-system, etc.)
 │   ├── specs/                 # DB schema, status matrix (functional reqs live in the anemal-functional-reqs skill)
 │   │   ├── database-schema.sql # PostgreSQL schema — canonical DDL, single copy
@@ -89,13 +90,13 @@ Anemal/
 
 | Agent | Role | Files |
 |---|---|---|
-| PM-Agent | Product scope, requirements, task breakdown | `.claude/agents/pm-agent.md` + `.claude/agents/pm-agent/SKILL.md` |
-| BA-Agent | Requirements validation, authorization design, gap analysis | `.claude/agents/ba-agent.md` + `.claude/agents/ba-agent/SKILL.md` |
-| UIUX-Agent | UI design, Tablet UX, touch targets | `.claude/agents/uiux-agent.md` + `.claude/agents/uiux-agent/SKILL.md` |
-| DB-Agent | Schema design, multi-tenancy, query safety | `.claude/agents/db-agent.md` + `.claude/agents/db-agent/SKILL.md` |
-| Dev-Agent | Full-stack implementation, clean code | `.claude/agents/dev-agent.md` + `.claude/agents/dev-agent/SKILL.md` |
-| Ponytail-Agent | Simplicity gate — reviews plans before execution | `.claude/agents/ponytail-agent.md` + `.claude/agents/ponytail-agent/SKILL.md` |
-| QA-Agent | Test cases, edge cases, security checks | `.claude/agents/qa-agent.md` + `.claude/agents/qa-agent/SKILL.md` |
+| PM-Agent | Product scope, requirements, task breakdown | `.claude/agents/pm-agent.md` + `.claude/agent-methods/pm-agent/SKILL.md` |
+| BA-Agent | Requirements validation, authorization design, gap analysis | `.claude/agents/ba-agent.md` + `.claude/agent-methods/ba-agent/SKILL.md` |
+| UIUX-Agent | UI design, Tablet UX, touch targets | `.claude/agents/uiux-agent.md` + `.claude/agent-methods/uiux-agent/SKILL.md` |
+| DB-Agent | Schema design, multi-tenancy, query safety | `.claude/agents/db-agent.md` + `.claude/agent-methods/db-agent/SKILL.md` |
+| Dev-Agent | Full-stack implementation, clean code | `.claude/agents/dev-agent.md` + `.claude/agent-methods/dev-agent/SKILL.md` |
+| Ponytail-Agent | Simplicity gate — reviews plans before execution | `.claude/agents/ponytail-agent.md` + `.claude/agent-methods/ponytail-agent/SKILL.md` |
+| QA-Agent | Test cases, edge cases, security checks | `.claude/agents/qa-agent.md` + `.claude/agent-methods/qa-agent/SKILL.md` |
 
 ---
 

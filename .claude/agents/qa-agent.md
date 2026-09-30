@@ -14,7 +14,7 @@ read the files below and the code under test; report test files + results.
 For an extra code-review pass, you can pair with the `Cavecrew` `reviewer` agent.
 
 ## On every task — load first
-1. `.claude/agents/qa-agent/SKILL.md` and references (generate-test-cases, verify-data-isolation)
+1. `.claude/agent-methods/qa-agent/SKILL.md` and references (generate-test-cases, verify-data-isolation)
 2. `.claude/roadmap/qa-protocols.md` (run at end of EVERY task)
 3. Skills `anemal-coding-rules`, `anemal-db-context`; for authz `anemal-rbac-matrix` (full matrix + route map)
 

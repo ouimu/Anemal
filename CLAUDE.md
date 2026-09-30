@@ -111,7 +111,7 @@ Live DDL: `.claude/specs/database-schema.sql` — single canonical copy.
 ## Ponytail Gate
 
 ANY criterion yes = REJECT. All no = APPROVE. The 9 criteria, the three modes, and the templates live
-in `.claude/agents/ponytail-agent/SKILL.md` — canonical there, not duplicated here.
+in `.claude/agent-methods/ponytail-agent/SKILL.md` — canonical there, not duplicated here.
 
 > **Highest authority:** a plan approved by Superpowers `/execute-plan` must still pass the gate.
 > **Scope note:** the global `ponytail` persona ("build less, skip what YAGNI allows") governs
@@ -125,7 +125,8 @@ in `.claude/agents/ponytail-agent/SKILL.md` — canonical there, not duplicated 
 
 ```
 design_prototype/   # Compassionate Care UI (read-only)
-.claude/agents/     # <name>.md (trigger) + <name>/SKILL.md (method) — 9 agents
+.claude/agents/     # <name>.md — 9 agents (keep flat: no subdirs, checked by scripts/check-agents.mjs)
+.claude/agent-methods/  # <name>/SKILL.md + references/ (method)
 .claude/skills/     # anemal-* domain skills   .claude/standards/  # rules & policies
 .claude/specs/      # database-schema.sql · implementation-status-matrix.md · historical RBAC spec
 .claude/roadmap/    # index.md · phase-history.md · qa-protocols.md · archive/
@@ -138,7 +139,7 @@ Which document is canonical for what, and who loads it: `.claude/standards/doc-m
 **Searches must exclude** `.claude/worktrees/` and `*/archive/*` — both are stale copies and pollute
 every Glob/Grep result. (`.gitignore` covers the first for git only, not for search.)
 
-**Skill priority (highest → lowest):** `.claude/agents/<name>/SKILL.md` → `.claude/skills/anemal-*/`
+**Skill priority (highest → lowest):** `.claude/agent-methods/<name>/SKILL.md` → `.claude/skills/anemal-*/`
 → Superpowers skills → default behaviour.
 
 ---
@@ -172,6 +173,9 @@ Run the QA protocol at the end of every task: `.claude/roadmap/qa-protocols.md`.
   suite is green and which turns those failing tests green (or deletes them with a recorded
   deleted-coverage justification) may merge while `main` is red, and its PR body must say so.
   Mechanic: `anemal-finish-branch` SKILL.md §1.5.
+- **CI merge gate (every lane):** never merge a PR unless its `frontend` and `backend` CI checks are
+  green on the current head — even when told "merge". GitHub does not enforce this (private repo, free
+  plan), so the agent is the gate. Mechanic: `anemal-finish-branch` SKILL.md §3.5.
 
 ---
 

@@ -15,7 +15,7 @@ integrity. Isolated context: read the files below and the diff/branch you were g
 what you verified and what you changed. You do NOT write production code.
 
 ## On every task — load first
-1. `.claude/agents/scribe-agent/SKILL.md` (your full checklists)
+1. `.claude/agent-methods/scribe-agent/SKILL.md` (your full checklists)
 2. `.claude/skills/anemal-coding-rules/references/06-github-workflow.md` (branch/commit/PR rules)
 3. Skill `anemal-finish-branch` (the Step 8 mechanic, incl. §1.5 red-suite ship gate)
 4. `.claude/standards/doc-maintenance.md` (the five documents to refresh, who authors what) and
