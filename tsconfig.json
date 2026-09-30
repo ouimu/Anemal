@@ -1,0 +1,13 @@
+{
+  "extends": "./src/backend/tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "rootDir": ".",
+    "noEmit": true,
+    "typeRoots": ["./src/backend/node_modules/@types", "./src/backend/types"]
+  },
+  "include": ["api/*.ts", "src/backend/**/*.ts"],
+  "exclude": ["src/backend/node_modules", "src/backend/dist", "src/backend/__tests__"]
+}

@@ -10,7 +10,7 @@
 
 | Component | Technology | Version | Purpose |
 |-----------|------------|---------|---------|
-| Runtime | Node.js | 20 LTS | Server runtime |
+| Runtime | Node.js | 24 LTS (npm 11) | Server runtime — same major on dev, CI and Vercel |
 | API Framework | Express.js | 4.19.x | HTTP routing & middleware |
 | Database | PostgreSQL | 16+ | Relational data store |
 | ORM | Prisma | 5.13.x | Type-safe database access |
@@ -27,7 +27,7 @@
 |-----------|------------|---------|---------|
 | Framework | React | 18 | Component library |
 | Language | TypeScript | 5.x | Type safety |
-| Build Tool | Vite | 5.x | Module bundler |
+| Build Tool | Vite | 8.x | Module bundler — one copy shared with Vitest |
 | State Management | Zustand | 4.x | Lightweight store |
 | Data Fetching | TanStack Query | 5.x | Server state management |
 | UI Components | Tailwind CSS | 3.4.x | Project design tokens + utility classes |
