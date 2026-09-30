@@ -33,6 +33,20 @@ _Avoid_: conflating with "clinic staff" generally — platform's write access is
 The codebase's convention for atomic writes under concurrency: a single raw SQL `UPDATE` (optionally with a subquery or a guard condition) run via `tx.$executeRaw` inside `prisma.$transaction`, instead of a read-then-write with an explicit row lock (`SELECT ... FOR UPDATE`). Established by `prescription.repository.ts` `deductStockAndCreate` (guarded decrement, checks `affected === 0`); reused by the weight-sync recompute (subquery form). See ADR-0008.
 _Avoid_: introducing `SELECT ... FOR UPDATE` for new conditional-write logic without checking whether a single-statement form covers it first.
 
+### Responsive shell
+
+**Viewport mode**:
+Which of three sidebar layouts is active for the current window width: `drawer` (< 1024px), `rail` (1024–1279px) or `expanded` (≥ 1280px). The single source of truth for it is `useViewportMode` (ADR-0033); a manual collapse or expand never survives a change of mode — the width-appropriate default wins.
+_Avoid_: "breakpoint" for the mode itself (a breakpoint is only the boundary between two modes); "responsive class" for anything that decides which mode applies.
+
+**Rail**:
+The narrow icon-only sidebar shown by default at 1024–1279px. The user may expand it, in which case it pushes the page content rather than covering it.
+_Avoid_: "collapsed sidebar" when the viewport mode is meant — a wide window can also have a collapsed sidebar, and it is not the rail.
+
+**Drawer**:
+The sidebar shown below 1024px: hidden until the hamburger is pressed, then an overlay that closes on navigation.
+_Avoid_: "mobile menu", "hamburger menu".
+
 ### Localisation (i18n)
 
 The binding English → Thai translation glossary (96 terms, 7 value → label maps, 15 safety-critical sentences, 14 wording rules) is **not** copied here. It lives in `docs/superpowers/plans/2026-09-23-i18n-completion-ba-signoff.md` §5 and is owned by `@ba-agent`. The entries below pin down only the concepts.

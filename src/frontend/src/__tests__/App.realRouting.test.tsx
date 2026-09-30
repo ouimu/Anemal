@@ -82,6 +82,8 @@ vi.mock('../store/uiStore', () => ({
     (selector ? selector(ui) : ui),
 }))
 
+// jsdom is 1024px wide = `rail` band (labels hidden). These routing tests assert visible nav text, so pin the width band.
+vi.mock('../hooks/useViewportMode', () => ({ useViewportMode: () => 'expanded' }))
 vi.mock('../i18n', () => ({ useT: () => (k: string) => k }))
 vi.mock('../hooks/useAuth', () => ({
   useLogout: () => vi.fn(),

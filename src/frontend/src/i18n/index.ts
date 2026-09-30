@@ -78,6 +78,7 @@ const en: Dict = {
   'nav.adminPanel': 'Admin Panel',
   'nav.allBranches': 'All Branches',
   'nav.roles': 'Role Editor',
+  'nav.openMenu': 'Open menu',
 
   // Preferences page
   'prefs.title': 'My Preferences',
@@ -334,6 +335,9 @@ const en: Dict = {
   'clinic.emr.addPrescription': 'Add Prescription',
   'clinic.emr.failedToAdd': 'Failed to add',
   'clinic.emr.saveFirstForPrescriptions': 'Save the EMR first to add prescriptions.',
+  'clinic.emr.tabPatient': 'Patient',
+  'clinic.emr.tabSoap': 'SOAP',
+  'clinic.emr.tabAttachmentsRx': 'Attachments & Rx',
 
   // Clinic grooming (I18N-1/I18N-2, BA sign-off §5.2 Grooming rows #21-38 and
   // §5.3 Grooming status/service enum maps). `doctor` never reaches this
@@ -642,6 +646,7 @@ const th: Dict = {
   'nav.adminPanel': 'แผงผู้ดูแล',
   'nav.allBranches': 'ภาพรวมทั้งหมด',
   'nav.roles': 'ตัวแก้ไขบทบาท',
+  'nav.openMenu': 'เปิดเมนู',
 
   'prefs.title': 'การตั้งค่าส่วนตัว',
   'prefs.saved': 'บันทึกการตั้งค่าแล้ว',
@@ -887,6 +892,9 @@ const th: Dict = {
   'clinic.emr.addPrescription': 'เพิ่มรายการยา',
   'clinic.emr.failedToAdd': 'เพิ่มไม่สำเร็จ',
   'clinic.emr.saveFirstForPrescriptions': 'กรุณาบันทึกเวชระเบียนก่อนเพิ่มรายการยา',
+  'clinic.emr.tabPatient': 'ผู้ป่วย',
+  'clinic.emr.tabSoap': 'บันทึก SOAP',
+  'clinic.emr.tabAttachmentsRx': 'ไฟล์แนบและรายการยา',
 
   // Clinic grooming
   'clinic.grooming.queueTitle': 'คิวอาบน้ำตัดขน',

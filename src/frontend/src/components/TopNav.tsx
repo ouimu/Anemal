@@ -1,25 +1,31 @@
 import { useLocation } from 'react-router-dom'
-import { useUiStore } from '../store/uiStore'
+import type { ShellSidebar } from '../hooks/useShellSidebar'
 import { useT } from '../i18n'
 import MaterialIcon from './MaterialIcon'
 import ProfileMenu from './ProfileMenu'
+import { SidebarMenuButton } from './ResponsiveSidebar'
 
-export default function TopNav() {
-  const { sidebarOpen } = useUiStore()
+/**
+ * Top bar. Its left offset comes from `shell.offset.top` (never composed here) and
+ * the hamburger is shown only when the sidebar is a drawer (ADR-0033).
+ */
+export default function TopNav({ shell }: { shell: ShellSidebar }) {
   const { pathname } = useLocation()
   const t = useT()
 
   const titleRaw   = t(`page.${pathname}`)
   const pageTitle  = titleRaw.startsWith('page.') ? 'Anemal' : titleRaw
-  const leftOffset = sidebarOpen ? 'left-56' : 'left-14'
 
   return (
     <header
-      className={`fixed top-0 right-0 ${leftOffset} h-16 z-40 bg-surface border-b border-outline-variant flex items-center justify-between px-lg transition-all duration-200`}
+      className={`fixed top-0 right-0 ${shell.offset.top} h-16 z-40 bg-surface border-b border-outline-variant flex items-center justify-between px-lg transition-all duration-200`}
     >
-      <h1 className="text-headline-sm font-headline font-semibold text-primary hidden sm:block">
-        {pageTitle}
-      </h1>
+      <div className="flex items-center gap-sm">
+        {shell.mode === 'drawer' && <SidebarMenuButton onOpen={shell.openDrawer} label={t('nav.openMenu')} />}
+        <h1 className="text-headline-sm font-headline font-semibold text-primary hidden sm:block">
+          {pageTitle}
+        </h1>
+      </div>
 
       <div className="relative flex items-center mx-auto sm:mx-0">
         <span className="absolute left-md pointer-events-none text-on-surface-variant">
