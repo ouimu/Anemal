@@ -257,7 +257,7 @@
 
   <div class="callout ok" style="margin-top:16px">
     <span class="callout-icon">✅</span>
-    <span><strong><code>main</code> is green.</strong> Backend 1488 tests passing across 114 suites; frontend 833 tests passing across 80 files; type-checking and linting clean on both. The most recent shipped work (2026-09-26) completed the Thai/English interface for the last 4 clinic screens (Grooming, Inpatient, EMR, Pets) — the clinic side of the app is now fully bilingual. Full ship history and what's coming next: <a onclick="show('progress')" href="javascript:void(0)">Progress →</a>.</span>
+    <span><strong><code>main</code> is green.</strong> Backend 1488 tests passing across 114 suites; frontend 1010 tests passing across 89 files; type-checking and linting clean on both. The most recent shipped work (2026-10-01) made the side menu adapt to screen size on every part of the app and made the EMR (medical record) screen usable on a tablet held upright (three tabs: Patient, SOAP, Attachments and Rx). Some touch-screen checks on real tablets are still pending. Earlier (2026-09-26) the clinic side became fully bilingual. Full ship history and what's coming next: <a onclick="show('progress')" href="javascript:void(0)">Progress →</a>.</span>
   </div>
 
   <div class="stat-row">
@@ -1499,7 +1499,7 @@ src/frontend/src/{components,views,hooks,utils,store}/</code></pre>
     <p>Where the project stands today, what shipped and when, and what's coming next.</p>
   </div>
 
-  <div class="callout ok"><span class="callout-icon">✅</span><span><strong><code>main</code> is green</strong> — backend 1488 tests / 114 suites, frontend 833 tests / 80 files, all passing; type-checking and linting clean on both. Phases 1–9 are complete; Phases 10 and 11 are scoped and ready but paused pending third-party credentials (payment gateway, LINE/SMS). The most recently shipped change (2026-09-26) completed the Thai/English interface for the Grooming, Inpatient, EMR and Pets screens — every clinic screen is now fully bilingual (the Platform/SuperAdmin console stays English-only by design). Next planned work: a frontend restructuring pass on a handful of large screen components, and finishing a couple of small in-flight code-quality items.</span></div>
+  <div class="callout ok"><span class="callout-icon">✅</span><span><strong><code>main</code> is green</strong> — backend 1488 tests / 114 suites, frontend 1010 tests / 89 files, all passing; type-checking and linting clean on both. Phases 1–9 are complete; Phases 10 and 11 are scoped and ready but paused pending third-party credentials (payment gateway, LINE/SMS). The most recently shipped change (2026-10-01) gave every part of the app one shared, screen-size-aware side menu (full, icons-only, or a slide-out drawer) and made the EMR screen usable on an upright tablet; four checks on real tablets (idle-warning over the menu, iPad Safari toolbar, on-screen keyboard, Android Back button) are not yet verified. Earlier (2026-09-26) every clinic screen became fully bilingual (the Platform/SuperAdmin console stays English-only by design). Next planned work: a frontend restructuring pass on a handful of large screen components, and finishing a couple of small in-flight code-quality items.</span></div>
 
   <h2 id="ship-history">Ship History</h2>
   <p style="font-size:12.5px;color:var(--muted)">Condensed — one line per release. Full PR-by-PR detail, ADR links, and the open engineering backlog: <code>.claude/roadmap/phase-history.md</code> (canonical) and <code>.claude/roadmap/index.md</code>.</p>
@@ -1533,6 +1533,7 @@ src/frontend/src/{components,views,hooks,utils,store}/</code></pre>
       <tr><td>2026-09-17</td><td>Fixed a frontend bug that pre-emptively hid some screens from roles who were actually entitled to open them (PR #75)</td><td>1486 / 585</td></tr>
       <tr><td>2026-09-23</td><td>Small fixes and doc/config maintenance — restored two renamed Inventory API fields, closed a Billing double-payment edge case, agent config retuning (PR #88–#94)</td><td>1488 / 585</td></tr>
       <tr><td>2026-09-26</td><td>Completed the Thai/English interface for Grooming, Inpatient, EMR and Pets — the last 4 clinic screens; dates on EMR/Pets now follow the chosen app language rather than the browser's (PR #97)</td><td>1488 / 833</td></tr>
+      <tr><td>2026-10-01</td><td>One shared side menu that adapts to screen size (full / icons-only / slide-out drawer) across Clinic, Admin, Settings and Platform; EMR now works on an upright tablet with three tabs. Four real-device checks still open (PR #106)</td><td>1488 / 1010</td></tr>
     </tbody>
   </table></div>
 
