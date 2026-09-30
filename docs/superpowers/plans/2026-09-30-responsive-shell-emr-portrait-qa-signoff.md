@@ -196,6 +196,8 @@ Run on a real tablet or on DevTools device emulation at the widths shown, signed
 | B-11 | -8-4 | 768, en and th | Drawer labels and EMR tab labels (`ผู้ป่วย`, `บันทึก SOAP`, `ไฟล์แนบและรายการยา`) are not clipped and do not wrap out of their control |
 | B-12 | F-3 | 768, Android tablet | (Informational) Open the drawer, press hardware Back, and note the result for RESP-BL-8 |
 
+**Browser checklist result (2026-09-30, orchestrator via the in-app browser, human approved proceeding to Step 8).** Verified: B-1, B-2, B-3, B-5, B-10 PASS. Partial: B-7 (canvas fits at 768; a mouse stroke draws; touch not tested), B-9 (no overflow at 768; not compared side by side against `main`), B-11 (Thai labels fit; English not checked). **NOT verified, need real devices; the human chose to skip them: B-4 (idle warning over the drawer), B-6 (iPad Safari toolbar vs drawer sign-out), B-8 (soft keyboard vs save bar), B-12 (Android hardware Back).** These stay open and are not claimed verified; they are carried in the PR body and the backlog (`RESP-OPEN-1`..`RESP-OPEN-4`, plus RESP-BL-12 conditional on B-6).
+
 Thai wording `บันทึก SOAP`, `ไฟล์แนบและรายการยา` and `เปิดเมนู` is still waiting on @ba-agent review (HANDOFF). This does not block QA.
 
 ## 8. Tests added or changed by QA (tests only, no production code)
