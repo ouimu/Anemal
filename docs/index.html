@@ -1137,7 +1137,7 @@
       <thead><tr><th>Requirement</th><th>Version</th><th>Notes</th></tr></thead>
       <tbody>
         <tr><td><strong>Node.js</strong></td><td>20.x LTS</td><td>Check with <code>node -v</code>.</td></tr>
-        <tr><td><strong>npm</strong></td><td>9+</td><td>Bundled with Node.js 20</td></tr>
+        <tr><td><strong>npm</strong></td><td>11+</td><td>Bundled with Node.js 24</td></tr>
         <tr><td><strong>PostgreSQL</strong></td><td>16+</td><td>Via Docker (recommended) or local install</td></tr>
         <tr><td><strong>Docker</strong></td><td>any recent</td><td>Optional — used for the dev database container</td></tr>
         <tr><td><strong>Git</strong></td><td>any</td><td>For cloning</td></tr>
@@ -1340,7 +1340,7 @@ taskkill /PID &lt;pid&gt; /F</code></pre>
 
     <h3>Node version mismatch</h3>
     <ol>
-      <li>Check with <code>node -v</code> — the project targets Node 20 LTS.</li>
+      <li>Check with <code>node -v</code> — the project targets Node 24 LTS.</li>
       <li><code>nvm install 20 &amp;&amp; nvm use 20</code></li>
       <li>Reinstall dependencies in both packages after switching.</li>
     </ol>
@@ -1374,12 +1374,12 @@ taskkill /PID &lt;pid&gt; /F</code></pre>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Layer</th><th>Technology</th><th>Notes</th></tr></thead>
     <tbody>
-      <tr><td>Runtime</td><td>Node.js 20 LTS</td><td>Express 4.19</td></tr>
+      <tr><td>Runtime</td><td>Node.js 24 LTS</td><td>Express 4.19</td></tr>
       <tr><td>Database</td><td>PostgreSQL 16+</td><td>Shared database, shared schema — <code>tenant_id</code> discriminator on every tenant-scoped table</td></tr>
       <tr><td>ORM</td><td>Prisma 5.13</td><td>Type-safe, migration-based; 43 models</td></tr>
       <tr><td>Auth</td><td>Custom JWT</td><td>Clinic tokens: <code>{ userId, tenantId, branchId, plane, permSetVersion, role }</code>. Platform tokens: <code>{ platformUserId, plane:'platform', role }</code>. 8h TTL.</td></tr>
       <tr><td>Validation</td><td>Zod 3.x</td><td>Runtime schema validation on every route</td></tr>
-      <tr><td>Frontend</td><td>React 18 + TypeScript 5 + Vite 5</td><td>Tablet + web responsive</td></tr>
+      <tr><td>Frontend</td><td>React 18 + TypeScript 5 + Vite 8</td><td>Tablet + web responsive</td></tr>
       <tr><td>Styling</td><td>Tailwind CSS 3.4</td><td>Project design tokens only — no raw hex in components</td></tr>
       <tr><td>State</td><td>TanStack Query 5 + Zustand 4</td><td>Server state vs. local/UI state</td></tr>
       <tr><td>Charts / scanning</td><td>Recharts 2.12 · ZXing 0.2/0.22</td><td>Barcode camera scan implemented for Inventory</td></tr>
