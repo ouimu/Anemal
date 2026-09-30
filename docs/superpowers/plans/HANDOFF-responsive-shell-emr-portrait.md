@@ -5,9 +5,12 @@
 **Last commit:** `07b9a61` (Steps 1-3 artefacts). Edits after it are UNCOMMITTED: tasks doc (E1-E12), arch doc, ponytail precheck doc, this HANDOFF.
 
 ## Current step
-**STEP 6 DONE 2026-09-30 (W0 + W1 committed, both integration checkpoints green: full frontend suite 992/992, tsc clean, lint 0 errors).** Steps done: 1, 2, 3, 3.4, 3.4b, 3.5, 4, 4b, 5 (APPROVE, third pass), 6 (W0 = RESP-1 + RESP-1i; W1 = RESP-2/2t/3/4/5 Dev A, RESP-6a UIUX A, RESP-6/7 Dev B).
+**STEP 7 — `@qa-agent` code gate APPROVED 2026-09-30 (HEAD `7c96156`; F-1 drawer a11y fixed: `role="dialog" aria-modal`, `KNOWN_BESPOKE_MODALS` entry). Frontend 1010/1010, tsc clean, lint 0 errors, build clean, backend untouched.** Steps done: 1-6 and 7 (code gate). **Waiting on the human: browser checklist B-1..B-12** in `2026-09-30-responsive-shell-emr-portrait-qa-signoff.md` §6 (jsdom cannot check layout: 768/1024/1280 no horizontal scroll, 320px SOAP editor, soft keyboard, iPad Safari toolbar B-6, Thai label wrap). If any row except B-12 fails, the sign-off reopens.
 
-**Literal next command:** Step 7 `@qa-agent` + `/code-review` on branch `feature/responsive-shell-emr-portrait` vs `main`: findings closed + arch conformance (arch doc §9 A-1..A-7) + RESP-8 tests. Then Step 8 `@scribe-agent` `/anemal-finish-branch`.
+**Literal next command:** after the human reports the browser checklist result -> Step 8 `@scribe-agent` `/anemal-finish-branch` (red-suite ship gate; re-run backend suite once first: F-9 flaky `rbac-regression.test.ts` "socket hang up"/401 on one full run, passed on rerun 1488/1488; PR -> merge only when `frontend` and `backend` CI green -> 5 tracking docs). Optional before Step 8: `@ba-agent` reviews Thai wording (`บันทึก SOAP`, `ไฟล์แนบและรายการยา`, `เปิดเมนู`).
+
+### Backlog to file at Step 8 (from QA §9)
+RESP-BL-1..6 (plan §9) plus: RESP-BL-7 Escape under idle warning also closes drawer (F-2); RESP-BL-8 drawer stays open on browser/Android Back (F-3); RESP-BL-9..12 proposed by QA for F-4 (blank Attachments tab with no record), F-5 (`?petId=` deep link lands on SOAP empty state), F-8 (tablist lacks tabpanel roles/arrow keys), F-10 (drawer `h-screen` vs iOS toolbar); Lane B ticket F-9 (flaky backend test); Lane D item for `ClinicEMR.tsx` (834 LOC); `ADR-DUP-1` row (renumber target 0032).
 
 ### Step 6 facts for QA
 - Orchestrator edit outside worker scopes: one line in `src/frontend/src/__tests__/App.realRouting.test.tsx` mocking `useViewportMode -> 'expanded'` (jsdom 1024px is the `rail` band, labels hidden; no assertion changed).

@@ -3,18 +3,23 @@
 2026-09-30 · Lane A · Step 7 · Author: @qa-agent · Branch `feature/responsive-shell-emr-portrait` (verified with `git branch --show-current`) vs `main`
 Inputs: HANDOFF ("Step 6 facts for QA"), plan `2026-09-30-responsive-shell-emr-portrait.md` (RESP-8, §6, §8), arch `2026-09-30-responsive-shell-emr-portrait-arch.md` (§4a-4d, §7, §9), tasks `2026-09-29-responsive-shell-emr-portrait-tasks.md`, ADR-0033, ADR-0027, skills `anemal-coding-rules`, `anemal-rbac-matrix`, `anemal-design-system`.
 
-## Verdict: **CHANGES-REQUESTED**
+## Verdict: **APPROVE** (re-verification, 2026-09-30, HEAD `7c96156`)
 
-One blocking finding (F-1: drawer semantics and the census workaround). Everything else is green: every `@AC-RESP` tag has a passing test or is explicitly browser-only, arch conformance A-1..A-7 passes, and there are no role or tenant regressions. Sign-off turns to APPROVE once F-1 is fixed (or the human explicitly accepts F-1 as a trade-off) and the human browser checklist in section 6 passes.
+QA-Agent Approval: ✅ for the code gate. The one blocking finding, F-1 (drawer semantics and the census workaround), was fixed by Dev A in `7c96156` and re-verified (section 2a). No open blocking finding and no open `/code-review` finding that blocks: #1..#4 are triaged to backlog (F-2..F-5). Every `@AC-RESP` tag has a passing test or is explicitly browser-only, arch conformance A-1..A-7 passes, and there are no role or tenant regressions. The human browser checklist in section 7 (B-1..B-12) is still the Step 7 remainder; a failing B row reopens this sign-off.
+
+First pass (superseded): CHANGES-REQUESTED on F-1.
 
 | Count | |
 |---|---|
-| Findings | 10 total: 1 Medium blocking (F-1), 4 Low product (F-2..F-5), 2 Low test gaps fixed by QA (F-6, F-7), 3 Info (F-8..F-10) |
+| Findings | 10 total: 1 Medium blocking (F-1, **closed** in `7c96156`), 4 Low product (F-2..F-5, backlog), 2 Low test gaps fixed by QA (F-6, F-7), 3 Info (F-8..F-10) |
+| Open blocking findings | 0 |
 | `/code-review` (medium) findings | 4, triaged as F-2, F-3, F-4, F-5 below (no High) |
 | Production code changed by QA | none |
 | Tests added by QA | 18 (1 in `PlatformLayout.test.tsx`, 13 in `ResponsiveShell.integration.test.tsx`, 4 in `App.drawerRouting.test.tsx`) |
 
 ## 1. Run results
+
+Re-run on HEAD `7c96156` (after the F-1 fix), from `src/frontend`: `npx tsc --noEmit` exit 0; `npm run lint` exit 0 (0 errors, the same 3 pre-existing `react-refresh/only-export-components` warnings); `npm run test` **89 files, 1010/1010 pass** (unchanged count: the F-1 fix edited existing assertions and added no tests); `npm run build` exit 0, built CSS contains `.z-\[45\]` and `.inset-0`. The backend was not re-run: the fix commit touches no backend file. The first-pass results below still hold.
 
 | Check | Result |
 |---|---|
@@ -33,7 +38,7 @@ One blocking finding (F-1: drawer semantics and the census workaround). Everythi
 
 | ID | Sev | Blocking | File:line | Finding | Fix |
 |---|---|---|---|---|---|
-| F-1 | Medium | **Yes** | `src/frontend/src/components/ResponsiveSidebar.tsx:211-221` | **Dev A deviation 1.** The open drawer is modal in every way a user can see: a full-screen backdrop, focus moved into the panel, and Escape or backdrop tap to close. But it is announced as an `<aside>` (complementary landmark) with no `aria-modal`. Screen-reader virtual cursors and Tab can move into the page under the backdrop. The backdrop's `fixed left-0 top-0 h-screen w-screen` has the same effect as `fixed inset-0` and was written only so the MODAL-13 census would not count it, so the census now misses a modal root it was built to track. | **Recommendation: use `role="dialog" aria-modal="true"` and add a `KNOWN_BESPOKE_MODALS` entry.** On the panel: `role="dialog" aria-modal="true" aria-label={header.title}`. On the backdrop: `fixed inset-0`. In `__tests__/modal-consistency.test.ts`, add `'components/ResponsiveSidebar.tsx': { count: 2, reason: 'Navigation drawer (ADR-0033): not a Dialog consumer (no title/footer/dismissal-policy); closes on Escape, backdrop and navigation by design.' }`. This uses ADR-0027's own allowlist mechanism, so it needs no ADR-0027 policy change. Update the tests that find the open drawer with `getByRole('complementary')` so they use `getByRole('dialog', { name })`: `ResponsiveSidebar.test.tsx`, `PlatformLayout.test.tsx` (@AC-RESP-5-8), and the QA `ResponsiveShell.integration.test.tsx` (`drawerPanel()`). A focus trap stays out of scope, to match `Dialog`, which has none. Owner: Dev A. |
+| F-1 | Medium | **Closed** (`7c96156`, see 2a) | `src/frontend/src/components/ResponsiveSidebar.tsx:211-221` | **Dev A deviation 1.** The open drawer is modal in every way a user can see: a full-screen backdrop, focus moved into the panel, and Escape or backdrop tap to close. But it is announced as an `<aside>` (complementary landmark) with no `aria-modal`. Screen-reader virtual cursors and Tab can move into the page under the backdrop. The backdrop's `fixed left-0 top-0 h-screen w-screen` has the same effect as `fixed inset-0` and was written only so the MODAL-13 census would not count it, so the census now misses a modal root it was built to track. | **Recommendation: use `role="dialog" aria-modal="true"` and add a `KNOWN_BESPOKE_MODALS` entry.** On the panel: `role="dialog" aria-modal="true" aria-label={header.title}`. On the backdrop: `fixed inset-0`. In `__tests__/modal-consistency.test.ts`, add `'components/ResponsiveSidebar.tsx': { count: 2, reason: 'Navigation drawer (ADR-0033): not a Dialog consumer (no title/footer/dismissal-policy); closes on Escape, backdrop and navigation by design.' }`. This uses ADR-0027's own allowlist mechanism, so it needs no ADR-0027 policy change. Update the tests that find the open drawer with `getByRole('complementary')` so they use `getByRole('dialog', { name })`: `ResponsiveSidebar.test.tsx`, `PlatformLayout.test.tsx` (@AC-RESP-5-8), and the QA `ResponsiveShell.integration.test.tsx` (`drawerPanel()`). A focus trap stays out of scope, to match `Dialog`, which has none. Owner: Dev A. |
 | F-2 | Low | No | `ResponsiveSidebar.tsx:199-206` | **Dev A deviation 5** (also `/code-review` #1). When the blocking idle warning is up, Escape still closes the drawer underneath it, and the cleanup moves focus to the hamburger behind the `aria-modal` alertdialog. Plan A-5/A-8 accepted this: the drawer state is not asserted, and "stay signed in" stays clickable (now tested). Focus was never inside the warning to begin with, because `Dialog` does not move focus. | Backlog **RESP-BL-7**: the drawer's key handler ignores Escape while any other `[aria-modal="true"]` element is open. No change to `Dialog`/ADR-0027. |
 | F-3 | Low | No | `ResponsiveSidebar.tsx:115-146`, `hooks/useShellSidebar.ts` | `/code-review` #2. The drawer closes only when one of its own links is activated. Browser Back or Android hardware Back changes the route but leaves the drawer and backdrop open over the new page. D2 ("drawer auto-closes on navigation") reads as covering this; `@AC-RESP-2-6` only requires the tap case. | Backlog **RESP-BL-8**: each host adds a `useLocation().pathname` effect that calls `shell.closeDrawer`. The sidebar and hook import allowlists forbid router hooks, so doing it there is an arch change. |
 | F-4 | Low | No | `views/clinic/ClinicEMR.tsx:823` | `/code-review` #3. In portrait with no record open (the initial state), the Attachments & Rx tab shows an empty body with no hint, because the right panel renders only when `selectedRecordId \|\| isNewRecord`. | When `tabbed` and no record is open, show the existing empty-state hint on that tab, or disable the tab. Can go with F-1 or to backlog. |
@@ -47,6 +52,19 @@ One blocking finding (F-1: drawer semantics and the census workaround). Everythi
 `/code-review` triage: #1 is F-2, #2 is F-3, #3 is F-4, #4 is F-5. None is High, and none is a correctness break in the frozen contract.
 
 **Deviation 1 judgement (asked by the orchestrator).** It is not an acceptable trade-off. The drawer behaves as a modal but is not announced as one, and the backdrop class was picked to get around a guard test instead of declaring the exception openly. ADR-0027's census exists so every hand-rolled modal root is listed with a reason. Adding the drawer to `KNOWN_BESPOKE_MODALS` is the intended route and does not change ADR-0027 policy.
+
+### 2a. F-1 re-verification (HEAD `7c96156`)
+
+| Check | Result | Evidence |
+|---|---|---|
+| Drawer panel is a modal dialog | PASS | `ResponsiveSidebar.tsx:219-228`: `<div role="dialog" aria-modal="true" aria-label={props.header.title} tabIndex={-1}>` replaces the `<aside>` |
+| Backdrop is `fixed inset-0` | PASS | `ResponsiveSidebar.tsx:213-218`: `className="fixed inset-0 z-[45] bg-primary/30"`, still `aria-hidden` with `onClick={onCloseDrawer}` |
+| Census allowlist entry | PASS | `__tests__/modal-consistency.test.ts:68-73`: `'components/ResponsiveSidebar.tsx': { count: 2, reason: … }`. The diff to that file is this entry only: `countHandRolledRoots`, the comment stripping, the other four entries and the IdleLogoutModal prose guard are unchanged, so no ADR-0027 census logic changed. Count 2 = backdrop + panel; the JSDoc that mentions `role="dialog"` is stripped by the scanner (test green). |
+| Inline sidebar still a plain aside | PASS | `ResponsiveSidebar.tsx:242`: expanded/rail render `<aside>` with no role or `aria-modal`; tests still find it with `getByRole('complementary')` (`ResponsiveShell.integration.test.tsx:146-197`, `ResponsiveSidebar.test.tsx`) |
+| Closed drawer leaves nothing | PASS | `@AC-RESP-2-3` now also asserts `queryByRole('dialog')` is absent |
+| No behaviour regression: focus in on open, focus back to opener, Escape, backdrop, nav close | PASS | `DrawerPanel` effect and handlers unchanged apart from the ref type (`HTMLElement` to `HTMLDivElement`). Covered green by `ResponsiveSidebar.test.tsx` (@AC-RESP-2-5, -2-6, -2-12) and `ResponsiveShell.integration.test.tsx` (`drawerPanel()` now queries `dialog` by name "Anemal"; real hamburger to Escape to focus return, backdrop, navigate-closes, sign-out) |
+| Production scope of the fix | PASS | `git diff HEAD~1 --stat` on non-test `src/frontend/src`: `ResponsiveSidebar.tsx` only (12+/8-) |
+| Idle warning still above the drawer | PASS | `PlatformLayout.test.tsx` @AC-RESP-5-8 finds the panel as `dialog` "Anemal" (z-[45]) and the `alertdialog` separately; RESP-8 Escape test green |
 
 ## 3. Arch conformance (arch §4, §9; plan §1, §6)
 
@@ -68,7 +86,7 @@ One blocking finding (F-1: drawer semantics and the census workaround). Everythi
 | EMR arch §4a: `tabbed = useViewportMode() === 'drawer'`, class/`hidden` only, same tree position | PASS | The tab bar sits in a stable `{tabbed && …}` slot. The panels keep their element types. DOM-identity tests @AC-RESP-6-7, @AC-RESP-7-3. |
 | Layer rules (architecture-rules §1): logic in hooks, component presentational | PASS | |
 
-No drift between the code and the arch doc. The only open item is F-1, which is an a11y and census matter, not a contract drift.
+No drift between the code and the arch doc. F-1 (an a11y and census matter, not a contract drift) is closed; the drawer's `role="dialog"` is internal markup, and the `ResponsiveSidebarProps` contract (arch §4b) is unchanged by the fix.
 
 ## 4. Role / tenant regression
 
@@ -188,12 +206,23 @@ Thai wording `บันทึก SOAP`, `ไฟล์แนบและราย
 | `src/frontend/src/__tests__/ResponsiveShell.integration.test.tsx` (new) | 13 tests. PlatformLayout with the real `useShellSidebar`, `uiStore`, `ResponsiveSidebar`, `Dialog` and router: drawer open, Escape and focus return, backdrop, navigate-closes, sign-out, rotation discard, RESP-8 Escape with the real drawer state, persisted collapse on mount, rail push, D1 reset. Also the hardened A-1 import census (F-6). |
 | `src/frontend/src/__tests__/App.drawerRouting.test.tsx` (new) | 4 tests: @AC-RESP-4-3 through the real `App` route tree at `drawer` (F-7) |
 
-Nothing committed (per brief).
+These QA tests, together with Dev A's F-1 fix and the `complementary` to `dialog` query edits in `ResponsiveSidebar.test.tsx` and `PlatformLayout.test.tsx`, were committed in `7c96156`. The re-verification added no tests and changed only this document (uncommitted).
 
 ## 9. Backlog to add at Step 8 (@scribe-agent)
 
-RESP-BL-7 (F-2, Escape under a blocking modal), RESP-BL-8 (F-3, close the drawer on route change), EMR tab polish (F-4, F-5 if not fixed with F-1, F-8), iOS `dvh` (F-10 if B-6 fails), and a Lane B ticket for the `rbac-regression` full-run flake (F-9). These add to RESP-BL-1..6 and the existing Step 8 items.
+| ID | Source | Item |
+|---|---|---|
+| RESP-BL-7 | F-2 | Escape under the blocking idle warning also closes the drawer and moves focus behind the alertdialog: ignore Escape in the drawer while another `[aria-modal="true"]` is open |
+| RESP-BL-8 | F-3 | Drawer stays open on browser/hardware Back: hosts close it on `pathname` change |
+| RESP-BL-9 | F-4 | EMR portrait Attachments & Rx tab is blank with no record open: empty-state hint or disabled tab |
+| RESP-BL-10 | F-5 | `?petId=` deep link opens on the SOAP tab: start on Patient when no record is open |
+| RESP-BL-11 | F-8 | EMR tablist a11y polish: `tabpanel`/`aria-controls`, arrow-key roving |
+| RESP-BL-12 | F-10 | iOS `h-[100dvh]` for the drawer, only if B-6 fails |
+| Lane B ticket | F-9 | `rbac-regression` full-run flake (socket hang up); re-run once before calling `main` red |
+
+These add to RESP-BL-1..6 and the existing Step 8 items. The IDs RESP-BL-9..12 are proposed; @scribe-agent may renumber.
 
 ## 10. Next
 
-Dev A fixes F-1 (component and test edits listed in the F-1 row), then @qa-agent re-runs `npm run test`, `npx tsc --noEmit` and `npm run lint` and re-checks F-1. If the human instead accepts deviation 1 as a recorded trade-off, F-1 closes as "accepted" and the verdict becomes APPROVE subject to the section 7 checklist. After that, Step 8 `@scribe-agent` `/anemal-finish-branch`.
+1. Human runs the section 7 browser checklist B-1..B-12 (B-12 informational). A failing row (other than B-12) reopens this sign-off.
+2. Step 8: `@scribe-agent` `/anemal-finish-branch` (commit this document with the branch, file the section 9 backlog, red-suite gate with the F-9 re-run rule).
