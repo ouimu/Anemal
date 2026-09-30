@@ -6,6 +6,7 @@
     "vercel-build": "npm --prefix src/backend install --include=dev && npm --prefix src/backend run db:generate && npm --prefix src/frontend install --include=dev && npm --prefix src/frontend run build"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "concurrently": "^9.1.0",
+    "typescript": "5.9.3"
   }
 }
