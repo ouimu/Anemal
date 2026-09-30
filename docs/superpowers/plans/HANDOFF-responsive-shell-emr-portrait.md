@@ -5,9 +5,18 @@
 **Last commit:** `07b9a61` (Steps 1-3 artefacts). Edits after it are UNCOMMITTED: tasks doc (E1-E12), arch doc, ponytail precheck doc, this HANDOFF.
 
 ## Current step
-**STEP 5 ponytail gate — APPROVED 2026-09-30 (third pass).** Steps done: 1, 2, 3 (BA sign-off + E1-E12), 3.4 arch, 3.4b ponytail PASS, 3.5 grill (4 findings, 0 unresolved), 4 plan + manifest, 4b scribe refcheck PASS, 5 gate APPROVE (REJECT D-1 fixed by R-1/R-2, REJECT D-2 fixed by R-3). `/execute-plan` is unblocked.
+**STEP 6 DONE 2026-09-30 (W0 + W1 committed, both integration checkpoints green: full frontend suite 992/992, tsc clean, lint 0 errors).** Steps done: 1, 2, 3, 3.4, 3.4b, 3.5, 4, 4b, 5 (APPROVE, third pass), 6 (W0 = RESP-1 + RESP-1i; W1 = RESP-2/2t/3/4/5 Dev A, RESP-6a UIUX A, RESP-6/7 Dev B).
 
-**Literal next command:** Step 6 `/superpowers:execute-plan` on `docs/superpowers/plans/2026-09-30-responsive-shell-emr-portrait.md`: W0 = RESP-1 + RESP-1i (`@dev-agent` Dev A), integration checkpoint, then W1 = Dev A ∥ `@uiux-agent` (RESP-6a design note) ∥ `@dev-agent` Dev B (RESP-6/7), integration checkpoint. Each delegation names its exclusive file scope from the plan §3. Step 6 has NOT started; no source under `src/` is changed yet. Human should decide whether to commit the docs first (all Steps 2-5 docs are uncommitted).
+**Literal next command:** Step 7 `@qa-agent` + `/code-review` on branch `feature/responsive-shell-emr-portrait` vs `main`: findings closed + arch conformance (arch doc §9 A-1..A-7) + RESP-8 tests. Then Step 8 `@scribe-agent` `/anemal-finish-branch`.
+
+### Step 6 facts for QA
+- Orchestrator edit outside worker scopes: one line in `src/frontend/src/__tests__/App.realRouting.test.tsx` mocking `useViewportMode -> 'expanded'` (jsdom 1024px is the `rail` band, labels hidden; no assertion changed).
+- Dev A deviation 1: drawer panel is `<aside>` (no `role="dialog"`), backdrop `fixed left-0 top-0 h-screen w-screen` (not `inset-0`) so `modal-consistency.test.ts` MODAL-13 census stays green. Alternative: keep `role="dialog" aria-modal` and add `components/ResponsiveSidebar.tsx: 2` to `KNOWN_BESPOKE_MODALS`. QA/human may judge the a11y trade-off.
+- Dev A deviation 5: Escape with the blocking idle warning up over the drawer also closes the drawer (Dialog does not stop the event). Not asserted per plan (A-5/A-8).
+- Dev B: applied `display: contents` + `order` in tabbed mode instead of the UIUX root-grid (kept "panel tree stable", A-3). Panels switch by class only. Observations: default SOAP tab shows empty state until a patient is picked on the Patient tab; `?petId=` deep link lands on SOAP.
+- `TopNav.tsx` keeps 3 cosmetic responsive prefixes (`hidden sm:block`, `sm:mx-0`, `lg:w-80` on search) — exempt, not mode switches.
+- Browser-only ACs still to verify at Step 7: no horizontal scroll (-3-1, -4-1, -5-1, -8-1), 320px editor (-6-1), stacking (-5-8), soft keyboard (-7-7), canvas clipping (-7-5), label clipping/Thai wrap (-8-4), 44px geometry (-2-11), reload persistence (-8-3). `@AC-RESP-6-10` = backend suites unchanged.
+- Thai wording to review by `@ba-agent`: `บันทึก SOAP`, `ไฟล์แนบและรายการยา` (both clinic.emr.*), `เปิดเมนู` (nav.openMenu).
 
 ### Notes for Step 7 (`@qa-agent`)
 - A-5/A-8: RESP-8 extra test = with drawer open + blocking idle warning up, one Escape leaves the warning open and "stay signed in" clickable (not keyboard focus; `Dialog` has no focus trap). Drawer state behind the warning is NOT asserted.

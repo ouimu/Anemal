@@ -12,6 +12,7 @@ import { formatDate } from '../../i18n/dateFormat'
 import { speciesLabel } from '../../i18n/speciesLabel'
 import { useEmrAttachmentUpload } from '../../hooks/useEmrAttachmentUpload'
 import Can from '../../components/Can'
+import { useViewportMode } from '../../hooks/useViewportMode'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Pet { id: number; name: string; species: string; photoUrl?: string; allergies?: string; underlyingConditions?: string; owner?: { firstName: string; lastName: string; phone: string } }
@@ -78,7 +79,10 @@ function anatomyTemplateLabel(t: (key: string) => string, template: string): str
 // so these mirror the error / on-surface / info token hexes from tailwind.config.js.
 const PEN_COLORS = ['#EF4444', '#191c1e', '#0EA5E9'] as const
 
-function AnatomyCanvas({ value, onChange }: { value: AnatomyAnnotation | null; onChange: (v: AnatomyAnnotation | null) => void }) {
+function AnatomyCanvas({ value, onChange, touch = false }: { value: AnatomyAnnotation | null; onChange: (v: AnatomyAnnotation | null) => void; touch?: boolean }) {
+  // Portrait tabs (RESP-7): 44px targets instead of the pointer-sized 36px / 32px.
+  const btnMin = touch ? 'min-h-[44px]' : 'min-h-[36px]'
+  const swatchSize = touch ? 'w-11 h-11' : 'w-8 h-8'
   const t = useT()
   const canvasRef  = useRef<HTMLCanvasElement>(null)
   const drawing    = useRef(false)
@@ -155,30 +159,30 @@ function AnatomyCanvas({ value, onChange }: { value: AnatomyAnnotation | null; o
       <div className="flex gap-sm flex-wrap">
         {TEMPLATES.map(tpl => (
           <button key={tpl} type="button" onClick={() => setTemplate(tpl)}
-            className={`px-md py-xs rounded-full text-label-md font-medium transition-colors min-h-[36px] ${template === tpl ? 'bg-primary text-primary-on' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}>
+            className={`px-md py-xs rounded-full text-label-md font-medium transition-colors ${btnMin} ${template === tpl ? 'bg-primary text-primary-on' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}>
             {anatomyTemplateLabel(t, tpl)}
           </button>
         ))}
       </div>
 
       {/* Tool row */}
-      <div className="flex items-center gap-sm">
+      <div className="flex flex-wrap items-center gap-sm">
         {PEN_COLORS.map(c => (
           <button key={c} type="button" onClick={() => { setTool('pen'); setColor(c) }}
-            className={`w-8 h-8 rounded-full border-2 transition-transform ${color === c && tool === 'pen' ? 'border-primary scale-110' : 'border-outline-variant'}`}
+            className={`${swatchSize} rounded-full border-2 transition-transform ${color === c && tool === 'pen' ? 'border-primary scale-110' : 'border-outline-variant'}`}
             style={{ background: c }} />
         ))}
         <button type="button" onClick={() => setTool('eraser')}
-          className={`px-md py-xs rounded-lg text-label-md min-h-[36px] transition-colors ${tool === 'eraser' ? 'bg-primary text-primary-on' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}>
+          className={`px-md py-xs rounded-lg text-label-md ${btnMin} transition-colors ${tool === 'eraser' ? 'bg-primary text-primary-on' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}>
           <MaterialIcon name="ink_eraser" size={16} className="inline mr-xs" />{t('clinic.emr.eraserTool')}
         </button>
-        <button type="button" onClick={clearCanvas} className="px-md py-xs rounded-lg text-label-md bg-surface-container text-on-surface-variant hover:bg-surface-container-high min-h-[36px] transition-colors">
+        <button type="button" onClick={clearCanvas} className={`px-md py-xs rounded-lg text-label-md bg-surface-container text-on-surface-variant hover:bg-surface-container-high ${btnMin} transition-colors`}>
           {t('clinic.emr.clearCanvas')}
         </button>
       </div>
 
       {/* Canvas */}
-      <div className="bg-surface-container-low rounded-xl overflow-hidden border border-outline-variant">
+      <div className="bg-surface-container-low rounded-xl overflow-hidden border border-outline-variant max-w-full min-w-0">
         <div className="p-md text-center text-label-md text-on-surface-variant border-b border-outline-variant">{t('clinic.emr.anatomyInstruction').replace('{template}', anatomyTemplateLabel(t, template))}</div>
         <canvas
           ref={canvasRef}
@@ -408,6 +412,62 @@ const EMPTY_DRAFT: EmrDraft = {
   weightKg: null, tempC: null, heartRate: null, respRate: null, anatomy: null,
 }
 
+// ─── Portrait tabs (RESP-6 / RESP-7) ──────────────────────────────────────────
+// Below the drawer breakpoint (useViewportMode() === 'drawer', ADR-0033) the three
+// panels become tabs. The switch is class-only: every panel keeps its element type
+// and tree position and is hidden with `hidden`, never unmounted, so unsaved text,
+// the open record id and `isNewRecord` survive tab switches and rotation (arch §4a).
+type EmrTab = 'patient' | 'soap' | 'attachments'
+const DEFAULT_EMR_TAB: EmrTab = 'soap'
+const EMR_TABS: readonly { id: EmrTab; icon: string; labelKey: string }[] = [
+  { id: 'patient',     icon: 'person',      labelKey: 'clinic.emr.tabPatient' },
+  { id: 'soap',        icon: 'edit_note',   labelKey: 'clinic.emr.tabSoap' },
+  { id: 'attachments', icon: 'attach_file', labelKey: 'clinic.emr.tabAttachmentsRx' },
+]
+
+interface EmrLayoutClasses {
+  root: string; left: string; center: string; header: string; chip: string
+  soapBar: string; soapBody: string; empty: string; save: string; right: string
+}
+
+/** The three-column layout (1024 / 1280): exactly the classes the view always had. */
+const WIDE_CLASSES: EmrLayoutClasses = {
+  root: 'flex h-full overflow-hidden',
+  left: 'w-56 flex-shrink-0 border-r border-outline-variant bg-surface flex flex-col overflow-hidden',
+  center: 'flex-1 flex flex-col overflow-hidden',
+  header: 'bg-surface-container-low border-b border-outline-variant px-lg py-md flex items-center gap-md flex-shrink-0',
+  chip: 'ml-auto px-md py-xs rounded-full bg-error-container text-error text-label-md font-medium',
+  soapBar: 'flex flex-wrap border-b border-outline-variant bg-surface flex-shrink-0',
+  soapBody: 'flex-1 overflow-y-auto p-lg flex flex-col gap-lg',
+  empty: 'flex-1 flex flex-col items-center justify-center text-center p-xl text-on-surface-variant',
+  save: 'border-t border-outline-variant bg-surface px-lg py-md flex items-center gap-md flex-shrink-0',
+  right: 'w-72 flex-shrink-0 border-l border-outline-variant bg-surface flex flex-col overflow-hidden',
+}
+
+/**
+ * Class strings per element for the current layout. Tabbed: the root becomes a
+ * column, the centre column turns `contents` so the patient header and save bar
+ * become root-level flex items that stay pinned (`order` 1 / 4) around whichever
+ * single panel is shown (`order` 3); the other panels get `hidden`.
+ */
+function emrLayoutClasses(tabbed: boolean, active: EmrTab): EmrLayoutClasses {
+  if (!tabbed) return WIDE_CLASSES
+  const show = (tab: EmrTab) => (active === tab ? 'flex' : 'hidden')
+  const body = 'order-3 flex-1 min-h-0 min-w-0'
+  return {
+    root: 'flex flex-col h-full overflow-hidden',
+    left: `${show('patient')} ${body} w-full bg-surface flex-col overflow-hidden`,
+    center: 'contents',
+    header: 'bg-surface-container-low border-b border-outline-variant px-md py-sm flex flex-wrap items-center gap-sm flex-shrink-0 order-1 min-w-0',
+    chip: `${WIDE_CLASSES.chip} max-w-full break-words`,
+    soapBar: `${show('soap')} order-3 flex-wrap border-b border-outline-variant bg-surface flex-shrink-0`,
+    soapBody: `${show('soap')} ${body} overflow-y-auto p-md flex-col gap-lg`,
+    empty: `${show('soap')} ${body} flex-col items-center justify-center text-center p-xl text-on-surface-variant`,
+    save: 'border-t border-outline-variant bg-surface px-md py-sm flex items-center gap-md flex-shrink-0 order-4',
+    right: `${show('attachments')} ${body} w-full border-0 bg-surface flex-col overflow-hidden`,
+  }
+}
+
 // ─── Main View ────────────────────────────────────────────────────────────────
 export default function ClinicEMR() {
   const t = useT()
@@ -432,6 +492,10 @@ export default function ClinicEMR() {
 
   // SOAP form state
   const [soapTab, setSoapTab] = useState<SoapTab>('Subjective')
+  // Portrait tab state (RESP-6): local, not persisted; ignored outside the drawer band.
+  const tabbed = useViewportMode() === 'drawer'
+  const [activeTab, setActiveTab] = useState<EmrTab>(DEFAULT_EMR_TAB)
+  const cls = emrLayoutClasses(tabbed, activeTab)
   const [draft, setDraft]     = useState<EmrDraft>(EMPTY_DRAFT)
   const [saving, setSaving]   = useState(false)
   const [saveMsg, setSaveMsg] = useState('')
@@ -535,6 +599,7 @@ export default function ClinicEMR() {
     resetForm()
     setSelectedRecordId(null)
     setIsNewRecord(true)
+    setActiveTab(DEFAULT_EMR_TAB)
   }
 
   const saveRecord = async () => {
@@ -571,9 +636,26 @@ export default function ClinicEMR() {
   }
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className={cls.root}>
+      {/* ── Portrait tab bar (rendered only below the drawer breakpoint) ── */}
+      {tabbed && (
+        <div role="tablist" className="order-2 flex border-b border-outline-variant bg-surface flex-shrink-0">
+          {EMR_TABS.map(({ id, icon, labelKey }) => {
+            const label = t(labelKey)
+            const selected = activeTab === id
+            return (
+              <button key={id} type="button" role="tab" aria-selected={selected} aria-label={label}
+                onClick={() => setActiveTab(id)}
+                className={`flex-1 min-w-[44px] min-h-[44px] px-xs py-xs flex flex-col items-center justify-center gap-xs text-label-md font-medium text-center leading-tight break-words transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary border-b-2 ${selected ? 'text-primary border-primary' : 'text-on-surface-variant border-transparent hover:bg-surface-container-low'}`}>
+                <MaterialIcon name={icon} size={20} />{label}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
       {/* ── Left sidebar: patient selection ── */}
-      <div className="w-56 flex-shrink-0 border-r border-outline-variant bg-surface flex flex-col overflow-hidden">
+      <div data-emr-panel="patient" className={cls.left}>
         <div className="p-md border-b border-outline-variant">
           <p className="text-body-sm font-semibold text-on-surface-variant mb-sm">{t('clinic.emr.findPatient')}</p>
           <div className="relative">
@@ -619,7 +701,7 @@ export default function ClinicEMR() {
         {/* Recent visits */}
         <div className="flex-1 overflow-y-auto">
           {records.map(r => (
-            <button key={r.id} onClick={() => { setSelectedRecordId(r.id); setIsNewRecord(false) }}
+            <button key={r.id} onClick={() => { setSelectedRecordId(r.id); setIsNewRecord(false); setActiveTab(DEFAULT_EMR_TAB) }}
               className={`w-full text-left px-md py-sm min-h-[52px] border-b border-outline-variant/50 transition-colors ${selectedRecordId === r.id ? 'bg-surface-container-low border-l-4 border-primary' : 'hover:bg-surface-container-low border-l-4 border-transparent'}`}>
               <p className="text-body-sm font-medium truncate">{r.assessment ?? t('clinic.emr.visitFallback')}</p>
               <p className="text-label-md text-on-surface-variant">{formatDate(r.createdAt, language)}</p>
@@ -630,16 +712,16 @@ export default function ClinicEMR() {
 
       {/* ── Center: SOAP editor ── */}
       {selectedPetId && (isNewRecord || selectedRecordId) ? (
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Patient header bar */}
+        <div className={cls.center}>
+          {/* Patient header bar (pinned on every tab) */}
           {pet && (
-            <div className="bg-surface-container-low border-b border-outline-variant px-lg py-md flex items-center gap-md flex-shrink-0">
+            <div data-emr-pinned="header" className={cls.header}>
               <p className="text-body-md font-bold">{pet.name}</p>
               <p className="text-body-sm text-on-surface-variant">·</p>
               <p className="text-body-sm text-on-surface-variant">{pet.owner?.firstName} {pet.owner?.lastName}</p>
               {pet.owner?.phone && <><span className="text-on-surface-variant">·</span><p className="text-body-sm text-on-surface-variant">{pet.owner.phone}</p></>}
               {pet.allergies && (
-                <span className="ml-auto px-md py-xs rounded-full bg-error-container text-error text-label-md font-medium">
+                <span className={cls.chip}>
                   <MaterialIcon name="warning" size={14} className="inline mr-xs" />{t('clinic.emr.allergyLabel').replace('{allergies}', pet.allergies)}
                 </span>
               )}
@@ -647,7 +729,7 @@ export default function ClinicEMR() {
           )}
 
           {/* SOAP Tab bar */}
-          <div className="flex flex-wrap border-b border-outline-variant bg-surface flex-shrink-0">
+          <div data-emr-panel="soap" className={cls.soapBar}>
             {SOAP_TABS.map(tab => (
               <button key={tab} onClick={() => setSoapTab(tab)}
                 className={`px-lg py-sm text-body-sm font-semibold min-h-[44px] whitespace-nowrap flex-shrink-0 transition-colors ${soapTab === tab ? 'border-b-2 border-primary text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
@@ -657,7 +739,7 @@ export default function ClinicEMR() {
           </div>
 
           {/* Tab content */}
-          <div className="flex-1 overflow-y-auto p-lg flex flex-col gap-lg">
+          <div data-emr-panel="soap" className={cls.soapBody}>
             {soapTab === 'Subjective' && (
               <textarea
                 className="w-full bg-surface-container-low rounded-xl px-lg py-md text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary min-h-[200px] resize-none"
@@ -694,7 +776,7 @@ export default function ClinicEMR() {
                 {/* Anatomy canvas */}
                 <div>
                   <p className="text-body-sm font-semibold text-on-surface-variant mb-md">{t('clinic.emr.anatomyAnnotation')}</p>
-                  <AnatomyCanvas value={draft.anatomy} onChange={v => setField('anatomy', v)} />
+                  <AnatomyCanvas value={draft.anatomy} onChange={v => setField('anatomy', v)} touch={tabbed} />
                 </div>
               </div>
             )}
@@ -718,9 +800,9 @@ export default function ClinicEMR() {
             )}
           </div>
 
-          {/* Sticky save bar */}
-          <div className="border-t border-outline-variant bg-surface px-lg py-md flex items-center gap-md flex-shrink-0">
-            {saveMsg && <span className={`text-body-sm font-medium ${saveStatus === 'success' ? 'text-success' : 'text-error'}`}>{saveMsg}</span>}
+          {/* Sticky save bar (pinned on every tab) */}
+          <div data-emr-pinned="savebar" className={cls.save}>
+            {saveMsg && <span className={`text-body-sm font-medium ${tabbed ? 'min-w-0 truncate' : ''} ${saveStatus === 'success' ? 'text-success' : 'text-error'}`}>{saveMsg}</span>}
             <div className="flex-1" />
             <button onClick={saveRecord} disabled={saving}
               className="min-h-[44px] px-xl bg-primary text-primary-on rounded-lg text-body-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-sm">
@@ -730,7 +812,7 @@ export default function ClinicEMR() {
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col items-center justify-center text-center p-xl text-on-surface-variant">
+        <div data-emr-panel="soap" className={cls.empty}>
           <MaterialIcon name="medical_services" size={64} className="mb-lg opacity-20" />
           <p className="text-headline-sm font-headline font-bold mb-sm">{t('clinic.emr.emptyStateTitle')}</p>
           <p className="text-body-md">{t('clinic.emr.emptyStateBody')}</p>
@@ -739,13 +821,13 @@ export default function ClinicEMR() {
 
       {/* ── Right panel: attachments + prescriptions ── */}
       {(selectedRecordId || isNewRecord) && (
-        <div className="w-72 flex-shrink-0 border-l border-outline-variant bg-surface flex flex-col overflow-hidden">
+        <div data-emr-panel="attachments" className={cls.right}>
           {/* Attachments */}
           <div className="p-lg border-b border-outline-variant">
             <div className="flex items-center justify-between mb-md">
               <h4 className="text-body-sm font-semibold text-on-surface-variant">{t('clinic.emr.attachments')}</h4>
               <Can perm="emr.attach">
-                <label className="min-h-[36px] px-md flex items-center gap-xs rounded-lg bg-surface-container text-label-md font-medium text-on-surface-variant hover:bg-surface-container-high cursor-pointer transition-colors">
+                <label className={`${tabbed ? 'min-h-[44px]' : 'min-h-[36px]'} px-md flex items-center gap-xs rounded-lg bg-surface-container text-label-md font-medium text-on-surface-variant hover:bg-surface-container-high cursor-pointer transition-colors`}>
                   <MaterialIcon name="upload_file" size={16} />
                   {isUploading ? t('clinic.emr.uploading') : t('clinic.emr.upload')}
                   <input
@@ -806,7 +888,7 @@ export default function ClinicEMR() {
                         setAttachmentUiError(message ?? t('clinic.emr.failedToDeleteAttachment'))
                       }
                     }}
-                    className="w-[36px] h-[36px] flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-error/10 hover:text-error transition-colors flex-shrink-0"
+                    className={`${tabbed ? 'w-11 h-11' : 'w-[36px] h-[36px]'} flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-error/10 hover:text-error transition-colors flex-shrink-0`}
                   >
                     <MaterialIcon name="delete" size={16} />
                   </button>

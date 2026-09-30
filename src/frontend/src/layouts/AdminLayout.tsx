@@ -1,11 +1,11 @@
-﻿// Admin-only shell — redirects non-admins to /clinic/dashboard
-import { NavLink, Outlet, Navigate } from 'react-router-dom'
+// Admin-only shell — redirects non-admins to /clinic/dashboard
+import { Outlet, Navigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { useLogout } from '../hooks/useAuth'
-import { useUiStore } from '../store/uiStore'
+import { useShellSidebar } from '../hooks/useShellSidebar'
 import { useAdminSettings } from '../hooks/useAdmin'
 import { useT } from '../i18n'
-import MaterialIcon from '../components/MaterialIcon'
+import ResponsiveSidebar from '../components/ResponsiveSidebar'
 import TopNav from '../components/TopNav'
 import { ADMIN_NAV_PERMS, CLINIC_NAV_PERMS } from './navAccess'
 
@@ -30,7 +30,7 @@ export default function AdminLayout() {
   const hasPermission = useAuthStore(s => s.hasPermission)
   const logout   = useLogout()
   const t        = useT()
-  const { sidebarOpen, toggleSidebar } = useUiStore()
+  const shell    = useShellSidebar()
   const { data } = useAdminSettings()
 
   // RBAC-based entry (F-3): the legacy role==='admin' gate blocked any role
@@ -44,89 +44,34 @@ export default function AdminLayout() {
   const hasAnyClinicPerm = CLINIC_NAV_PERMS.some(hasPermission)
   if (!hasAnyAdminPerm && hasAnyClinicPerm) return <Navigate to="/clinic/dashboard" replace />
 
-  const sidebarW  = sidebarOpen ? 'w-56' : 'w-14'
-  const mainClass = sidebarOpen ? 'ml-56' : 'ml-14'
-
-  const navClass = (isActive: boolean) => {
-    if (sidebarOpen) {
-      return isActive
-        ? 'flex items-center gap-md px-lg min-h-[44px] border-r-4 border-primary bg-surface-container-low text-primary font-bold'
-        : 'flex items-center gap-md px-lg min-h-[44px] mx-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors'
-    }
-    return isActive
-      ? 'flex items-center justify-center min-h-[44px] w-full border-r-4 border-primary bg-surface-container-low text-primary'
-      : 'flex items-center justify-center min-h-[44px] mx-1 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors'
-  }
+  const items = NAV
+    .filter(item => !item.perm || hasPermission(item.perm))
+    .map(item => ({ to: item.to, icon: item.icon, label: t(item.label) }))
 
   return (
     <div className="min-h-screen bg-background">
-      {/* ── Sidebar (fixed) ─────────────────────────────────────────────── */}
-      <aside
-        className={`fixed left-0 top-0 h-screen z-50 ${sidebarW} bg-surface shadow-sm flex flex-col transition-all duration-200 overflow-hidden`}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-sm pt-md pb-md border-b border-outline-variant min-h-[64px] flex-shrink-0">
-          {sidebarOpen && (
-            <div className="pl-sm min-w-0">
-              <p className="text-headline-sm font-headline font-bold text-primary leading-tight truncate">
-                {data?.tenant.name ?? 'Anemal'}
-              </p>
-              <p className="text-label-md text-on-surface-variant mt-0.5">{t('nav.adminPanel')}</p>
-            </div>
-          )}
-          <button
-            onClick={toggleSidebar}
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-surface-container text-on-surface-variant transition-colors flex-shrink-0 ml-auto"
-            aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-          >
-            <MaterialIcon name={sidebarOpen ? 'menu_open' : 'menu'} size={22} />
-          </button>
-        </div>
-
-        {/* Nav */}
-        <nav className="flex flex-col flex-1 py-sm overflow-y-auto">
-          {NAV.filter(item => !item.perm || hasPermission(item.perm)).map(item => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) => navClass(isActive)}
-            >
-              <MaterialIcon name={item.icon} size={22} className="flex-shrink-0" />
-              {sidebarOpen && (
-                <span className="text-body-md whitespace-nowrap">{t(item.label)}</span>
-              )}
-            </NavLink>
-          ))}
-        </nav>
-
-        {/* Footer */}
-        <div className="border-t border-outline-variant p-sm flex-shrink-0">
-          {sidebarOpen && (
-            <div className="flex items-center gap-sm px-sm mb-sm">
-              <div className="w-10 h-10 rounded-full bg-primary text-primary-on flex items-center justify-center text-label-md font-bold flex-shrink-0 select-none">
-                {(name ?? 'A').charAt(0).toUpperCase()}
-              </div>
-              <div className="min-w-0">
-                <p className="text-body-sm font-medium text-on-surface truncate">{name}</p>
-                <p className="text-label-md text-on-surface-variant capitalize">admin</p>
-              </div>
-            </div>
-          )}
-          <button
-            onClick={logout}
-            className={`w-full min-h-[44px] flex items-center justify-center gap-sm text-on-surface-variant hover:bg-surface-container border border-outline-variant rounded-lg transition-colors text-body-sm ${sidebarOpen ? 'px-md' : ''}`}
-          >
-            <MaterialIcon name="logout" size={18} />
-            {sidebarOpen && <span>{t('menu.signOut')}</span>}
-          </button>
-        </div>
-      </aside>
+      <ResponsiveSidebar
+        mode={shell.mode}
+        expanded={shell.expanded}
+        drawerOpen={shell.drawerOpen}
+        onToggleExpanded={shell.toggleExpanded}
+        onCloseDrawer={shell.closeDrawer}
+        items={items}
+        header={{ title: data?.tenant.name ?? 'Anemal', subtitle: t('nav.adminPanel') }}
+        footer={{
+          name,
+          roleLabel: 'admin',
+          initial: (name ?? 'A').charAt(0).toUpperCase(),
+          signOutLabel: t('menu.signOut'),
+          onSignOut: logout,
+        }}
+      />
 
       {/* ── Top Nav (fixed, offset by sidebar) ──────────────────────────── */}
-      <TopNav />
+      <TopNav shell={shell} />
 
       {/* ── Main content ────────────────────────────────────────────────── */}
-      <main className={`${mainClass} pt-16 min-h-screen overflow-y-auto transition-all duration-200`}>
+      <main className={`${shell.offset.main} pt-16 min-h-screen overflow-y-auto transition-all duration-200`}>
         <Outlet />
       </main>
     </div>
